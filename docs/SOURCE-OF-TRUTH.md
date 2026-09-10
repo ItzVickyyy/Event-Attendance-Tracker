@@ -416,8 +416,9 @@ mode:
 
 -   **Time-in only** — a single tap marks the student present. Simplest
     mode, good for short events, general assemblies, orientation.
--   **Time-in + Time-out** — first tap of the event records time-in,
-    a second tap by the same student later records time-out. Good for
+-   **Time-in + Time-out** — the scanner provides explicit **Time-In** and
+    **Time-Out** actions. The officer selects the intended action before
+    scanning. Time-Out is only valid when a time-in exists. Good for
     seminars, training sessions, or anything requiring proof of a minimum
     stay duration.
 
@@ -433,14 +434,19 @@ mode:
 6.  The browser reads the NFC UID via Web NFC.
 7.  System looks up the UID.
 8.  Student information is displayed for a brief confirmation moment.
-9.  System determines whether this tap is a time-in or a time-out:
-    -   If the student has no attendance record yet for this event →
-        record as **time-in**.
-    -   If the student already has a time-in but no time-out, and the
-        event is in time-in + time-out mode → record as **time-out**.
-    -   If the student already has both a time-in and time-out → treat as
-        an already-completed record (see Section 11, duplicate handling).
-10. Screen returns to a ready-to-scan state.
+9.  Officer selects **Time-In** or **Time-Out** before scanning.
+10. System validates the selected action:
+    -   **Time-In** → record time-in if the student has not already timed in.
+    -   **Time-Out** → record time-out only when the event requires time-out
+        and the student has a valid time-in with no existing time-out.
+    -   Duplicate or invalid action → reject it with a clear status such as
+        **Already Recorded**, **Already Completed**, or **Time-In Required**.
+11. For time-in-only events, the **Time-Out** action is unavailable.
+12. Screen returns to a ready-to-scan state.
+
+The system must not infer the officer's intended action solely from the
+number of previous taps. The same explicit Time-In/Time-Out controls and
+validation rules apply to NFC scanning and manual entry.
 
 ### Example — time-in only event
 
@@ -562,7 +568,7 @@ Third scan (same event): Already Completed — In: 08:42:15 AM / Out:
 The system should not create multiple attendance records for the same
 student and event unless an authorized staff function explicitly allows
 it — for example, a manual "correct this record" action performed by an
-Administrative Officer or higher (Section 21), which should be logged
+Admin or higher (Section 21), which should be logged
 (who changed it, old value, new value, when).
 
 ------------------------------------------------------------------------
@@ -724,7 +730,7 @@ an event.
 
 Per the officer roster document, the dashboard should expose (at
 minimum) **Dashboard, Events, Students, Records, and Scanner** as
-distinct sections for Administrative Officer accounts — see Section 21.
+distinct sections for Admin accounts — see Section 21.
 
 ------------------------------------------------------------------------
 
@@ -877,80 +883,42 @@ the actual phones officers will use.
 
 ------------------------------------------------------------------------
 
-## 21. Roles and Access Control (RBAC)
+## 21. Roles and Access Control
 
-This section formalizes the role structure from the Student Council's
-planning notes into concrete dashboard access levels.
+The system uses the following roles only. No additional role names should be introduced unless this Source of Truth is explicitly revised.
 
-### Role hierarchy
+### Developer
 
-**1. Developer (system-level)**
+Technical/system-level access for maintaining the application infrastructure and implementation. This role is separate from normal attendance operations and should not be treated as an ordinary dashboard operator.
 
--   Technical maintainer(s) of the codebase and infrastructure.
--   Access: system tools, application logs, feature flags.
--   This is treated as separate from the "officer" RBAC scope below — it
-    is infrastructure/engineering access (e.g., server admin, database
-    access, deploy permissions), not a dashboard role a Student Council
-    member would be assigned through the app's own user management.
+### Super Admin
 
-**2. Executive Officer (Super Admin)** — *still being scoped, not fully
-defined yet*
+Highest application-administration role. Has full access to application management, organization-wide attendance operations, users/roles, system settings, audit logs, data correction, and other administrative functions. The Super Admin can adjust event attendance rules such as the Time-Out cutoff/grace period and can authorize attendance corrections.
 
--   Full administration: includes everything an Administrative Officer
-    (below) can do, plus organization-wide oversight not yet fully
-    specified.
--   Intended scope (per the org notes): Dean, Student Council Advisers,
-    and Executive Officers (President, Vice President, Executive
-    Secretary, Recording Secretary, Treasurer, Auditor).
--   **Open item:** the exact additional capabilities that distinguish
-    Super Admin from Admin (e.g., managing other users' roles, approving
-    Admin-level corrections, cross-organization visibility once Section
-    25 "multi-org" work happens) still need to be defined. Do not assume
-    parity with Admin beyond what's explicitly decided.
+### Admin
 
-**3. Administrative Officer (Admin)**
+Day-to-day organization-wide operator. Has access to Dashboard, Events, Students, Records, and Scanner, plus operational attendance management. Admin can manage the masterlist, register/reassign NFC UIDs, operate scanners, and perform permitted attendance administration. Sensitive system-level settings and Super Admin-only controls remain restricted.
 
--   Full access to: **Dashboard, Events, Students, Records, Scanner.**
--   Intended scope (per the org notes): Administrative officers (Business
-    Managers, Event Coordinators, PIOs for Publication/Documentation,
-    Creative Designers) and Year Representatives.
--   This is effectively the "day-to-day operator" role — the people who
-    will actually run the Scanner during events, create/manage Events,
-    and pull Records/exports.
+### Class Representative
 
-**4. Class Representative** — *tentative; still deciding whether to
-build this role at all*
+Section-scoped role. A Class Representative may manage students and attendance-related information for their own assigned section, subject to the permissions defined for that section. They cannot access organization-wide administration or other sections unless explicitly granted a separate permission.
 
--   Intended scope: strictly limited to their own assigned section (e.g.,
-    can only view/manage attendance for students in their section).
--   Not yet decided whether this ships in v1 or is stashed for later.
-    Treat as **out of scope** for the first working version unless
-    explicitly revisited.
+### Student
 
-**5. Student** — *tentative; still deciding whether to build this role
-at all*
+Represents the student record in the system. A student account is not required for the core attendance flow. Student-facing/self-service features are optional and must not be required for NFC scanning, manual attendance, or attendance reporting.
 
--   Intended scope: presumably a self-service view limited to the
-    logged-in student's own attendance history.
--   Same status as Class Representative — **out of scope** for v1 unless
-    explicitly revisited.
+### Scanner Permission
 
-### Implementation notes
+Scanning is treated as an explicit permission/capability rather than being tied only to a role name. Authorized scanners may include the Dean, Student Council Advisers, and Student Council Officers. The permission should be enforced server-side and through the UI.
 
--   The FastAPI template ships with JWT authentication and secure
-    password hashing out of the box — this is the natural place to build
-    role/permission checks (e.g., a `role` field on the user model, with
-    FastAPI dependency-injected permission checks per route).
--   Since Class Representative and Student roles are tentative, the
-    initial RBAC implementation should be built so that adding them later
-    doesn't require re-architecting — e.g., permissions should be checked
-    per-route/per-action against a role enum, not hardcoded as "if Admin
-    do X" scattered through the code.
--   Manual attendance corrections, masterlist import, and NFC UID
-    reassignment (Sections 6 and 11) should require **Administrative
-    Officer or higher** — not left open to every logged-in user.
+### Permission Principles
 
-------------------------------------------------------------------------
+- Use route-level and action-level permission checks rather than scattered hardcoded role checks.
+- Masterlist import, NFC UID reassignment, and manual attendance corrections require Admin or higher unless a narrower permission is explicitly defined.
+- Attendance corrections must be auditable, retaining the original value, corrected value, reason, actor, and timestamp.
+- Super Admin controls must include configurable Time-Out cutoff/grace-period settings.
+- A student who was genuinely present but could not time in may request an authorized Time-In adjustment from a Super Admin or designated executive officer.
+- Role names and boundaries must remain consistent across the frontend, backend, database seed data, and documentation.
 
 ## 22. Student Council Officers — A.Y. 2026-2027 (Reference Roster)
 
@@ -987,8 +955,8 @@ should live in the user database, not this document).
 
 ### Year Representatives
 
-  Role                              Name
-  -----------------------------------------------------
+  Role                     Name
+  ------------------------ -----------------------------
   BSIT 1st Year Representative      Adrian Padilla
   BSIT 2nd Year Representative      Andrew Flores
   BSIT 3rd Year Representative      Ivan Angelo Cano
@@ -1027,27 +995,6 @@ should live in the user database, not this document).
 -   Event Coordinator Ivan Angelo Cano
 -   Event Coordinator Abby P. Peñarubia
 -   BSCS 1st Year Representative Chris Banasihan
-
-### Data-quality flags worth resolving before seeding accounts
-
--   The Year Representatives section duplicating the Administrative list
-    (noted above).
--   Minor name-spelling inconsistencies across sections (e.g., "Gerlyn
-    Mae Salamero" vs. "Gerlyn Mae Malle Salamero"; "Philix Nashley Ebron"
-    vs. "Nashley Ebron"; "Abby Marjery Peñarubia" vs. "Abby P.
-    Peñarubia"). These should be reconciled to one canonical spelling per
-    person before creating user accounts, since account matching will
-    likely be by name and/or student number.
--   Treasurer name discrepancy noted above ("John Ryan Malabanan" vs.
-    "Rhai Malabanan").
-
-------------------------------------------------------------------------
-
-## 23. Technology Stack
-
-The project is built on the **Full Stack FastAPI Template**
-(`fastapi/full-stack-fastapi-template`), already cloned into
-https://github.com/ItzVickyyy/Event-Attendance-Tracker.
 
 ### Backend
 
@@ -1222,10 +1169,13 @@ Implement:
 
 -   `role` field on the user model, layered on the template's existing
     auth
--   Route-level permission checks (Administrative Officer vs. Executive
-    Officer / Super Admin, per Section 21)
--   Admin-only gating for: masterlist import, UID reassignment, manual
-    attendance corrections
+-   Route-level and action-level permission checks for Developer, Super Admin,
+    Admin, Class Representative, and Student (per Section 21)
+-   Explicit scanner capability/permission for authorized scanners
+-   Admin-or-higher gating for masterlist import, UID reassignment, and
+    manual attendance corrections
+-   Super Admin controls for Time-Out cutoff/grace-period settings and
+    authorized attendance adjustments
 
 ------------------------------------------------------------------------
 
@@ -1328,8 +1278,7 @@ The system should:
 
 -   Avoid storing unnecessary student information
 -   Restrict administrative functions (masterlist import, UID
-    reassignment, record correction) to Administrative Officer accounts
-    or higher (Section 21)
+    reassignment, record correction) to Admin accounts or higher (Section 21)
 -   Protect the student database (standard production hardening for the
     PostgreSQL instance — network access restricted, credentials not
     committed to the repo, backups handled sensibly)
@@ -1374,7 +1323,7 @@ The first complete version should be able to:
 -   Work fully offline during an event (via PWA/IndexedDB) and sync
     automatically once online
 -   View attendance on a live dashboard during the event
--   Enforce role-based access (Administrative Officer minimum for admin
+-   Enforce role-based access (Admin minimum for administrative
     functions)
 -   Export attendance data to Excel, CSV, Word, and PDF
 -   Produce a printable attendance sheet (both pre-event blank and
@@ -1422,39 +1371,13 @@ dependency for the first prototype.
 
 ## 29. Open Questions / To Decide
 
--   **Super Admin scope** (Section 21): what exactly does Executive
-    Officer / Super Admin get beyond Administrative Officer? Not yet
-    defined.
--   **Class Representative and Student roles**: build now, later, or
-    stash entirely? Currently tentative/undecided.
--   **Roster data-quality issues** (Section 22): the Year Representatives
-    duplication, name-spelling inconsistencies, and the
-    Malabanan/"Rhai" vs. "John Ryan" discrepancy need to be resolved with
-    whoever maintains the officer roster before real accounts are seeded.
--   **Officer device compatibility**: has it been confirmed that the
-    officers expected to run the Scanner (Admins/Year Reps) actually have
-    Android phones with a Chromium-based browser? If any expected
-    scanning officer has an iPhone, that changes staffing/rollout plans
-    (Section 3.1, 8.1) and should be known before an event, not during
-    one.
--   Does the local browser storage (IndexedDB) need any additional
-    protection, given it will contain a cached student roster and queued
-    attendance data on a personal phone that could be lost?
--   What's the actual minimum-stay policy (if any) for time-in +
-    time-out events — is "incomplete" (timed in, never timed out)
-    something that needs manual adviser review, or auto-marked absent
-    after some cutoff?
--   Self-hosted (Docker Compose + Traefik) vs. FastAPI Cloud for
-    deployment — which one, and who's paying for/maintaining it?
--   Does the Dean's office / school registrar have any existing policy
-    on scanning/using student ID NFC UIDs that this project should be
-    aware of before piloting at a real CCS event?
--   Longer-term: if broader device compatibility (iPhone officers, or a
-    dedicated reader-at-a-table setup) turns out to be necessary, is a
-    native companion app worth revisiting for the scanning role
-    specifically, while keeping the dashboard/admin side as the website?
-    Not needed for v1, but worth keeping in mind given Web NFC's
-    platform limits.
+-   **Student self-service:** decide later which optional student-facing
+    features, if any, should be implemented after the core attendance flow.
+-   **Officer device compatibility:** confirm the actual NFC-capable Android
+    devices and Chromium browsers that will be used in deployment.
+-   **Offline storage recovery:** determine the final operational procedure
+    for recovering unsynced attendance if an officer's phone is lost, cleared,
+    or becomes unusable during an event.
 
 ------------------------------------------------------------------------
 
