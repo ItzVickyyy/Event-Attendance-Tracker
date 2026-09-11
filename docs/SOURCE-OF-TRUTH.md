@@ -24,14 +24,14 @@ sign-in sheets.
 ## 1. Project Goal
 
 Build an event attendance tracker where a Student Council officer opens
-a website on an NFC-capable Android phone and uses the phone's browser
-as the scanner — no separate app install required.
+a website on an appropriate device and uses the browser as the attendance
+scanner — no separate app install required for the web-based flow.
 
 The intended flow is:
 
-School ID → Officer's phone browser reads NFC UID → System identifies
-the student → System records attendance (time-in or time-out) →
-Attendance can be viewed, printed, and exported from the same website
+NFC tap OR QR scan OR manual search → System identifies attendee →
+System records attendance (time-in or time-out) → Attendance can be
+viewed, printed, and exported from the same website
 
 The system should be usable for CCS (College of Computer Studies) events
 first, and should be designed from day one so it can later support other
@@ -59,23 +59,431 @@ encoding after the event.
 -   This is not a native mobile app — see Section 3.1 for what that
     trade-off means for NFC scanning.
 
-------------------------------------------------------------------------
 
 ## 2. Core Idea
 
-The NFC UID is the identifier of the physical school ID.
+The NFC UID is one identifier for a physical school ID. It is not the only way an attendee can be identified.
 
-The student masterlist is the source of student information.
+The student masterlist remains the source of student information for students. Other attendee types (Faculty, Staff, Parent/Guardian, and Guest) may be registered directly for an event with only the information needed for attendance.
 
-The attendance system connects the two.
+The attendance system connects identification methods to an attendee, then connects that attendee to an event and attendance record.
 
 Conceptually:
 
-NFC UID → Student record → Attendance record
+NFC UID / QR Identifier / Manual Search → Attendee record → Event Registration → Attendance record
 
 The system must not assume that the NFC chip itself contains the
 student's name, student number, year, or section. The UID is treated as
 an opaque key, nothing more.
+
+## 2.1 Event-Day Attendance Problem and Solution
+
+### Why this matters (the problem being solved)
+
+Whenever there is an event, students currently have to fall in line to manually write their name and student number on a paper attendance sheet. The current process can require students to follow a line assigned to their year level and, after reaching the attendance area, ask for their section and find the paper sheet assigned to that section before writing their information.
+
+This creates several problems:
+
+- Students are forced into specific lines based on year level.
+- Students may have to search for the correct section sheet.
+- Officers must manage many separate paper sheets at the entrance.
+- Handwriting can be difficult to read.
+- Paper sheets are slow to tally and consolidate after the event.
+- Long lines create bottlenecks at entrances, especially when many students arrive at the same time.
+
+### Proposed solution
+
+The system should allow students and other registered attendees to use **any available attendance line**. They no longer need to choose a line based on year level or find a paper sheet for their section.
+
+An officer simply identifies the attendee using one of the supported methods:
+
+- **NFC** — tap a registered school ID or NFC credential.
+- **QR Code** — scan the attendee's QR code.
+- **Manual Search** — search and select the attendee when NFC or QR is unavailable.
+
+The system automatically identifies the person, records the attendance against the correct event, and stores the timestamp. The attendee can therefore use any scanner station instead of being directed to a year-level/section-specific paper line.
+
+The goal is not necessarily to eliminate every physical line. Officers may still need to scan people one at a time. The goal is to remove the unnecessary sorting work at the entrance and make every scanner station interchangeable.
+
+### Simple event-day flow
+
+```text
+Attendee arrives
+       ↓
+Choose any available scanner line
+       ↓
+NFC tap OR QR scan OR Manual Search
+       ↓
+System identifies attendee
+       ↓
+System records attendance automatically
+       ↓
+Attendee proceeds into the event
+```
+
+The scanner should immediately return to a **Ready for Next Attendee** state after a successful or rejected scan.
+
+### Example
+
+Instead of: 
+
+```text
+Year 1 Line → Find Section 1A Paper → Write Name
+Year 2 Line → Find Section 2B Paper → Write Name
+Year 3 Line → Find Section 3A Paper → Write Name
+Year 4 Line → Find Section 4C Paper → Write Name
+```
+
+the new process is:
+
+```text
+Any Line → Scan/Tap → System finds the person → Attendance recorded
+```
+
+This is the core operational benefit of the system during an event.
+
+------------------------------------------------------------------------
+
+## 2.2 Attendee Types
+
+The system should not be designed only around students. The core attendance model should support multiple types of people who may attend an event:
+
+- **Student** — a currently enrolled student and the primary NFC school-ID user.
+- **Faculty** — teaching or academic personnel attending an event.
+- **Staff** — non-faculty school personnel or authorized staff members.
+- **Parent/Guardian** — a parent or guardian attending with or in relation to a student.
+- **Guest** — an event guest who is not a student, faculty member, staff member, or parent/guardian.
+
+These are attendee classifications, not separate attendance systems. All attendee types should use the same event registration and attendance infrastructure.
+
+Conceptually:
+
+```text
+Attendee
+├── Student
+├── Faculty
+├── Staff
+├── Parent/Guardian
+└── Guest
+```
+
+### Parent/Guardian relationship
+
+A Parent/Guardian should be represented as a separate attendee, while optionally being linked to the student they are accompanying.
+
+Example:
+
+```text
+Student: Juan Dela Cruz
+        ↓
+Parent/Guardian: Maria Dela Cruz
+Relationship: Mother
+```
+
+The relationship should support values such as Mother, Father, Guardian, Grandparent, Sibling, or Other.
+
+A Parent/Guardian should **not** be required to create a system login simply to attend an event. They may be registered as an event attendee without having an authenticated user account.
+
+### Independent attendance
+
+Every attendee must have an independent attendance record. A student's attendance must not automatically mark their Parent/Guardian, and a Parent/Guardian's attendance must not automatically mark the student.
+
+Example:
+
+```text
+Juan Dela Cruz     → Present at 8:15 AM
+Maria Dela Cruz    → Present at 8:18 AM
+```
+
+If Juan arrives but Maria does not, the system must record only Juan as present.
+
+------------------------------------------------------------------------
+
+## 2.3 Multi-Method Attendee Identification
+
+The system should be a **multi-method event attendance system**, not an NFC-only or QR-only system. NFC, QR, and manual search are identification methods that resolve to the same attendee and the same attendance record.
+
+Conceptually:
+
+```text
+NFC ────────┐
+QR Code ────┼──→ Identify Attendee → Validate → Record Attendance
+Manual ─────┘
+```
+
+### NFC
+
+NFC is the preferred fast path for attendees who have a registered NFC credential. For students, the existing plan uses the physical school ID's NFC UID as the identifier.
+
+NFC scanning should continue to follow the Web NFC constraints already documented in Section 3.1.
+
+### QR Code
+
+QR should be supported as another identification method. A registered attendee may be assigned a unique QR code that resolves to their attendee record.
+
+QR codes are particularly useful for:
+
+- Parent/Guardian attendees who do not have a school NFC ID.
+- Guests who do not have a school NFC ID.
+- Faculty or Staff who are not using a supported NFC credential.
+- Backup identification when an NFC credential is unavailable.
+
+The QR code should identify the attendee; it should not contain unnecessary personal information.
+
+### Manual Search
+
+Manual search remains a first-class fallback, not an emergency-only feature. It should be available when:
+
+- An attendee forgot their ID.
+- An NFC credential is unreadable.
+- A QR code is unavailable or cannot be scanned.
+- The officer's device does not support NFC.
+- A Parent/Guardian or Guest has not been assigned an NFC credential.
+
+The officer searches for the attendee, confirms the correct record, and records attendance.
+
+### One attendee, multiple identification methods
+
+An attendee may have more than one identification method. For example:
+
+```text
+Maria Dela Cruz
+Parent/Guardian
+├── QR Code: available
+└── NFC Credential: optional
+```
+
+Both methods must resolve to the **same attendee**. Scanning the QR and then tapping NFC must not create two attendance records. Duplicate-prevention rules apply regardless of the identification method used.
+
+Attendance records should store the method used, such as:
+
+- `nfc`
+- `qr`
+- `manual`
+
+This allows event organizers to see how attendance was collected and how often fallback methods were required.
+
+------------------------------------------------------------------------
+
+## 2.4 Event-Day Scanner Experience
+
+The Scanner page should be designed for speed and simplicity. Officers should not need to understand the attendee's year level, section, or paper-sheet location before checking them in.
+
+The scanner should provide three clear paths:
+
+```text
+┌─────────────────────────────────────┐
+│          EVENT CHECK-IN             │
+│                                     │
+│  📳 Tap NFC                         │
+│  📱 Scan QR                         │
+│  🔍 Search Attendee                 │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+### Successful identification
+
+The system should briefly display the person's relevant information before or while confirming the attendance action:
+
+```text
+✓ CHECK-IN SUCCESSFUL
+
+Maria Dela Cruz
+PARENT/GUARDIAN
+
+Linked Student: Juan Dela Cruz
+Relationship: Mother
+
+Time: 8:18 AM
+
+READY FOR NEXT ATTENDEE
+```
+
+For a student:
+
+```text
+✓ CHECK-IN SUCCESSFUL
+
+Juan Dela Cruz
+STUDENT
+BSIT 3A
+
+Time: 8:15 AM
+
+READY FOR NEXT ATTENDEE
+```
+
+### Duplicate identification
+
+If the same attendee is scanned again during a time-in-only event, the system should show the existing attendance rather than creating another record:
+
+```text
+⚠ ALREADY RECORDED
+
+Juan Dela Cruz
+Checked in: 8:15 AM
+
+READY FOR NEXT ATTENDEE
+```
+
+The same duplicate-prevention logic must apply whether the person was identified by NFC, QR, or manual search.
+
+------------------------------------------------------------------------
+
+## 2.5 Attendee Data Model Direction
+
+The existing student-focused design should be expanded into a general attendee model without removing the separate Student database concept.
+
+The recommended normalized conceptual structure is:
+
+```text
+People
+├── Students ──→ Academic Sections ──→ Academic Programs
+│
+└── Attendees
+     ├── Credentials (NFC / QR)
+     └── Relationships ──→ Students
+
+Attendees ──→ Event Registrations ──→ Attendance
+```
+
+For students, the attendee record references the student's person record rather than duplicating the entire masterlist. Identification credentials, parent/guardian relationships, event registration, and attendance are stored in their own related tables.
+
+For Parent/Guardian attendees, the system should store the minimum information required for event attendance, such as:
+
+- Full name
+- Relationship to student
+- Linked student, when applicable
+- Contact information only when genuinely needed by an event feature
+- QR/NFC identifier when assigned
+
+For Faculty, Staff, and Guests, the system should likewise collect only the information required to register and identify them for the event.
+
+### Event registration
+
+Registration should connect an attendee to a specific event. This keeps the person's identity separate from their attendance at any one event.
+
+Conceptually:
+
+```text
+Person / Attendee
+       ↓
+Event Registration
+       ↓
+Attendance Record
+```
+
+This allows the same person to attend multiple events without creating a new permanent person record every time.
+
+------------------------------------------------------------------------
+
+## 2.6 Parent/Guardian Event-Day Flow
+
+Parent/Guardian support should follow the same scanner flow as other attendees.
+
+### Before the event
+
+1. Student registers for the event.
+2. Registration asks whether a Parent/Guardian will attend.
+3. If yes, the Parent/Guardian is registered as a separate attendee.
+4. The system links the Parent/Guardian to the student.
+5. The system provides a QR code and/or NFC credential when applicable.
+
+### During the event
+
+```text
+Parent/Guardian arrives
+        ↓
+Uses any available scanner line
+        ↓
+QR / NFC / Manual Search
+        ↓
+System identifies Parent/Guardian
+        ↓
+System displays linked student
+        ↓
+Attendance recorded
+```
+
+The Parent/Guardian does not need to find the student's year-level line or section sheet.
+
+### Important rule
+
+Parent/Guardian attendance is always independent from student attendance. The system should be able to answer:
+
+- Is the student present?
+- Is the Parent/Guardian present?
+- What time did each person arrive?
+- Which identification method was used?
+
+------------------------------------------------------------------------
+
+## 2.7 Event-Day Dashboard by Attendee Type
+
+The live dashboard should be able to summarize attendance across all attendee types.
+
+Example:
+
+```text
+EVENT ATTENDANCE
+
+Total Registered: 500
+Present:          327
+
+Students          215 / 300
+Faculty            42 / 50
+Staff              35 / 40
+Parents/Guardians  30 / 80
+Guests              5 / 30
+```
+
+Organizers should also be able to filter the live attendance list by attendee type.
+
+Useful filters include:
+
+- Attendee Type
+- Name
+- Student Number, for students
+- Year & Section, for students
+- Linked Student, for Parent/Guardian attendees
+- Attendance Status
+- Identification Method
+
+------------------------------------------------------------------------
+
+## 2.8 Attendance Hardware and Operational Principle
+
+The system should not force the event organizer to use one specific identification technology. The goal is to make the **scanner station** flexible.
+
+A station may support:
+
+```text
+NFC + QR + Manual Search
+```
+
+or, depending on the available device and event setup:
+
+```text
+QR + Manual Search
+```
+
+or:
+
+```text
+NFC + Manual Search
+```
+
+All stations should connect to the same event and use the same attendance rules.
+
+This means an event can deploy multiple scanner stations and allow attendees to use any station. The backend must safely handle simultaneous scans and prevent duplicate records, as already required by Section 12.
+
+The existing Web NFC limitations remain unchanged: NFC scanning from the website requires a supported Android/Chromium environment. QR and manual search provide important alternatives for unsupported devices and attendee types without NFC credentials.
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
 
 ------------------------------------------------------------------------
 
@@ -116,9 +524,9 @@ testing.
     cracking anything — this keeps the project inside "authorized NFC
     reading" (see Section 24). No keys, no bypassing, no writing.
 -   UID collisions across the whole student population are astronomically
-    unlikely (4-byte UID space), but the system should still treat
-    `nfc_uid` as unique in the database and fail loudly (not silently) if
-    a duplicate is ever detected during registration.
+    unlikely (4-byte UID space), but the system should still enforce
+    uniqueness of the NFC credential value at the database level and fail
+    loudly (not silently) if a duplicate is ever detected during registration.
 
 ### 3.1 Reading the UID from a website (Web NFC API)
 
@@ -219,326 +627,429 @@ The application should have its own student database, modeled with
 **SQLModel** (per the FastAPI template's ORM choice) and stored in
 **PostgreSQL**.
 
-Initial student fields:
+The database must follow **relational database normalization principles,
+with the operational schema designed to satisfy at least Third Normal Form
+(3NF)**. The purpose is to avoid duplicated student, section, attendee,
+event, credential, and attendance data while keeping relationships explicit.
 
--   student_id
--   student_number
--   first_name
--   middle_name
--   last_name
--   extension
--   year
--   section
--   nfc_uid
--   nfc_registered
--   created_at
--   updated_at
+### Normalization requirements
 
-The database will initially be populated by importing the college
-masterlist.
+The database design must follow these rules:
 
-Example:
+1. **One fact is stored in one appropriate place.** For example, a student's
+   name belongs to the person/student data, while an event's name belongs to
+   the event table and should not be copied into every attendance row.
+2. **No repeating groups or comma-separated values.** A student must not have
+   fields such as `event_ids = "1,2,3"` or `qr_codes = "A,B"`.
+3. **Use primary keys and foreign keys for relationships.** Related records
+   should reference IDs instead of duplicating descriptive data.
+4. **Keep many-to-many relationships in junction tables.** Student/event
+   participation is represented by `event_registrations`, not repeated event
+   columns on `students`.
+5. **Separate identification credentials from the person record.** NFC and QR
+   are identification methods and may change or exist in multiples; they
+   should not require duplicated person records.
+6. **Separate event registration from attendance.** Registration answers
+   "who is expected/allowed to attend this event?" while attendance answers
+   "what happened when this attendee arrived?".
+7. **Avoid storing derived values as authoritative data.** Dashboard totals,
+   attendance rates, and present/absent counts should be calculated from
+   registrations and attendance records rather than manually stored and
+   updated in multiple places.
+8. **Use nullable foreign keys only when the relationship is genuinely
+   optional.** For example, a Parent/Guardian may optionally be linked to a
+   student depending on the event.
+9. **Do not duplicate student information in Parent/Guardian, Faculty, Staff,
+   or Guest records.** Store the person once and represent relationships
+   through foreign keys.
 
-  Student Number   Name            Year & Section   NFC UID
-  ---------------- --------------- ---------------- ----------------
-  2024-00001       Student One     BSIT 3A          Not registered
-  2024-00002       Student Two     BSIT 3A          Not registered
-  2024-00003       Student Three   BSIT 3B          Not registered
+### Normalized academic structure
 
-Most students may initially have no NFC UID. That is acceptable.
+Year and section information should not be repeated as free-text fields on
+every student row. Instead, use a normalized academic section table.
+
+Conceptually:
+
+```text
+Academic Program
+    ↓
+Academic Section
+    ↓
+Student
+```
+
+Recommended tables/fields:
+
+**academic_programs**
+
+- `program_id` (PK)
+- `program_code` (unique, e.g. `BSIT`, `BSCS`)
+- `program_name`
+
+**academic_sections**
+
+- `section_id` (PK)
+- `program_id` (FK → `academic_programs.program_id`)
+- `year_level`
+- `section_name`
+- `academic_year`
+
+A uniqueness constraint should prevent duplicate sections for the same
+program, year level, section name, and academic year.
+
+### Students
+
+The student table should contain student-specific facts only:
+
+**students**
+
+- `student_id` (PK)
+- `person_id` (FK → `people.person_id`, unique)
+- `student_number` (unique)
+- `section_id` (FK → `academic_sections.section_id`)
+- `created_at`
+- `updated_at`
+
+The student's name should not be repeated in `students` if it already exists
+in `people`. Year, program, and section should be obtained through the
+`section_id` relationship.
+
+Example normalized relationship:
+
+```text
+Person
+  ↓
+Student → Academic Section → Academic Program
+```
+
+The database may use a staging table for masterlist imports, but staging data
+must be validated before it is promoted into the normalized operational
+schema.
 
 ### Import process (masterlist → app database)
 
-1.  Export/obtain the masterlist as CSV or Excel from whoever maintains
-    it (department secretary, adviser, etc.).
-2.  Map masterlist columns to the app's student fields (Student Number,
-    Name split into first/middle/last/extension, Year, Section).
-3.  Run the import into a staging table first, not directly into the live
-    table.
-4.  Validate: no duplicate Student Numbers, no blank required fields,
-    consistent Year/Section formatting (e.g., always "BSIT 3A", not a mix
-    of "3A-BSIT" and "BSIT-3A").
-5.  Flag and manually review any rows that fail validation instead of
-    silently dropping or silently importing them.
-6.  Promote the staging table into the live `students` table.
-7.  Keep the original masterlist file archived (outside the app) in case
-    a re-import or audit is needed later.
+1. Export/obtain the masterlist as CSV or Excel from whoever maintains it.
+2. Import the raw file into a **staging table** that is separate from the
+   operational tables.
+3. Validate required fields and detect duplicate student numbers.
+4. Normalize program and section values against `academic_programs` and
+   `academic_sections` instead of copying the same text into every student.
+5. Create or update the corresponding `people` record.
+6. Create or update the corresponding `students` record using foreign keys.
+7. Flag rows that fail validation for manual review instead of silently
+   dropping or importing them.
+8. Keep the original masterlist archived outside the operational database for
+   audit/re-import purposes.
 
-Re-imports (e.g., new semester, corrected data) should update existing
-records by `student_number` rather than creating duplicates.
-
-------------------------------------------------------------------------
-
-## 6. NFC Registration
-
-Students should not have to manually type all of their information if
-they already exist in the masterlist.
-
-Preferred registration process:
-
-1.  Search for the student using their Student Number or name.
-2.  Display the matching student record.
-3.  Confirm the student's identity.
-4.  Ask the student to tap their school ID against the officer's phone.
-5.  The web page reads the NFC UID via Web NFC (Section 3.1).
-6.  Associate the UID with that student.
-7.  Save the association.
-
-Example:
-
-Student Number: 2024-00001
-
-Name: Student One
-
-Action: TAP SCHOOL ID
-
-NFC UID detected: 8F:49:5B:74
-
-Save association.
-
-After registration:
-
-8F:49:5B:74 → Student One → 2024-00001 → BSIT 3A
-
-### Where registration happens
-
-To avoid one bottleneck line just replacing another, NFC registration
-should ideally be:
-
--   **Rolling/ambient**: built into the normal attendance flow, so a
-    student's very first scan at any event doubles as their registration
-    (see Section 7 fallback flow) — no separate registration event
-    needed.
--   **Optionally batched**: officers can also run a dedicated
-    "registration day" booth before a big event if a fast head start is
-    wanted, using the same search → confirm → tap flow, from the same
-    website.
-
-### Re-registration / lost ID handling
-
-If a student loses their ID or gets a replacement:
-
-1.  Officer searches the student record.
-2.  Officer selects "Replace NFC ID".
-3.  System requires confirmation (this is a deliberate, logged action,
-    not a silent overwrite) because it breaks the link to the old UID.
-4.  Student taps the new ID.
-5.  New UID replaces the old one on the student record.
-6.  The old UID is retired (kept in a history/log for audit purposes, but
-    no longer resolves to the student going forward).
-
-------------------------------------------------------------------------
-
-## 7. Unregistered NFC IDs
-
-The system must handle students whose NFC UID has not yet been
-registered.
-
-Suggested fallback flow:
-
-NFC UID detected → UID not found → Search student by Student Number or
-name → Confirm student → Associate UID → Record attendance
-
-This allows NFC registration to happen gradually instead of requiring
-every student to be registered before the first event, and it means
-attendance and registration can effectively happen in the same tap for a
-first-time student — the officer just does one extra search step.
-
-------------------------------------------------------------------------
-
-## 8. No NFC ID (Manual Fallback Path)
-
-Some situations will not have a usable NFC ID at all:
-
--   Student forgot their ID at home.
--   Student's ID is damaged, demagnetized, or otherwise unreadable.
--   Student has not been issued an ID yet (e.g., new/transferee student).
--   The scanning officer's phone/browser can't use Web NFC at all (see
-    8.1 below — this is not a rare edge case for this project, it's an
-    expected regular occurrence given Web NFC's Android-Chromium-only
-    support).
-
-**Plan:**
-
-1.  Attendance scanner page always has a visible "No ID / Manual Entry"
-    button alongside the tap-to-scan state — it is not hidden in a menu.
-2.  Manual entry opens the same student search used elsewhere (by Student
-    Number or name).
-3.  Officer selects the correct student and confirms identity visually
-    (this is why Year & Section and, ideally, a small role/photo
-    reference if available, matter — reduces impersonation risk).
-4.  Attendance is recorded with a `scan_method` of `manual` instead of
-    `nfc`, so later reports can show how many check-ins were manual vs.
-    tapped (useful for gauging ID adoption/damage rates, and Web NFC
-    device compatibility, over time).
-5.  No NFC UID is created or modified from a manual entry — manual entry
-    never silently registers a UID; UID registration only happens through
-    the explicit flow in Section 6.
-6.  Manual entry should require the same duplicate-prevention check as a
-    normal scan (Section 11) — a student can't be marked present twice
-    for the same event just because one check-in was manual.
-
-### 8.1 Device/browser fallback
-
-Because Web NFC only works on Android + a Chromium-based browser
-(Section 3.1), the system should treat "officer's device can't scan NFC
-at all" as a first-class, expected case — not a crash or dead end:
-
--   On page load, the scanner page should feature-detect Web NFC support
-    (checking for `NDEFReader` in the browser) and, if unsupported,
-    immediately show the manual-entry flow as the primary interface
-    instead of a broken "tap to scan" button.
--   Sites/committees where the assigned officer has an iPhone (Safari, no
-    Web NFC support at all) should default straight to manual entry —
-    this should be communicated clearly, not discovered mid-event.
--   Where budget allows, a low-cost external USB/Bluetooth NFC reader
-    connected to a laptop running Chrome desktop is **not** an option
-    under Web NFC's current Android-only restriction — this rules out a
-    "reader at a table" style setup for now unless a native companion app
-    is built later (see Section 25, open questions).
-
-This keeps the door open (any student can always be checked in) without
-weakening the NFC-based flow for everyone else.
-
-------------------------------------------------------------------------
-
-## 9. Attendance Flow (Time-In and Time-Out)
-
-The system records both **time-in** and **time-out**, not just a single
-presence flag. This supports events that need to track how long a
-student stayed (e.g., seminars with a minimum attendance duration) as
-well as simple one-tap presence events.
-
-### Mode selection per event
-
-When an officer creates or opens an event, they choose an attendance
-mode:
-
--   **Time-in only** — a single tap marks the student present. Simplest
-    mode, good for short events, general assemblies, orientation.
--   **Time-in + Time-out** — the scanner provides explicit **Time-In** and
-    **Time-Out** actions. The officer selects the intended action before
-    scanning. Time-Out is only valid when a time-in exists. Good for
-    seminars, training sessions, or anything requiring proof of a minimum
-    stay duration.
-
-### Scanning flow
-
-1.  Officer opens the website on their phone.
-2.  Officer logs in (see Section 21, roles/access control).
-3.  Officer selects or creates an event, and confirms its attendance
-    mode (time-in only, or time-in + time-out).
-4.  The Scanner page is opened.
-5.  Student taps their school ID on the phone (or the officer uses manual
-    entry, per Section 8).
-6.  The browser reads the NFC UID via Web NFC.
-7.  System looks up the UID.
-8.  Student information is displayed for a brief confirmation moment.
-9.  Officer selects **Time-In** or **Time-Out** before scanning.
-10. System validates the selected action:
-    -   **Time-In** → record time-in if the student has not already timed in.
-    -   **Time-Out** → record time-out only when the event requires time-out
-        and the student has a valid time-in with no existing time-out.
-    -   Duplicate or invalid action → reject it with a clear status such as
-        **Already Recorded**, **Already Completed**, or **Time-In Required**.
-11. For time-in-only events, the **Time-Out** action is unavailable.
-12. Screen returns to a ready-to-scan state.
-
-The system must not infer the officer's intended action solely from the
-number of previous taps. The same explicit Time-In/Time-Out controls and
-validation rules apply to NFC scanning and manual entry.
-
-### Example — time-in only event
-
-TAP YOUR ID
-
-NFC UID: 8F:49:5B:74
-
-Student: Student One
-
-Year & Section: BSIT 3A
-
-Status: Present (Time-In)
-
-Time: 08:42:15 AM
-
-Then:
-
-READY FOR NEXT STUDENT
-
-### Example — time-in + time-out event
-
-First tap:
-
-Student: Student One — Status: Time-In recorded — 08:42:15 AM
-
-Second tap (later):
-
-Student: Student One — Status: Time-Out recorded — 11:58:40 AM — Duration
-present: 3h 16m
+Most students may initially have no NFC credential. That is acceptable.
+NFC registration is handled separately from the student masterlist.
 
 ------------------------------------------------------------------------
 
 ## 10. Attendance Database
 
-Student information and attendance records should be separated.
+The attendance database must use a **normalized relational structure**. The
+schema should target **Third Normal Form (3NF)**: each table represents one
+subject/fact set, non-key attributes depend on the key, and relationships
+between entities are represented with foreign keys or junction tables.
 
-### Students
+The recommended operational model is:
+
+```text
+Organization
+    │
+    ├── Users
+    │
+    └── Events
+           │
+           └── Event Registrations ─── Attendees ─── People
+                                      │       │
+                                      │       ├── Student (optional)
+                                      │       └── Credentials
+                                      │
+                                      └── Parent/Guardian Relationships
+
+Event Registration
+        ↓
+Attendance
+```
+
+### 10.1 People
+
+**people** stores identity/contact facts that are common to a person,
+regardless of attendee type.
 
 Fields:
 
--   student_id
--   student_number
--   first_name
--   middle_name
--   last_name
--   extension
--   year
--   section
--   nfc_uid
--   nfc_registered
+- `person_id` (PK)
+- `first_name`
+- `middle_name` (nullable)
+- `last_name`
+- `name_extension` (nullable)
+- `contact_number` (nullable)
+- `email` (nullable)
+- `created_at`
+- `updated_at`
 
-### Events
+Do not store attendee type, event, attendance status, NFC UID, or QR code in
+this table because those facts belong to other relationships.
+
+### 10.2 Academic Programs and Sections
+
+**academic_programs**
+
+- `program_id` (PK)
+- `program_code` (unique)
+- `program_name`
+
+**academic_sections**
+
+- `section_id` (PK)
+- `program_id` (FK → `academic_programs.program_id`)
+- `year_level`
+- `section_name`
+- `academic_year`
+
+These tables prevent repeating values such as `BSIT`, `BSCS`, `3rd Year`, or
+`3A` across every student row.
+
+### 10.3 Students
+
+**students** contains only student-specific information.
 
 Fields:
 
--   event_id
--   event_name
--   event_date
--   start_time
--   end_time
--   attendance_mode (`time_in_only` | `time_in_time_out`)
--   organizer (e.g., "CCS Student Council" — supports future multi-org use)
--   status (`draft` | `open` | `closed`)
+- `student_id` (PK)
+- `person_id` (FK → `people.person_id`, unique)
+- `student_number` (unique)
+- `section_id` (FK → `academic_sections.section_id`)
+- `created_at`
+- `updated_at`
 
-### Attendance
+Student number remains the primary business identifier for student lookup,
+while `student_id` is the internal relational primary key.
+
+### 10.4 Attendees
+
+**attendees** represents a person participating in the attendance system.
+It should not duplicate the person's name.
 
 Fields:
 
--   attendance_id
--   event_id
--   student_id
--   time_in
--   time_out (nullable — only filled for time-in + time-out events, or
-    left null if the student never tapped out)
--   status (`present` | `time_in_only` | `completed` | `incomplete`)
--   scan_method (`nfc` | `manual`)
--   scanned_by (which officer/user account recorded it — ties into
-    Section 21's user accounts, useful for accountability and sync
-    debugging)
--   synced (boolean — whether this record has reached the central
-    database yet; see Section 13 on offline support)
--   created_at / updated_at
+- `attendee_id` (PK)
+- `person_id` (FK → `people.person_id`, unique)
+- `attendee_type` (`student` | `faculty` | `staff` | `parent_guardian` | `guest`)
+- `created_at`
+- `updated_at`
 
-One student can have many attendance records across different events.
+For the current scope, one person has one attendee record. If future
+requirements allow one person to participate in multiple roles, the design
+can be extended with a separate attendee-role junction table rather than
+adding multiple role columns.
 
-Example:
+For students, the attendee is linked to the student's `person_id`; the
+student-specific record remains in `students`.
 
-Student One → CCS Seminar → Time-In 08:42:15 AM → Time-Out 11:58:40 AM →
-Status: Completed
+### 10.5 Parent/Guardian Relationships
 
-Student One → CCS General Assembly → Time-In 09:00:02 AM → Status:
-Present (time-in only event, no time-out expected)
+Parent/Guardian relationships must be stored separately from the attendee
+record because the same relationship can connect two existing people and
+should not be embedded as repeated student/parent fields.
+
+**attendee_relationships**
+
+- `relationship_id` (PK)
+- `attendee_id` (FK → `attendees.attendee_id`)
+- `related_student_id` (FK → `students.student_id`)
+- `relationship_type` (`mother` | `father` | `guardian` | `grandparent` | `sibling` | `other`)
+- `created_at`
+
+A database constraint should ensure that the relationship is only used for a
+Parent/Guardian attendee when required by the business rules.
+
+This means:
+
+```text
+Parent/Guardian Attendee
+        ↓
+Attendee Relationship
+        ↓
+Student
+```
+
+The student's name and the Parent/Guardian's name are not duplicated into
+the relationship table.
+
+### 10.6 Identification Credentials
+
+NFC and QR codes are identification methods, not separate attendee types.
+They should be stored in a normalized credential table so one attendee can
+have multiple credentials and credentials can be replaced without changing
+the person record.
+
+**attendee_credentials**
+
+- `credential_id` (PK)
+- `attendee_id` (FK → `attendees.attendee_id`)
+- `credential_type` (`nfc` | `qr`)
+- `credential_value` (unique)
+- `is_active`
+- `created_at`
+- `updated_at`
+
+Examples:
+
+```text
+Attendee A → NFC → UID-001
+Attendee A → QR  → QR-ABC123
+```
+
+The database must enforce uniqueness of the credential value so the same
+NFC UID or QR identifier cannot identify two active attendees.
+
+This replaces the denormalized approach of putting `nfc_uid` and
+`qr_identifier` directly on the attendee/person row.
+
+### 10.7 Events
+
+**events** contains facts about an event only.
+
+Fields:
+
+- `event_id` (PK)
+- `event_name`
+- `event_date`
+- `start_time`
+- `end_time`
+- `attendance_mode` (`time_in_only` | `time_in_time_out`)
+- `organization_id` (FK → `organizations.organization_id`)
+- `status` (`draft` | `open` | `closed`)
+- `created_at`
+- `updated_at`
+
+The organizer/organization name should not be copied into every event or
+attendance row. It should be resolved through the organization relationship.
+
+### 10.8 Organizations
+
+**organizations** supports the current CCS scope while keeping the database
+ready for future multi-organization use.
+
+Fields:
+
+- `organization_id` (PK)
+- `organization_name` (unique)
+- `created_at`
+- `updated_at`
+
+### 10.9 Event Registrations
+
+**event_registrations** is the junction table between attendees and events.
+It represents expected/allowed participation and keeps registration separate
+from actual attendance.
+
+Fields:
+
+- `registration_id` (PK)
+- `event_id` (FK → `events.event_id`)
+- `attendee_id` (FK → `attendees.attendee_id`)
+- `registration_status` (e.g. `registered` | `cancelled`)
+- `registered_at`
+- `created_at`
+- `updated_at`
+
+A unique constraint on `(event_id, attendee_id)` must prevent duplicate
+registrations for the same attendee and event.
+
+### 10.10 Attendance
+
+**attendance** stores what happened during the event. It should reference
+the event registration rather than repeating attendee/event identity data.
+
+Fields:
+
+- `attendance_id` (PK)
+- `registration_id` (FK → `event_registrations.registration_id`, unique)
+- `time_in`
+- `time_out` (nullable)
+- `status` (`present` | `time_in_only` | `completed` | `incomplete`)
+- `scan_method` (`nfc` | `qr` | `manual`)
+- `scanned_by` (FK → `users.id`, nullable when a controlled offline import
+  requires it)
+- `created_at`
+- `updated_at`
+
+The unique `registration_id` constraint means there is at most one canonical
+attendance record per attendee per event. Time-in and time-out are state
+changes to that attendance record, not separate duplicate attendance rows.
+
+### 10.11 Attendance Audit / Corrections
+
+If an authorized officer corrects an attendance record, the correction should
+be stored in a separate audit table rather than overwriting history without a
+record of what happened.
+
+**attendance_corrections**
+
+- `correction_id` (PK)
+- `attendance_id` (FK → `attendance.attendance_id`)
+- `corrected_by` (FK → `users.id`)
+- `reason`
+- `old_time_in` (nullable)
+- `new_time_in` (nullable)
+- `old_time_out` (nullable)
+- `new_time_out` (nullable)
+- `old_status` (nullable)
+- `new_status` (nullable)
+- `corrected_at`
+
+This preserves an auditable history without storing multiple conflicting
+"current" values in the attendance table.
+
+### 10.12 Normalized relationship summary
+
+```text
+organizations
+    └── events
+          └── event_registrations
+                └── attendance
+
+people
+    ├── students
+    │     └── academic_sections
+    │            └── academic_programs
+    │
+    └── attendees
+          ├── attendee_credentials
+          └── attendee_relationships ─── students
+
+users ─── attendance.scanned_by
+users ─── attendance_corrections.corrected_by
+```
+
+### 10.13 Normalization acceptance criteria
+
+The implementation is considered normalized when:
+
+- A person's name is stored once and referenced by ID.
+- Student program/year/section data is represented through normalized
+  academic tables rather than repeated text on every student.
+- NFC/QR credentials are stored in a dedicated credential table.
+- Parent/Guardian-to-student links are stored in a relationship table.
+- Event participation is stored in `event_registrations`.
+- Attendance references the registration and does not repeat event/person
+  details.
+- Attendance dashboards calculate totals from normalized records.
+- Duplicate registrations and duplicate credentials are prevented with
+  database-level unique constraints.
+- Foreign-key constraints protect referential integrity.
+- Deletion/update behavior is explicitly defined for related records rather
+  than relying on accidental database behavior.
+
+This normalized structure should be treated as the database design direction
+for the implementation. SQLModel models, Pydantic schemas, CRUD operations,
+API endpoints, migrations, seed data, and tests should follow these same
+relationships rather than introducing denormalized convenience fields.
 
 ------------------------------------------------------------------------
 
@@ -1089,9 +1600,9 @@ unknown introduced by moving from native app to website (Section 3.1).
 
 ------------------------------------------------------------------------
 
-### Phase 3 — Student Database and Import
+### Phase 3 — Database Foundation and Student Import
 
--   Define the Student SQLModel schema (Section 5).
+-   Define the normalized SQLModel schema (Section 5 and Section 10).
 -   Build masterlist import (CSV/Excel → staging → validated → live).
 -   Student list/search views in the dashboard.
 
@@ -1099,44 +1610,60 @@ Use fake/sample student data during development when possible.
 
 ------------------------------------------------------------------------
 
-### Phase 4 — NFC Registration
+### Phase 4 — Attendee Types and Registration
 
 Implement:
 
--   Student search
+-   General attendee model and event registration
+-   Student attendee mapping to the existing Student database
+-   Faculty attendee registration
+-   Staff attendee registration
+-   Parent/Guardian attendee registration and Student relationship
+-   Guest attendee registration
+-   Minimal attendee data collection per type
+
+### Phase 5 — NFC and QR Identification
+
+Implement:
+
+-   Student/attendee search
 -   NFC scanning (reusing the Phase 2 proof of concept)
+-   QR identifier generation and registration for attendees who need it
+-   Multi-method identification resolution to the same attendee
 -   Manual fallback entry (Section 8)
--   UID-to-student association
--   NFC registration status
--   Reassignment/update of an existing UID when authorized
+-   Credential-to-attendee association
+-   Credential registration status
+-   Reassignment/deactivation of an existing credential when authorized
+-   Duplicate prevention across NFC, QR, and manual methods
 
 Goal:
 
-Masterlist student → Tap school ID (or manual search) → UID linked to
-student
+Attendee → NFC/QR credential (when available) → Credential lookup → Attendee
 
 ------------------------------------------------------------------------
 
-### Phase 5 — Event Management
+### Phase 6 — Event Management
 
 Implement:
 
 -   Create event
 -   Event name, date, start/end time
+-   Create normalized event registrations linking attendees to events
 -   Attendance mode selection (time-in only vs. time-in + time-out)
 -   Open attendance / close attendance
 -   Event list, event status (draft/open/closed)
 
 ------------------------------------------------------------------------
 
-### Phase 6 — Attendance Scanner (Time-In / Time-Out)
+### Phase 7 — Attendance Scanner (Time-In / Time-Out)
 
 Implement:
 
 -   NFC UID detection (online mode first, offline mode deferred to
-    Phase 7)
--   Student lookup
--   Student confirmation display
+    Phase 8)
+-   QR code scanning/identification
+-   Attendee lookup
+-   Attendee confirmation display
 -   Time-in recording
 -   Time-out recording (for events in that mode)
 -   Duplicate/already-completed prevention (database-level uniqueness
@@ -1147,7 +1674,7 @@ Implement:
 
 ------------------------------------------------------------------------
 
-### Phase 7 — Offline Mode and Sync (PWA)
+### Phase 8 — Offline Mode and Sync (PWA)
 
 Implement:
 
@@ -1163,7 +1690,7 @@ would have been in the originally-planned native app.
 
 ------------------------------------------------------------------------
 
-### Phase 8 — Roles and Access Control
+### Phase 9 — Roles and Access Control
 
 Implement:
 
@@ -1179,7 +1706,7 @@ Implement:
 
 ------------------------------------------------------------------------
 
-### Phase 9 — Attendance Dashboard
+### Phase 10 — Attendance Dashboard
 
 Implement:
 
@@ -1192,7 +1719,7 @@ Implement:
 
 ------------------------------------------------------------------------
 
-### Phase 10 — Print and Export
+### Phase 11 — Print and Export
 
 Implement:
 
@@ -1211,7 +1738,7 @@ Total Students: 520 Present: 387 Absent: 133 Attendance Rate: 74.4%
 
 ------------------------------------------------------------------------
 
-### Phase 11 — School API Integration
+### Phase 12 — School API Integration
 
 Only after the standalone system works.
 
@@ -1226,7 +1753,7 @@ Tasks:
 
 ------------------------------------------------------------------------
 
-### Phase 12 — Multi-Organization Expansion
+### Phase 13 — Multi-Organization Expansion
 
 Once CCS is running smoothly:
 
@@ -1245,19 +1772,21 @@ implemented (e.g., not hardcoding "CCS" into core logic where an
 
 ## 25. Important Design Principle
 
-The system should be designed around student identity, not around the
+The system should be designed around attendee identity, not around the
 NFC chip.
 
-NFC is one way to identify a student.
+NFC is one way to identify an attendee. QR and manual search are additional
+identification paths.
 
-The student's Student Number should remain the primary student
-identifier in the application's database.
+The student's Student Number should remain the primary business identifier
+for student lookup, while internal database relationships use stable primary
+keys and foreign keys.
 
 Conceptually:
 
-Student Number → Student
-
-NFC UID → Physical ID Card → Student
+Student Number → Student → Attendee
+NFC UID / QR Identifier → Credential → Attendee
+Attendee → Event Registration → Attendance
 
 This makes the system easier to maintain if an ID card is replaced or
 its NFC UID changes — and it also makes the system resilient to Web
@@ -1313,13 +1842,22 @@ The first complete version should be able to:
 
 -   Import a college student masterlist
 -   Search for students
+-   Use a normalized PostgreSQL schema designed to satisfy Third Normal Form (3NF)
+-   Enforce primary keys, foreign keys, unique constraints, and referential integrity at the database level
+-   Keep people, students, academic sections, attendees, credentials, event registrations, and attendance as separate related entities
+-   Prevent duplicate event registrations and duplicate attendance records through database constraints
+-   Support Parent/Guardian relationships without duplicating student or person information
 -   Register a student's NFC UID via Web NFC on a supported Android
     phone/browser
--   Identify a registered student from a scan
+-   Register QR identifiers where needed
+-   Identify a registered attendee through NFC, QR, or manual search
+-   Support Student, Faculty, Staff, Parent/Guardian, and Guest attendee types
+-   Link Parent/Guardian attendees to their student without merging their
+    attendance records
 -   Record time-in (and time-out, for events configured that way)
 -   Prevent duplicate/conflicting attendance records
--   Handle unregistered NFC IDs and no-ID/no-Web-NFC-support situations
-    via manual entry
+-   Handle unregistered NFC IDs, unavailable QR credentials, and
+    no-ID/no-Web-NFC-support situations via manual entry
 -   Work fully offline during an event (via PWA/IndexedDB) and sync
     automatically once online
 -   View attendance on a live dashboard during the event
@@ -1350,8 +1888,8 @@ Start with these tasks, in order:
 
 The first successful test should look like:
 
-School ID → NFC UID detected in browser → UID found in database →
-Student displayed
+NFC tap OR QR scan → Identifier resolved in browser → Attendee found in
+database → Attendee displayed → Attendance ready to record
 
 Once that works, add:
 
@@ -1383,20 +1921,20 @@ dependency for the first prototype.
 
 ## 30. Current Project Vision
 
-The end goal is a simple event attendance website that allows Student
-Council or authorized event staff to use ordinary NFC-capable Android
-phones (via the browser) as attendance scanners — offline-capable,
-syncing automatically, with time-in/time-out tracking, a live dashboard,
-role-based access, and one-click export/print in the formats officers
-actually need.
+The end goal is a simple multi-method event attendance website that allows
+Student Council or authorized event staff to use browser-based scanner
+stations to identify attendees through NFC, QR, or manual search —
+offline-capable, syncing automatically, with time-in/time-out tracking, a
+live dashboard, role-based access, and one-click export/print in the formats
+officers actually need.
 
 The ideal experience is:
 
-Officer logs into the website → Opens the event's Scanner page → Student
-taps school ID → Student is recognized → Time-in (and later time-out) is
-recorded, online or offline → Scanner is immediately ready for the next
-student → Officer checks the live dashboard during the event → Officer
-exports or prints a finished report right after
+Officer logs into the website → Opens the event's Scanner page → Attendee
+uses NFC, QR, or manual search → Attendee is recognized → Time-in (and later
+time-out) is recorded, online or offline → Scanner is immediately ready for
+the next attendee → Officer checks the live dashboard during the event →
+Officer exports or prints a finished report right after
 
 The system should be simple enough for event staff to operate quickly
 from a phone browser with nothing to install, reliable enough for real
