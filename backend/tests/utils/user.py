@@ -3,7 +3,7 @@ from sqlmodel import Session
 
 from app import crud
 from app.core.config import settings
-from app.models import User, UserCreate, UserUpdate
+from app.models import User, UserCreate, UserRole, UserUpdate
 from tests.utils.utils import random_email, random_lower_string
 
 
@@ -17,6 +17,40 @@ def user_authentication_headers(
     auth_token = response["access_token"]
     headers = {"Authorization": f"Bearer {auth_token}"}
     return headers
+
+
+def create_user_with_role(
+    db: Session,
+    role: UserRole = UserRole.student,
+    can_scan: bool = False,
+    is_superuser: bool = False,
+) -> tuple[UserCreate, str]:
+    email = random_email()
+    password = random_lower_string()
+    user_in = UserCreate(
+        email=email,
+        password=password,
+        role=role,
+        can_scan=can_scan,
+        is_superuser=is_superuser,
+    )
+    crud.create_user(session=db, user_create=user_in)
+    return user_in, password
+
+
+def get_token_headers_for_role(
+    client: TestClient,
+    db: Session,
+    role: UserRole = UserRole.student,
+    can_scan: bool = False,
+    is_superuser: bool = False,
+) -> dict[str, str]:
+    user_in, password = create_user_with_role(
+        db, role=role, can_scan=can_scan, is_superuser=is_superuser
+    )
+    return user_authentication_headers(
+        client=client, email=user_in.email, password=password
+    )
 
 
 def create_random_user(db: Session) -> User:

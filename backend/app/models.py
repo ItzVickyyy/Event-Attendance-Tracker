@@ -12,11 +12,33 @@ def get_datetime_utc() -> datetime:
     return datetime.now(UTC)
 
 
+# ===========================================================================
+# Template Authentication & Item Models (Preserved & Extended with RBAC)
+# ===========================================================================
+
+
+class UserRole(StrEnum):
+    developer = "developer"
+    super_admin = "super_admin"
+    admin = "admin"
+    class_representative = "class_representative"
+    student = "student"
+
+
 # Shared properties
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
+    role: UserRole = Field(
+        default=UserRole.student,
+        max_length=50,
+        description="Application RBAC role",
+    )
+    can_scan: bool = Field(
+        default=False,
+        description="Explicit attendance scanning permission",
+    )
     full_name: str | None = Field(default=None, max_length=255)
 
 
@@ -36,6 +58,8 @@ class UserUpdate(SQLModel):
     email: EmailStr | None = Field(default=None, max_length=255)
     is_active: bool | None = None
     is_superuser: bool | None = None
+    role: UserRole | None = None
+    can_scan: bool | None = None
     full_name: str | None = Field(default=None, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=128)
 
