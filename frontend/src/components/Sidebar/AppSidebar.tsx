@@ -1,4 +1,4 @@
-import { Briefcase, Home, Users } from "lucide-react"
+import { Calendar, Home, Users, ClipboardList, Wifi, Briefcase } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
@@ -14,14 +14,17 @@ import { User } from "./User"
 
 const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
-  { icon: Briefcase, title: "Items", path: "/items" },
+  { icon: Calendar, title: "Events", path: "/events" },
+  { icon: Users, title: "Students", path: "/students" },
+  { icon: Wifi, title: "Scanner", path: "/scanner" },
+  { icon: ClipboardList, title: "Records", path: "/records" },
 ]
 
 export function AppSidebar() {
   const { user: currentUser } = useAuth()
 
   const items = currentUser?.is_superuser
-    ? [...baseItems, { icon: Users, title: "Admin", path: "/admin" }]
+    ? [...baseItems, { icon: Briefcase, title: "Admin", path: "/admin" }]
     : baseItems
 
   return (

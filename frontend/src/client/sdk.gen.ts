@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { academicProgramsCreateAcademicProgramData, academicProgramsCreateAcademicProgramErrors, academicProgramsCreateAcademicProgramResponses, academicProgramsDeleteAcademicProgramData, academicProgramsDeleteAcademicProgramErrors, academicProgramsDeleteAcademicProgramResponses, academicProgramsReadAcademicProgramData, academicProgramsReadAcademicProgramErrors, academicProgramsReadAcademicProgramResponses, academicProgramsReadAcademicProgramsData, academicProgramsReadAcademicProgramsErrors, academicProgramsReadAcademicProgramsResponses, academicProgramsUpdateAcademicProgramData, academicProgramsUpdateAcademicProgramErrors, academicProgramsUpdateAcademicProgramResponses, academicSectionsCreateAcademicSectionData, academicSectionsCreateAcademicSectionErrors, academicSectionsCreateAcademicSectionResponses, academicSectionsDeleteAcademicSectionData, academicSectionsDeleteAcademicSectionErrors, academicSectionsDeleteAcademicSectionResponses, academicSectionsReadAcademicSectionData, academicSectionsReadAcademicSectionErrors, academicSectionsReadAcademicSectionResponses, academicSectionsReadAcademicSectionsData, academicSectionsReadAcademicSectionsErrors, academicSectionsReadAcademicSectionsResponses, academicSectionsUpdateAcademicSectionData, academicSectionsUpdateAcademicSectionErrors, academicSectionsUpdateAcademicSectionResponses, attendanceCorrectionsCreateAttendanceCorrectionData, attendanceCorrectionsCreateAttendanceCorrectionErrors, attendanceCorrectionsCreateAttendanceCorrectionResponses, attendanceCorrectionsReadAttendanceCorrectionData, attendanceCorrectionsReadAttendanceCorrectionErrors, attendanceCorrectionsReadAttendanceCorrectionResponses, attendanceCorrectionsReadAttendanceCorrectionsData, attendanceCorrectionsReadAttendanceCorrectionsErrors, attendanceCorrectionsReadAttendanceCorrectionsResponses, attendanceCreateAttendanceData, attendanceCreateAttendanceErrors, attendanceCreateAttendanceResponses, attendanceDeleteAttendanceData, attendanceDeleteAttendanceErrors, attendanceDeleteAttendanceResponses, attendanceReadAttendanceData, attendanceReadAttendanceErrors, attendanceReadAttendanceResponses, attendanceReadAttendancesData, attendanceReadAttendancesErrors, attendanceReadAttendancesResponses, attendanceScanAttendanceData, attendanceScanAttendanceErrors, attendanceScanAttendanceResponses, attendanceUpdateAttendanceData, attendanceUpdateAttendanceErrors, attendanceUpdateAttendanceResponses, attendeeCredentialsCreateAttendeeCredentialData, attendeeCredentialsCreateAttendeeCredentialErrors, attendeeCredentialsCreateAttendeeCredentialResponses, attendeeCredentialsDeleteAttendeeCredentialData, attendeeCredentialsDeleteAttendeeCredentialErrors, attendeeCredentialsDeleteAttendeeCredentialResponses, attendeeCredentialsLookupCredentialData, attendeeCredentialsLookupCredentialErrors, attendeeCredentialsLookupCredentialResponses, attendeeCredentialsReadAttendeeCredentialData, attendeeCredentialsReadAttendeeCredentialErrors, attendeeCredentialsReadAttendeeCredentialResponses, attendeeCredentialsReadAttendeeCredentialsData, attendeeCredentialsReadAttendeeCredentialsErrors, attendeeCredentialsReadAttendeeCredentialsResponses, attendeeCredentialsUpdateAttendeeCredentialData, attendeeCredentialsUpdateAttendeeCredentialErrors, attendeeCredentialsUpdateAttendeeCredentialResponses, attendeeRelationshipsCreateAttendeeRelationshipData, attendeeRelationshipsCreateAttendeeRelationshipErrors, attendeeRelationshipsCreateAttendeeRelationshipResponses, attendeeRelationshipsDeleteAttendeeRelationshipData, attendeeRelationshipsDeleteAttendeeRelationshipErrors, attendeeRelationshipsDeleteAttendeeRelationshipResponses, attendeeRelationshipsReadAttendeeRelationshipData, attendeeRelationshipsReadAttendeeRelationshipErrors, attendeeRelationshipsReadAttendeeRelationshipResponses, attendeeRelationshipsReadAttendeeRelationshipsData, attendeeRelationshipsReadAttendeeRelationshipsErrors, attendeeRelationshipsReadAttendeeRelationshipsResponses, attendeeRelationshipsUpdateAttendeeRelationshipData, attendeeRelationshipsUpdateAttendeeRelationshipErrors, attendeeRelationshipsUpdateAttendeeRelationshipResponses, attendeesCreateAttendeeData, attendeesCreateAttendeeErrors, attendeesCreateAttendeeResponses, attendeesDeleteAttendeeData, attendeesDeleteAttendeeErrors, attendeesDeleteAttendeeResponses, attendeesReadAttendeeData, attendeesReadAttendeeErrors, attendeesReadAttendeeResponses, attendeesReadAttendeesData, attendeesReadAttendeesErrors, attendeesReadAttendeesResponses, attendeesUpdateAttendeeData, attendeesUpdateAttendeeErrors, attendeesUpdateAttendeeResponses, eventRegistrationsCreateEventRegistrationData, eventRegistrationsCreateEventRegistrationErrors, eventRegistrationsCreateEventRegistrationResponses, eventRegistrationsDeleteEventRegistrationData, eventRegistrationsDeleteEventRegistrationErrors, eventRegistrationsDeleteEventRegistrationResponses, eventRegistrationsReadEventRegistrationData, eventRegistrationsReadEventRegistrationErrors, eventRegistrationsReadEventRegistrationResponses, eventRegistrationsReadEventRegistrationsData, eventRegistrationsReadEventRegistrationsErrors, eventRegistrationsReadEventRegistrationsResponses, eventRegistrationsUpdateEventRegistrationData, eventRegistrationsUpdateEventRegistrationErrors, eventRegistrationsUpdateEventRegistrationResponses, eventsCreateEventData, eventsCreateEventErrors, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventsData, eventsReadEventsErrors, eventsReadEventsResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, itemsCreateItemData, itemsCreateItemErrors, itemsCreateItemResponses, itemsDeleteItemData, itemsDeleteItemErrors, itemsDeleteItemResponses, itemsReadItemData, itemsReadItemErrors, itemsReadItemResponses, itemsReadItemsData, itemsReadItemsErrors, itemsReadItemsResponses, itemsUpdateItemData, itemsUpdateItemErrors, itemsUpdateItemResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, organizationsCreateOrganizationData, organizationsCreateOrganizationErrors, organizationsCreateOrganizationResponses, organizationsDeleteOrganizationData, organizationsDeleteOrganizationErrors, organizationsDeleteOrganizationResponses, organizationsReadOrganizationData, organizationsReadOrganizationErrors, organizationsReadOrganizationResponses, organizationsReadOrganizationsData, organizationsReadOrganizationsErrors, organizationsReadOrganizationsResponses, organizationsUpdateOrganizationData, organizationsUpdateOrganizationErrors, organizationsUpdateOrganizationResponses, peopleCreatePersonData, peopleCreatePersonErrors, peopleCreatePersonResponses, peopleDeletePersonData, peopleDeletePersonErrors, peopleDeletePersonResponses, peopleReadPeopleData, peopleReadPeopleErrors, peopleReadPeopleResponses, peopleReadPersonData, peopleReadPersonErrors, peopleReadPersonResponses, peopleUpdatePersonData, peopleUpdatePersonErrors, peopleUpdatePersonResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, studentsCreateStudentData, studentsCreateStudentErrors, studentsCreateStudentResponses, studentsDeleteStudentData, studentsDeleteStudentErrors, studentsDeleteStudentResponses, studentsReadStudentData, studentsReadStudentErrors, studentsReadStudentResponses, studentsReadStudentsData, studentsReadStudentsErrors, studentsReadStudentsResponses, studentsUpdateStudentData, studentsUpdateStudentErrors, studentsUpdateStudentResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -360,6 +360,846 @@ export class ItemsService {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+}
+
+export class OrganizationsService {
+    /**
+     * Read Organizations
+     */
+    public static readOrganizations<ThrowOnError extends boolean = true>(options?: Options<organizationsReadOrganizationsData, ThrowOnError>) {
+        return (options?.client ?? client).get<organizationsReadOrganizationsResponses, organizationsReadOrganizationsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Organization
+     */
+    public static createOrganization<ThrowOnError extends boolean = true>(options: Options<organizationsCreateOrganizationData, ThrowOnError>) {
+        return (options.client ?? client).post<organizationsCreateOrganizationResponses, organizationsCreateOrganizationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Organization
+     */
+    public static deleteOrganization<ThrowOnError extends boolean = true>(options: Options<organizationsDeleteOrganizationData, ThrowOnError>) {
+        return (options.client ?? client).delete<organizationsDeleteOrganizationResponses, organizationsDeleteOrganizationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{organization_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Organization
+     */
+    public static readOrganization<ThrowOnError extends boolean = true>(options: Options<organizationsReadOrganizationData, ThrowOnError>) {
+        return (options.client ?? client).get<organizationsReadOrganizationResponses, organizationsReadOrganizationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{organization_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Organization
+     */
+    public static updateOrganization<ThrowOnError extends boolean = true>(options: Options<organizationsUpdateOrganizationData, ThrowOnError>) {
+        return (options.client ?? client).patch<organizationsUpdateOrganizationResponses, organizationsUpdateOrganizationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/organizations/{organization_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AcademicProgramsService {
+    /**
+     * Read Academic Programs
+     */
+    public static programsReadAcademicPrograms<ThrowOnError extends boolean = true>(options?: Options<academicProgramsReadAcademicProgramsData, ThrowOnError>) {
+        return (options?.client ?? client).get<academicProgramsReadAcademicProgramsResponses, academicProgramsReadAcademicProgramsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-programs/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Academic Program
+     */
+    public static programsCreateAcademicProgram<ThrowOnError extends boolean = true>(options: Options<academicProgramsCreateAcademicProgramData, ThrowOnError>) {
+        return (options.client ?? client).post<academicProgramsCreateAcademicProgramResponses, academicProgramsCreateAcademicProgramErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-programs/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Academic Program
+     */
+    public static programsDeleteAcademicProgram<ThrowOnError extends boolean = true>(options: Options<academicProgramsDeleteAcademicProgramData, ThrowOnError>) {
+        return (options.client ?? client).delete<academicProgramsDeleteAcademicProgramResponses, academicProgramsDeleteAcademicProgramErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-programs/{program_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Academic Program
+     */
+    public static programsReadAcademicProgram<ThrowOnError extends boolean = true>(options: Options<academicProgramsReadAcademicProgramData, ThrowOnError>) {
+        return (options.client ?? client).get<academicProgramsReadAcademicProgramResponses, academicProgramsReadAcademicProgramErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-programs/{program_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Academic Program
+     */
+    public static programsUpdateAcademicProgram<ThrowOnError extends boolean = true>(options: Options<academicProgramsUpdateAcademicProgramData, ThrowOnError>) {
+        return (options.client ?? client).patch<academicProgramsUpdateAcademicProgramResponses, academicProgramsUpdateAcademicProgramErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-programs/{program_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AcademicSectionsService {
+    /**
+     * Read Academic Sections
+     */
+    public static sectionsReadAcademicSections<ThrowOnError extends boolean = true>(options?: Options<academicSectionsReadAcademicSectionsData, ThrowOnError>) {
+        return (options?.client ?? client).get<academicSectionsReadAcademicSectionsResponses, academicSectionsReadAcademicSectionsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-sections/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Academic Section
+     */
+    public static sectionsCreateAcademicSection<ThrowOnError extends boolean = true>(options: Options<academicSectionsCreateAcademicSectionData, ThrowOnError>) {
+        return (options.client ?? client).post<academicSectionsCreateAcademicSectionResponses, academicSectionsCreateAcademicSectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-sections/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Academic Section
+     */
+    public static sectionsDeleteAcademicSection<ThrowOnError extends boolean = true>(options: Options<academicSectionsDeleteAcademicSectionData, ThrowOnError>) {
+        return (options.client ?? client).delete<academicSectionsDeleteAcademicSectionResponses, academicSectionsDeleteAcademicSectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-sections/{section_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Academic Section
+     */
+    public static sectionsReadAcademicSection<ThrowOnError extends boolean = true>(options: Options<academicSectionsReadAcademicSectionData, ThrowOnError>) {
+        return (options.client ?? client).get<academicSectionsReadAcademicSectionResponses, academicSectionsReadAcademicSectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-sections/{section_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Academic Section
+     */
+    public static sectionsUpdateAcademicSection<ThrowOnError extends boolean = true>(options: Options<academicSectionsUpdateAcademicSectionData, ThrowOnError>) {
+        return (options.client ?? client).patch<academicSectionsUpdateAcademicSectionResponses, academicSectionsUpdateAcademicSectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-sections/{section_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class PeopleService {
+    /**
+     * Read People
+     */
+    public static readPeople<ThrowOnError extends boolean = true>(options?: Options<peopleReadPeopleData, ThrowOnError>) {
+        return (options?.client ?? client).get<peopleReadPeopleResponses, peopleReadPeopleErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/people/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Person
+     */
+    public static createPerson<ThrowOnError extends boolean = true>(options: Options<peopleCreatePersonData, ThrowOnError>) {
+        return (options.client ?? client).post<peopleCreatePersonResponses, peopleCreatePersonErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/people/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Person
+     */
+    public static deletePerson<ThrowOnError extends boolean = true>(options: Options<peopleDeletePersonData, ThrowOnError>) {
+        return (options.client ?? client).delete<peopleDeletePersonResponses, peopleDeletePersonErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/people/{person_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Person
+     */
+    public static readPerson<ThrowOnError extends boolean = true>(options: Options<peopleReadPersonData, ThrowOnError>) {
+        return (options.client ?? client).get<peopleReadPersonResponses, peopleReadPersonErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/people/{person_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Person
+     */
+    public static updatePerson<ThrowOnError extends boolean = true>(options: Options<peopleUpdatePersonData, ThrowOnError>) {
+        return (options.client ?? client).patch<peopleUpdatePersonResponses, peopleUpdatePersonErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/people/{person_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class StudentsService {
+    /**
+     * Read Students
+     */
+    public static readStudents<ThrowOnError extends boolean = true>(options?: Options<studentsReadStudentsData, ThrowOnError>) {
+        return (options?.client ?? client).get<studentsReadStudentsResponses, studentsReadStudentsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/students/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Student
+     */
+    public static createStudent<ThrowOnError extends boolean = true>(options: Options<studentsCreateStudentData, ThrowOnError>) {
+        return (options.client ?? client).post<studentsCreateStudentResponses, studentsCreateStudentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/students/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Student
+     */
+    public static deleteStudent<ThrowOnError extends boolean = true>(options: Options<studentsDeleteStudentData, ThrowOnError>) {
+        return (options.client ?? client).delete<studentsDeleteStudentResponses, studentsDeleteStudentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/students/{student_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Student
+     */
+    public static readStudent<ThrowOnError extends boolean = true>(options: Options<studentsReadStudentData, ThrowOnError>) {
+        return (options.client ?? client).get<studentsReadStudentResponses, studentsReadStudentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/students/{student_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Student
+     */
+    public static updateStudent<ThrowOnError extends boolean = true>(options: Options<studentsUpdateStudentData, ThrowOnError>) {
+        return (options.client ?? client).patch<studentsUpdateStudentResponses, studentsUpdateStudentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/students/{student_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AttendeesService {
+    /**
+     * Read Attendees
+     */
+    public static readAttendees<ThrowOnError extends boolean = true>(options?: Options<attendeesReadAttendeesData, ThrowOnError>) {
+        return (options?.client ?? client).get<attendeesReadAttendeesResponses, attendeesReadAttendeesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendees/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Attendee
+     */
+    public static createAttendee<ThrowOnError extends boolean = true>(options: Options<attendeesCreateAttendeeData, ThrowOnError>) {
+        return (options.client ?? client).post<attendeesCreateAttendeeResponses, attendeesCreateAttendeeErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendees/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Attendee
+     */
+    public static deleteAttendee<ThrowOnError extends boolean = true>(options: Options<attendeesDeleteAttendeeData, ThrowOnError>) {
+        return (options.client ?? client).delete<attendeesDeleteAttendeeResponses, attendeesDeleteAttendeeErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendees/{attendee_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Attendee
+     */
+    public static readAttendee<ThrowOnError extends boolean = true>(options: Options<attendeesReadAttendeeData, ThrowOnError>) {
+        return (options.client ?? client).get<attendeesReadAttendeeResponses, attendeesReadAttendeeErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendees/{attendee_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Attendee
+     */
+    public static updateAttendee<ThrowOnError extends boolean = true>(options: Options<attendeesUpdateAttendeeData, ThrowOnError>) {
+        return (options.client ?? client).patch<attendeesUpdateAttendeeResponses, attendeesUpdateAttendeeErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendees/{attendee_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AttendeeCredentialsService {
+    /**
+     * Read Attendee Credentials
+     */
+    public static credentialsReadAttendeeCredentials<ThrowOnError extends boolean = true>(options?: Options<attendeeCredentialsReadAttendeeCredentialsData, ThrowOnError>) {
+        return (options?.client ?? client).get<attendeeCredentialsReadAttendeeCredentialsResponses, attendeeCredentialsReadAttendeeCredentialsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-credentials/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Attendee Credential
+     */
+    public static credentialsCreateAttendeeCredential<ThrowOnError extends boolean = true>(options: Options<attendeeCredentialsCreateAttendeeCredentialData, ThrowOnError>) {
+        return (options.client ?? client).post<attendeeCredentialsCreateAttendeeCredentialResponses, attendeeCredentialsCreateAttendeeCredentialErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-credentials/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Lookup Credential
+     */
+    public static credentialsLookupCredential<ThrowOnError extends boolean = true>(options: Options<attendeeCredentialsLookupCredentialData, ThrowOnError>) {
+        return (options.client ?? client).get<attendeeCredentialsLookupCredentialResponses, attendeeCredentialsLookupCredentialErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-credentials/lookup/{credential_value}',
+            ...options
+        });
+    }
+    
+    /**
+     * Delete Attendee Credential
+     */
+    public static credentialsDeleteAttendeeCredential<ThrowOnError extends boolean = true>(options: Options<attendeeCredentialsDeleteAttendeeCredentialData, ThrowOnError>) {
+        return (options.client ?? client).delete<attendeeCredentialsDeleteAttendeeCredentialResponses, attendeeCredentialsDeleteAttendeeCredentialErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-credentials/{credential_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Attendee Credential
+     */
+    public static credentialsReadAttendeeCredential<ThrowOnError extends boolean = true>(options: Options<attendeeCredentialsReadAttendeeCredentialData, ThrowOnError>) {
+        return (options.client ?? client).get<attendeeCredentialsReadAttendeeCredentialResponses, attendeeCredentialsReadAttendeeCredentialErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-credentials/{credential_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Attendee Credential
+     */
+    public static credentialsUpdateAttendeeCredential<ThrowOnError extends boolean = true>(options: Options<attendeeCredentialsUpdateAttendeeCredentialData, ThrowOnError>) {
+        return (options.client ?? client).patch<attendeeCredentialsUpdateAttendeeCredentialResponses, attendeeCredentialsUpdateAttendeeCredentialErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-credentials/{credential_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AttendeeRelationshipsService {
+    /**
+     * Read Attendee Relationships
+     */
+    public static relationshipsReadAttendeeRelationships<ThrowOnError extends boolean = true>(options?: Options<attendeeRelationshipsReadAttendeeRelationshipsData, ThrowOnError>) {
+        return (options?.client ?? client).get<attendeeRelationshipsReadAttendeeRelationshipsResponses, attendeeRelationshipsReadAttendeeRelationshipsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-relationships/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Attendee Relationship
+     */
+    public static relationshipsCreateAttendeeRelationship<ThrowOnError extends boolean = true>(options: Options<attendeeRelationshipsCreateAttendeeRelationshipData, ThrowOnError>) {
+        return (options.client ?? client).post<attendeeRelationshipsCreateAttendeeRelationshipResponses, attendeeRelationshipsCreateAttendeeRelationshipErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-relationships/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Attendee Relationship
+     */
+    public static relationshipsDeleteAttendeeRelationship<ThrowOnError extends boolean = true>(options: Options<attendeeRelationshipsDeleteAttendeeRelationshipData, ThrowOnError>) {
+        return (options.client ?? client).delete<attendeeRelationshipsDeleteAttendeeRelationshipResponses, attendeeRelationshipsDeleteAttendeeRelationshipErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-relationships/{relationship_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Attendee Relationship
+     */
+    public static relationshipsReadAttendeeRelationship<ThrowOnError extends boolean = true>(options: Options<attendeeRelationshipsReadAttendeeRelationshipData, ThrowOnError>) {
+        return (options.client ?? client).get<attendeeRelationshipsReadAttendeeRelationshipResponses, attendeeRelationshipsReadAttendeeRelationshipErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-relationships/{relationship_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Attendee Relationship
+     */
+    public static relationshipsUpdateAttendeeRelationship<ThrowOnError extends boolean = true>(options: Options<attendeeRelationshipsUpdateAttendeeRelationshipData, ThrowOnError>) {
+        return (options.client ?? client).patch<attendeeRelationshipsUpdateAttendeeRelationshipResponses, attendeeRelationshipsUpdateAttendeeRelationshipErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendee-relationships/{relationship_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class EventsService {
+    /**
+     * Read Events
+     */
+    public static readEvents<ThrowOnError extends boolean = true>(options?: Options<eventsReadEventsData, ThrowOnError>) {
+        return (options?.client ?? client).get<eventsReadEventsResponses, eventsReadEventsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/events/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Event
+     */
+    public static createEvent<ThrowOnError extends boolean = true>(options: Options<eventsCreateEventData, ThrowOnError>) {
+        return (options.client ?? client).post<eventsCreateEventResponses, eventsCreateEventErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/events/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Event
+     */
+    public static deleteEvent<ThrowOnError extends boolean = true>(options: Options<eventsDeleteEventData, ThrowOnError>) {
+        return (options.client ?? client).delete<eventsDeleteEventResponses, eventsDeleteEventErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/events/{event_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Event
+     */
+    public static readEvent<ThrowOnError extends boolean = true>(options: Options<eventsReadEventData, ThrowOnError>) {
+        return (options.client ?? client).get<eventsReadEventResponses, eventsReadEventErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/events/{event_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Event
+     */
+    public static updateEvent<ThrowOnError extends boolean = true>(options: Options<eventsUpdateEventData, ThrowOnError>) {
+        return (options.client ?? client).patch<eventsUpdateEventResponses, eventsUpdateEventErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/events/{event_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class EventRegistrationsService {
+    /**
+     * Read Event Registrations
+     */
+    public static registrationsReadEventRegistrations<ThrowOnError extends boolean = true>(options?: Options<eventRegistrationsReadEventRegistrationsData, ThrowOnError>) {
+        return (options?.client ?? client).get<eventRegistrationsReadEventRegistrationsResponses, eventRegistrationsReadEventRegistrationsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/event-registrations/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Event Registration
+     */
+    public static registrationsCreateEventRegistration<ThrowOnError extends boolean = true>(options: Options<eventRegistrationsCreateEventRegistrationData, ThrowOnError>) {
+        return (options.client ?? client).post<eventRegistrationsCreateEventRegistrationResponses, eventRegistrationsCreateEventRegistrationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/event-registrations/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Event Registration
+     */
+    public static registrationsDeleteEventRegistration<ThrowOnError extends boolean = true>(options: Options<eventRegistrationsDeleteEventRegistrationData, ThrowOnError>) {
+        return (options.client ?? client).delete<eventRegistrationsDeleteEventRegistrationResponses, eventRegistrationsDeleteEventRegistrationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/event-registrations/{registration_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Event Registration
+     */
+    public static registrationsReadEventRegistration<ThrowOnError extends boolean = true>(options: Options<eventRegistrationsReadEventRegistrationData, ThrowOnError>) {
+        return (options.client ?? client).get<eventRegistrationsReadEventRegistrationResponses, eventRegistrationsReadEventRegistrationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/event-registrations/{registration_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Event Registration
+     */
+    public static registrationsUpdateEventRegistration<ThrowOnError extends boolean = true>(options: Options<eventRegistrationsUpdateEventRegistrationData, ThrowOnError>) {
+        return (options.client ?? client).patch<eventRegistrationsUpdateEventRegistrationResponses, eventRegistrationsUpdateEventRegistrationErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/event-registrations/{registration_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AttendanceService {
+    /**
+     * Read Attendances
+     */
+    public static readAttendances<ThrowOnError extends boolean = true>(options?: Options<attendanceReadAttendancesData, ThrowOnError>) {
+        return (options?.client ?? client).get<attendanceReadAttendancesResponses, attendanceReadAttendancesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Attendance
+     */
+    public static createAttendance<ThrowOnError extends boolean = true>(options: Options<attendanceCreateAttendanceData, ThrowOnError>) {
+        return (options.client ?? client).post<attendanceCreateAttendanceResponses, attendanceCreateAttendanceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Scan Attendance
+     */
+    public static scanAttendance<ThrowOnError extends boolean = true>(options: Options<attendanceScanAttendanceData, ThrowOnError>) {
+        return (options.client ?? client).post<attendanceScanAttendanceResponses, attendanceScanAttendanceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance/scan',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete Attendance
+     */
+    public static deleteAttendance<ThrowOnError extends boolean = true>(options: Options<attendanceDeleteAttendanceData, ThrowOnError>) {
+        return (options.client ?? client).delete<attendanceDeleteAttendanceResponses, attendanceDeleteAttendanceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance/{record_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Read Attendance
+     */
+    public static readAttendance<ThrowOnError extends boolean = true>(options: Options<attendanceReadAttendanceData, ThrowOnError>) {
+        return (options.client ?? client).get<attendanceReadAttendanceResponses, attendanceReadAttendanceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance/{record_id}',
+            ...options
+        });
+    }
+    
+    /**
+     * Update Attendance
+     */
+    public static updateAttendance<ThrowOnError extends boolean = true>(options: Options<attendanceUpdateAttendanceData, ThrowOnError>) {
+        return (options.client ?? client).patch<attendanceUpdateAttendanceResponses, attendanceUpdateAttendanceErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance/{record_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AttendanceCorrectionsService {
+    /**
+     * Read Attendance Corrections
+     */
+    public static correctionsReadAttendanceCorrections<ThrowOnError extends boolean = true>(options?: Options<attendanceCorrectionsReadAttendanceCorrectionsData, ThrowOnError>) {
+        return (options?.client ?? client).get<attendanceCorrectionsReadAttendanceCorrectionsResponses, attendanceCorrectionsReadAttendanceCorrectionsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-corrections/',
+            ...options
+        });
+    }
+    
+    /**
+     * Create Attendance Correction
+     */
+    public static correctionsCreateAttendanceCorrection<ThrowOnError extends boolean = true>(options: Options<attendanceCorrectionsCreateAttendanceCorrectionData, ThrowOnError>) {
+        return (options.client ?? client).post<attendanceCorrectionsCreateAttendanceCorrectionResponses, attendanceCorrectionsCreateAttendanceCorrectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-corrections/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+    
+    /**
+     * Read Attendance Correction
+     */
+    public static correctionsReadAttendanceCorrection<ThrowOnError extends boolean = true>(options: Options<attendanceCorrectionsReadAttendanceCorrectionData, ThrowOnError>) {
+        return (options.client ?? client).get<attendanceCorrectionsReadAttendanceCorrectionResponses, attendanceCorrectionsReadAttendanceCorrectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-corrections/{correction_id}',
+            ...options
         });
     }
 }
