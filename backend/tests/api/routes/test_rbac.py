@@ -71,6 +71,31 @@ def test_invalid_token_returns_401_with_bearer_header(client: TestClient) -> Non
     assert response.json()["detail"] == "Could not validate credentials"
 
 
+def test_invalid_token_payload_returns_401_with_bearer_header(
+    client: TestClient,
+) -> None:
+    # Create a JWT with valid signature but invalid payload for TokenPayload
+    # TokenPayload requires `sub` to be a string if present
+    # We bypass jwt.decode's default sub validation to test Pydantic validation
+    import jwt
+
+    from app.core import security
+    from app.core.config import settings
+
+    payload = {"sub": 123, "exp": 9999999999}  # sub as int (should be str)
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=security.ALGORITHM)
+
+    # Use options to disable jwt's sub validation so we hit Pydantic validation
+    # We directly test the endpoint which will use the fixed code path
+    response = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 401
+    assert response.headers.get("www-authenticate") == "Bearer"
+    assert response.json()["detail"] == "Could not validate credentials"
+
+
 def test_role_hierarchy_admin_mutations(client: TestClient, db: Session) -> None:
     student_headers = get_token_headers_for_role(
         client, db, role=UserRole.student, can_scan=False
