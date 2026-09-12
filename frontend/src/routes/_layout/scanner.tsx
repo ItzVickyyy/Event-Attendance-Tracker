@@ -1,26 +1,18 @@
-import { Wifi, WifiOff, UserCheck, Loader2, Search, X, CheckCircle } from "lucide-react"
-import { useState, useCallback, useEffect, useRef } from "react"
+import { Wifi, Loader2, Search, CheckCircle, Camera, CameraOff } from "lucide-react"
+import { useState, useCallback, useRef } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
+import { useSearch } from "@tanstack/react-router"
 import { toast } from "sonner"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 
-import { AttendanceService, StudentsService, UsersService } from "@/client"
+import { AttendanceService, StudentsService, UsersService, AttendeeCredentialsService } from "@/client"
 import type { StudentPublic, ScanMethod } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import useAuth from "@/hooks/useAuth"
+import { Html5Qrcode } from "html5-qrcode"
 
 type ScanAction = "time_in" | "time_out"
 
@@ -43,9 +35,7 @@ export const Route = createFileRoute("/_layout/scanner")({
 
 function Scanner() {
   const queryClient = useQueryClient()
-  const { user } = useAuth()
-  const router = useRouter()
-  const search = router.location.search
+  const search = useSearch({ strict: false })
   const eventId = search?.event_id as string | undefined
 
   const [scanning, setScanning] = useState(false)
@@ -62,6 +52,12 @@ function Scanner() {
   } | null>(null)
   const [manualSearch, setManualSearch] = useState("")
   const ndefReaderRef = useRef<any>(null)
+  const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
+  const [qrScanning, setQrScanning] = useState(false)
+  const [qrSupported, setQrSupported] = useState(false)
+  const [qrPermissionGranted, setQrPermissionGranted] = useState(false)
+  const [lastScannedCredential, setLastScannedCredential] = useState<string | null>(null)
+  const [lastScanTime, setLastScanTime] = useState<number>(0)
 
   const checkNfcSupport = useCallback(() => {
     const supported = "NDEFReader" in window
@@ -121,25 +117,90 @@ function Scanner() {
     }
   }, [])
 
-  useEffect(() => {
-    checkNfcSupport()
-    return () => stopScanning()
-  }, [checkNfcSupport, stopScanning])
+  const checkQrSupport = useCallback(() => {
+    const supported = "BarcodeDetector" in window || typeof Html5Qrcode !== "undefined"
+    setQrSupported(supported)
+    return supported
+  }, [])
+
+  const scanQr = useCallback(async () => {
+    if (!checkQrSupport()) return
+
+    try {
+      setQrScanning(true)
+      const html5Qrcode = new Html5Qrcode("qr-reader")
+      html5QrcodeRef.current = html5Qrcode
+
+      await html5Qrcode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        async (decodedText, decodedResult) => {
+          // Prevent duplicate scans within 2 seconds
+          const now = Date.now()
+          if (decodedText === lastScannedCredential && now - lastScanTime < 2000) {
+            return
+          }
+          setLastScannedCredential(decodedText)
+          setLastScanTime(now)
+
+          html5Qrcode.stop().catch(() => {})
+          html5QrcodeRef.current = null
+          setQrScanning(false)
+          setQrPermissionGranted(true)
+          handleQrLookup(decodedText)
+        },
+        (errorMessage) => {
+          // Ignore scan errors (no QR code in frame)
+        }
+      )
+      setQrPermissionGranted(true)
+    } catch (error) {
+      setQrScanning(false)
+      if (error instanceof Error) {
+        if (error.name === "NotAllowedError" || error.message.includes("permission")) {
+          toast.error("Camera permission denied. Please allow camera access in browser settings.")
+          setQrPermissionGranted(false)
+        } else {
+          toast.error(`QR scan error: ${error.message}`)
+        }
+      }
+    }
+  }, [checkQrSupport, lastScannedCredential, lastScanTime])
+
+  const stopQrScanning = useCallback(() => {
+    if (html5QrcodeRef.current) {
+      html5QrcodeRef.current.stop().catch(() => {})
+      html5QrcodeRef.current = null
+      setQrScanning(false)
+    }
+  }, [])
+
+  const handleQrLookup = useCallback((credentialValue: string) => {
+    if (!eventId) {
+      toast.error("Please select an event first")
+      return
+    }
+    submitAttendance(credentialValue, "qr")
+  }, [eventId])
 
   const lookupMutation = useMutation({
-    mutationFn: (uid: string) =>
-      StudentsService.lookupByNfc({
-        path: { nfc_uid: uid },
+    mutationFn: async (uid: string) => {
+      const result = await AttendeeCredentialsService.credentialsLookupCredential({
+        path: { credential_value: uid },
         throwOnError: false,
-      }),
+      })
+      return { uid, credential: result.data }
+    },
     onSuccess: (result) => {
-      if (result.data) {
-        setFoundStudent(result.data)
+      if (result.credential) {
         if (!eventId) {
           toast.error("Please select an event first")
           return
         }
-        submitAttendance(result.data, "nfc")
+        submitAttendance(result.uid, "nfc")
       }
     },
     onError: () => {
@@ -201,9 +262,9 @@ function Scanner() {
     },
   })
 
-  const submitAttendance = async (student: StudentPublic, scanMethod: "nfc" | "manual") => {
+  const submitAttendance = async (studentOrCredential: StudentPublic | string, scanMethod: "nfc" | "manual" | "qr") => {
     if (!eventId) return
-    const credentialValue = student.nfc_uid || ""
+    const credentialValue = typeof studentOrCredential === "string" ? studentOrCredential : (studentOrCredential.nfc_uid || "")
     await scanAttendanceMutation.mutateAsync({
       event_id: eventId,
       credential_value: credentialValue,
@@ -247,106 +308,93 @@ function Scanner() {
         </div>
       </div>
 
-      {!nfcSupported ? (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-3 text-destructive">
-              <WifiOff className="h-8 w-8" />
-              <div>
-                <p className="font-medium">Web NFC Not Supported</p>
-                <p className="text-sm text-muted-foreground">
-                  This browser does not support Web NFC. Please use Chrome on Android for NFC scanning.
-                  Use the manual search below as a fallback.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {scanning ? (
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              ) : permissionGranted ? (
-                <Wifi className="h-5 w-5 text-green-500" />
-              ) : (
-                <Wifi className="h-5 w-5 text-muted-foreground" />
-              )}
-              NFC Scanner
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="8F:49:5B:74"
-                value={nfcUid}
-                onChange={(e) => setNfcUid(e.target.value.toUpperCase())}
-                disabled={scanning}
-                className="flex-1 font-mono"
-              />
-              <LoadingButton
-                loading={scanning}
-                onClick={scanNfc}
-                disabled={scanning || !permissionGranted}
-              >
-                {scanning ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Scanning...
-                  </>
-                ) : !permissionGranted ? (
-                  "Request Permission"
-                ) : (
-                  "Scan NFC Tag"
-                )}
-              </LoadingButton>
-            </div>
-
-            {foundStudent && (
-              <div className="border rounded-lg p-4 bg-green-50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xl font-bold">
-                      {foundStudent.last_name}, {foundStudent.first_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {foundStudent.student_number} • {foundStudent.year}{foundStudent.section}
-                    </p>
-                  </div>
-                  <UserCheck className="h-8 w-8 text-green-500" />
-                </div>
-                {foundStudent.nfc_uid && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    NFC UID: <code className="font-mono">{foundStudent.nfc_uid}</code>
-                  </p>
-                )}
-                <div className="mt-4 flex gap-2">
-                  <LoadingButton
-                    loading={createAttendanceMutation.isPending}
-                    onClick={() => submitAttendance(foundStudent!.id)}
-                    disabled={!eventId}
-                    className="flex-1"
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Confirm {scanAction === "time_in" ? "Time-In" : "Time-Out"}
-                  </LoadingButton>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setFoundStudent(null)
-                      setNfcUid("")
-                    }}
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Cancel
-                  </Button>
-                </div>
-              </div>
+<Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {scanning ? (
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            ) : permissionGranted ? (
+              <Wifi className="h-5 w-5 text-green-500" />
+            ) : (
+              <Wifi className="h-5 w-5 text-muted-foreground" />
             )}
-          </CardContent>
-        </Card>
-      )}
+            NFC Scanner
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!nfcSupported && (
+            <p className="text-sm text-muted-foreground">
+              Web NFC is not supported in this browser. Use QR scanning or manual search instead.
+            </p>
+          )}
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="8F:49:5B:74"
+              value={nfcUid}
+              onChange={(e) => setNfcUid(e.target.value.toUpperCase())}
+              disabled={scanning || !nfcSupported}
+              className="flex-1 font-mono"
+            />
+            <LoadingButton
+              loading={scanning}
+              onClick={scanNfc}
+              disabled={scanning || !nfcSupported || !permissionGranted}
+            >
+              {scanning ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Scanning...
+                </>
+              ) : !permissionGranted ? (
+                "Request Permission"
+              ) : (
+                "Scan NFC Tag"
+              )}
+            </LoadingButton>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            {qrScanning ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-5 w-5" />}
+            QR Scanner
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!qrSupported ? (
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <CameraOff className="h-6 w-6" />
+              <p className="text-sm">QR scanning is not supported in this browser or device.</p>
+            </div>
+          ) : (
+            <>
+              <div id="qr-reader" className="overflow-hidden rounded-lg" />
+              <div className="flex gap-2">
+                <LoadingButton
+                  loading={qrScanning}
+                  onClick={scanQr}
+                  disabled={qrScanning}
+                  className="flex-1"
+                >
+                  {qrScanning ? "Scanning QR..." : "Start QR Scanner"}
+                </LoadingButton>
+                <Button
+                  variant="outline"
+                  onClick={stopQrScanning}
+                  disabled={!qrScanning}
+                >
+                  Stop
+                </Button>
+              </div>
+              {!qrPermissionGranted && (
+                <p className="text-sm text-muted-foreground">Camera permission is requested when scanning starts.</p>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
