@@ -2,10 +2,11 @@ import { Wifi, Loader2, Search, CheckCircle, Camera, CameraOff } from "lucide-re
 import { useState, useCallback, useRef } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useSearch } from "@tanstack/react-router"
+import type { SearchSchema } from "./routeTree.gen"
 import { toast } from "sonner"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 
-import { AttendanceService, StudentsService, UsersService, AttendeeCredentialsService } from "@/client"
+import { AttendanceService, StudentsService, UsersService } from "@/client"
 import type { StudentPublic, ScanMethod } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +14,7 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Html5Qrcode } from "html5-qrcode"
+import { enqueueScan } from "@/data"
 
 type ScanAction = "time_in" | "time_out"
 
@@ -178,36 +180,18 @@ function Scanner() {
     }
   }, [])
 
-  const handleQrLookup = useCallback((credentialValue: string) => {
+  const handleQrLookup = useCallback(async (credentialValue: string) => {
     if (!eventId) {
       toast.error("Please select an event first")
       return
     }
-    submitAttendance(credentialValue, "qr")
+    try {
+      await enqueueScan({ event_id: eventId, credential_value: credentialValue, scan_method: "qr" })
+      toast.success("Scan queued for sync")
+    } catch (error) {
+      toast.error("Failed to queue scan")
+    }
   }, [eventId])
-
-  const lookupMutation = useMutation({
-    mutationFn: async (uid: string) => {
-      const result = await AttendeeCredentialsService.credentialsLookupCredential({
-        path: { credential_value: uid },
-        throwOnError: false,
-      })
-      return { uid, credential: result.data }
-    },
-    onSuccess: (result) => {
-      if (result.credential) {
-        if (!eventId) {
-          toast.error("Please select an event first")
-          return
-        }
-        submitAttendance(result.uid, "nfc")
-      }
-    },
-    onError: () => {
-      setFoundStudent(null)
-      toast.error("No student found with this NFC UID")
-    },
-  })
 
   const manualLookupMutation = useMutation({
     mutationFn: (query: string) =>
@@ -265,11 +249,8 @@ function Scanner() {
   const submitAttendance = async (studentOrCredential: StudentPublic | string, scanMethod: "nfc" | "manual" | "qr") => {
     if (!eventId) return
     const credentialValue = typeof studentOrCredential === "string" ? studentOrCredential : (studentOrCredential.nfc_uid || "")
-    await scanAttendanceMutation.mutateAsync({
-      event_id: eventId,
-      credential_value: credentialValue,
-      scan_method: scanMethod,
-    })
+    await enqueueScan({ event_id: eventId, credential_value: credentialValue, scan_method: scanMethod })
+    toast.success("Scan queued for sync")
   }
 
   const handleManualSearch = (e: React.FormEvent) => {
@@ -279,9 +260,18 @@ function Scanner() {
     }
   }
 
-  const handleNfcLookup = (uid: string) => {
-    lookupMutation.mutate(uid)
-  }
+  const handleNfcLookup = useCallback(async (uid: string) => {
+    if (!eventId) {
+      toast.error("Please select an event first")
+      return
+    }
+    try {
+      await enqueueScan({ event_id: eventId, credential_value: uid, scan_method: "nfc" })
+      toast.success("NFC scan queued for sync")
+    } catch (error) {
+      toast.error("Failed to queue NFC scan")
+    }
+  }, [eventId])
 
   
 

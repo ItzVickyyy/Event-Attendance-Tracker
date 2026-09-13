@@ -38,6 +38,7 @@
     "date-fns": "^4.4.0",
     "form-data": "4.0.6",
     "html5-qrcode": "^2.3.8",
+    "idb": "^8.0.3",
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
