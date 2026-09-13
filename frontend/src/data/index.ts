@@ -1,6 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import { registerAttendanceSync, requestImmediateSync } from "./sync";
 
+export const QUEUE_CHANGED_EVENT = "pwa:queue-changed";
+
 interface EventRecord {
   id: string;
   event_name: string;
@@ -143,6 +145,10 @@ export async function enqueueScan(scan: QueuedScan): Promise<string> {
   };
 
   await db.add("attendanceQueue", record);
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(QUEUE_CHANGED_EVENT));
+  }
 
   void registerAttendanceSync();
   if (navigator.onLine) {

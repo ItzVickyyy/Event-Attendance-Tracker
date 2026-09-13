@@ -50,15 +50,37 @@ async function runAttendanceSync() {
     if (!auth || !auth.token) {
       return { skipped: true, needsRetry: false };
     }
+    broadcastToClients({ type: "PWA_SYNC_START" });
     const result = await flushPendingScans(auth.token, auth.apiBase);
     console.log(
       `[sw-sync] flushed attendance queue in creation order ` +
         `(needsRetry=${result.needsRetry})`
     );
+    broadcastToClients({
+      type: "PWA_SYNC_END",
+      needsRetry: result.needsRetry,
+      skipped: result.skipped,
+    });
     return result;
   } finally {
     syncRunning = false;
   }
+}
+
+function broadcastToClients(message) {
+  if (!self.clients) return;
+  self.clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((clients) => {
+      for (const client of clients) {
+        try {
+          client.postMessage(message);
+        } catch (error) {
+          // Ignore; the client may have disconnected.
+        }
+      }
+    })
+    .catch(() => undefined);
 }
 
 async function flushPendingScans(token, apiBase) {

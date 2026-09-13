@@ -36,6 +36,35 @@ export async function requestImmediateSync(): Promise<void> {
   }
 }
 
+export interface SyncStatusInfo {
+  needsRetry: boolean
+  skipped: boolean
+}
+
+export function setupSyncStatusListener(handlers: {
+  onSyncStart?: () => void
+  onSyncEnd?: (info: SyncStatusInfo) => void
+}): () => void {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return () => {}
+  }
+  const onMessage = (event: MessageEvent) => {
+    const data = event.data as
+      | { type?: string; needsRetry?: boolean; skipped?: boolean }
+      | undefined
+    if (data?.type === "PWA_SYNC_START") {
+      handlers.onSyncStart?.()
+    } else if (data?.type === "PWA_SYNC_END") {
+      handlers.onSyncEnd?.({
+        needsRetry: Boolean(data.needsRetry),
+        skipped: Boolean(data.skipped),
+      })
+    }
+  }
+  navigator.serviceWorker.addEventListener("message", onMessage)
+  return () => navigator.serviceWorker.removeEventListener("message", onMessage)
+}
+
 export function setupSyncMessageHandlers(): void {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return
   navigator.serviceWorker.addEventListener("message", (event: MessageEvent) => {
