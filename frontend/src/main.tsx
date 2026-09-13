@@ -9,14 +9,14 @@ import { AxiosError } from "axios"
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
 import { client } from "./client/client.gen"
+import { ThemeProvider } from "./components/theme-provider"
+import { Toaster } from "./components/ui/sonner"
 import { getPendingCount } from "./data"
 import {
   registerAttendanceSync,
   requestImmediateSync,
   setupSyncMessageHandlers,
 } from "./data/sync"
-import { ThemeProvider } from "./components/theme-provider"
-import { Toaster } from "./components/ui/sonner"
 import "./index.css"
 import { routeTree } from "./routeTree.gen"
 
@@ -53,7 +53,8 @@ declare module "@tanstack/react-router" {
 setupBackgroundSync()
 
 function setupBackgroundSync(): void {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
+    return
   setupSyncMessageHandlers()
   window.addEventListener("online", () => {
     void registerAttendanceSync()

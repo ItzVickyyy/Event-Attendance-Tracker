@@ -1,4 +1,11 @@
-import { Calendar, Home, Users, ClipboardList, Wifi, Briefcase } from "lucide-react"
+import {
+  Briefcase,
+  Calendar,
+  ClipboardList,
+  Home,
+  Users,
+  Wifi,
+} from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"

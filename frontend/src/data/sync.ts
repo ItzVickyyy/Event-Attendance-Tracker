@@ -66,7 +66,8 @@ export function setupSyncStatusListener(handlers: {
 }
 
 export function setupSyncMessageHandlers(): void {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
+    return
   navigator.serviceWorker.addEventListener("message", (event: MessageEvent) => {
     const data = event.data as { type?: string } | undefined
     if (data?.type !== "PWA_SYNC_GET_TOKEN") return
