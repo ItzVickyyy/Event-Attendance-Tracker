@@ -1140,6 +1140,62 @@ export type RegistrationStatus = 'registered' | 'cancelled';
 export type RelationshipType = 'mother' | 'father' | 'guardian' | 'grandparent' | 'sibling' | 'other';
 
 /**
+ * RosterCredential
+ */
+export type RosterCredential = {
+    credential_type: CredentialType;
+    /**
+     * Credential Value
+     */
+    credential_value: string;
+    /**
+     * Is Active
+     */
+    is_active: boolean;
+};
+
+/**
+ * RosterEntry
+ */
+export type RosterEntry = {
+    /**
+     * Event Id
+     */
+    event_id: string;
+    /**
+     * Attendee Id
+     */
+    attendee_id: string;
+    registration_status: RegistrationStatus;
+    /**
+     * Person Name
+     */
+    person_name: string;
+    /**
+     * Student Number
+     */
+    student_number?: string | null;
+    /**
+     * Credentials
+     */
+    credentials?: Array<RosterCredential>;
+};
+
+/**
+ * RostersPublic
+ */
+export type RostersPublic = {
+    /**
+     * Data
+     */
+    data: Array<RosterEntry>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * ScanMethod
  */
 export type ScanMethod = 'nfc' | 'qr' | 'manual';
@@ -3529,6 +3585,36 @@ export type eventsUpdateEventResponses = {
 };
 
 export type eventsUpdateEventResponse = eventsUpdateEventResponses[keyof eventsUpdateEventResponses];
+
+export type eventsReadEventRosterData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: string;
+    };
+    query?: never;
+    url: '/api/v1/events/{event_id}/roster/';
+};
+
+export type eventsReadEventRosterErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type eventsReadEventRosterError = eventsReadEventRosterErrors[keyof eventsReadEventRosterErrors];
+
+export type eventsReadEventRosterResponses = {
+    /**
+     * Successful Response
+     */
+    200: RostersPublic;
+};
+
+export type eventsReadEventRosterResponse = eventsReadEventRosterResponses[keyof eventsReadEventRosterResponses];
 
 export type eventRegistrationsReadEventRegistrationsData = {
     body?: never;

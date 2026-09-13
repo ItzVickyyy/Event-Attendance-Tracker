@@ -1,31 +1,74 @@
-import { Wifi, Loader2, Search, CheckCircle, Camera, CameraOff, WifiOff, RefreshCw, TriangleAlert, CloudUpload } from "lucide-react"
-import { useState, useCallback, useRef, useEffect } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useSearch } from "@tanstack/react-router"
-import type { SearchSchema } from "./routeTree.gen"
+import { createFileRoute, redirect, useSearch } from "@tanstack/react-router"
+import { Html5Qrcode } from "html5-qrcode"
+import {
+  Camera,
+  CameraOff,
+  CheckCircle,
+  CloudUpload,
+  Download,
+  Loader2,
+  RefreshCw,
+  Search,
+  TriangleAlert,
+  Users,
+  Wifi,
+  WifiOff,
+} from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { createFileRoute, redirect } from "@tanstack/react-router"
-
-import { AttendanceService, StudentsService, UsersService } from "@/client"
-import type { StudentPublic, ScanMethod } from "@/client"
+import type { ScanMethod, StudentPublic } from "@/client"
+import {
+  AttendanceService,
+  EventsService,
+  StudentsService,
+  UsersService,
+} from "@/client"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Html5Qrcode } from "html5-qrcode"
-import { enqueueScan, getPendingScans, QUEUE_CHANGED_EVENT } from "@/data"
-import type { QueuedScanRecord } from "@/data"
-import { registerAttendanceSync, requestImmediateSync, setupSyncStatusListener } from "@/data/sync"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import type { QueuedScanRecord, RosterRecord } from "@/data"
+import {
+  enqueueScan,
+  getAllQueuedScans,
+  getPendingScans,
+  getRoster,
+  getRosterEntryByCredential,
+  putRoster,
+  QUEUE_CHANGED_EVENT,
+  ROSTER_CHANGED_EVENT,
+} from "@/data"
+import {
+  registerAttendanceSync,
+  requestImmediateSync,
+  setupSyncStatusListener,
+} from "@/data/sync"
 
 type ScanAction = "time_in" | "time_out"
 
 export const Route = createFileRoute("/_layout/scanner")({
   component: Scanner,
   beforeLoad: async () => {
-    const { data: user } = await UsersService.readUserMe().catch(() => ({ data: null }))
-    if (!user || (!user.is_superuser && user.role !== "admin" && user.role !== "super_admin" && user.role !== "developer" && !user.can_scan)) {
+    const { data: user } = await UsersService.readUserMe().catch(() => ({
+      data: null,
+    }))
+    if (
+      !user ||
+      (!user.is_superuser &&
+        user.role !== "admin" &&
+        user.role !== "super_admin" &&
+        user.role !== "developer" &&
+        !user.can_scan)
+    ) {
       throw redirect({ to: "/" })
     }
   },
@@ -38,10 +81,12 @@ export const Route = createFileRoute("/_layout/scanner")({
   }),
 })
 
-function useSyncStatus() {
+function useSyncStatus(eventId?: string) {
   const [online, setOnline] = useState(() => navigator.onLine)
   const [pendingScans, setPendingScans] = useState<QueuedScanRecord[]>([])
   const [isSyncing, setIsSyncing] = useState(false)
+  const [roster, setRoster] = useState<RosterRecord | null>(null)
+  const [isDownloadingRoster, setIsDownloadingRoster] = useState(false)
 
   const reload = useCallback(async () => {
     try {
@@ -52,6 +97,19 @@ function useSyncStatus() {
     }
   }, [])
 
+  const reloadRoster = useCallback(async () => {
+    if (!eventId) {
+      setRoster(null)
+      return
+    }
+    try {
+      const stored = await getRoster(eventId)
+      setRoster(stored ?? null)
+    } catch {
+      setRoster(null)
+    }
+  }, [eventId])
+
   useEffect(() => {
     const handleOnline = () => {
       setOnline(true)
@@ -59,8 +117,12 @@ function useSyncStatus() {
     }
     const handleOffline = () => setOnline(false)
     const handleQueueChanged = () => void reload()
+    const handleRosterChanged = () => void reloadRoster()
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") void reload()
+      if (document.visibilityState === "visible") {
+        void reload()
+        void reloadRoster()
+      }
     }
     const unsubscribe = setupSyncStatusListener({
       onSyncStart: () => setIsSyncing(true),
@@ -73,17 +135,20 @@ function useSyncStatus() {
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)
     window.addEventListener(QUEUE_CHANGED_EVENT, handleQueueChanged)
+    window.addEventListener(ROSTER_CHANGED_EVENT, handleRosterChanged)
     document.addEventListener("visibilitychange", handleVisibility)
     void reload()
+    void reloadRoster()
 
     return () => {
       window.removeEventListener("online", handleOnline)
       window.removeEventListener("offline", handleOffline)
       window.removeEventListener(QUEUE_CHANGED_EVENT, handleQueueChanged)
+      window.removeEventListener(ROSTER_CHANGED_EVENT, handleRosterChanged)
       document.removeEventListener("visibilitychange", handleVisibility)
       unsubscribe()
     }
-  }, [reload])
+  }, [reload, reloadRoster])
 
   const retrySync = useCallback(() => {
     setIsSyncing(true)
@@ -95,7 +160,52 @@ function useSyncStatus() {
     }, 10_000)
   }, [reload])
 
-  return { online, pendingScans, isSyncing, retrySync }
+  const downloadRoster = useCallback(async () => {
+    if (!eventId) return
+    setIsDownloadingRoster(true)
+    try {
+      const result = await EventsService.readEventRoster({
+        path: { event_id: eventId },
+      })
+      const entries = (result.data?.data ?? []).map((entry) => ({
+        event_id: entry.event_id,
+        attendee_id: entry.attendee_id,
+        registration_status: entry.registration_status,
+        person_name: entry.person_name,
+        student_number: entry.student_number ?? undefined,
+        credentials: (entry.credentials ?? []).map((credential) => ({
+          credential_type: credential.credential_type,
+          credential_value: credential.credential_value,
+          is_active: credential.is_active,
+        })),
+      }))
+      await putRoster({
+        event_id: eventId,
+        entries,
+        downloaded_at: new Date().toISOString(),
+        entry_count: entries.length,
+        credential_count: entries.reduce(
+          (total, entry) => total + entry.credentials.length,
+          0,
+        ),
+      })
+      toast.success("Roster downloaded for offline scanning")
+    } catch {
+      toast.error("Failed to download roster")
+    } finally {
+      setIsDownloadingRoster(false)
+    }
+  }, [eventId])
+
+  return {
+    online,
+    pendingScans,
+    isSyncing,
+    retrySync,
+    roster,
+    isDownloadingRoster,
+    downloadRoster,
+  }
 }
 
 function SyncStatusCard({
@@ -103,15 +213,25 @@ function SyncStatusCard({
   pendingScans,
   isSyncing,
   onRetry,
+  roster,
+  isDownloadingRoster,
+  onDownloadRoster,
+  eventId,
 }: {
   online: boolean
   pendingScans: QueuedScanRecord[]
   isSyncing: boolean
   onRetry: () => void
+  roster: RosterRecord | null
+  isDownloadingRoster: boolean
+  onDownloadRoster: () => void
+  eventId?: string
 }) {
   const pendingCount = pendingScans.length
   const failedScans = pendingScans.filter((scan) => Boolean(scan.last_error))
-  const failedCodes = [...new Set(failedScans.map((scan) => scan.last_error).filter(Boolean))]
+  const failedCodes = [
+    ...new Set(failedScans.map((scan) => scan.last_error).filter(Boolean)),
+  ]
 
   return (
     <Card data-testid="sync-status">
@@ -131,7 +251,8 @@ function SyncStatusCard({
         {isSyncing ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Syncing {pendingCount} pending scan{pendingCount === 1 ? "" : "s"}...
+            Syncing {pendingCount} pending scan{pendingCount === 1 ? "" : "s"}
+            ...
           </div>
         ) : online && pendingCount === 0 ? (
           <div className="flex items-center gap-2 text-green-600">
@@ -159,7 +280,8 @@ function SyncStatusCard({
           <div className="flex items-center justify-between gap-2 text-sm text-destructive">
             <div className="flex items-center gap-2">
               <TriangleAlert className="h-4 w-4" />
-              Some scans failed to sync{failedCodes.length > 0 ? ` (${failedCodes.join(", ")})` : ""} 
+              Some scans failed to sync
+              {failedCodes.length > 0 ? ` (${failedCodes.join(", ")})` : ""}
             </div>
             <Button variant="outline" size="sm" onClick={onRetry}>
               <RefreshCw className="mr-1 h-3 w-3" />
@@ -168,11 +290,34 @@ function SyncStatusCard({
           </div>
         )}
 
-        {!isSyncing && online && pendingCount > 0 && failedScans.length === 0 && (
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCw className="mr-1 h-3 w-3" />
-              Sync now
+        {!isSyncing &&
+          online &&
+          pendingCount > 0 &&
+          failedScans.length === 0 && (
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                <RefreshCw className="mr-1 h-3 w-3" />
+                Sync now
+              </Button>
+            </div>
+          )}
+
+        {eventId && (
+          <div className="flex items-center justify-between gap-2 border-t pt-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              {roster
+                ? `${roster.entry_count} attendees on offline roster`
+                : "Roster not downloaded for this event"}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDownloadRoster}
+              disabled={!online || isDownloadingRoster}
+            >
+              <Download className="mr-1 h-3 w-3" />
+              {isDownloadingRoster ? "Downloading..." : "Download roster"}
             </Button>
           </div>
         )}
@@ -185,7 +330,7 @@ function Scanner() {
   const queryClient = useQueryClient()
   const search = useSearch({ strict: false })
   const eventId = search?.event_id as string | undefined
-  const syncStatus = useSyncStatus()
+  const syncStatus = useSyncStatus(eventId)
 
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
@@ -205,8 +350,77 @@ function Scanner() {
   const [qrScanning, setQrScanning] = useState(false)
   const [qrSupported, setQrSupported] = useState(false)
   const [qrPermissionGranted, setQrPermissionGranted] = useState(false)
-  const [lastScannedCredential, setLastScannedCredential] = useState<string | null>(null)
+  const [lastScannedCredential, setLastScannedCredential] = useState<
+    string | null
+  >(null)
   const [lastScanTime, setLastScanTime] = useState<number>(0)
+
+  const queueScan = useCallback(
+    async (credentialValue: string, scanMethod: "nfc" | "qr" | "manual") => {
+      if (!eventId) {
+        toast.error("Please select an event first")
+        return
+      }
+      if (!navigator.onLine) {
+        try {
+          const entry = await getRosterEntryByCredential(
+            eventId,
+            credentialValue,
+          )
+          if (!entry) {
+            toast.error("No offline roster entry for this credential")
+            return
+          }
+          const queued = await getAllQueuedScans()
+          const isDuplicate = queued.some(
+            (record) =>
+              !record.synced &&
+              record.event_id === eventId &&
+              record.credential_value.toUpperCase() ===
+                credentialValue.toUpperCase(),
+          )
+          if (isDuplicate) {
+            toast.info("Already queued for this attendee")
+            return
+          }
+          await enqueueScan({
+            event_id: eventId,
+            credential_value: credentialValue,
+            scan_method: scanMethod,
+          })
+          toast.success(`Scan queued - ${entry.person_name}`)
+        } catch {
+          toast.error("Failed to queue scan")
+        }
+        return
+      }
+      try {
+        await enqueueScan({
+          event_id: eventId,
+          credential_value: credentialValue,
+          scan_method: scanMethod,
+        })
+        toast.success("Scan queued locally - waiting to sync")
+      } catch {
+        toast.error("Failed to queue scan")
+      }
+    },
+    [eventId],
+  )
+
+  const handleNfcLookup = useCallback(
+    async (uid: string) => {
+      await queueScan(uid, "nfc")
+    },
+    [queueScan],
+  )
+
+  const handleQrLookup = useCallback(
+    async (credentialValue: string) => {
+      await queueScan(credentialValue, "qr")
+    },
+    [queueScan],
+  )
 
   const checkNfcSupport = useCallback(() => {
     const supported = "NDEFReader" in window
@@ -250,16 +464,18 @@ function Scanner() {
       setScanning(false)
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
-          toast.error("NFC permission denied. Please allow NFC access in browser settings.")
+          toast.error(
+            "NFC permission denied. Please allow NFC access in browser settings.",
+          )
           setPermissionGranted(false)
         } else {
           toast.error(`NFC error: ${error.message}`)
         }
       }
     }
-  }, [checkNfcSupport, scanning])
+  }, [checkNfcSupport, scanning, handleNfcLookup])
 
-  const stopScanning = useCallback(() => {
+  const _stopScanning = useCallback(() => {
     if (ndefReaderRef.current) {
       ndefReaderRef.current = null
       setScanning(false)
@@ -267,7 +483,8 @@ function Scanner() {
   }, [])
 
   const checkQrSupport = useCallback(() => {
-    const supported = "BarcodeDetector" in window || typeof Html5Qrcode !== "undefined"
+    const supported =
+      "BarcodeDetector" in window || typeof Html5Qrcode !== "undefined"
     setQrSupported(supported)
     return supported
   }, [])
@@ -286,10 +503,13 @@ function Scanner() {
           fps: 10,
           qrbox: { width: 250, height: 250 },
         },
-        async (decodedText, decodedResult) => {
+        async (decodedText, _decodedResult) => {
           // Prevent duplicate scans within 2 seconds
           const now = Date.now()
-          if (decodedText === lastScannedCredential && now - lastScanTime < 2000) {
+          if (
+            decodedText === lastScannedCredential &&
+            now - lastScanTime < 2000
+          ) {
             return
           }
           setLastScannedCredential(decodedText)
@@ -301,23 +521,28 @@ function Scanner() {
           setQrPermissionGranted(true)
           handleQrLookup(decodedText)
         },
-        (errorMessage) => {
+        (_errorMessage) => {
           // Ignore scan errors (no QR code in frame)
-        }
+        },
       )
       setQrPermissionGranted(true)
     } catch (error) {
       setQrScanning(false)
       if (error instanceof Error) {
-        if (error.name === "NotAllowedError" || error.message.includes("permission")) {
-          toast.error("Camera permission denied. Please allow camera access in browser settings.")
+        if (
+          error.name === "NotAllowedError" ||
+          error.message.includes("permission")
+        ) {
+          toast.error(
+            "Camera permission denied. Please allow camera access in browser settings.",
+          )
           setQrPermissionGranted(false)
         } else {
           toast.error(`QR scan error: ${error.message}`)
         }
       }
     }
-  }, [checkQrSupport, lastScannedCredential, lastScanTime])
+  }, [checkQrSupport, lastScannedCredential, lastScanTime, handleQrLookup])
 
   const stopQrScanning = useCallback(() => {
     if (html5QrcodeRef.current) {
@@ -326,19 +551,6 @@ function Scanner() {
       setQrScanning(false)
     }
   }, [])
-
-  const handleQrLookup = useCallback(async (credentialValue: string) => {
-    if (!eventId) {
-      toast.error("Please select an event first")
-      return
-    }
-    try {
-      await enqueueScan({ event_id: eventId, credential_value: credentialValue, scan_method: "qr" })
-      toast.success("Scan queued locally — waiting to sync")
-    } catch (error) {
-      toast.error("Failed to queue scan")
-    }
-  }, [eventId])
 
   const manualLookupMutation = useMutation({
     mutationFn: (query: string) =>
@@ -368,8 +580,12 @@ function Scanner() {
     },
   })
 
-  const scanAttendanceMutation = useMutation({
-    mutationFn: (data: { event_id: string; credential_value: string; scan_method: ScanMethod }) =>
+  const _scanAttendanceMutation = useMutation({
+    mutationFn: (data: {
+      event_id: string
+      credential_value: string
+      scan_method: ScanMethod
+    }) =>
       AttendanceService.scanAttendance({
         body: data,
         throwOnError: true,
@@ -393,13 +609,6 @@ function Scanner() {
     },
   })
 
-  const submitAttendance = async (studentOrCredential: StudentPublic | string, scanMethod: "nfc" | "manual" | "qr") => {
-    if (!eventId) return
-    const credentialValue = typeof studentOrCredential === "string" ? studentOrCredential : (studentOrCredential.nfc_uid || "")
-    await enqueueScan({ event_id: eventId, credential_value: credentialValue, scan_method: scanMethod })
-    toast.success("Scan queued locally — waiting to sync")
-  }
-
   const handleManualSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (manualSearch.trim()) {
@@ -407,27 +616,35 @@ function Scanner() {
     }
   }
 
-  const handleNfcLookup = useCallback(async (uid: string) => {
-    if (!eventId) {
-      toast.error("Please select an event first")
-      return
-    }
-    try {
-      await enqueueScan({ event_id: eventId, credential_value: uid, scan_method: "nfc" })
-      toast.success("NFC scan queued locally — waiting to sync")
-    } catch (error) {
-      toast.error("Failed to queue NFC scan")
-    }
-  }, [eventId])
+  const submitAttendance = async (
+    studentOrCredential: StudentPublic | string,
+    scanMethod: "nfc" | "manual" | "qr",
+  ) => {
+    if (!eventId) return
+    const credentialValue =
+      typeof studentOrCredential === "string"
+        ? studentOrCredential
+        : studentOrCredential.nfc_uid || ""
+    await queueScan(credentialValue, scanMethod)
+  }
 
-  
+  const submitNfcUid = useCallback(() => {
+    const value = nfcUid.trim()
+    if (!value) return
+    setScanning(true)
+    void handleNfcLookup(value).finally(() => setScanning(false))
+  }, [nfcUid, handleNfcLookup])
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Attendance Scanner</h1>
-          <p className="text-muted-foreground">Scan student IDs or search manually</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Attendance Scanner
+          </h1>
+          <p className="text-muted-foreground">
+            Scan student IDs or search manually
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Select
@@ -445,7 +662,7 @@ function Scanner() {
         </div>
       </div>
 
-<Card>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {scanning ? (
@@ -461,7 +678,8 @@ function Scanner() {
         <CardContent className="space-y-4">
           {!nfcSupported && (
             <p className="text-sm text-muted-foreground">
-              Web NFC is not supported in this browser. Use QR scanning or manual search instead.
+              Web NFC is not supported in this browser. Use QR scanning or
+              manual search instead.
             </p>
           )}
           <div className="flex items-center gap-2">
@@ -469,7 +687,13 @@ function Scanner() {
               placeholder="8F:49:5B:74"
               value={nfcUid}
               onChange={(e) => setNfcUid(e.target.value.toUpperCase())}
-              disabled={scanning || !nfcSupported}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && nfcUid.trim()) {
+                  e.preventDefault()
+                  submitNfcUid()
+                }
+              }}
+              disabled={scanning}
               className="flex-1 font-mono"
             />
             <LoadingButton
@@ -495,7 +719,11 @@ function Scanner() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {qrScanning ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-5 w-5" />}
+            {qrScanning ? (
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            ) : (
+              <Camera className="h-5 w-5" />
+            )}
             QR Scanner
           </CardTitle>
         </CardHeader>
@@ -503,7 +731,9 @@ function Scanner() {
           {!qrSupported ? (
             <div className="flex items-center gap-3 text-muted-foreground">
               <CameraOff className="h-6 w-6" />
-              <p className="text-sm">QR scanning is not supported in this browser or device.</p>
+              <p className="text-sm">
+                QR scanning is not supported in this browser or device.
+              </p>
             </div>
           ) : (
             <>
@@ -526,7 +756,9 @@ function Scanner() {
                 </Button>
               </div>
               {!qrPermissionGranted && (
-                <p className="text-sm text-muted-foreground">Camera permission is requested when scanning starts.</p>
+                <p className="text-sm text-muted-foreground">
+                  Camera permission is requested when scanning starts.
+                </p>
               )}
             </>
           )}
@@ -564,6 +796,10 @@ function Scanner() {
         pendingScans={syncStatus.pendingScans}
         isSyncing={syncStatus.isSyncing}
         onRetry={syncStatus.retrySync}
+        roster={syncStatus.roster}
+        isDownloadingRoster={syncStatus.isDownloadingRoster}
+        onDownloadRoster={syncStatus.downloadRoster}
+        eventId={eventId}
       />
 
       {lastScan && (
@@ -571,7 +807,9 @@ function Scanner() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-bold text-green-700">{lastScan.status}</p>
+                <p className="text-lg font-bold text-green-700">
+                  {lastScan.status}
+                </p>
                 <p className="text-sm text-green-600">
                   {lastScan.student.last_name}, {lastScan.student.first_name} •{" "}
                   {lastScan.student.student_number}

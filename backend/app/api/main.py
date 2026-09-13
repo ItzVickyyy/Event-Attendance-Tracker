@@ -15,6 +15,7 @@ from app.api.routes import (
     organizations,
     people,
     private,
+    roster,
     students,
     users,
     utils,
@@ -35,6 +36,7 @@ api_router.include_router(attendees.router)
 api_router.include_router(attendee_credentials.router)
 api_router.include_router(attendee_relationships.router)
 api_router.include_router(events.router)
+api_router.include_router(roster.router)
 api_router.include_router(event_registrations.router)
 api_router.include_router(attendance.router)
 api_router.include_router(attendance_corrections.router)

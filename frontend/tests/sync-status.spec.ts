@@ -1,4 +1,9 @@
-import { expect, test as base, type CDPSession, type Page } from "@playwright/test"
+import {
+  test as base,
+  type CDPSession,
+  expect,
+  type Page,
+} from "@playwright/test"
 
 const SCAN_URL = "http://localhost:8001/api/v1/attendance/scan*"
 
@@ -93,23 +98,30 @@ const test = base.extend<{
         "Fetch.requestPaused",
         async (event: {
           requestId: string
-          request: { method: string; url: string; postData?: string; headers: Record<string, string> }
+          request: {
+            method: string
+            url: string
+            postData?: string
+            headers: Record<string, string>
+          }
         }) => {
           const { requestId, request } = event
           if (request.method === "OPTIONS") {
             await cdp.send("Fetch.fulfillRequest", {
               requestId,
               responseCode: 204,
-              responseHeaders: Object.entries(corsHeaders).map(([name, value]) => ({
-                name,
-                value,
-              })),
+              responseHeaders: Object.entries(corsHeaders).map(
+                ([name, value]) => ({
+                  name,
+                  value,
+                }),
+              ),
             })
             return
           }
-          const scanBody = (request.postData
-            ? JSON.parse(request.postData)
-            : {}) as Record<string, unknown>
+          const scanBody = (
+            request.postData ? JSON.parse(request.postData) : {}
+          ) as Record<string, unknown>
           const authHeader = Object.entries(request.headers).find(
             ([k]) => k.toLowerCase() === "authorization",
           )
@@ -135,7 +147,10 @@ const test = base.extend<{
             responseCode: result.status ?? 200,
             responseHeaders: [
               { name: "content-type", value: "application/json" },
-              ...Object.entries(corsHeaders).map(([name, value]) => ({ name, value })),
+              ...Object.entries(corsHeaders).map(([name, value]) => ({
+                name,
+                value,
+              })),
             ],
             body: responseBody,
           })
@@ -151,25 +166,41 @@ const test = base.extend<{
   },
 })
 
-async function setToken(page: Page, token = "test-access-token"): Promise<void> {
-  await page.evaluate((value) => localStorage.setItem("access_token", value), token)
+async function setToken(
+  page: Page,
+  token = "test-access-token",
+): Promise<void> {
+  await page.evaluate(
+    (value) => localStorage.setItem("access_token", value),
+    token,
+  )
 }
 
-async function getTrackerCard(page: Page): Promise<import("@playwright/test").Locator> {
+async function getTrackerCard(
+  page: Page,
+): Promise<import("@playwright/test").Locator> {
   return page.getByTestId("sync-status")
 }
 
-async function seedRecords(page: Page, records: QueueRecordLike[]): Promise<void> {
+async function seedRecords(
+  page: Page,
+  records: QueueRecordLike[],
+): Promise<void> {
   await page.evaluate(
     (recs) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 1)
+        const request = indexedDB.open("attendance-offline", 2)
         request.onupgradeneeded = () => {
           const db = request.result
           if (!db.objectStoreNames.contains("attendanceQueue")) {
-            const store = db.createObjectStore("attendanceQueue", { keyPath: "id" })
+            const store = db.createObjectStore("attendanceQueue", {
+              keyPath: "id",
+            })
             store.createIndex("by-synced-created", ["synced", "created_at"])
             store.createIndex("by-synced", "synced")
+          }
+          if (!db.objectStoreNames.contains("rosters")) {
+            db.createObjectStore("rosters", { keyPath: "event_id" })
           }
         }
         request.onsuccess = () => {
@@ -194,7 +225,7 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
   return page.evaluate(
     () =>
       new Promise<QueueRecordLike[]>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 1)
+        const request = indexedDB.open("attendance-offline", 2)
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("attendanceQueue", "readonly")
@@ -202,7 +233,11 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
           getAll.onsuccess = () => {
             const records = getAll.result as QueueRecordLike[]
             records.sort((a, b) =>
-              a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0,
+              a.created_at < b.created_at
+                ? -1
+                : a.created_at > b.created_at
+                  ? 1
+                  : 0,
             )
             db.close()
             resolve(records)
@@ -215,7 +250,9 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
 }
 
 async function notifyQueueChanged(page: Page): Promise<void> {
-  await page.evaluate(() => window.dispatchEvent(new Event("pwa:queue-changed")))
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event("pwa:queue-changed")),
+  )
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -258,7 +295,9 @@ test.describe("Scanner sync status UI", () => {
     await expect(card).not.toContainText("All synced")
     await expect(card).not.toContainText("Offline")
 
-    await seedRecords(page, [record({ id: "rec-c", credential_value: "CRED-C" })])
+    await seedRecords(page, [
+      record({ id: "rec-c", credential_value: "CRED-C" }),
+    ])
     await notifyQueueChanged(page)
 
     await expect(card.getByText("3 pending sync")).toBeVisible()
@@ -308,7 +347,9 @@ test.describe("Scanner sync status UI", () => {
     const card = await getTrackerCard(page)
     await expect(card.getByText("All synced")).toBeVisible()
 
-    await seedRecords(page, [record({ id: "rec-syncing", credential_value: "CRED-1" })])
+    await seedRecords(page, [
+      record({ id: "rec-syncing", credential_value: "CRED-1" }),
+    ])
     await notifyQueueChanged(page)
     await expect(card.getByText("1 pending sync")).toBeVisible()
 
@@ -324,7 +365,10 @@ test.describe("Scanner sync status UI", () => {
     expect(queued.last_error).toBeUndefined()
   })
 
-  test("401 leaves the record pending without a failure flag", async ({ page, mockHttp }) => {
+  test("401 leaves the record pending without a failure flag", async ({
+    page,
+    mockHttp,
+  }) => {
     await mockHttp(page, () => ({
       status: 401,
       json: { detail: "unauthorized" },
@@ -369,7 +413,9 @@ test.describe("Scanner sync status UI", () => {
     await expect(card.getByText("1 pending sync")).toBeVisible()
 
     await card.getByRole("button", { name: "Sync now" }).click()
-    await expect(card.getByText(/Some scans failed to sync \(http-403\)/)).toBeVisible()
+    await expect(
+      card.getByText(/Some scans failed to sync \(http-403\)/),
+    ).toBeVisible()
     await expect(card).not.toContainText("All synced")
 
     const [queued] = await readQueue(page)
@@ -404,7 +450,10 @@ test.describe("Scanner sync status UI", () => {
     expect(queued.last_error).toBeUndefined()
   })
 
-  test("manual retry recovers a previously failed record", async ({ page, mockHttp }) => {
+  test("manual retry recovers a previously failed record", async ({
+    page,
+    mockHttp,
+  }) => {
     let calls = 0
     await mockHttp(page, () => {
       calls += 1
@@ -425,7 +474,9 @@ test.describe("Scanner sync status UI", () => {
     ])
     await notifyQueueChanged(page)
 
-    await expect(card.getByText(/Some scans failed to sync \(http-403\)/)).toBeVisible()
+    await expect(
+      card.getByText(/Some scans failed to sync \(http-403\)/),
+    ).toBeVisible()
 
     await card.getByRole("button", { name: "Retry" }).click()
     await expect(card.getByText("All synced")).toBeVisible()

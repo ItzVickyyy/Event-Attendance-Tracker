@@ -1,4 +1,9 @@
-import { expect, test as base, type CDPSession, type Page } from "@playwright/test"
+import {
+  test as base,
+  type CDPSession,
+  expect,
+  type Page,
+} from "@playwright/test"
 
 const SCAN_URL = "http://localhost:8001/api/v1/attendance/scan*"
 
@@ -68,7 +73,7 @@ const test = base.extend<{
     const browser = context.browser()
     if (!browser) throw new Error("no browser for browser-level CDP session")
     const cdp: CDPSession = await browser.newBrowserCDPSession()
-    await use(async (page: Page, responder) => {
+    await use(async (_page: Page, responder) => {
       const sent: SentScan[] = []
       await cdp.send("Fetch.enable", {
         patterns: [{ urlPattern: SCAN_URL, requestStage: "Request" }],
@@ -77,7 +82,12 @@ const test = base.extend<{
         "Fetch.requestPaused",
         async (event: {
           requestId: string
-          request: { method: string; url: string; postData?: string; headers: Record<string, string> }
+          request: {
+            method: string
+            url: string
+            postData?: string
+            headers: Record<string, string>
+          }
         }) => {
           const { requestId, request } = event
           if (request.method === "OPTIONS") {
@@ -85,16 +95,25 @@ const test = base.extend<{
               requestId,
               responseCode: 204,
               responseHeaders: [
-                { name: "access-control-allow-origin", value: corsHeaders["access-control-allow-origin"] },
-                { name: "access-control-allow-methods", value: corsHeaders["access-control-allow-methods"] },
-                { name: "access-control-allow-headers", value: corsHeaders["access-control-allow-headers"] },
+                {
+                  name: "access-control-allow-origin",
+                  value: corsHeaders["access-control-allow-origin"],
+                },
+                {
+                  name: "access-control-allow-methods",
+                  value: corsHeaders["access-control-allow-methods"],
+                },
+                {
+                  name: "access-control-allow-headers",
+                  value: corsHeaders["access-control-allow-headers"],
+                },
               ],
             })
             return
           }
-          const body = (request.postData
-            ? JSON.parse(request.postData)
-            : {}) as Record<string, unknown>
+          const body = (
+            request.postData ? JSON.parse(request.postData) : {}
+          ) as Record<string, unknown>
           const authHeader = Object.entries(request.headers).find(
             ([k]) => k.toLowerCase() === "authorization",
           )
@@ -118,7 +137,10 @@ const test = base.extend<{
             responseCode: result.status ?? 200,
             responseHeaders: [
               { name: "content-type", value: "application/json" },
-              ...Object.entries(corsHeaders).map(([name, value]) => ({ name, value })),
+              ...Object.entries(corsHeaders).map(([name, value]) => ({
+                name,
+                value,
+              })),
             ],
             body: responseBody,
           })
@@ -137,15 +159,37 @@ async function gotoApp(page: Page): Promise<void> {
   await page.goto("/login")
 }
 
-async function setToken(page: Page, token = "test-access-token"): Promise<void> {
-  await page.evaluate((value) => localStorage.setItem("access_token", value), token)
+async function setToken(
+  page: Page,
+  token = "test-access-token",
+): Promise<void> {
+  await page.evaluate(
+    (value) => localStorage.setItem("access_token", value),
+    token,
+  )
 }
 
-async function seedRecords(page: Page, records: QueueRecordLike[]): Promise<void> {
+async function seedRecords(
+  page: Page,
+  records: QueueRecordLike[],
+): Promise<void> {
   await page.evaluate(
     (recs) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 1)
+        const request = indexedDB.open("attendance-offline", 2)
+        request.onupgradeneeded = () => {
+          const db = request.result
+          if (!db.objectStoreNames.contains("attendanceQueue")) {
+            const store = db.createObjectStore("attendanceQueue", {
+              keyPath: "id",
+            })
+            store.createIndex("by-synced-created", ["synced", "created_at"])
+            store.createIndex("by-synced", "synced")
+          }
+          if (!db.objectStoreNames.contains("rosters")) {
+            db.createObjectStore("rosters", { keyPath: "event_id" })
+          }
+        }
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("attendanceQueue", "readwrite")
@@ -168,7 +212,7 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
   return page.evaluate(
     () =>
       new Promise<QueueRecordLike[]>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 1)
+        const request = indexedDB.open("attendance-offline", 2)
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("attendanceQueue", "readonly")
@@ -176,7 +220,11 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
           getAll.onsuccess = () => {
             const records = getAll.result as QueueRecordLike[]
             records.sort((a, b) =>
-              a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0,
+              a.created_at < b.created_at
+                ? -1
+                : a.created_at > b.created_at
+                  ? 1
+                  : 0,
             )
             db.close()
             resolve(records)
@@ -203,7 +251,10 @@ test.describe("Attendance background sync", () => {
     page,
     mockScan,
   }) => {
-    const scan = await mockScan(page, () => ({ status: 201, json: { ok: true } }))
+    const scan = await mockScan(page, () => ({
+      status: 201,
+      json: { ok: true },
+    }))
     await gotoApp(page)
     await setToken(page)
     await seedRecords(page, [
@@ -248,7 +299,10 @@ test.describe("Attendance background sync", () => {
     }
   })
 
-  test("409 duplicate scans are treated as resolved", async ({ page, mockScan }) => {
+  test("409 duplicate scans are treated as resolved", async ({
+    page,
+    mockScan,
+  }) => {
     const scan = await mockScan(page, () => ({
       status: 409,
       json: { detail: "already scanned" },
@@ -265,7 +319,10 @@ test.describe("Attendance background sync", () => {
     expect(queued.last_error).toBeUndefined()
   })
 
-  test("401 responses leave the record pending and untouched", async ({ page, mockScan }) => {
+  test("401 responses leave the record pending and untouched", async ({
+    page,
+    mockScan,
+  }) => {
     const scan = await mockScan(page, () => ({
       status: 401,
       json: { detail: "unauthorized" },
@@ -304,7 +361,10 @@ test.describe("Attendance background sync", () => {
     expect(queued.last_retry_at).toBeTruthy()
   })
 
-  test("server errors (500) mark the record as retryable", async ({ page, mockScan }) => {
+  test("server errors (500) mark the record as retryable", async ({
+    page,
+    mockScan,
+  }) => {
     const scan = await mockScan(page, () => ({
       status: 500,
       json: { detail: "boom" },
@@ -322,7 +382,10 @@ test.describe("Attendance background sync", () => {
     expect(queued.last_retry_at).toBeTruthy()
   })
 
-  test("network failures mark the record as retryable", async ({ page, mockScan }) => {
+  test("network failures mark the record as retryable", async ({
+    page,
+    mockScan,
+  }) => {
     const scan = await mockScan(page, () => ({ abort: true }))
     await gotoApp(page)
     await setToken(page)
@@ -338,7 +401,10 @@ test.describe("Attendance background sync", () => {
   })
 
   test("synced records persist across a reload", async ({ page, mockScan }) => {
-    const scan = await mockScan(page, () => ({ status: 201, json: { ok: true } }))
+    const scan = await mockScan(page, () => ({
+      status: 201,
+      json: { ok: true },
+    }))
     await gotoApp(page)
     await setToken(page)
     await seedRecords(page, [record({ id: "rec-persist" })])

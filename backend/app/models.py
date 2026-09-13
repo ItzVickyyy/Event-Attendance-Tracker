@@ -812,6 +812,26 @@ class EventRegistrationsPublic(SQLModel):
     count: int
 
 
+class RosterCredential(SQLModel):
+    credential_type: CredentialType
+    credential_value: str
+    is_active: bool
+
+
+class RosterEntry(SQLModel):
+    event_id: uuid.UUID
+    attendee_id: uuid.UUID
+    registration_status: RegistrationStatus
+    person_name: str
+    student_number: str | None = None
+    credentials: list[RosterCredential] = Field(default_factory=list)
+
+
+class RostersPublic(SQLModel):
+    data: list[RosterEntry]
+    count: int
+
+
 # ===========================================================================
 # 11. Attendance
 # ===========================================================================
