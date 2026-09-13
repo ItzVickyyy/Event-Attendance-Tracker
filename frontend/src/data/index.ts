@@ -1,4 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import { registerAttendanceSync, requestImmediateSync } from "./sync";
 
 interface EventRecord {
   id: string;
@@ -142,17 +143,30 @@ export async function enqueueScan(scan: QueuedScan): Promise<string> {
   };
 
   await db.add("attendanceQueue", record);
+
+  void registerAttendanceSync();
+  if (navigator.onLine) {
+    void requestImmediateSync();
+  }
+
   return local_id;
 }
 
 export async function getPendingScans(): Promise<QueueRecord[]> {
   const db = await getDB();
-  return db.getAllFromIndex("attendanceQueue", "by-synced", IDBKeyRange.only(false));
+  const all = await db.getAll("attendanceQueue");
+  return all
+    .filter((record) => !record.synced)
+    .sort((a, b) => {
+      const byCreated = a.created_at.localeCompare(b.created_at);
+      return byCreated !== 0 ? byCreated : a.id.localeCompare(b.id);
+    });
 }
 
 export async function getPendingCount(): Promise<number> {
   const db = await getDB();
-  return db.countFromIndex("attendanceQueue", "by-synced", IDBKeyRange.only(false));
+  const all = await db.getAll("attendanceQueue");
+  return all.filter((record) => !record.synced).length;
 }
 
 export async function markSynced(localId: string): Promise<void> {
@@ -193,7 +207,7 @@ export async function removeSyncedRecords(olderThanMs: number = 7 * 24 * 60 * 60
   const tx = db.transaction("attendanceQueue", "readwrite");
   let count = 0;
 
-  for await (const cursor of tx.store.index("by-synced-created").iterate()) {
+  for await (const cursor of tx.store.iterate()) {
     if (cursor.value.synced && cursor.value.synced_at && cursor.value.synced_at < cutoff) {
       await cursor.delete();
       count++;
