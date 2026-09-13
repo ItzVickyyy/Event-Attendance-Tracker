@@ -94,11 +94,12 @@ export function getDB(): Promise<IDBPDatabase<OfflineDB>> {
         queueStore.createIndex("by-created", "created_at");
         queueStore.createIndex("by-synced-created", ["synced", "created_at"]);
 
-        db.createObjectStore("syncMeta", { keyPath: "key" });
+        db.createObjectStore("syncMeta", { keyPath: "id" });
       },
     });
     return dbPromise;
   }
+  return dbPromise;
 }
 
 export async function getDBInstance(): Promise<IDBPDatabase<OfflineDB>> {
@@ -146,15 +147,15 @@ export async function enqueueScan(scan: QueuedScan): Promise<string> {
 
 export async function getPendingScans(): Promise<QueueRecord[]> {
   const db = await getDB();
-  return db.getAllFromIndex("attendanceQueue", "by-synced", false);
+  return db.getAllFromIndex("attendanceQueue", "by-synced", IDBKeyRange.only(false));
 }
 
 export async function getPendingCount(): Promise<number> {
   const db = await getDB();
-  return db.countFromIndex("attendanceQueue", "by-synced", false);
+  return db.countFromIndex("attendanceQueue", "by-synced", IDBKeyRange.only(false));
 }
 
-export async function markSynced(localId: string, serverResponse?: { attendance_id?: string; synced_at?: string }): Promise<void> {
+export async function markSynced(localId: string): Promise<void> {
   const db = await getDB();
   const record = await db.get("attendanceQueue", localId);
   if (!record) return;
@@ -190,7 +191,6 @@ export async function removeSyncedRecords(olderThanMs: number = 7 * 24 * 60 * 60
   const db = await getDB();
   const cutoff = new Date(Date.now() - olderThanMs).toISOString();
   const tx = db.transaction("attendanceQueue", "readwrite");
-  const index = tx.store.index("by-synced-created");
   let count = 0;
 
   for await (const cursor of tx.store.index("by-synced-created").iterate()) {
@@ -221,7 +221,7 @@ export async function getSyncMeta(key: string): Promise<string | undefined> {
 
 export async function setSyncMeta(key: string, value: string): Promise<void> {
   const db = await getDB();
-  await db.put("syncMeta", { key, value, updated_at: new Date().toISOString() });
+  await db.put("syncMeta", { id: crypto.randomUUID(), key, value, updated_at: new Date().toISOString() });
 }
 
 export async function getEventById(eventId: string): Promise<EventRecord | undefined> {
@@ -254,7 +254,7 @@ export async function upsertCredential(credential: CredentialRecord): Promise<vo
 
 export async function getCredentialByValue(value: string): Promise<CredentialRecord | undefined> {
   const db = await getDB();
-  return db.getFromIndex("credentials", "by-credential-value", value);
+  return db.getFromIndex("credentials", "by-credential-value", IDBKeyRange.only(value));
 }
 
 export async function getAllCredentials(): Promise<CredentialRecord[]> {
