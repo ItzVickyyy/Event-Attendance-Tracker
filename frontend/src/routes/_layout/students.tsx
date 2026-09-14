@@ -1,12 +1,13 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Search } from "lucide-react"
-import { Suspense, useState } from "react"
-
-import { StudentsService } from "@/client"
+import { Suspense, useMemo, useState } from "react"
+import type { PersonPublic } from "@/client"
+import { PeopleService, StudentsService } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
 import PendingStudents from "@/components/Pending/PendingStudents"
 import AddStudent from "@/components/Students/AddStudent"
+import type { StudentTableRow } from "@/components/Students/columns"
 import { studentsColumns } from "@/components/Students/columns"
 import NfcRegister from "@/components/Students/NfcRegister"
 
@@ -22,21 +23,33 @@ function getStudentsQueryOptions(search: string) {
   }
 }
 
+function getPeopleQueryOptions() {
+  return {
+    queryFn: async () =>
+      (await PeopleService.readPeople({ query: { skip: 0, limit: 10000 } }))
+        .data,
+    queryKey: ["people"] as const,
+  }
+}
+
 export const Route = createFileRoute("/_layout/students")({
   component: Students,
-  head: () => ({
-    meta: [
-      {
-        title: "Students - Event Attendance Tracker",
-      },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "Students - Event Attendance Tracker" }] }),
 })
 
 function StudentsTableContent({ search }: { search: string }) {
   const { data: students } = useSuspenseQuery(getStudentsQueryOptions(search))
+  const { data: people } = useSuspenseQuery(getPeopleQueryOptions())
 
-  if (students.data.length === 0) {
+  const rows: StudentTableRow[] = useMemo(() => {
+    const map = new Map<string, PersonPublic>(people.data.map((p) => [p.id, p]))
+    return students.data.map((s) => ({
+      ...s,
+      person: map.get(s.person_id) ?? null,
+    }))
+  }, [students, people])
+
+  if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-12">
         <div className="rounded-full bg-muted p-4 mb-4">
@@ -52,12 +65,11 @@ function StudentsTableContent({ search }: { search: string }) {
     )
   }
 
-  return <DataTable columns={studentsColumns} data={students.data} />
+  return <DataTable columns={studentsColumns} data={rows} />
 }
 
 function Students() {
   const [search, setSearch] = useState("")
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
