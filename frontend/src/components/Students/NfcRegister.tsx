@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 import { Loader2, Search, UserCheck, Wifi, WifiOff } from "lucide-react"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import type { StudentPublic } from "@/client"
-import { StudentsService } from "@/client"
+import type { AttendeeCredentialCreate, AttendeeCredentialPublic, StudentPublic } from "@/client"
+import { AttendeeCredentialsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,16 +27,15 @@ export function NfcRegister({ student }: NfcRegisterProps) {
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
   const [permissionGranted, setPermissionGranted] = useState(false)
-  const [foundStudent, setFoundStudent] = useState<StudentPublic | null>(null)
+  const [foundCredential, setFoundCredential] = useState<AttendeeCredentialPublic | null>(null)
+  const scanningRef = useRef(false)
 
-  const checkNfcSupport = useCallback(() => {
-    const supported = "NDEFReader" in window
-    setNfcSupported(supported)
-    return supported
+  useEffect(() => {
+    setNfcSupported("NDEFReader" in window)
   }, [])
 
   const scanNfc = useCallback(async () => {
-    if (!checkNfcSupport()) {
+    if (!("NDEFReader" in window)) {
       toast.error(
         "Web NFC is not supported in this browser. Use Chrome on Android.",
       )
@@ -50,7 +49,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
       setPermissionGranted(true)
 
       const handleReading = (event: any) => {
-        const uid = event.serialNumber
+        const uid = event.message
         if (uid) {
           setNfcUid(uid.toUpperCase())
           ndef.removeEventListener("reading", handleReading)
@@ -61,7 +60,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
       ndef.addEventListener("reading", handleReading)
 
       setTimeout(() => {
-        if (scanning) {
+        if (scanningRef.current) {
           ndef.removeEventListener("reading", handleReading)
           setScanning(false)
           toast.error("Scan timeout. Please try again.")
@@ -80,43 +79,41 @@ export function NfcRegister({ student }: NfcRegisterProps) {
         }
       }
     }
-  }, [checkNfcSupport, scanning])
+  }, [])
 
   const lookupMutation = useMutation({
     mutationFn: (uid: string) =>
-      StudentsService.lookupByNfc({
-        path: { nfc_uid: uid },
+      AttendeeCredentialsService.credentialsLookupCredential({
+        path: { credential_value: uid },
         throwOnError: false,
       }),
     onSuccess: (result) => {
-      if (result.data) {
-        setFoundStudent(result.data)
-        toast.success(
-          `Found: ${result.data.last_name}, ${result.data.first_name}`,
-        )
-      }
+      const data = (result as any).data as AttendeeCredentialPublic
+      setFoundCredential(data)
+      toast.success(
+        `Found credential for attendee: ${data.attendee_id}`,
+      )
     },
     onError: () => {
-      setFoundStudent(null)
-      toast.error("No student found with this NFC UID")
+      setFoundCredential(null)
+      toast.error("No credential found with this NFC UID")
     },
   })
 
   const registerMutation = useMutation({
-    mutationFn: ({ studentId, uid }: { studentId: string; uid: string }) =>
-      StudentsService.updateStudent({
-        path: { student_id: studentId },
-        body: { nfc_uid: uid },
+    mutationFn: (body: AttendeeCredentialCreate) =>
+      AttendeeCredentialsService.credentialsCreateAttendeeCredential({
+        body,
         throwOnError: true,
       }),
     onSuccess: () => {
-      toast.success("NFC UID registered successfully")
+      toast.success("NFC credential registered successfully")
       setNfcUid("")
-      setFoundStudent(null)
+      setFoundCredential(null)
       router.invalidate()
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to register NFC UID")
+      toast.error(error.message || "Failed to register NFC credential")
     },
   })
 
@@ -130,12 +127,17 @@ export function NfcRegister({ student }: NfcRegisterProps) {
 
   const handleRegister = () => {
     if (!student) return
-    registerMutation.mutate({ studentId: student.id, uid: nfcUid })
+    if (!foundCredential) return
+    registerMutation.mutate({
+      attendee_id: foundCredential.attendee_id,
+      credential_value: nfcUid,
+      credential_type: "nfc",
+    })
   }
 
   const handleScanAndRegister = async () => {
     if (!student) return
-    if (!checkNfcSupport()) return
+    if (!("NDEFReader" in window)) return
 
     try {
       setScanning(true)
@@ -144,13 +146,20 @@ export function NfcRegister({ student }: NfcRegisterProps) {
       setPermissionGranted(true)
 
       const handleReading = async (event: any) => {
-        const uid = event.serialNumber
+        const uid = event.message
         if (uid) {
           ndef.removeEventListener("reading", handleReading)
           setScanning(false)
+          const response = await AttendeeCredentialsService.credentialsLookupCredential({
+            path: { credential_value: uid.toUpperCase() },
+            throwOnError: true,
+          })
+          const credential = (response as any).data as AttendeeCredentialPublic
+          setFoundCredential(credential)
           await registerMutation.mutateAsync({
-            studentId: student.id,
-            uid: uid.toUpperCase(),
+            attendee_id: credential.attendee_id,
+            credential_value: uid.toUpperCase(),
+            credential_type: "nfc",
           })
         }
       }
@@ -158,7 +167,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
       ndef.addEventListener("reading", handleReading)
 
       setTimeout(() => {
-        if (scanning) {
+        if (scanningRef.current) {
           ndef.removeEventListener("reading", handleReading)
           setScanning(false)
           toast.error("Scan timeout. Please try again.")
@@ -179,7 +188,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
     }
   }
 
-  if (!student && !nfcSupported && !checkNfcSupport()) {
+  if (!student && !nfcSupported) {
     return (
       <Button
         variant="outline"
@@ -215,7 +224,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
           </DialogTitle>
           <DialogDescription>
             {student
-              ? `Register an NFC tag for ${student.last_name}, ${student.first_name} (${student.student_number})`
+              ? `Register an NFC tag for ${student.student_number}`
               : "Scan a school ID to read its NFC UID"}
           </DialogDescription>
         </DialogHeader>
@@ -255,24 +264,22 @@ export function NfcRegister({ student }: NfcRegisterProps) {
                 </Button>
               </div>
 
-              {foundStudent && (
+              {foundCredential && (
                 <div className="border rounded-lg p-4 bg-green-50">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">
-                        {foundStudent.last_name}, {foundStudent.first_name}
+                        Attendee: {foundCredential.attendee_id}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {foundStudent.student_number} • {foundStudent.year}
-                        {foundStudent.section}
+                        Credential: {foundCredential.credential_value}
                       </p>
                     </div>
                     <UserCheck className="h-6 w-6 text-green-500" />
                   </div>
-                  {foundStudent.nfc_uid && (
+                  {foundCredential.is_active && (
                     <p className="text-sm text-muted-foreground mt-2">
-                      Already registered with UID:{" "}
-                      <code className="font-mono">{foundStudent.nfc_uid}</code>
+                      Already registered and active.
                     </p>
                   )}
                 </div>
