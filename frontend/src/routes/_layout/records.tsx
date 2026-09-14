@@ -29,7 +29,7 @@ function getAttendanceQueryOptions(eventId?: string) {
   return {
     queryFn: async () =>
       (
-        await AttendanceService.readAttendance({
+        await AttendanceService.readAttendances({
           query: { event_id: eventId, skip: 0, limit: 1000 },
         })
       ).data,
