@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
-import { StudentsService } from "@/client"
+import { PeopleService, StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -55,20 +55,27 @@ export function AddStudent() {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: FormData) =>
-      StudentsService.createStudent({
+    mutationFn: async (data: FormData) => {
+      const personRes = await PeopleService.createPerson({
         body: {
-          student_number: data.student_number,
           first_name: data.first_name,
           last_name: data.last_name,
-          middle_name: data.middle_name || undefined,
-          extension: data.extension || undefined,
-          year: data.year,
-          section: data.section,
-          nfc_uid: data.nfc_uid || undefined,
+          middle_name: data.middle_name || null,
+          name_extension: data.extension || null,
         },
         throwOnError: true,
-      }),
+      })
+      const personId = (personRes as unknown as { data: { id: string } }).data
+        .id
+      return StudentsService.createStudent({
+        body: {
+          person_id: personId,
+          student_number: data.student_number,
+          section_id: null,
+        },
+        throwOnError: true,
+      })
+    },
     onSuccess: () => {
       toast.success("Student created successfully")
       form.reset({
