@@ -19,7 +19,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { StudentPublic } from "@/client"
 import {
-  AttendeeCredentialsService,
+  AttendeesService,
+  AttendanceService,
   EventsService,
   StudentsService,
   UsersService,
@@ -610,17 +611,19 @@ function Scanner() {
         query: { skip: 0, limit: 10, search: query },
         throwOnError: false,
       }),
-    onSuccess: (result) => {
-      if (result.data?.data && result.data.data.length === 1) {
-        if (!eventId) {
-          toast.error("Please select an event first")
-          return
-        }
-        submitAttendance(result.data.data[0], "manual")
-      } else if (result.data?.data && result.data.data.length > 1) {
-        toast.info("Multiple students found. Please be more specific.")
-      } else {
+    onSuccess: async (result) => {
+      if (!eventId) {
+        toast.error("Please select an event first")
+        return
+      }
+      const students = result.data?.data ?? []
+      if (students.length === 0) {
         toast.error("No student found")
+      } else if (students.length === 1) {
+        await submitManualScan(students[0])
+      } else {
+        setManualResults(students)
+        setShowManualPicker(true)
       }
     },
     onError: () => {
@@ -628,47 +631,64 @@ function Scanner() {
     },
   })
 
-  const handleManualSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (manualSearch.trim()) {
-      manualLookupMutation.mutate(manualSearch.trim())
+  const [manualResults, setManualResults] = useState<StudentPublic[]>([])
+  const [showManualPicker, setShowManualPicker] = useState(false)
+
+  const submitManualScan = async (student: StudentPublic) => {
+    try {
+      if (!eventId) {
+        toast.error("No event selected")
+        return
+      }
+      const attendeeResp = await AttendeesService.readAttendees({
+        query: { person_id: student.person_id ?? "", limit: 1 },
+        throwOnError: false,
+      })
+      const attendeeId = attendeeResp.data?.data?.[0]?.id
+      if (!attendeeId) {
+        toast.error("No attendee record found for this student")
+        return
+      }
+      const scanResp = await AttendanceService.scanAttendanceManual(
+        {
+          body: { event_id: eventId, attendee_id: attendeeId, scan_method: "manual" },
+          throwOnError: false,
+        },
+      )
+      if (scanResp.error) {
+        const status = (scanResp as any).status
+        if (status === 409) {
+          const data = (scanResp as any).data
+          const already = data?.detail?.includes("Completed")
+            ? "Already completed"
+            : data?.detail?.includes("Already Recorded")
+              ? "Already recorded (in: " + data?.detail?.match(/In: (\S+)/)?.[1] + ")"
+              : "Already recorded"
+          toast.error(already)
+        } else {
+          toast.error((scanResp as any).data?.detail ?? "Scan failed")
+        }
+        return
+      }
+      const data = scanResp.data
+      toast.success(`Recorded ${student.person_name ?? student.student_number} (${data.message})`)
+    } catch {
+      toast.error("Failed to submit manual scan")
+    } finally {
+      setShowManualPicker(false)
+      setManualResults([])
+      setManualSearch("")
     }
   }
 
-  const submitAttendance = useCallback(
-    async (
-      studentOrCredential: StudentPublic | string,
-      scanMethod: "nfc" | "manual" | "qr",
-    ) => {
-      if (!eventId) return
-      let credentialValue: string
-      if (typeof studentOrCredential === "string") {
-        credentialValue = studentOrCredential
-      } else {
-        const fetched =
-          await AttendeeCredentialsService.credentialsLookupCredential({
-            path: { credential_value: studentOrCredential.student_number },
-          }).catch(() => null)
-        const cv = (fetched as any)?.data?.credential_value as
-          | string
-          | undefined
-        if (!cv) {
-          toast.error("No NFC credential registered for this student")
-          return
-        }
-        credentialValue = cv
-      }
-      await queueScan(credentialValue, scanMethod)
-    },
-    [eventId, queueScan],
-  )
-
-  const submitNfcUid = useCallback(() => {
-    const value = nfcUid.trim()
-    if (!value) return
-    setScanning(true)
-    void handleNfcLookup(value).finally(() => setScanning(false))
-  }, [nfcUid, handleNfcLookup])
+  const handleManualSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (manualSearch.trim()) {
+      setShowManualPicker(false)
+      setManualResults([])
+      manualLookupMutation.mutate(manualSearch.trim())
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
@@ -725,7 +745,7 @@ function Scanner() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && nfcUid.trim()) {
                   e.preventDefault()
-                  submitNfcUid()
+                  void handleNfcLookup(nfcUid.trim().toUpperCase())
                 }
               }}
               disabled={scanning}
@@ -823,6 +843,21 @@ function Scanner() {
               Search
             </LoadingButton>
           </form>
+          {showManualPicker && manualResults.length > 0 && (
+            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+              {manualResults.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => submitManualScan(s)}
+                  className="w-full text-left px-3 py-2 rounded-md border hover:bg-accent transition-colors"
+                >
+                  <div className="font-medium">{s.person_name ?? s.student_number}</div>
+                  <div className="text-sm text-muted-foreground">{s.student_number}</div>
+                </button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

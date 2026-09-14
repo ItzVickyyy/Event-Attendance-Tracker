@@ -900,6 +900,21 @@ export type ItemsPublic = {
 };
 
 /**
+ * ManualScanRequest
+ */
+export type ManualScanRequest = {
+    /**
+     * Event Id
+     */
+    event_id: string;
+    /**
+     * Attendee Id
+     */
+    attendee_id: string;
+    scan_method?: ScanMethod;
+};
+
+/**
  * Message
  */
 export type Message = {
@@ -1284,6 +1299,14 @@ export type StudentPublic = {
      * Updated At
      */
     updated_at?: string | null;
+    /**
+     * Person Name
+     */
+    person_name?: string | null;
+    /**
+     * Attendee Id
+     */
+    attendee_id?: string | null;
 };
 
 /**
@@ -2756,6 +2779,10 @@ export type studentsReadStudentsData = {
          */
         section_id?: string | null;
         /**
+         * Person Id
+         */
+        person_id?: string | null;
+        /**
          * Skip
          */
         skip?: number;
@@ -2916,6 +2943,10 @@ export type attendeesReadAttendeesData = {
          * Attendee Type
          */
         attendee_type?: AttendeeType | null;
+        /**
+         * Person Id
+         */
+        person_id?: string | null;
         /**
          * Skip
          */
@@ -3880,6 +3911,31 @@ export type attendanceScanAttendanceResponses = {
 };
 
 export type attendanceScanAttendanceResponse = attendanceScanAttendanceResponses[keyof attendanceScanAttendanceResponses];
+
+export type attendanceScanAttendanceManualData = {
+    body: ManualScanRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendance/scan-manual';
+};
+
+export type attendanceScanAttendanceManualErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendanceScanAttendanceManualError = attendanceScanAttendanceManualErrors[keyof attendanceScanAttendanceManualErrors];
+
+export type attendanceScanAttendanceManualResponses = {
+    /**
+     * Successful Response
+     */
+    200: ScanResponse;
+};
+
+export type attendanceScanAttendanceManualResponse = attendanceScanAttendanceManualResponses[keyof attendanceScanAttendanceManualResponses];
 
 export type attendanceDeleteAttendanceData = {
     body?: never;

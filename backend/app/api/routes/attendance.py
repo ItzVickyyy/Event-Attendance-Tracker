@@ -24,6 +24,7 @@ from app.models import (
     Event,
     EventRegistration,
     EventStatus,
+    ManualScanRequest,
     Person,
     RegistrationStatus,
     ScanRequest,
@@ -361,6 +362,195 @@ def scan_attendance(
             )
 
     # 9. Insert new Attendance record (Time-In) with concurrency handling
+    record = Attendance(
+        registration_id=registration.id,
+        time_in=now,
+        status=(
+            AttendanceStatus.present
+            if event.attendance_mode == AttendanceMode.time_in_only
+            else AttendanceStatus.time_in_only
+        ),
+        scan_method=scan_in.scan_method,
+        scanned_by=current_user.id,
+    )
+    session.add(record)
+    try:
+        session.commit()
+        session.refresh(record)
+        return ScanResponse(
+            message="Time-In Recorded",
+            attendance=AttendancePublic.model_validate(record),
+            attendee_id=attendee.id,
+            person_name=person_name,
+            student_number=student_number,
+        )
+    except IntegrityError:
+        session.rollback()
+        # Another concurrent request already inserted the attendance record
+        existing = session.exec(
+            select(Attendance).where(col(Attendance.registration_id) == registration.id)
+        ).first()
+        if not existing:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to record attendance due to concurrent conflict",
+            )
+        if event.attendance_mode == AttendanceMode.time_in_only:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Already Recorded - In: {existing.time_in}",
+            )
+        else:
+            if existing.time_out is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Already Recorded - In: {existing.time_in}",
+                )
+
+
+@router.post(
+    "/scan-manual",
+    response_model=ScanResponse,
+    dependencies=[Depends(require_scanner_permission)],
+)
+def scan_attendance_manual(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    scan_in: ManualScanRequest,
+) -> Any:
+    # 1. Validate Event exists
+    event = session.get(Event, scan_in.event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    # 2. Validate Event is open for scanning
+    if event.status != EventStatus.open:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Event is not open for attendance scanning (current status: {event.status.value})",
+        )
+
+    # 3. Resolve Attendee
+    attendee = session.get(Attendee, scan_in.attendee_id)
+    if not attendee:
+        raise HTTPException(status_code=404, detail="Attendee not found")
+
+    # 4. Resolve Person and optional Student details
+    person = attendee.person or (
+        session.get(Person, attendee.person_id) if attendee.person_id else None
+    )
+    person_name = f"{person.first_name} {person.last_name}" if person else "Unknown"
+
+    student_number = None
+    if person:
+        student = session.exec(
+            select(Student).where(col(Student.person_id) == person.id)
+        ).first()
+        if student:
+            student_number = student.student_number
+
+    # 5. Validate / obtain EventRegistration
+    registration = session.exec(
+        select(EventRegistration).where(
+            col(EventRegistration.event_id) == event.id,
+            col(EventRegistration.attendee_id) == attendee.id,
+        )
+    ).first()
+
+    if registration:
+        if registration.registration_status == RegistrationStatus.cancelled:
+            raise HTTPException(
+                status_code=400,
+                detail="Attendee registration is cancelled for this event",
+            )
+    else:
+        # Auto-register attendee with concurrency handling
+        try:
+            registration = EventRegistration(
+                event_id=event.id,
+                attendee_id=attendee.id,
+                registration_status=RegistrationStatus.registered,
+            )
+            session.add(registration)
+            session.commit()
+            session.refresh(registration)
+        except IntegrityError:
+            session.rollback()
+            registration = session.exec(
+                select(EventRegistration).where(
+                    col(EventRegistration.event_id) == event.id,
+                    col(EventRegistration.attendee_id) == attendee.id,
+                )
+            ).first()
+            if not registration:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to retrieve event registration",
+                )
+            if registration.registration_status == RegistrationStatus.cancelled:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Attendee registration is cancelled for this event",
+                )
+
+    # 6. Check Existing Attendance
+    existing = session.exec(
+        select(Attendance).where(col(Attendance.registration_id) == registration.id)
+    ).first()
+
+    now = get_datetime_utc()
+
+    if existing:
+        if event.attendance_mode == AttendanceMode.time_in_only:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Already Recorded - In: {existing.time_in}",
+            )
+        else:
+            if existing.time_out is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
+                )
+            # Concurrency-safe atomic update for time_out
+            stmt = (
+                update(Attendance)
+                .where(
+                    col(Attendance.id) == existing.id,
+                    col(Attendance.time_out).is_(None),
+                )
+                .values(
+                    time_out=now,
+                    status=AttendanceStatus.completed,
+                    scanned_by=current_user.id,
+                    scan_method=scan_in.scan_method,
+                    updated_at=now,
+                )
+            )
+            result = session.exec(stmt)
+            session.commit()
+            if result.rowcount == 0:
+                session.refresh(existing)
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
+                )
+            session.refresh(existing)
+            return ScanResponse(
+                message="Time-Out Recorded",
+                attendance=AttendancePublic.model_validate(existing),
+                attendee_id=attendee.id,
+                person_name=person_name,
+                student_number=student_number,
+            )
+
+    # 7. Insert new Attendance record (Time-In) with concurrency handling
     record = Attendance(
         registration_id=registration.id,
         time_in=now,

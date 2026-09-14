@@ -24,6 +24,7 @@ def read_attendees(
     session: SessionDep,
     _current_user: CurrentUser,
     attendee_type: AttendeeType | None = None,
+    person_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
     search: str | None = None,
@@ -49,6 +50,10 @@ def read_attendees(
             | col(Person.last_name).ilike(pattern)
             | col(Person.email).ilike(pattern)
         )
+
+    if person_id:
+        count_statement = count_statement.where(col(Attendee.person_id) == person_id)
+        statement = statement.where(col(Attendee.person_id) == person_id)
 
     count = session.exec(count_statement).one()
     statement = (

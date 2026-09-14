@@ -7,6 +7,7 @@ from sqlmodel import col, func, select
 from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
     AcademicSection,
+    Attendee,
     Person,
     Student,
     StudentCreate,
@@ -24,16 +25,25 @@ def read_students(
     session: SessionDep,
     _current_user: CurrentUser,
     section_id: uuid.UUID | None = None,
+    person_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
     search: str | None = None,
 ) -> Any:
     count_statement = select(func.count()).select_from(Student)
-    statement = select(Student)
+    statement = (
+        select(Student, Person, Attendee)
+        .join(Person, col(Student.person_id) == Person.id)
+        .join(Attendee, col(Attendee.person_id) == Person.id, isouter=True)
+    )
 
     if section_id:
         count_statement = count_statement.where(col(Student.section_id) == section_id)
         statement = statement.where(col(Student.section_id) == section_id)
+
+    if person_id:
+        count_statement = count_statement.where(col(Student.person_id) == person_id)
+        statement = statement.where(col(Student.person_id) == person_id)
 
     if search:
         pattern = f"%{search}%"
@@ -42,7 +52,7 @@ def read_students(
             | col(Person.first_name).ilike(pattern)
             | col(Person.last_name).ilike(pattern)
         )
-        statement = statement.join(Person, isouter=True).where(
+        statement = statement.where(
             col(Student.student_number).ilike(pattern)
             | col(Person.first_name).ilike(pattern)
             | col(Person.last_name).ilike(pattern)
@@ -52,9 +62,17 @@ def read_students(
     statement = (
         statement.order_by(col(Student.student_number).asc()).offset(skip).limit(limit)
     )
-    students = session.exec(statement).all()
+    rows = session.exec(statement).all()
     return StudentsPublic(
-        data=[StudentPublic.model_validate(s) for s in students], count=count
+        data=[
+            StudentPublic(
+                **student.model_dump(),
+                person_name=f"{person.first_name} {person.last_name}".strip(),
+                attendee_id=attendee.id if attendee else None,
+            )
+            for student, person, attendee in rows
+        ],
+        count=count,
     )
 
 

@@ -490,6 +490,8 @@ class StudentPublic(StudentBase):
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    person_name: str | None = None
+    attendee_id: uuid.UUID | None = None
 
 
 class StudentsPublic(SQLModel):
@@ -922,6 +924,12 @@ class ScanResponse(SQLModel):
     attendee_id: uuid.UUID
     person_name: str | None = None
     student_number: str | None = None
+
+
+class ManualScanRequest(SQLModel):
+    event_id: uuid.UUID
+    attendee_id: uuid.UUID
+    scan_method: ScanMethod = ScanMethod.manual
 
 
 # ===========================================================================
