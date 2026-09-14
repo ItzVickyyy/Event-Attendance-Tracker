@@ -2,7 +2,6 @@ import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 import { AlertTriangle, Trash2 } from "lucide-react"
 import { toast } from "sonner"
-import type { StudentPublic } from "@/client"
 import { StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,9 +13,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { LoadingButton } from "@/components/ui/loading-button"
+import type { StudentTableRow } from "./columns"
+import { formatName } from "./columns"
 
 interface DeleteStudentProps {
-  student: StudentPublic
+  student: StudentTableRow
 }
 
 export function DeleteStudent({ student }: DeleteStudentProps) {
@@ -54,10 +55,8 @@ export function DeleteStudent({ student }: DeleteStudentProps) {
           <DialogTitle className="text-center">Delete Student</DialogTitle>
           <DialogDescription className="text-center">
             Are you sure you want to delete{" "}
-            <strong>
-              {student.last_name}, {student.first_name}
-            </strong>
-            ({student.student_number})? This action cannot be undone.
+            <strong>{formatName(student.person)}</strong>(
+            {student.student_number})? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2 py-4">

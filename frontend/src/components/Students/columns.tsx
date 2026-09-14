@@ -6,7 +6,7 @@ import EditStudent from "./EditStudent"
 
 export type StudentTableRow = StudentPublic & { person: PersonPublic | null }
 
-function formatName(person: PersonPublic | null): string {
+export function formatName(person: PersonPublic | null): string {
   if (!person) return "Unknown"
   return (
     [
