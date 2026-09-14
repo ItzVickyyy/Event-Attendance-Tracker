@@ -3,8 +3,12 @@ import { useRouter } from "@tanstack/react-router"
 import { Loader2, Search, UserCheck, Wifi, WifiOff } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import type { AttendeeCredentialCreate, AttendeeCredentialPublic, StudentPublic } from "@/client"
-import { AttendeeCredentialsService } from "@/client"
+import type {
+  AttendeeCredentialCreate,
+  AttendeeCredentialPublic,
+  StudentPublic,
+} from "@/client"
+import { AttendeeCredentialsService, AttendeesService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,17 +25,74 @@ interface NfcRegisterProps {
   student?: StudentPublic
 }
 
+async function resolveAttendeeId(personId: string): Promise<string> {
+  const result = await AttendeesService.readAttendees({
+    query: { limit: 10000 },
+    throwOnError: true,
+  })
+  const attendees = (
+    result as unknown as { data: { data: { id: string; person_id: string }[] } }
+  ).data.data
+  const existing = attendees.find((a) => a.person_id === personId)
+  if (existing) return existing.id
+  const created = await AttendeesService.createAttendee({
+    body: { person_id: personId, attendee_type: "student" },
+    throwOnError: true,
+  })
+  return (created as unknown as { data: { id: string } }).data.id
+}
+
+function extractNfcCredential(event: any): string {
+  const msg = event.message
+  if (typeof msg === "string" && msg.trim()) return msg.trim()
+  if (msg?.records && Array.isArray(msg.records)) {
+    for (const r of msg.records) {
+      if (r.recordType === "text" && r.data instanceof DataView) {
+        const dv = r.data as DataView
+        if (dv.byteLength === 0) continue
+        const status = dv.getUint8(0)
+        const isUtf16 = (status & 0x80) !== 0
+        const langLen = status & 0x3f
+        const start = 1 + langLen
+        if (start >= dv.byteLength) continue
+        const bytes = new Uint8Array(
+          dv.buffer,
+          dv.byteOffset + start,
+          dv.byteLength - start,
+        )
+        const uid = new TextDecoder(isUtf16 ? "utf-16" : "utf-8")
+          .decode(bytes)
+          .trim()
+        if (uid) return uid
+      }
+    }
+  }
+  return ""
+}
+
 export function NfcRegister({ student }: NfcRegisterProps) {
   const router = useRouter()
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
   const [permissionGranted, setPermissionGranted] = useState(false)
-  const [foundCredential, setFoundCredential] = useState<AttendeeCredentialPublic | null>(null)
-  const scanningRef = useRef(false)
+  const [foundCredential, setFoundCredential] =
+    useState<AttendeeCredentialPublic | null>(null)
+  const ndefRef = useRef<any>(null)
+  const handlerRef = useRef<((event: any) => void) | null>(null)
+  const timeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     setNfcSupported("NDEFReader" in window)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+      if (ndefRef.current && handlerRef.current) {
+        ndefRef.current.removeEventListener("reading", handlerRef.current)
+      }
+    }
   }, [])
 
   const scanNfc = useCallback(async () => {
@@ -49,24 +110,34 @@ export function NfcRegister({ student }: NfcRegisterProps) {
       setPermissionGranted(true)
 
       const handleReading = (event: any) => {
-        const uid = event.message
-        if (uid) {
-          setNfcUid(uid.toUpperCase())
-          ndef.removeEventListener("reading", handleReading)
-          setScanning(false)
+        const uid = extractNfcCredential(event)
+        if (!uid) return
+        setNfcUid(uid.toUpperCase())
+        ndef.removeEventListener("reading", handleReading)
+        handlerRef.current = null
+        if (timeoutRef.current !== null) {
+          window.clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
         }
+        setScanning(false)
       }
 
       ndef.addEventListener("reading", handleReading)
+      ndefRef.current = ndef
+      handlerRef.current = handleReading
 
-      setTimeout(() => {
-        if (scanningRef.current) {
-          ndef.removeEventListener("reading", handleReading)
-          setScanning(false)
-          toast.error("Scan timeout. Please try again.")
-        }
+      timeoutRef.current = window.setTimeout(() => {
+        ndef.removeEventListener("reading", handleReading)
+        handlerRef.current = null
+        timeoutRef.current = null
+        setScanning(false)
+        toast.error("Scan timeout. Please try again.")
       }, 30000)
     } catch (error) {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       setScanning(false)
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
@@ -90,9 +161,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
     onSuccess: (result) => {
       const data = (result as any).data as AttendeeCredentialPublic
       setFoundCredential(data)
-      toast.success(
-        `Found credential for attendee: ${data.attendee_id}`,
-      )
+      toast.success(`Found credential for attendee: ${data.attendee_id}`)
     },
     onError: () => {
       setFoundCredential(null)
@@ -125,14 +194,26 @@ export function NfcRegister({ student }: NfcRegisterProps) {
     await lookupMutation.mutateAsync(uid.trim().toUpperCase())
   }
 
-  const handleRegister = () => {
-    if (!student) return
-    if (!foundCredential) return
-    registerMutation.mutate({
-      attendee_id: foundCredential.attendee_id,
-      credential_value: nfcUid,
-      credential_type: "nfc",
-    })
+  const handleRegister = async () => {
+    if (!student) {
+      toast.error("No student selected")
+      return
+    }
+    const uid = nfcUid.trim().toUpperCase()
+    if (!uid) {
+      toast.error("Please enter or scan an NFC UID first")
+      return
+    }
+    try {
+      const attendeeId = await resolveAttendeeId(student.person_id)
+      await registerMutation.mutateAsync({
+        attendee_id: attendeeId,
+        credential_value: uid,
+        credential_type: "nfc",
+      })
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to resolve attendee")
+    }
   }
 
   const handleScanAndRegister = async () => {
@@ -146,34 +227,45 @@ export function NfcRegister({ student }: NfcRegisterProps) {
       setPermissionGranted(true)
 
       const handleReading = async (event: any) => {
-        const uid = event.message
-        if (uid) {
-          ndef.removeEventListener("reading", handleReading)
-          setScanning(false)
-          const response = await AttendeeCredentialsService.credentialsLookupCredential({
-            path: { credential_value: uid.toUpperCase() },
-            throwOnError: true,
-          })
-          const credential = (response as any).data as AttendeeCredentialPublic
-          setFoundCredential(credential)
+        const raw = extractNfcCredential(event)
+        if (!raw) return
+        const uid = raw.toUpperCase()
+        ndef.removeEventListener("reading", handleReading)
+        handlerRef.current = null
+        if (timeoutRef.current !== null) {
+          window.clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
+        setScanning(false)
+        setNfcUid(uid)
+        try {
+          const attendeeId = await resolveAttendeeId(student.person_id)
           await registerMutation.mutateAsync({
-            attendee_id: credential.attendee_id,
-            credential_value: uid.toUpperCase(),
+            attendee_id: attendeeId,
+            credential_value: uid,
             credential_type: "nfc",
           })
+        } catch (e: any) {
+          toast.error(e?.message || "Failed to register NFC credential")
         }
       }
 
       ndef.addEventListener("reading", handleReading)
+      ndefRef.current = ndef
+      handlerRef.current = handleReading
 
-      setTimeout(() => {
-        if (scanningRef.current) {
-          ndef.removeEventListener("reading", handleReading)
-          setScanning(false)
-          toast.error("Scan timeout. Please try again.")
-        }
+      timeoutRef.current = window.setTimeout(() => {
+        ndef.removeEventListener("reading", handleReading)
+        handlerRef.current = null
+        timeoutRef.current = null
+        setScanning(false)
+        toast.error("Scan timeout. Please try again.")
       }, 30000)
     } catch (error) {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
       setScanning(false)
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
@@ -246,11 +338,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
                   onChange={(e) => setNfcUid(e.target.value.toUpperCase())}
                   disabled={scanning}
                 />
-                <Button
-                  variant="outline"
-                  onClick={scanNfc}
-                  disabled={scanning || !permissionGranted}
-                >
+                <Button variant="outline" onClick={scanNfc} disabled={scanning}>
                   {scanning ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

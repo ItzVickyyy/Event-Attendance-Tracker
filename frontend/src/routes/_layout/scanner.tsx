@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, redirect, useSearch } from "@tanstack/react-router"
 import { Html5Qrcode } from "html5-qrcode"
 import {
@@ -17,9 +17,8 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import type { ScanMethod, StudentPublic } from "@/client"
+import type { StudentPublic } from "@/client"
 import {
-  AttendanceService,
   AttendeeCredentialsService,
   EventsService,
   StudentsService,
@@ -55,6 +54,34 @@ import {
 } from "@/data/sync"
 
 type ScanAction = "time_in" | "time_out"
+
+function extractNfcCredential(event: any): string {
+  const msg = event.message
+  if (typeof msg === "string" && msg.trim()) return msg.trim()
+  if (msg?.records && Array.isArray(msg.records)) {
+    for (const r of msg.records) {
+      if (r.recordType === "text" && r.data instanceof DataView) {
+        const dv = r.data as DataView
+        if (dv.byteLength === 0) continue
+        const status = dv.getUint8(0)
+        const isUtf16 = (status & 0x80) !== 0
+        const langLen = status & 0x3f
+        const start = 1 + langLen
+        if (start >= dv.byteLength) continue
+        const bytes = new Uint8Array(
+          dv.buffer,
+          dv.byteOffset + start,
+          dv.byteLength - start,
+        )
+        const uid = new TextDecoder(isUtf16 ? "utf-16" : "utf-8")
+          .decode(bytes)
+          .trim()
+        if (uid) return uid
+      }
+    }
+  }
+  return ""
+}
 
 export const Route = createFileRoute("/_layout/scanner")({
   component: Scanner,
@@ -328,25 +355,19 @@ function SyncStatusCard({
 }
 
 function Scanner() {
-  const queryClient = useQueryClient()
-  const search = useSearch({ strict: false })
-  const eventId = search?.event_id as string | undefined
+  const search = useSearch({ strict: false }) as any
+  const eventId = (search as any)?.event_id as string | undefined
   const syncStatus = useSyncStatus(eventId)
 
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
   const [permissionGranted, setPermissionGranted] = useState(false)
-  const [foundStudent, setFoundStudent] = useState<StudentPublic | null>(null)
   const [scanAction, setScanAction] = useState<ScanAction>("time_in")
-  const [lastScan, setLastScan] = useState<{
-    student: StudentPublic
-    action: ScanAction
-    time: Date
-    status: string
-  } | null>(null)
   const [manualSearch, setManualSearch] = useState("")
-  const ndefReaderRef = useRef<any>(null)
+  const ndefRef = useRef<any>(null)
+  const nfcHandlerRef = useRef<((event: any) => void) | null>(null)
+  const nfcTimeoutRef = useRef<number | null>(null)
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null)
   const [qrScanning, setQrScanning] = useState(false)
   const [qrSupported, setQrSupported] = useState(false)
@@ -435,86 +456,53 @@ function Scanner() {
     try {
       setScanning(true)
       const ndef = new (window as any).NDEFReader()
-      ndefReaderRef.current = ndef
       await ndef.scan()
       setPermissionGranted(true)
 
-      const handleReading = async (event: any) => {
-        try {
-          const message = event.message || event.data || event.records
-          const records = Array.isArray(message?.records)
-            ? message.records
-            : Array.isArray(message)
-              ? message
-              : []
-
-          let credential = ""
-          for (const record of records) {
-            if (record.recordType === "text" && record.data instanceof DataView) {
-              const dv = record.data as DataView
-              if (dv.byteLength === 0) continue
-              const statusByte = dv.getUint8(0)
-              const isUtf16 = (statusByte & 0x80) !== 0
-              const langLen = statusByte & 0x3f
-              const textStart = 1 + langLen
-              if (textStart >= dv.byteLength) continue
-              const textBytes = new Uint8Array(
-                dv.buffer,
-                dv.byteOffset + textStart,
-                dv.byteLength - textStart,
-              )
-              credential = new TextDecoder(isUtf16 ? "utf-16" : "utf-8")
-                .decode(textBytes)
-                .trim()
-              break
-            }
-          }
-
-          if (!credential && typeof message === "string") {
-            credential = message.trim()
-          }
-          if (!credential && typeof message?.toString === "function") {
-            const str = message.toString()
-            if (str && str !== "[object NDEFMessage]" && str !== "[object DataView]") {
-              credential = str.trim()
-            }
-          }
-
-          if (credential) {
-            const formatted = credential.toUpperCase()
-            setNfcUid(formatted)
-            ndef.removeEventListener("reading", handleReading)
-            ndefReaderRef.current = null
-            setScanning(false)
-            handleNfcLookup(formatted)
-          } else {
-            ndef.removeEventListener("reading", handleReading)
-            ndefReaderRef.current = null
-            setScanning(false)
-            toast.error(
-              "No credential found. Ensure the tag contains an NDEF text record.",
-            )
-          }
-        } catch {
-          ndef.removeEventListener("reading", handleReading)
-          ndefReaderRef.current = null
-          setScanning(false)
-          toast.error("Failed to read NFC tag")
+      const handleReading = (event: any) => {
+        if (nfcTimeoutRef.current !== null) {
+          window.clearTimeout(nfcTimeoutRef.current)
+          nfcTimeoutRef.current = null
         }
+        const credential = extractNfcCredential(event)
+        if (!credential) {
+          toast.error(
+            "No credential found. Ensure the tag contains an NDEF text record.",
+          )
+          ndef.removeEventListener("reading", handleReading)
+          nfcHandlerRef.current = null
+          ndefRef.current = null
+          setScanning(false)
+          return
+        }
+        const formatted = credential.toUpperCase()
+        setNfcUid(formatted)
+        ndef.removeEventListener("reading", handleReading)
+        nfcHandlerRef.current = null
+        ndefRef.current = null
+        setScanning(false)
+        handleNfcLookup(formatted)
       }
 
       ndef.addEventListener("reading", handleReading)
+      ndefRef.current = ndef
+      nfcHandlerRef.current = handleReading
 
-      setTimeout(() => {
-        if (scanning && ndefReaderRef.current) {
-          ndefReaderRef.current.removeEventListener("reading", handleReading)
-          ndefReaderRef.current = null
-          setScanning(false)
-          toast.error("Scan timeout. Please try again.")
-        }
+      nfcTimeoutRef.current = window.setTimeout(() => {
+        ndef.removeEventListener("reading", handleReading)
+        nfcHandlerRef.current = null
+        ndefRef.current = null
+        nfcTimeoutRef.current = null
+        setScanning(false)
+        toast.error("Scan timeout. Please try again.")
       }, 30000)
     } catch (error) {
+      if (nfcTimeoutRef.current !== null) {
+        window.clearTimeout(nfcTimeoutRef.current)
+        nfcTimeoutRef.current = null
+      }
       setScanning(false)
+      ndefRef.current = null
       if (error instanceof Error) {
         if (error.name === "NotAllowedError") {
           toast.error(
@@ -528,19 +516,30 @@ function Scanner() {
     }
   }, [checkNfcSupport, handleNfcLookup])
 
-  const _stopScanning = useCallback(() => {
-    if (ndefReaderRef.current) {
-      ndefReaderRef.current = null
-      setScanning(false)
+  useEffect(() => {
+    return () => {
+      if (nfcTimeoutRef.current !== null)
+        window.clearTimeout(nfcTimeoutRef.current)
+      if (ndefRef.current && nfcHandlerRef.current) {
+        ndefRef.current.removeEventListener("reading", nfcHandlerRef.current)
+      }
+      if (html5QrcodeRef.current) {
+        html5QrcodeRef.current.stop().catch(() => {})
+        html5QrcodeRef.current = null
+      }
     }
   }, [])
 
   const checkQrSupport = useCallback(() => {
-    const supported =
-      "BarcodeDetector" in window || typeof Html5Qrcode !== "undefined"
+    const supported = typeof Html5Qrcode !== "undefined"
     setQrSupported(supported)
     return supported
   }, [])
+
+  useEffect(() => {
+    checkNfcSupport()
+    checkQrSupport()
+  }, [checkNfcSupport, checkQrSupport])
 
   const scanQr = useCallback(async () => {
     if (!checkQrSupport()) return
@@ -613,7 +612,6 @@ function Scanner() {
       }),
     onSuccess: (result) => {
       if (result.data?.data && result.data.data.length === 1) {
-        setFoundStudent(result.data.data[0])
         if (!eventId) {
           toast.error("Please select an event first")
           return
@@ -621,44 +619,12 @@ function Scanner() {
         submitAttendance(result.data.data[0], "manual")
       } else if (result.data?.data && result.data.data.length > 1) {
         toast.info("Multiple students found. Please be more specific.")
-        setFoundStudent(null)
       } else {
-        setFoundStudent(null)
         toast.error("No student found")
       }
     },
     onError: () => {
-      setFoundStudent(null)
       toast.error("Search failed")
-    },
-  })
-
-  const _scanAttendanceMutation = useMutation({
-    mutationFn: (data: {
-      event_id: string
-      credential_value: string
-      scan_method: ScanMethod
-    }) =>
-      AttendanceService.scanAttendance({
-        body: data,
-        throwOnError: true,
-      }),
-    onSuccess: (result) => {
-      const action = scanAction
-      const message = result.data?.message || "Scan recorded"
-      setLastScan({
-        student: foundStudent!,
-        action,
-        time: new Date(),
-        status: message,
-      })
-      setNfcUid("")
-      setFoundStudent(null)
-      queryClient.invalidateQueries({ queryKey: ["attendance"] })
-      toast.success(message)
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to record attendance")
     },
   })
 
@@ -669,22 +635,33 @@ function Scanner() {
     }
   }
 
-  const submitAttendance = async (
-    studentOrCredential: StudentPublic | string,
-    scanMethod: "nfc" | "manual" | "qr",
-  ) => {
-    if (!eventId) return
-    let credentialValue: string
-    if (typeof studentOrCredential === "string") {
-      credentialValue = studentOrCredential
-    } else {
-      const publicCredential = await AttendeeCredentialsService.credentialsLookupCredential({
-        path: { credential_value: studentOrCredential.student_number },
-      }).catch(() => null)
-      credentialValue = publicCredential?.data?.credential_value ?? ""
-    }
-    await queueScan(credentialValue, scanMethod)
-  }
+  const submitAttendance = useCallback(
+    async (
+      studentOrCredential: StudentPublic | string,
+      scanMethod: "nfc" | "manual" | "qr",
+    ) => {
+      if (!eventId) return
+      let credentialValue: string
+      if (typeof studentOrCredential === "string") {
+        credentialValue = studentOrCredential
+      } else {
+        const fetched =
+          await AttendeeCredentialsService.credentialsLookupCredential({
+            path: { credential_value: studentOrCredential.student_number },
+          }).catch(() => null)
+        const cv = (fetched as any)?.data?.credential_value as
+          | string
+          | undefined
+        if (!cv) {
+          toast.error("No NFC credential registered for this student")
+          return
+        }
+        credentialValue = cv
+      }
+      await queueScan(credentialValue, scanMethod)
+    },
+    [eventId, queueScan],
+  )
 
   const submitNfcUid = useCallback(() => {
     const value = nfcUid.trim()
@@ -757,7 +734,7 @@ function Scanner() {
             <LoadingButton
               loading={scanning}
               onClick={scanNfc}
-              disabled={scanning || !nfcSupported || !permissionGranted}
+              disabled={scanning || !nfcSupported}
             >
               {scanning ? (
                 <>
@@ -859,28 +836,6 @@ function Scanner() {
         onDownloadRoster={syncStatus.downloadRoster}
         eventId={eventId}
       />
-
-      {lastScan && (
-        <Card className="border-green-500 bg-green-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-lg font-bold text-green-700">
-                  {lastScan.status}
-                </p>
-                <p className="text-sm text-green-600">
-                  {lastScan.student.student_number}
-                </p>
-                <p className="text-sm text-green-600">
-                  {lastScan.action === "time_in" ? "Time-In" : "Time-Out"} at{" "}
-                  {lastScan.time.toLocaleTimeString()}
-                </p>
-              </div>
-              <CheckCircle className="h-10 w-10 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

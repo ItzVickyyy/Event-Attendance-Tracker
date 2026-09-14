@@ -17,13 +17,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 const schema = z.object({
   student_number: z.string().min(1, "Student number is required"),
@@ -31,9 +24,6 @@ const schema = z.object({
   last_name: z.string().min(1, "Last name is required"),
   middle_name: z.string().optional().or(z.literal("")),
   extension: z.string().optional().or(z.literal("")),
-  year: z.string().min(1, "Year is required"),
-  section: z.string().min(1, "Section is required"),
-  nfc_uid: z.string().optional().or(z.literal("")),
 })
 
 type FormData = z.infer<typeof schema>
@@ -48,9 +38,6 @@ export function AddStudent() {
       middle_name: undefined,
       last_name: "",
       extension: undefined,
-      year: "",
-      section: "",
-      nfc_uid: undefined,
     },
   })
 
@@ -84,9 +71,6 @@ export function AddStudent() {
         middle_name: undefined,
         last_name: "",
         extension: undefined,
-        year: "",
-        section: "",
-        nfc_uid: undefined,
       })
       router.invalidate()
     },
@@ -161,58 +145,6 @@ export function AddStudent() {
                 id="extension"
                 placeholder="Jr."
                 {...form.register("extension")}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <label htmlFor="year" className="text-sm font-medium">
-                  Year
-                </label>
-                <Select
-                  value={form.watch("year")}
-                  onValueChange={form.setValue("year")}
-                >
-                  <SelectTrigger id="year">
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1st Year</SelectItem>
-                    <SelectItem value="2">2nd Year</SelectItem>
-                    <SelectItem value="3">3rd Year</SelectItem>
-                    <SelectItem value="4">4th Year</SelectItem>
-                    <SelectItem value="5">5th Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="section" className="text-sm font-medium">
-                  Section
-                </label>
-                <Select
-                  value={form.watch("section")}
-                  onValueChange={form.setValue("section")}
-                >
-                  <SelectTrigger id="section">
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="A">A</SelectItem>
-                    <SelectItem value="B">B</SelectItem>
-                    <SelectItem value="C">C</SelectItem>
-                    <SelectItem value="D">D</SelectItem>
-                    <SelectItem value="E">E</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="nfc_uid" className="text-sm font-medium">
-                NFC UID (Optional)
-              </label>
-              <Input
-                id="nfc_uid"
-                placeholder="8F:49:5B:74"
-                {...form.register("nfc_uid")}
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">

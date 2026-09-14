@@ -65,7 +65,7 @@ interface RosterEntryRecord {
   credentials: RosterCredentialRecord[]
 }
 
-interface RosterRecord {
+export interface RosterRecord {
   event_id: string
   entries: RosterEntryRecord[]
   downloaded_at: string
