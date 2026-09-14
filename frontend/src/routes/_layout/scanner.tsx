@@ -20,6 +20,7 @@ import { toast } from "sonner"
 import type { ScanMethod, StudentPublic } from "@/client"
 import {
   AttendanceService,
+  AttendeeCredentialsService,
   EventsService,
   StudentsService,
   UsersService,
@@ -438,15 +439,23 @@ function Scanner() {
       await ndef.scan()
       setPermissionGranted(true)
 
-      const handleReading = (event: any) => {
-        const uid = event.serialNumber
-        if (uid) {
-          const formattedUid = uid.toUpperCase()
-          setNfcUid(formattedUid)
+      const handleReading = async (event: any) => {
+        try {
+          const message = event.message || event.data || event.records?.[0]?.data
+          const uid = typeof message === "string" ? message : message?.toString?.()
+          if (uid) {
+            const formattedUid = uid.toUpperCase()
+            setNfcUid(formattedUid)
+            ndef.removeEventListener("reading", handleReading)
+            ndefReaderRef.current = null
+            setScanning(false)
+            handleNfcLookup(formattedUid)
+          }
+        } catch {
           ndef.removeEventListener("reading", handleReading)
           ndefReaderRef.current = null
           setScanning(false)
-          handleNfcLookup(formattedUid)
+          toast.error("Failed to read NFC tag")
         }
       }
 
@@ -473,7 +482,7 @@ function Scanner() {
         }
       }
     }
-  }, [checkNfcSupport, scanning, handleNfcLookup])
+  }, [checkNfcSupport, handleNfcLookup])
 
   const _stopScanning = useCallback(() => {
     if (ndefReaderRef.current) {
@@ -621,10 +630,15 @@ function Scanner() {
     scanMethod: "nfc" | "manual" | "qr",
   ) => {
     if (!eventId) return
-    const credentialValue =
-      typeof studentOrCredential === "string"
-        ? studentOrCredential
-        : studentOrCredential.nfc_uid || ""
+    let credentialValue: string
+    if (typeof studentOrCredential === "string") {
+      credentialValue = studentOrCredential
+    } else {
+      const publicCredential = await AttendeeCredentialsService.credentialsLookupCredential({
+        path: { credential_value: studentOrCredential.student_number },
+      }).catch(() => null)
+      credentialValue = publicCredential?.data?.credential_value ?? ""
+    }
     await queueScan(credentialValue, scanMethod)
   }
 
@@ -811,7 +825,6 @@ function Scanner() {
                   {lastScan.status}
                 </p>
                 <p className="text-sm text-green-600">
-                  {lastScan.student.last_name}, {lastScan.student.first_name} •{" "}
                   {lastScan.student.student_number}
                 </p>
                 <p className="text-sm text-green-600">
