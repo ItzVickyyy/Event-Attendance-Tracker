@@ -441,15 +441,59 @@ function Scanner() {
 
       const handleReading = async (event: any) => {
         try {
-          const message = event.message || event.data || event.records?.[0]?.data
-          const uid = typeof message === "string" ? message : message?.toString?.()
-          if (uid) {
-            const formattedUid = uid.toUpperCase()
-            setNfcUid(formattedUid)
+          const message = event.message || event.data || event.records
+          const records = Array.isArray(message?.records)
+            ? message.records
+            : Array.isArray(message)
+              ? message
+              : []
+
+          let credential = ""
+          for (const record of records) {
+            if (record.recordType === "text" && record.data instanceof DataView) {
+              const dv = record.data as DataView
+              if (dv.byteLength === 0) continue
+              const statusByte = dv.getUint8(0)
+              const isUtf16 = (statusByte & 0x80) !== 0
+              const langLen = statusByte & 0x3f
+              const textStart = 1 + langLen
+              if (textStart >= dv.byteLength) continue
+              const textBytes = new Uint8Array(
+                dv.buffer,
+                dv.byteOffset + textStart,
+                dv.byteLength - textStart,
+              )
+              credential = new TextDecoder(isUtf16 ? "utf-16" : "utf-8")
+                .decode(textBytes)
+                .trim()
+              break
+            }
+          }
+
+          if (!credential && typeof message === "string") {
+            credential = message.trim()
+          }
+          if (!credential && typeof message?.toString === "function") {
+            const str = message.toString()
+            if (str && str !== "[object NDEFMessage]" && str !== "[object DataView]") {
+              credential = str.trim()
+            }
+          }
+
+          if (credential) {
+            const formatted = credential.toUpperCase()
+            setNfcUid(formatted)
             ndef.removeEventListener("reading", handleReading)
             ndefReaderRef.current = null
             setScanning(false)
-            handleNfcLookup(formattedUid)
+            handleNfcLookup(formatted)
+          } else {
+            ndef.removeEventListener("reading", handleReading)
+            ndefReaderRef.current = null
+            setScanning(false)
+            toast.error(
+              "No credential found. Ensure the tag contains an NDEF text record.",
+            )
           }
         } catch {
           ndef.removeEventListener("reading", handleReading)

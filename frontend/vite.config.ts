@@ -1,9 +1,12 @@
+import fs from "node:fs"
 import path from "node:path"
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react-swc"
 import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
+
+const httpsCertDir = path.resolve(import.meta.dirname, ".certs")
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,6 +17,19 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+    },
+  },
+  server: {
+    host: true,
+    https: {
+      key: fs.readFileSync(path.join(httpsCertDir, "localhost+lan-key.pem")),
+      cert: fs.readFileSync(path.join(httpsCertDir, "localhost+lan.pem")),
+    },
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:8001",
+        changeOrigin: true,
+      },
     },
   },
   plugins: [
@@ -107,11 +123,5 @@ export default defineConfig({
         type: "module",
       },
     }),
-    tanstackRouter({
-      target: "react",
-      autoCodeSplitting: true,
-    }),
-    react(),
-    tailwindcss(),
   ],
 })
