@@ -19,8 +19,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { StudentPublic } from "@/client"
 import {
-  AttendeesService,
   AttendanceService,
+  AttendeesService,
   EventsService,
   StudentsService,
   UsersService,
@@ -649,12 +649,14 @@ function Scanner() {
         toast.error("No attendee record found for this student")
         return
       }
-      const scanResp = await AttendanceService.scanAttendanceManual(
-        {
-          body: { event_id: eventId, attendee_id: attendeeId, scan_method: "manual" },
-          throwOnError: false,
+      const scanResp = await AttendanceService.scanAttendanceManual({
+        body: {
+          event_id: eventId,
+          attendee_id: attendeeId,
+          scan_method: "manual",
         },
-      )
+        throwOnError: false,
+      })
       if (scanResp.error) {
         const status = (scanResp as any).status
         if (status === 409) {
@@ -662,7 +664,7 @@ function Scanner() {
           const already = data?.detail?.includes("Completed")
             ? "Already completed"
             : data?.detail?.includes("Already Recorded")
-              ? "Already recorded (in: " + data?.detail?.match(/In: (\S+)/)?.[1] + ")"
+              ? `Already recorded (in: ${data?.detail?.match(/In: (\S+)/)?.[1]})`
               : "Already recorded"
           toast.error(already)
         } else {
@@ -671,7 +673,9 @@ function Scanner() {
         return
       }
       const data = scanResp.data
-      toast.success(`Recorded ${student.person_name ?? student.student_number} (${data.message})`)
+      toast.success(
+        `Recorded ${student.person_name ?? student.student_number} (${data.message})`,
+      )
     } catch {
       toast.error("Failed to submit manual scan")
     } finally {
@@ -852,8 +856,12 @@ function Scanner() {
                   onClick={() => submitManualScan(s)}
                   className="w-full text-left px-3 py-2 rounded-md border hover:bg-accent transition-colors"
                 >
-                  <div className="font-medium">{s.person_name ?? s.student_number}</div>
-                  <div className="text-sm text-muted-foreground">{s.student_number}</div>
+                  <div className="font-medium">
+                    {s.person_name ?? s.student_number}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {s.student_number}
+                  </div>
                 </button>
               ))}
             </div>
