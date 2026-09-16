@@ -58,6 +58,9 @@ ignore = [
     "B008",  # do not perform function calls in argument defaults
     "W191",  # indentation contains tabs
     "B904",  # Allow raising exceptions without from e, for HTTPException
+    # Quoted collection forward references are required by SQLModel 0.0.39
+    # relationship parsing (see models.py); do not unquote.
+    "UP037",
 ]
 
 [tool.ruff.lint.pyupgrade]

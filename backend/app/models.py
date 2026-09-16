@@ -249,10 +249,6 @@ class Organization(OrganizationBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
 
-
-
-
-
     events: list["Event"] = Relationship(back_populates="organization")
 
 
@@ -364,10 +360,6 @@ class AcademicSection(AcademicSectionBase, table=True):
 
     program: AcademicProgram | None = Relationship(back_populates="sections")
     students: list["Student"] = Relationship(back_populates="section")
-
-
-
-
 
 
 class AcademicSectionPublic(AcademicSectionBase):
