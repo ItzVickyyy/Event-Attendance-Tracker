@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -86,10 +84,9 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    items: list[Item] = Relationship(back_populates="owner", cascade_delete=True)
+    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
-# Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
     created_at: datetime | None = None
@@ -132,7 +129,6 @@ class Item(ItemBase, table=True):
     owner: User | None = Relationship(back_populates="items")
 
 
-# Properties to return via API, id is always required
 class ItemPublic(ItemBase):
     id: uuid.UUID
     owner_id: uuid.UUID
@@ -253,7 +249,11 @@ class Organization(OrganizationBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
 
-    events: list[Event] = Relationship(back_populates="organization")
+
+
+
+
+    events: list["Event"] = Relationship(back_populates="organization")
 
 
 class OrganizationPublic(OrganizationBase):
@@ -299,7 +299,7 @@ class AcademicProgram(AcademicProgramBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
 
-    sections: list[AcademicSection] = Relationship(
+    sections: list["AcademicSection"] = Relationship(
         back_populates="program", cascade_delete=True
     )
 
@@ -363,7 +363,11 @@ class AcademicSection(AcademicSectionBase, table=True):
     )
 
     program: AcademicProgram | None = Relationship(back_populates="sections")
-    students: list[Student] = Relationship(back_populates="section")
+    students: list["Student"] = Relationship(back_populates="section")
+
+
+
+
 
 
 class AcademicSectionPublic(AcademicSectionBase):
@@ -483,7 +487,7 @@ class Student(StudentBase, table=True):
 
     person: Person | None = Relationship(back_populates="student")
     section: AcademicSection | None = Relationship(back_populates="students")
-    guardian_relationships: list[AttendeeRelationship] = Relationship(
+    guardian_relationships: list["AttendeeRelationship"] = Relationship(
         back_populates="related_student", cascade_delete=True
     )
 
@@ -540,13 +544,13 @@ class Attendee(AttendeeBase, table=True):
     )
 
     person: Person | None = Relationship(back_populates="attendee")
-    credentials: list[AttendeeCredential] = Relationship(
+    credentials: list["AttendeeCredential"] = Relationship(
         back_populates="attendee", cascade_delete=True
     )
-    relationships: list[AttendeeRelationship] = Relationship(
+    relationships: list["AttendeeRelationship"] = Relationship(
         back_populates="attendee", cascade_delete=True
     )
-    registrations: list[EventRegistration] = Relationship(
+    registrations: list["EventRegistration"] = Relationship(
         back_populates="attendee", cascade_delete=True
     )
 
@@ -733,7 +737,7 @@ class Event(EventBase, table=True):
     )
 
     organization: Organization | None = Relationship(back_populates="events")
-    registrations: list[EventRegistration] = Relationship(
+    registrations: list["EventRegistration"] = Relationship(
         back_populates="event", cascade_delete=True
     )
 
@@ -897,7 +901,7 @@ class Attendance(AttendanceBase, table=True):
     )
 
     registration: EventRegistration | None = Relationship(back_populates="attendance")
-    corrections: list[AttendanceCorrection] = Relationship(
+    corrections: list["AttendanceCorrection"] = Relationship(
         back_populates="attendance", cascade_delete=True
     )
     scanner_user: User | None = Relationship()
