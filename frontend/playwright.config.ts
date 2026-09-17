@@ -3,6 +3,10 @@ import 'dotenv/config'
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:5173'
 
+if (!process.env.VITE_API_URL) {
+  process.env.VITE_API_URL = 'http://localhost:8000'
+}
+
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
