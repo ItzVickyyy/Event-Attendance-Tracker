@@ -6,14 +6,11 @@ import type { AttendancePublic } from "@/client"
 
 export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
   {
-    accessorKey: "student_id",
-    header: "Student",
+    accessorKey: "registration_id",
+    header: "Registration ID",
     cell: ({ row }) => (
       <div>
-        <p className="font-medium">{row.original.student_id}</p>
-        <p className="text-sm text-muted-foreground">
-          Event: {row.original.event_id}
-        </p>
+        <p className="font-mono text-sm">{row.original.registration_id}</p>
       </div>
     ),
   },
@@ -52,6 +49,8 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.original.status
+      if (!status) return <span className="text-muted-foreground">-</span>
+
       const colors: Record<string, string> = {
         present: "bg-green-100 text-green-800",
         time_in_only: "bg-blue-100 text-blue-800",
@@ -64,7 +63,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
             colors[status] || "bg-gray-100 text-gray-800"
           }`}
         >
-          {status.replace("_", " ")}
+          {status.replace(/_/g, " ")}
         </span>
       )
     },
@@ -74,6 +73,8 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
     header: "Method",
     cell: ({ row }) => {
       const method = row.original.scan_method
+      if (!method) return <span className="text-muted-foreground">-</span>
+
       return (
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
