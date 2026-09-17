@@ -5,7 +5,7 @@ import {
   type Page,
 } from "@playwright/test"
 
-const SCAN_URL = "http://localhost:8001/api/v1/attendance/scan*"
+const SCAN_URL = "**/api/v1/attendance/scan*"
 
 interface QueueRecordLike {
   id: string
