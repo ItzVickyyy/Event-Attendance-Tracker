@@ -37,9 +37,8 @@ function EventsTableContent({ search }: { search: string }) {
   if (search) {
     const pattern = search.toLowerCase()
     filtered = events.filter(
-      (e: { event_name: string; organizer?: string }) =>
-        e.event_name.toLowerCase().includes(pattern) ||
-        (e.organizer?.toLowerCase().includes(pattern) ?? false),
+      (e: { event_name: string }) =>
+        e.event_name.toLowerCase().includes(pattern),
     )
   }
 

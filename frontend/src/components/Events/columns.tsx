@@ -82,11 +82,7 @@ export const eventsColumns: ColumnDef<EventPublic>[] = [
       )
     },
   },
-  {
-    accessorKey: "organizer",
-    header: "Organizer",
-    cell: ({ row }) => <div>{row.original.organizer}</div>,
-  },
+
   {
     id: "actions",
     header: "Actions",

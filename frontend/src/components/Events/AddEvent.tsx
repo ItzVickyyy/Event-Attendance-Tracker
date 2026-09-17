@@ -31,7 +31,6 @@ const schema = z.object({
   start_time: z.string().optional().or(z.literal("")),
   end_time: z.string().optional().or(z.literal("")),
   attendance_mode: z.enum(["time_in_only", "time_in_time_out"]).optional(),
-  organizer: z.string().optional(),
   status: z.enum(["draft", "open", "closed"]).optional(),
 })
 
@@ -47,7 +46,6 @@ export function AddEvent() {
       start_time: undefined,
       end_time: undefined,
       attendance_mode: "time_in_only",
-      organizer: "CCS Student Council",
       status: "draft",
     },
   })
@@ -61,7 +59,6 @@ export function AddEvent() {
           start_time: data.start_time || undefined,
           end_time: data.end_time || undefined,
           attendance_mode: data.attendance_mode,
-          organizer: data.organizer,
           status: data.status,
         },
         throwOnError: true,
@@ -74,7 +71,6 @@ export function AddEvent() {
         start_time: undefined,
         end_time: undefined,
         attendance_mode: "time_in_only",
-        organizer: "CCS Student Council",
         status: "draft",
       })
       router.invalidate()
@@ -164,16 +160,6 @@ export function AddEvent() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <label htmlFor="organizer" className="text-sm font-medium">
-                Organizer
-              </label>
-              <Input
-                id="organizer"
-                placeholder="CCS Student Council"
-                {...form.register("organizer")}
-              />
-            </div>
-            <div className="grid gap-2">
               <label htmlFor="status" className="text-sm font-medium">
                 Status
               </label>
@@ -202,7 +188,6 @@ export function AddEvent() {
                     start_time: undefined,
                     end_time: undefined,
                     attendance_mode: "time_in_only",
-                    organizer: "CCS Student Council",
                     status: "draft",
                   })
                 }
