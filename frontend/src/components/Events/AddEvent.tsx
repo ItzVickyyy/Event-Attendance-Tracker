@@ -146,7 +146,7 @@ export function AddEvent() {
               </label>
               <Select
                 value={form.watch("attendance_mode")}
-                onValueChange={form.setValue("attendance_mode")}
+                onValueChange={(value: "time_in_only" | "time_in_time_out") => form.setValue("attendance_mode", value)}
               >
                 <SelectTrigger id="attendance_mode">
                   <SelectValue placeholder="Select mode" />
@@ -165,7 +165,7 @@ export function AddEvent() {
               </label>
               <Select
                 value={form.watch("status")}
-                onValueChange={form.setValue("status")}
+                onValueChange={(value: "draft" | "open" | "closed") => form.setValue("status", value)}
               >
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Select status" />

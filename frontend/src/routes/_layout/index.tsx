@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, useRouterState } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { format } from "date-fns"
 import {
   AlertCircle,
@@ -10,8 +10,13 @@ import {
   Users,
 } from "lucide-react"
 import { Suspense } from "react"
+import { z } from "zod"
 
-import { AttendanceService, EventsService, StudentsService } from "@/client"
+import {
+  AttendanceService,
+  EventRegistrationsService,
+  EventsService,
+} from "@/client"
 import { PendingDashboard } from "@/components/Pending/PendingDashboard"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,18 +25,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 function getDashboardQueryOptions(eventId?: string) {
   return {
     queryFn: async () => {
-      const [students, events, attendance] = await Promise.all([
-        StudentsService.readStudents({ query: { skip: 0, limit: 1000 } }),
+      const [events, roster, registrations, attendance] = await Promise.all([
         EventsService.readEvents({ query: { skip: 0, limit: 100 } }),
         eventId
-          ? AttendanceService.readAttendance({
+          ? EventsService.readEventRoster({ path: { event_id: eventId } })
+          : { data: { data: [], count: 0 } },
+        eventId
+          ? EventRegistrationsService.registrationsReadEventRegistrations({
+              query: { event_id: eventId, skip: 0, limit: 1000 },
+            })
+          : { data: { data: [], count: 0 } },
+        eventId
+          ? AttendanceService.readAttendances({
               query: { event_id: eventId, skip: 0, limit: 1000 },
             })
           : { data: { data: [], count: 0 } },
       ])
       return {
-        students: students.data,
         events: events.data,
+        roster: roster.data,
+        registrations: registrations.data,
         attendance: attendance.data,
       }
     },
@@ -39,8 +52,13 @@ function getDashboardQueryOptions(eventId?: string) {
   }
 }
 
+const dashboardSearchSchema = z.object({
+  event_id: z.string().optional(),
+})
+
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
+  validateSearch: (search) => dashboardSearchSchema.parse(search),
   head: () => ({
     meta: [
       {
@@ -53,10 +71,7 @@ export const Route = createFileRoute("/_layout/")({
 function DashboardContent({ eventId }: { eventId?: string }) {
   const { data } = useSuspenseQuery(getDashboardQueryOptions(eventId))
 
-  const totalStudents = data.students.count
-  const registeredStudents = data.students.data.filter(
-    (s) => s.nfc_registered,
-  ).length
+  const totalExpected = data.roster.count
   const events = data.events.data
   const attendance = data.attendance.data
 
@@ -71,10 +86,10 @@ function DashboardContent({ eventId }: { eventId?: string }) {
       a.status === "completed" ||
       a.status === "time_in_only",
   ).length
-  const absentCount = totalStudents - presentCount
+  const absentCount = Math.max(0, totalExpected - presentCount)
   const attendanceRate =
-    totalStudents > 0
-      ? ((presentCount / totalStudents) * 100).toFixed(1)
+    totalExpected > 0
+      ? ((presentCount / totalExpected) * 100).toFixed(1)
       : "0.0"
 
   const completedCount = eventAttendance.filter(
@@ -118,14 +133,14 @@ function DashboardContent({ eventId }: { eventId?: string }) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Students
+              Expected Athletes
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStudents}</div>
+            <div className="text-2xl font-bold">{totalExpected}</div>
             <p className="text-xs text-muted-foreground">
-              {registeredStudents} with NFC registered
+              Total assigned to this event
             </p>
           </CardContent>
         </Card>
@@ -267,10 +282,27 @@ function DashboardContent({ eventId }: { eventId?: string }) {
                       )}
                     </div>
                     <div>
-                      <p className="font-medium">Student</p>
-                      <p className="text-sm text-muted-foreground">
-                        {scan.student_id} • {scan.scan_method.toUpperCase()}
-                      </p>
+                      {(() => {
+                        const registration = data.registrations.data.find(
+                          (r) => r.id === scan.registration_id,
+                        )
+                        const rosterEntry = data.roster.data.find(
+                          (r) => r.attendee_id === registration?.attendee_id,
+                        )
+                        return (
+                          <>
+                            <p className="font-medium">
+                              {rosterEntry?.person_name || "Unknown Attendee"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {rosterEntry?.student_number
+                                ? `${rosterEntry.student_number} • `
+                                : ""}
+                              {scan.scan_method?.toUpperCase() || "MANUAL"}
+                            </p>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                   <div className="text-right">
@@ -279,7 +311,7 @@ function DashboardContent({ eventId }: { eventId?: string }) {
                         scan.status === "completed" ? "default" : "secondary"
                       }
                     >
-                      {scan.status.replace("_", " ")}
+                      {scan.status?.replace(/_/g, " ") || "unknown"}
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-1">
                       {scan.time_in
@@ -298,8 +330,7 @@ function DashboardContent({ eventId }: { eventId?: string }) {
 }
 
 function Dashboard() {
-  const router = useRouterState()
-  const eventId = router.location.search?.event_id as string | undefined
+  const { event_id: eventId } = Route.useSearch()
 
   return (
     <Suspense fallback={<PendingDashboard />}>
