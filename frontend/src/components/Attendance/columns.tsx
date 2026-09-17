@@ -1,8 +1,13 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
-import { Calendar, Clock } from "lucide-react"
+import { Calendar, Clock, Edit } from "lucide-react"
 
 import type { AttendancePublic } from "@/client"
+import { Button } from "@/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { AttendanceCorrectionDialog } from "./CorrectionDialog"
+import { useState } from "react"
+import useAuth from "@/hooks/useAuth"
 
 export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
   {
@@ -109,6 +114,42 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
         </div>
       ) : (
         <span className="text-muted-foreground">-</span>
+      )
+    },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const { user } = useAuth()
+      const [isDialogOpen, setIsDialogOpen] = useState(false)
+      const attendance = row.original
+
+      const isAdmin = user?.role === "admin" || user?.role === "super_admin"
+
+      if (!isAdmin) return null
+
+      return (
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Correct
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setIsDialogOpen(true)}>
+                Correct Record
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <AttendanceCorrectionDialog
+            attendance={attendance}
+            isOpen={isDialogOpen}
+            onClose={() => setIsDialogOpen(false)}
+          />
+        </div>
       )
     },
   },
