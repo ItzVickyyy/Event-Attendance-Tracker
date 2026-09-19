@@ -1,138 +1,165 @@
-# FastAPI Project - Development
+# Event Attendance Tracker — Development Guide
 
-## Local Development
+This describes the development workflow as the repository is actually configured today. Where the current configuration has a gap (see the callout in "Full Stack with Docker Compose" below), that gap is called out explicitly rather than papered over.
 
-For local development, run PostgreSQL and Mailpit with Docker Compose, and run the FastAPI and Vite development servers locally.
+## Prerequisites
 
-Start the supporting services:
+- [uv](https://docs.astral.sh/uv/) (Python 3.14, pinned via `.python-version`)
+- [Bun](https://bun.sh/)
+- [Docker](https://www.docker.com/) and Docker Compose, for PostgreSQL (and optionally the full stack)
+- A locally-trusted TLS certificate for the frontend dev server (see "Frontend HTTPS Requirement" below) — this project relies on the browser's Web NFC API, which only works in a secure context, so the Vite dev server is configured to serve over HTTPS even locally.
+
+## Environment Configuration
+
+The repository does not commit a `.env` file. Copy the example and fill in real values before running the backend or Docker Compose:
 
 ```bash
-docker compose up -d db mailpit
+cp .env.example .env
 ```
 
-Then, from the `backend` directory, install the dependencies and prepare the database:
+`.env.example` currently defines: `FASTAPI_ENV`, `PROJECT_NAME`, `SECRET_KEY`, `FIRST_SUPERUSER`, `FIRST_SUPERUSER_PASSWORD`, SMTP settings (`SMTP_HOST`, `EMAILS_FROM_EMAIL`, `SMTP_TLS`, `SMTP_PORT`), `POSTGRES_PASSWORD`, and `DATABASE_URL`.
+
+Setting `FASTAPI_ENV=development` enables the `/private` API routes (a small set of test-only endpoints for creating users directly), which are only mounted when this variable is set.
+
+## Backend Setup
+
+From the `backend` directory:
 
 ```bash
 uv sync
 uv run bash scripts/prestart.sh
-```
-
-Start the FastAPI development server:
-
-```bash
 uv run fastapi dev
 ```
 
-In another terminal, from the project root, install the frontend dependencies and start the Vite development server:
+`scripts/prestart.sh` runs Alembic migrations (`alembic upgrade head`) and then seeds initial data (`python app/initial_data.py`), which creates the first superuser as a `super_admin` with scanning permission enabled.
+
+`prestart.sh` needs a reachable PostgreSQL database — see "Database (PostgreSQL)" below.
+
+The backend dev server runs at **http://localhost:8000**, with interactive API docs at **http://localhost:8000/docs**.
+
+## Frontend Setup
+
+From the project root:
 
 ```bash
 bun install
 bun run dev
 ```
 
-Now you can open these URLs:
+### Frontend HTTPS Requirement
 
-Frontend development server: <http://localhost:5173>
+`frontend/vite.config.ts` configures the Vite dev server to load a TLS key/cert pair from `frontend/.certs/localhost+lan-key.pem` and `frontend/.certs/localhost+lan.pem`. This directory is gitignored and **must be created locally** — `bun run dev` will fail to start without it. Generate a locally-trusted certificate covering `localhost` and your machine's LAN IP (a LAN-reachable address is needed if you want to test NFC/QR scanning from a phone on the same network) with a tool such as [`mkcert`](https://github.com/FiloSottile/mkcert), and place the resulting key and certificate at the paths above.
 
-Backend API: <http://localhost:8000>
-
-Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
-
-Mailpit: <http://localhost:8025>
-
-The frontend development server uses the backend at `http://localhost:8000`, as configured in `frontend/.env`.
+Once running, the frontend dev server is served over **HTTPS** (not plain HTTP) — check your terminal output for the exact host/port Vite reports. The dev server proxies `/api` requests to `http://127.0.0.1:8000`, so the backend must be running separately (see "Backend Setup").
 
 ### Frontend Served by FastAPI
 
-Build the frontend from the `frontend` directory:
+To build the frontend and have FastAPI serve it directly from the same origin:
 
 ```bash
 bun run build
 ```
 
-The build is written to `backend/app/frontend` and served by FastAPI at <http://localhost:8000>. Rebuild the frontend after making frontend changes.
+The build output goes to `backend/app/frontend` (configured in `vite.config.ts`) and is served by the backend at whatever URL the backend is running on. Rebuild after frontend changes.
+
+## Database (PostgreSQL)
+
+`compose.yml` defines a `db` service (PostgreSQL 18), but **as currently committed, `compose.yml` does not publish any ports to the host** — `db`, `backend`, `adminer`, and `proxy` all rely on Traefik's internal Docker routing rather than host port mappings; only `compose.deploy.yml` adds host ports (`80`/`443`, for production). This means running `docker compose up -d db` starts Postgres in a container, but it will **not** be reachable at `localhost:5432` from your host machine as `.env.example`'s `DATABASE_URL` assumes.
+
+Until this is resolved (see the audit findings for this repository), you have two practical options for local backend development:
+- Run PostgreSQL some other way that's reachable at `localhost:5432` (e.g., a local Postgres install, or a one-off `docker run -p 5432:5432 ...`), matching the credentials in your `.env`.
+- Add a local port mapping for the `db` service yourself (e.g., via a `compose.override.yml` you create) so `docker compose up -d db` publishes `5432:5432`.
+
+**Mailpit**, referenced in the original template docs for local email testing, is **not currently defined** in `compose.yml` — there is no `mailpit` service to start. Email sending is optional in development: if `SMTP_HOST` and `EMAILS_FROM_EMAIL` are left unset, the backend simply won't attempt to send email (`Settings.emails_enabled` is computed from those two values).
+
+## Database Migrations
+
+Migrations are managed with Alembic from the `backend` directory:
+
+```bash
+uv run alembic revision --autogenerate -m "description"
+uv run alembic upgrade head
+```
+
+`scripts/prestart.sh` already runs `alembic upgrade head` on startup.
+
+## Tests
+
+**Backend** (Pytest, from `backend`):
+
+```bash
+bash scripts/test.sh
+```
+
+This builds and runs the Docker Compose stack, runs `prestart.sh`, and executes the backend test suite with coverage. CI (`test-backend.yml`) enforces a minimum of 90% coverage.
+
+**Frontend end-to-end** (Playwright): tests live in `frontend/tests` and cover login, sign-up, password reset, the admin area, items, roster loading, manual scanning, sync status, background sync, and user settings.
+
+```bash
+bunx playwright test
+# or, with the UI runner:
+bunx playwright test --ui
+```
+
+Playwright tests expect the Docker Compose backend stack to be running (see `.github/workflows/playwright.yml` for the exact CI sequence, which also expects a `playwright` Compose service — see the Known Gaps note below).
+
+## Lint and Format
+
+**Frontend** (Biome):
+
+```bash
+bun run lint
+```
+
+**Backend** (Ruff, mypy, ty) and **pre-commit hooks** are managed with [`prek`](https://prek.j178.dev/), configured in `.pre-commit-config.yaml`. From the project root:
+
+```bash
+uv run prek install -f   # install the Git hook once
+uv run prek run --all-files   # run all checks manually
+```
+
+The pre-commit configuration also regenerates the frontend API client automatically when backend models/routes or `openapi-ts.config.ts` change (see below), and runs `zizmor` against the GitHub Actions workflows.
+
+## Generated Frontend API Client
+
+The frontend's typed API client (`frontend/src/client`) is generated from the backend's OpenAPI schema via [`@hey-api/openapi-ts`](https://heyapi.dev).
+
+Automatically, from the project root (backend must be able to import cleanly; this does not require a running server):
+
+```bash
+bash ./scripts/generate-client.sh
+```
+
+Or manually, with the backend running, by downloading `http://localhost:8000/api/v1/openapi.json` into `frontend/openapi.json` and running `bun run generate-client` from `frontend`.
+
+Regenerate and commit the client whenever backend routes or schemas change — this is also enforced by the pre-commit hook above.
 
 ## Full Stack with Docker Compose
 
-To run the backend and built frontend in Docker Compose:
-
 ```bash
+docker compose build
 docker compose run --rm backend bash scripts/prestart.sh
-docker compose watch
+docker compose up -d
 ```
 
-Now you can open these URLs:
+This starts `proxy` (Traefik), `db`, `adminer`, and `backend` using `compose.yml` alone.
 
-Application, with the frontend and API served by FastAPI: <http://localhost:8000>
+> **⚠️ Known gap:** with only `compose.yml` present, none of these services publish a host port (see "Database (PostgreSQL)" above), so nothing here is reachable at a `localhost` URL as previously documented. The earlier version of this guide described a `compose.override.yml` that added local port mappings, a `mailpit` service, and a `playwright` service for local Docker-based development and CI — **that file does not exist in the current repository.** CI workflows (`test-backend.yml` and `playwright.yml`) still reference `mailpit` and `playwright` Compose services respectively, and `test-docker-compose.yml` curls `http://localhost:8000` directly, all of which depend on configuration that isn't currently committed. If you're picking up this project, either restore an override file providing these, or update the affected workflows/docs to match whatever replaces it.
 
-Automatic interactive API documentation with Swagger UI: <http://localhost:8000/docs>
-
-Adminer, database web administration: <http://localhost:8080>
-
-Traefik UI, to see how the routes are being handled by the proxy: <http://localhost:8090>
-
-Mailpit: <http://localhost:8025>
-
-Stop a locally running FastAPI server before starting the Compose backend because both use port `8000`.
-
-**Note**: The first time you start the stack, it might take a minute for all the services to be ready. To monitor it, use `docker compose logs`, or `docker compose logs backend` for the backend service.
-
-## Mailpit
-
-[Mailpit](https://mailpit.axllent.org) captures emails sent during local development instead of delivering them. The local backend connects to it at `localhost:1025`, and the Compose backend connects to the `mailpit` service. Captured emails are available at <http://localhost:8025>.
-
-## Docker Compose Files and Environment Variables
-
-The main `compose.yml` file contains the configuration shared by the whole stack. Docker Compose loads it automatically.
-
-The `compose.override.yml` file adds local development settings, such as mounting the source code as a volume. Docker Compose also loads it automatically and applies it on top of `compose.yml`.
-
-The `compose.deploy.yml` file contains the deployment-specific settings, including HTTPS and automatic certificate handling. It is explicitly combined with `compose.yml` when deploying the application.
-
-The backend reads local settings from the `.env` file. Docker Compose also uses it for variable interpolation and passes the settings each container needs.
-
-After changing variables, make sure you restart the stack:
+To deploy with the production HTTPS configuration locally for testing, combine both files:
 
 ```bash
-docker compose watch
+docker compose -f compose.yml -f compose.deploy.yml build
+docker compose -f compose.yml -f compose.deploy.yml up -d
 ```
 
-## The `.env` File
+This requires `DOMAIN` and the other variables `compose.deploy.yml` marks as required (see `deployment-docker-compose.md`).
 
-The tracked `.env` file contains local development defaults, passwords, and other configuration. Its hostnames use `localhost` for processes running on your machine. Docker Compose overrides hostnames such as the database and SMTP server with their Compose service names.
+## Common Development Workflow
 
-Do not store deployment secrets in `.env`. Configure them as described in the [FastAPI Cloud deployment guide](./deployment.md) or the [Docker Compose deployment guide](./deployment-docker-compose.md).
-
-## Pre-commit Hooks and Code Linting
-
-The project uses [prek](https://prek.j178.dev/), a modern alternative to [pre-commit](https://pre-commit.com/), for code linting and formatting.
-
-You can find a file `.pre-commit-config.yaml` with configurations at the root of the project.
-
-### Install `prek` to Run Automatically
-
-`prek` is already part of the dependencies of the project.
-
-From the project root, install the Git hook so that `prek` runs automatically before each commit:
-
-```bash
-uv run prek install -f
-```
-
-The `-f` flag forces the installation, in case there was already a `pre-commit` hook previously installed.
-
-Now whenever you try to commit, for example with:
-
-```bash
-git commit
-```
-
-`prek` will check and format the code you are about to commit. If it modifies any files, add those files to Git again before committing.
-
-### Run `prek` Manually
-
-You can also run `prek` manually on all files from the project root:
-
-```bash
-uv run prek run --all-files
-```
+1. `cp .env.example .env` and fill in real values.
+2. Get PostgreSQL reachable at `localhost:5432` (see the Database section above).
+3. From `backend`: `uv sync && uv run bash scripts/prestart.sh && uv run fastapi dev`.
+4. From the project root: `bun install && bun run dev` (after generating local HTTPS certs — see above).
+5. Make backend changes; if routes/schemas changed, run `bash ./scripts/generate-client.sh` (or let the pre-commit hook do it).
+6. Run `uv run prek run --all-files` before committing, or rely on the installed Git hook.
