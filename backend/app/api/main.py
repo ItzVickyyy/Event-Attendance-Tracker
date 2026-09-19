@@ -10,7 +10,6 @@ from app.api.routes import (
     attendees,
     event_registrations,
     events,
-    items,
     login,
     organizations,
     people,
@@ -26,7 +25,6 @@ api_router = APIRouter()
 api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
-api_router.include_router(items.router)
 api_router.include_router(organizations.router)
 api_router.include_router(academic_programs.router)
 api_router.include_router(academic_sections.router)

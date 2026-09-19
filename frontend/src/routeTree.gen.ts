@@ -17,7 +17,6 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutEventsRouteImport } from './routes/_layout/events'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutRecordsRouteImport } from './routes/_layout/records'
 import { Route as LayoutScannerRouteImport } from './routes/_layout/scanner'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
@@ -62,11 +61,6 @@ const LayoutEventsRoute = LayoutEventsRouteImport.update({
   path: '/events',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutRecordsRoute = LayoutRecordsRouteImport.update({
   id: '/records',
   path: '/records',
@@ -96,7 +90,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/events': typeof LayoutEventsRoute
-  '/items': typeof LayoutItemsRoute
   '/records': typeof LayoutRecordsRoute
   '/scanner': typeof LayoutScannerRoute
   '/settings': typeof LayoutSettingsRoute
@@ -109,7 +102,6 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/events': typeof LayoutEventsRoute
-  '/items': typeof LayoutItemsRoute
   '/records': typeof LayoutRecordsRoute
   '/scanner': typeof LayoutScannerRoute
   '/settings': typeof LayoutSettingsRoute
@@ -125,7 +117,6 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/events': typeof LayoutEventsRoute
-  '/_layout/items': typeof LayoutItemsRoute
   '/_layout/records': typeof LayoutRecordsRoute
   '/_layout/scanner': typeof LayoutScannerRoute
   '/_layout/settings': typeof LayoutSettingsRoute
@@ -142,7 +133,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/events'
-    | '/items'
     | '/records'
     | '/scanner'
     | '/settings'
@@ -155,7 +145,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/events'
-    | '/items'
     | '/records'
     | '/scanner'
     | '/settings'
@@ -170,7 +159,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/events'
-    | '/_layout/items'
     | '/_layout/records'
     | '/_layout/scanner'
     | '/_layout/settings'
@@ -244,13 +232,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutEventsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/records': {
       id: '/_layout/records'
       path: '/records'
@@ -285,7 +266,6 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutEventsRoute: typeof LayoutEventsRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutRecordsRoute: typeof LayoutRecordsRoute
   LayoutScannerRoute: typeof LayoutScannerRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -296,7 +276,6 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutEventsRoute: LayoutEventsRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
   LayoutRecordsRoute: LayoutRecordsRoute,
   LayoutScannerRoute: LayoutScannerRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,

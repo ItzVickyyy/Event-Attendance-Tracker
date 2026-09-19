@@ -18,7 +18,6 @@ from app.models import (
     Event,
     EventRegistration,
     ImportBatch,
-    Item,
     Organization,
     Person,
     Student,
@@ -49,7 +48,6 @@ def db() -> Generator[Session]:
             AcademicProgram,
             Person,
             Organization,
-            Item,
             User,
         ]:
             session.execute(delete(model))
