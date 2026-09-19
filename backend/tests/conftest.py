@@ -17,10 +17,12 @@ from app.models import (
     AttendeeRelationship,
     Event,
     EventRegistration,
+    ImportBatch,
     Item,
     Organization,
     Person,
     Student,
+    StudentImportRecord,
     User,
 )
 from tests.utils.user import authentication_token_from_email
@@ -33,6 +35,8 @@ def db() -> Generator[Session]:
         init_db(session)
         yield session
         for model in [
+            StudentImportRecord,
+            ImportBatch,
             AttendanceCorrection,
             Attendance,
             EventRegistration,

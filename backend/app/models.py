@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import DateTime, Index, UniqueConstraint
+from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -215,6 +215,19 @@ class AttendanceStatus(StrEnum):
     time_in_only = "time_in_only"
     completed = "completed"
     incomplete = "incomplete"
+
+
+class AcademicStatus(StrEnum):
+    regular = "regular"
+    irregular = "irregular"
+
+
+class ImportValidationStatus(StrEnum):
+    pending = "pending"
+    valid = "valid"
+    invalid = "invalid"
+    conflict_cross_program = "conflict_cross_program"
+    resolved = "resolved"
 
 
 # ===========================================================================
@@ -452,6 +465,7 @@ class StudentBase(SQLModel):
         nullable=True,
         ondelete="SET NULL",
     )
+    academic_status: AcademicStatus | None = Field(default=None)
 
 
 class StudentCreate(StudentBase):
@@ -462,6 +476,7 @@ class StudentUpdate(SQLModel):
     person_id: uuid.UUID | None = None
     student_number: str | None = Field(default=None, max_length=50)
     section_id: uuid.UUID | None = None
+    academic_status: AcademicStatus | None = None
 
 
 class Student(StudentBase, table=True):
@@ -990,3 +1005,157 @@ class AttendanceCorrectionPublic(AttendanceCorrectionBase):
 class AttendanceCorrectionsPublic(SQLModel):
     data: list[AttendanceCorrectionPublic]
     count: int
+
+
+# ===========================================================================
+# 13. Student Import Staging (Masterlist Import Foundation)
+# ===========================================================================
+
+
+class ImportBatchStatus(StrEnum):
+    pending = "pending"
+    validated = "validated"
+    promoted = "promoted"
+    cancelled = "cancelled"
+
+
+class ImportBatchBase(SQLModel):
+    source_filename: str = Field(max_length=255)
+    academic_year: str | None = Field(default=None, max_length=50)
+    semester: str | None = Field(default=None, max_length=50)
+    imported_by: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="user.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
+    status: ImportBatchStatus = Field(default=ImportBatchStatus.pending)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class ImportBatchCreate(ImportBatchBase):
+    pass
+
+
+class ImportBatchUpdate(SQLModel):
+    source_filename: str | None = Field(default=None, max_length=255)
+    academic_year: str | None = Field(default=None, max_length=50)
+    semester: str | None = Field(default=None, max_length=50)
+    imported_by: uuid.UUID | None = None
+    status: ImportBatchStatus | None = None
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class ImportBatchPublic(ImportBatchBase):
+    id: uuid.UUID
+    imported_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class ImportBatchesPublic(SQLModel):
+    data: list[ImportBatchPublic]
+    count: int
+
+
+class ImportBatch(ImportBatchBase, table=True):
+    __tablename__ = "import_batches"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    imported_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    importer_user: User | None = Relationship()
+    records: list["StudentImportRecord"] = Relationship(
+        back_populates="import_batch", cascade_delete=True
+    )
+
+
+class StudentImportRecordBase(SQLModel):
+    import_batch_id: uuid.UUID = Field(
+        foreign_key="import_batches.id", nullable=False, ondelete="CASCADE"
+    )
+    source_sheet: str = Field(max_length=100)
+    source_row: int
+    source_no: int | None = Field(default=None)
+    raw_student_number: str = Field(index=True, max_length=50)
+    raw_last_name: str = Field(max_length=255)
+    raw_first_name: str = Field(max_length=255)
+    raw_middle_name: str | None = Field(default=None, max_length=255)
+    raw_mobile_number: str | None = Field(default=None, max_length=50)
+    raw_email: str | None = Field(default=None, max_length=255)
+    raw_subjects_enrolled: str | None = Field(default=None, max_length=4000)
+    raw_status: str | None = Field(default=None, max_length=50)
+    academic_status: AcademicStatus | None = Field(default=None)
+    validation_status: ImportValidationStatus = Field(
+        default=ImportValidationStatus.valid
+    )
+    validation_errors: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    conflict_key: str | None = Field(default=None, index=True, max_length=50)
+
+
+class StudentImportRecordCreate(StudentImportRecordBase):
+    pass
+
+
+class StudentImportRecordUpdate(SQLModel):
+    source_sheet: str | None = Field(default=None, max_length=100)
+    source_row: int | None = None
+    source_no: int | None = None
+    raw_student_number: str | None = Field(default=None, max_length=50)
+    raw_last_name: str | None = Field(default=None, max_length=255)
+    raw_first_name: str | None = Field(default=None, max_length=255)
+    raw_middle_name: str | None = Field(default=None, max_length=255)
+    raw_mobile_number: str | None = Field(default=None, max_length=50)
+    raw_email: str | None = Field(default=None, max_length=255)
+    raw_subjects_enrolled: str | None = Field(default=None, max_length=4000)
+    raw_status: str | None = Field(default=None, max_length=50)
+    academic_status: AcademicStatus | None = None
+    validation_status: ImportValidationStatus | None = None
+    validation_errors: list[str] | None = None
+    conflict_key: str | None = Field(default=None, max_length=50)
+
+
+class StudentImportRecordPublic(StudentImportRecordBase):
+    id: uuid.UUID
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class StudentImportRecordsPublic(SQLModel):
+    data: list[StudentImportRecordPublic]
+    count: int
+
+
+class StudentImportRecord(StudentImportRecordBase, table=True):
+    __tablename__ = "student_import_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "import_batch_id",
+            "source_sheet",
+            "source_row",
+            name="uq_student_import_batch_sheet_row",
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    import_batch: ImportBatch | None = Relationship(back_populates="records")
