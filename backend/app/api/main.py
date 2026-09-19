@@ -10,6 +10,7 @@ from app.api.routes import (
     attendees,
     event_registrations,
     events,
+    import_batches,
     login,
     organizations,
     people,
@@ -39,6 +40,6 @@ api_router.include_router(event_registrations.router)
 api_router.include_router(attendance.router)
 api_router.include_router(attendance_corrections.router)
 
-
 if settings.FASTAPI_ENV == "development":
     api_router.include_router(private.router)
+    api_router.include_router(import_batches.router)
