@@ -1,4 +1,4 @@
-# FastAPI Project - Deployment
+# Event Attendance Tracker - Deployment
 
 Deploy the project to [FastAPI Cloud](https://fastapicloud.com) with the included GitHub Actions workflow.
 
