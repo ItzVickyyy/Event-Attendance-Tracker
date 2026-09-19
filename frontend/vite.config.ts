@@ -41,7 +41,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["vite.svg"],
+      includeAssets: ["assets/images/favicon.png"],
       manifest: {
         name: "Event Attendance Tracker",
         short_name: "Attendance",
@@ -54,10 +54,10 @@ export default defineConfig({
         start_url: "/",
         icons: [
           {
-            src: "vite.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any maskable",
+            src: "assets/images/favicon.png",
+            sizes: "144x144",
+            type: "image/png",
+            purpose: "any",
           },
         ],
       },
