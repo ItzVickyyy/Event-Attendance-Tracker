@@ -1,10 +1,10 @@
-﻿Add academic status to students table
+Add academic status to students table
 
 Revision ID: b0e1d2c3f4a5
 Revises: fe56fa70289e
-Create Date: 2026-09-19 23:26:04.015
+Create Date: 2026-09-19 23:26:04.1
 
-""
+"""
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
@@ -41,4 +41,3 @@ def downgrade():
     # Drop the enum type from PostgreSQL
     academic_status_enum.drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###
-

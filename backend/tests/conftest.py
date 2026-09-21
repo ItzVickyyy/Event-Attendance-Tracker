@@ -54,6 +54,12 @@ def db() -> Generator[Session]:
         session.commit()
 
 
+@pytest.fixture
+def db_session(db: Session) -> Session:
+    """Alias for the db session fixture to maintain test compatibility."""
+    return db
+
+
 @pytest.fixture(scope="module")
 def client() -> Generator[TestClient]:
     with TestClient(app) as c:
