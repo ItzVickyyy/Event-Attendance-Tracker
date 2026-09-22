@@ -296,6 +296,183 @@ def test_cross_program_conflicts_detection(
     assert len(records) == 2
 
 
+# --- 3C-03: conflict_cross_program must mean cross-PROGRAM, not merely
+# cross-SHEET. These tests use a mocked session (like the 3C-02 persistence
+# tests above) so they can run even when PostgreSQL/the 3B-02 migration is
+# unavailable in the sandbox. ---
+
+
+def test_same_program_different_sections_not_cross_program_conflict():
+    """Case A: BSCS 1A + BSCS 2A, same student number.
+
+    Different sections of the SAME program must NOT be classified as
+    conflict_cross_program. The duplicate should instead be handled the
+    same way an in-sheet duplicate is: one row valid, the other flagged
+    invalid as a duplicate.
+    """
+    mock_session = MagicMock()
+    service = StudentImportService(session=mock_session)
+
+    import_batch = ImportBatch(id=uuid4(), source_filename="test_masterlist.xlsx")
+
+    headers = ["No.", "Student Number", "Last Name", "First Name"]
+    xlsx_data = create_test_xlsx_workbook(
+        {
+            "BSCS 1A": [
+                {"No.": 1, "Student Number": "01001", "Last Name": "Reyes", "First Name": "Liza"}
+            ],
+            "BSCS 2A": [
+                {"No.": 1, "Student Number": "01001", "Last Name": "Reyes", "First Name": "Liza"}
+            ],
+        },
+        headers,
+    )
+
+    parsed_rows = service.parse_student_import(import_batch, xlsx_data)
+
+    assert len(parsed_rows) == 2
+
+    statuses = {row["validation_status"] for row in parsed_rows}
+    assert ImportValidationStatus.conflict_cross_program not in statuses
+
+    valid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.valid]
+    invalid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.invalid]
+    assert len(valid_rows) == 1
+    assert len(invalid_rows) == 1
+    assert "Duplicate student number" in invalid_rows[0]["validation_errors"][0]
+    assert invalid_rows[0]["conflict_key"] == "01001"
+
+
+def test_bsit_same_program_different_sections_not_cross_program_conflict():
+    """Case B: BSIT 1A + BSIT 2A, same student number -> not conflict_cross_program."""
+    mock_session = MagicMock()
+    service = StudentImportService(session=mock_session)
+
+    import_batch = ImportBatch(id=uuid4(), source_filename="test_masterlist.xlsx")
+
+    headers = ["No.", "Student Number", "Last Name", "First Name"]
+    xlsx_data = create_test_xlsx_workbook(
+        {
+            "BSIT 1A": [
+                {"No.": 1, "Student Number": "01002", "Last Name": "Torres", "First Name": "Miko"}
+            ],
+            "BSIT 2A": [
+                {"No.": 1, "Student Number": "01002", "Last Name": "Torres", "First Name": "Miko"}
+            ],
+        },
+        headers,
+    )
+
+    parsed_rows = service.parse_student_import(import_batch, xlsx_data)
+
+    assert len(parsed_rows) == 2
+    statuses = {row["validation_status"] for row in parsed_rows}
+    assert ImportValidationStatus.conflict_cross_program not in statuses
+
+    valid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.valid]
+    invalid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.invalid]
+    assert len(valid_rows) == 1
+    assert len(invalid_rows) == 1
+
+
+def test_cross_program_duplicate_still_flagged():
+    """Case C: BSCS 1A + BSIT 1A, same student number -> conflict_cross_program,
+    and conflict_key remains the student number."""
+    mock_session = MagicMock()
+    service = StudentImportService(session=mock_session)
+
+    import_batch = ImportBatch(id=uuid4(), source_filename="test_masterlist.xlsx")
+
+    headers = ["No.", "Student Number", "Last Name", "First Name"]
+    xlsx_data = create_test_xlsx_workbook(
+        {
+            "BSCS 1A": [
+                {"No.": 1, "Student Number": "01003", "Last Name": "Gomez", "First Name": "Ella"}
+            ],
+            "BSIT 1A": [
+                {"No.": 1, "Student Number": "01003", "Last Name": "Gomez", "First Name": "Ella"}
+            ],
+        },
+        headers,
+    )
+
+    parsed_rows = service.parse_student_import(import_batch, xlsx_data)
+
+    assert len(parsed_rows) == 2
+    for row in parsed_rows:
+        assert row["validation_status"] == ImportValidationStatus.conflict_cross_program
+        assert row["conflict_key"] == "01003"
+
+
+def test_different_students_across_programs_not_conflicting():
+    """Case D: different student numbers in BSCS 1A and BSIT 1A -> no conflict."""
+    mock_session = MagicMock()
+    service = StudentImportService(session=mock_session)
+
+    import_batch = ImportBatch(id=uuid4(), source_filename="test_masterlist.xlsx")
+
+    headers = ["No.", "Student Number", "Last Name", "First Name"]
+    xlsx_data = create_test_xlsx_workbook(
+        {
+            "BSCS 1A": [
+                {"No.": 1, "Student Number": "01004", "Last Name": "Diaz", "First Name": "Noel"}
+            ],
+            "BSIT 1A": [
+                {"No.": 1, "Student Number": "01005", "Last Name": "Fuentes", "First Name": "Rae"}
+            ],
+        },
+        headers,
+    )
+
+    parsed_rows = service.parse_student_import(import_batch, xlsx_data)
+
+    assert len(parsed_rows) == 2
+    for row in parsed_rows:
+        assert row["validation_status"] == ImportValidationStatus.valid
+        assert row["conflict_key"] is None
+
+
+def test_same_program_duplicate_staging_persistence_compatibility():
+    """3C-03 + 3C-02: a same-program, multi-section duplicate must still reach
+    the staging layer via the existing create_staging_records() persistence
+    path, unchanged from 3C-02, with the corrected (non-cross-program)
+    validation_status."""
+    mock_session = MagicMock()
+    service = StudentImportService(session=mock_session)
+
+    import_batch = ImportBatch(id=uuid4(), source_filename="test_masterlist.xlsx")
+
+    headers = ["No.", "Student Number", "Last Name", "First Name"]
+    xlsx_data = create_test_xlsx_workbook(
+        {
+            "BSCS 1A": [
+                {"No.": 1, "Student Number": "01006", "Last Name": "Ramos", "First Name": "Kyle"}
+            ],
+            "BSCS 2A": [
+                {"No.": 1, "Student Number": "01006", "Last Name": "Ramos", "First Name": "Kyle"}
+            ],
+        },
+        headers,
+    )
+
+    parsed_rows = service.parse_student_import(import_batch, xlsx_data)
+
+    assert len(parsed_rows) == 2
+    # Persistence contract from 3C-02 is unchanged: one add() call per parsed row.
+    assert mock_session.add.call_count == 2
+
+    persisted_records = [call.args[0] for call in mock_session.add.call_args_list]
+    for record in persisted_records:
+        assert isinstance(record, StudentImportRecord)
+        assert record.import_batch_id == import_batch.id
+        assert record.raw_student_number == "01006"
+        assert record.validation_status != ImportValidationStatus.conflict_cross_program
+
+    statuses = {record.validation_status for record in persisted_records}
+    assert statuses == {ImportValidationStatus.valid, ImportValidationStatus.invalid}
+    mock_session.commit.assert_not_called()
+
+
 def test_validation_summary(
     student_import_service: StudentImportService,
 ):

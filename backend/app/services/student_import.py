@@ -1,5 +1,6 @@
 """Student Import Service - XLSX parsing and staging"""
 
+import re
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import UUID
@@ -159,6 +160,27 @@ class StudentImportService:
 
         return str(cell_value)
 
+    def _derive_program_from_sheet(self, sheet_name: str) -> str:
+        """Derive the academic program identity encoded in a section sheet name.
+
+        Per docs/Phase-3-Student-Data-Field-Mapping.md section 4, the workbook
+        encodes program through its section sheets using a leading program
+        code followed by a year-level/section suffix, e.g. "BSCS 1A" or
+        "BSIT 3A". Only the leading program code identifies the program;
+        the remainder of the sheet name (year level, section letter)
+        identifies the section, not the program, and must not be used to
+        distinguish program identity.
+
+        This is a lightweight, sheet-name-only derivation used solely to
+        classify import conflicts. It intentionally does not read or rely on
+        the parsed `raw_program` field, and does not touch `AcademicProgram`/
+        `AcademicSection` records.
+        """
+        match = re.match(r"^\s*([A-Za-z]+)", sheet_name)
+        if match:
+            return match.group(1).upper()
+        return sheet_name.strip().upper()
+
     def _validate_and_detect_conflicts(self, parsed_rows: List[Dict[str, Any]]) -> None:
         """Validate rows and detect duplicate/cross-program conflicts across the entire workbook"""
         student_to_sheets: Dict[str, Dict[str, int]] = {}
@@ -212,11 +234,22 @@ class StudentImportService:
                 continue
 
             sheet_counts = student_to_sheets[student_number]
-            if len(sheet_counts) > 1:
+            programs_involved = {
+                self._derive_program_from_sheet(sheet) for sheet in sheet_counts.keys()
+            }
+
+            if len(programs_involved) > 1:
+                # The student number appears under section sheets that belong
+                # to more than one program (e.g. BSCS and BSIT) - a genuine
+                # cross-program conflict per docs/Phase-3-Student-Data-Field-Mapping.md.
                 row_data["validation_status"] = ImportValidationStatus.conflict_cross_program
-                row_data["validation_errors"] = [f"Conflict across {len(sheet_counts)} program/section sheets"]
+                row_data["validation_errors"] = [
+                    f"Conflict across {len(programs_involved)} programs: "
+                    f"{', '.join(sorted(programs_involved))}"
+                ]
                 row_data["conflict_key"] = student_number
             elif len(sheet_counts) == 1:
+                # Same program, same sheet: unchanged existing duplicate handling.
                 rows_in_sheet = student_to_rows[student_number].get(list(sheet_counts.keys())[0], {})
                 
                 if len(rows_in_sheet) > 1:
@@ -233,6 +266,23 @@ class StudentImportService:
                     row_data["validation_status"] = ImportValidationStatus.valid
                     row_data["validation_errors"] = []
                     row_data["conflict_key"] = None
+            elif len(sheet_counts) > 1:
+                # Same program, multiple sheets (e.g. BSCS 1A + BSCS 2A): not a
+                # cross-program conflict. Reuse the same duplicate/invalid
+                # handling used for same-sheet duplicates above - the first
+                # occurrence (in parse order) is kept valid, the rest are
+                # flagged as duplicates.
+                all_rows_for_student = student_to_all_rows[student_number]
+                canonical_row = all_rows_for_student[0]
+
+                if row_data is canonical_row:
+                    row_data["validation_status"] = ImportValidationStatus.valid
+                    row_data["validation_errors"] = []
+                    row_data["conflict_key"] = None
+                else:
+                    row_data["validation_status"] = ImportValidationStatus.invalid
+                    row_data["validation_errors"] = [f"Duplicate student number in import: {student_number}"]
+                    row_data["conflict_key"] = student_number
             else:
                 row_data["validation_status"] = ImportValidationStatus.valid
                 row_data["validation_errors"] = []
