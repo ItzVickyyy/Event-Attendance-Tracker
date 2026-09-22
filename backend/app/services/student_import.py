@@ -16,6 +16,12 @@ class StudentImportService:
 
     def __init__(self, session: Session):
         self.session = session
+        # Populated by parse_student_import() each time it runs; holds the
+        # 3C-04 Summary Reconciliation result for the most recently parsed
+        # workbook. Kept off the parse_student_import() return value so the
+        # existing List[Dict[str, Any]] contract (and every caller/test that
+        # depends on it) is left unchanged. See get_summary_reconciliation().
+        self._last_summary_reconciliation: Optional[Dict[str, Any]] = None
 
     def parse_student_import(
         self, import_batch: ImportBatch, xlsx_file: bytes
@@ -35,8 +41,21 @@ class StudentImportService:
             raise ValueError(f"Failed to parse XLSX file: {str(e)}")
 
         parsed_rows = []
+        processed_section_sheets: List[str] = []
+        summary_sheet_rows: Optional[List[Tuple[Any, ...]]] = None
 
         for sheet_name in workbook.sheetnames:
+            if sheet_name.strip().lower() == "summary":
+                # The Summary sheet is a reconciliation/validation source,
+                # not a source of student records (Phase-3 mapping, section
+                # 10). Capture its rows for reconciliation below, but never
+                # feed it into parsed_rows / staging.
+                if summary_sheet_rows is None:
+                    summary_sheet_rows = list(
+                        workbook[sheet_name].iter_rows(values_only=True)
+                    )
+                continue
+
             if not self._validate_sheet_name(sheet_name):
                 continue
 
@@ -45,6 +64,8 @@ class StudentImportService:
 
             if not sheet_rows:
                 continue
+
+            processed_section_sheets.append(sheet_name)
 
             header_row = sheet_rows[0]
             data_rows = sheet_rows[1:]
@@ -62,7 +83,20 @@ class StudentImportService:
 
         self.create_staging_records(import_batch, parsed_rows)
 
+        self._last_summary_reconciliation = self._reconcile_summary_sheet(
+            summary_sheet_rows, parsed_rows, processed_section_sheets
+        )
+
         return parsed_rows
+
+    def get_summary_reconciliation(self) -> Optional[Dict[str, Any]]:
+        """Return the 3C-04 Summary Reconciliation result for the most
+        recently parsed workbook, or None if parse_student_import() has not
+        been run yet on this service instance.
+
+        See _reconcile_summary_sheet() for the structure of the result.
+        """
+        return self._last_summary_reconciliation
 
     def _validate_sheet_name(self, sheet_name: str) -> bool:
         """Validate that the sheet name is acceptable for processing.
@@ -180,6 +214,283 @@ class StudentImportService:
         if match:
             return match.group(1).upper()
         return sheet_name.strip().upper()
+
+    def _normalize_status(self, raw_status: Optional[str]) -> Optional[str]:
+        """Interpret a section sheet's supplied Status value.
+
+        Returns "regular", "irregular", or None when the supplied value is
+        missing, blank, or does not clearly represent either. Per
+        docs/Phase-3-Student-Data-Field-Mapping.md section 3, this only
+        reads the value the workbook actually supplied; it never infers or
+        recomputes academic status from subjects or other fields.
+        """
+        if not raw_status:
+            return None
+
+        normalized = raw_status.strip().lower()
+
+        if normalized == "regular":
+            return "regular"
+        if normalized == "irregular":
+            return "irregular"
+
+        return None
+
+    def _safe_numeric(self, cell_value: Any) -> Optional[int]:
+        """Best-effort extraction of a whole-number count from a Summary
+        sheet cell. Returns None if the cell does not hold a parseable
+        whole number (booleans and non-integer floats are deliberately
+        rejected rather than silently rounded)."""
+        if cell_value is None or isinstance(cell_value, bool):
+            return None
+
+        if isinstance(cell_value, int):
+            return cell_value
+
+        if isinstance(cell_value, float):
+            return int(cell_value) if cell_value.is_integer() else None
+
+        if isinstance(cell_value, str):
+            stripped = cell_value.strip()
+            if re.fullmatch(r"-?\d+", stripped):
+                return int(stripped)
+
+        return None
+
+    def _classify_summary_label(self, normalized_label: str) -> Optional[str]:
+        """Classify a Summary sheet row label into one of the four
+        reconciliation metrics. Checked in this order so that "Irregular"
+        is never mistakenly classified as "Regular" (it contains that
+        substring), and "Sections" is never mistakenly classified as a
+        total (a "Total Sections" label should reconcile against the
+        section count, not the student total)."""
+        if "irregular" in normalized_label:
+            return "irregular"
+        if "regular" in normalized_label:
+            return "regular"
+        if "section" in normalized_label:
+            return "sections"
+        if "total" in normalized_label:
+            return "total_students"
+        return None
+
+    def _read_summary_sheet(
+        self, summary_rows: List[Tuple[Any, ...]]
+    ) -> Dict[str, Optional[int]]:
+        """Dynamically extract the Summary sheet's declared reconciliation
+        figures. Never hardcodes the known example totals - every value is
+        read from whatever label/value pairs are actually present on the
+        sheet. Supports a label-in-one-cell, value-in-a-later-cell-of-the-
+        same-row layout, which is the Summary sheet's stable structure."""
+        declared: Dict[str, Optional[int]] = {
+            "total_students": None,
+            "regular": None,
+            "irregular": None,
+            "sections": None,
+        }
+
+        for row in summary_rows:
+            if not row:
+                continue
+
+            label_idx: Optional[int] = None
+            normalized_label: Optional[str] = None
+            for idx, cell in enumerate(row):
+                if isinstance(cell, str) and cell.strip():
+                    label_idx = idx
+                    normalized_label = cell.strip().lower().rstrip(":").strip()
+                    break
+
+            if normalized_label is None or label_idx is None:
+                continue
+
+            metric = self._classify_summary_label(normalized_label)
+            if metric is None or declared[metric] is not None:
+                continue
+
+            value: Optional[int] = None
+            for cell in row[label_idx + 1 :]:
+                value = self._safe_numeric(cell)
+                if value is not None:
+                    break
+
+            if value is not None:
+                declared[metric] = value
+
+        return declared
+
+    def _calculate_section_totals(
+        self,
+        parsed_rows: List[Dict[str, Any]],
+        processed_section_sheets: List[str],
+    ) -> Dict[str, int]:
+        """Calculate the reconciliation figures from the section-sheet data
+        actually discovered by the importer (never from the Summary sheet
+        itself)."""
+        regular = 0
+        irregular = 0
+        unknown_status = 0
+
+        for row_data in parsed_rows:
+            status = self._normalize_status(row_data.get("raw_status"))
+            if status == "regular":
+                regular += 1
+            elif status == "irregular":
+                irregular += 1
+            else:
+                unknown_status += 1
+
+        return {
+            "total_students": len(parsed_rows),
+            "regular": regular,
+            "irregular": irregular,
+            "unknown_status": unknown_status,
+            "sections": len(processed_section_sheets),
+        }
+
+    def _reconcile_summary_sheet(
+        self,
+        summary_sheet_rows: Optional[List[Tuple[Any, ...]]],
+        parsed_rows: List[Dict[str, Any]],
+        processed_section_sheets: List[str],
+    ) -> Dict[str, Any]:
+        """3C-04 Summary Reconciliation: compare the Summary sheet's
+        declared totals against the section-sheet data discovered during
+        import, and report any discrepancies explicitly rather than
+        silently proceeding.
+
+        Returns a dict shaped like:
+            {
+                "summary_sheet_found": bool,
+                "status": "matched" | "mismatched" | "unavailable",
+                "checks": {
+                    "total_students": {
+                        "declared": int | None,
+                        "calculated": int,
+                        "status": "matched" | "mismatched" | "unavailable",
+                        "detail": str | None,
+                    },
+                    "regular": {...},
+                    "irregular": {...},
+                    "sections": {...},
+                },
+                "discrepancies": [str, ...],
+            }
+
+        "status" is "matched" only when the Summary sheet was found and
+        every individual check matched. Any single mismatch makes the
+        overall status "mismatched"; if nothing mismatched but a figure
+        could not be reconciled (Summary sheet missing, a figure missing
+        from it, or section-sheet Status values that are neither Regular
+        nor Irregular), the overall status is "unavailable".
+        """
+        if summary_sheet_rows is None:
+            return {
+                "summary_sheet_found": False,
+                "status": "unavailable",
+                "checks": {},
+                "discrepancies": ["Summary sheet not found in workbook."],
+            }
+
+        declared = self._read_summary_sheet(summary_sheet_rows)
+        calculated = self._calculate_section_totals(parsed_rows, processed_section_sheets)
+
+        checks: Dict[str, Dict[str, Any]] = {}
+        discrepancies: List[str] = []
+
+        def add_check(
+            metric: str,
+            label: str,
+            declared_value: Optional[int],
+            calculated_value: int,
+            unavailable_reason: Optional[str] = None,
+        ) -> None:
+            if unavailable_reason is None and declared_value is None:
+                unavailable_reason = (
+                    f"Could not locate a declared {label.lower()} figure on "
+                    f"the Summary sheet."
+                )
+
+            if unavailable_reason is not None:
+                checks[metric] = {
+                    "declared": declared_value,
+                    "calculated": calculated_value,
+                    "status": "unavailable",
+                    "detail": unavailable_reason,
+                }
+                discrepancies.append(f"{label}: {unavailable_reason}")
+                return
+
+            if declared_value == calculated_value:
+                checks[metric] = {
+                    "declared": declared_value,
+                    "calculated": calculated_value,
+                    "status": "matched",
+                    "detail": None,
+                }
+                return
+
+            detail = (
+                f"Summary declares {declared_value} but {calculated_value} "
+                f"were found across the section sheets."
+            )
+            checks[metric] = {
+                "declared": declared_value,
+                "calculated": calculated_value,
+                "status": "mismatched",
+                "detail": detail,
+            }
+            discrepancies.append(f"{label}: {detail}")
+
+        add_check(
+            "total_students",
+            "Total students",
+            declared["total_students"],
+            calculated["total_students"],
+        )
+
+        unknown_status_reason: Optional[str] = None
+        if calculated["unknown_status"] > 0:
+            unknown_status_reason = (
+                f"{calculated['unknown_status']} section-sheet row(s) have a "
+                f"Status value that is neither Regular nor Irregular, so "
+                f"this figure cannot be reliably reconciled."
+            )
+
+        add_check(
+            "regular",
+            "Regular students",
+            declared["regular"],
+            calculated["regular"],
+            unavailable_reason=unknown_status_reason,
+        )
+        add_check(
+            "irregular",
+            "Irregular students",
+            declared["irregular"],
+            calculated["irregular"],
+            unavailable_reason=unknown_status_reason,
+        )
+        add_check(
+            "sections",
+            "Sections",
+            declared["sections"],
+            calculated["sections"],
+        )
+
+        if any(check["status"] == "mismatched" for check in checks.values()):
+            overall_status = "mismatched"
+        elif any(check["status"] == "unavailable" for check in checks.values()):
+            overall_status = "unavailable"
+        else:
+            overall_status = "matched"
+
+        return {
+            "summary_sheet_found": True,
+            "status": overall_status,
+            "checks": checks,
+            "discrepancies": discrepancies,
+        }
 
     def _validate_and_detect_conflicts(self, parsed_rows: List[Dict[str, Any]]) -> None:
         """Validate rows and detect duplicate/cross-program conflicts across the entire workbook"""
