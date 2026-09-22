@@ -40,6 +40,7 @@ api_router.include_router(event_registrations.router)
 api_router.include_router(attendance.router)
 api_router.include_router(attendance_corrections.router)
 
+api_router.include_router(import_batches.router)
+
 if settings.FASTAPI_ENV == "development":
     api_router.include_router(private.router)
-    api_router.include_router(import_batches.router)
