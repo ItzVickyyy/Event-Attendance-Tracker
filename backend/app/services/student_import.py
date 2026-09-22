@@ -59,6 +59,8 @@ class StudentImportService:
 
         self._validate_and_detect_conflicts(parsed_rows)
 
+        self.create_staging_records(import_batch, parsed_rows)
+
         return parsed_rows
 
     def _validate_sheet_name(self, sheet_name: str) -> bool:

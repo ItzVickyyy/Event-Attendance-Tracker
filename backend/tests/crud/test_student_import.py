@@ -3,8 +3,8 @@
 import pytest
 from io import BytesIO
 from pathlib import Path
-from unittest.mock import patch
-from uuid import UUID
+from unittest.mock import MagicMock, patch
+from uuid import UUID, uuid4
 
 from openpyxl import Workbook
 from sqlmodel import Session, select
@@ -402,6 +402,112 @@ def test_sections_as_source_sheet(
     
     assert len(parsed_rows) == 1
     assert parsed_rows[0]["source_sheet"] == "BSCS 1A"
+
+
+def test_parse_student_import_persists_staging_records():
+    """3C-02: parse_student_import() must persist parsed rows into the
+    StudentImportRecord staging layer via the existing create_staging_records()
+    helper, without requiring a live database (session is mocked here so this
+    test can run even when the import-table migration, 3B-02, is unavailable).
+    """
+    mock_session = MagicMock()
+    service = StudentImportService(session=mock_session)
+
+    import_batch = ImportBatch(
+        id=uuid4(),
+        source_filename="test_masterlist.xlsx",
+        academic_year="2026-2027",
+        semester="1st Semester",
+    )
+
+    headers = [
+        "No.",
+        "Student Number",
+        "Last Name",
+        "First Name",
+        "Middle Name",
+        "Mobile Number",
+        "Email",
+        "Subjects Enrolled",
+        "Status",
+    ]
+    test_rows = [
+        {
+            "No.": 1,
+            "Student Number": "00501",
+            "Last Name": "Cruz",
+            "First Name": "Ana",
+            "Middle Name": "Reyes",
+            "Mobile Number": "09171234567",
+            "Email": "ana.cruz@example.com",
+            "Subjects Enrolled": "CS101; CS102",
+            "Status": "Regular",
+        }
+    ]
+    xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows, headers)
+
+    parsed_rows = service.parse_student_import(import_batch, xlsx_data)
+
+    # The return contract is unchanged: still the parsed row dicts, not ORM objects.
+    assert len(parsed_rows) == 1
+    assert parsed_rows[0]["raw_student_number"] == "00501"
+
+    # The parser must now persist a staging record via the session.
+    assert mock_session.add.call_count == 1
+    persisted_record = mock_session.add.call_args[0][0]
+
+    assert isinstance(persisted_record, StudentImportRecord)
+    assert persisted_record.import_batch_id == import_batch.id
+    assert persisted_record.source_sheet == "BSCS 1A"
+    assert persisted_record.source_row == 2
+    assert persisted_record.raw_student_number == "00501"
+    assert persisted_record.raw_last_name == "Cruz"
+    assert persisted_record.raw_first_name == "Ana"
+    assert persisted_record.raw_middle_name == "Reyes"
+    assert persisted_record.raw_mobile_number == "09171234567"
+    assert persisted_record.raw_email == "ana.cruz@example.com"
+    assert persisted_record.raw_subjects_enrolled == "CS101; CS102"
+    assert persisted_record.raw_status == "Regular"
+    assert persisted_record.validation_status == ImportValidationStatus.valid
+    assert persisted_record.validation_errors == []
+    assert persisted_record.conflict_key is None
+
+    # Commit stays the caller's/route's responsibility, matching the project's
+    # existing session convention (create_staging_records already only calls add()).
+    mock_session.commit.assert_not_called()
+
+
+def test_parse_student_import_persists_conflicting_rows():
+    """3C-02: conflict/invalid rows must also reach the staging layer so they
+    remain visible for later, out-of-scope conflict resolution (3C-03)."""
+    mock_session = MagicMock()
+    service = StudentImportService(session=mock_session)
+
+    import_batch = ImportBatch(id=uuid4(), source_filename="test_masterlist.xlsx")
+
+    headers = ["No.", "Student Number", "Last Name", "First Name"]
+    xlsx_data = create_test_xlsx_workbook(
+        {
+            "BSCS 1A": [
+                {"No.": 1, "Student Number": "00601", "Last Name": "Rivera", "First Name": "Carlos"}
+            ],
+            "BSIT 1A": [
+                {"No.": 1, "Student Number": "00601", "Last Name": "Rivera", "First Name": "Carlos"}
+            ],
+        },
+        headers,
+    )
+
+    parsed_rows = service.parse_student_import(import_batch, xlsx_data)
+
+    assert len(parsed_rows) == 2
+    assert mock_session.add.call_count == 2
+
+    persisted_records = [call.args[0] for call in mock_session.add.call_args_list]
+    for record in persisted_records:
+        assert record.validation_status == ImportValidationStatus.conflict_cross_program
+        assert record.conflict_key == "00601"
+        assert record.import_batch_id == import_batch.id
 
 
 def test_create_staging_records(
