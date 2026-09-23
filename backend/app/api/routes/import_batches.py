@@ -13,6 +13,7 @@ from app.models import (
     ImportBatchUpdate,
     get_datetime_utc,
 )
+from app.services.student_promotion import StudentPromotionService
 
 router = APIRouter(prefix="/import-batches", tags=["import-batches"])
 
@@ -106,3 +107,23 @@ def delete_import_batch(
     session.delete(import_batch)
     session.commit()
     return {"message": "Import batch deleted successfully"}
+
+
+@router.post(
+    "/{batch_id}/promote",
+    dependencies=[Depends(require_admin)],
+)
+def promote_import_batch(
+    session: SessionDep, _current_user: CurrentUser, batch_id: uuid.UUID
+) -> dict[str, Any]:
+    import_batch = session.get(ImportBatch, batch_id)
+    if not import_batch:
+        raise HTTPException(status_code=404, detail="Import batch not found")
+
+    service = StudentPromotionService(session)
+    try:
+        result = service.promote_import_batch(batch_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return result.to_dict()

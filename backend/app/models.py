@@ -1058,6 +1058,16 @@ class StudentImportRecordBase(SQLModel):
     )
     validation_errors: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     conflict_key: str | None = Field(default=None, index=True, max_length=50)
+    promoted_student_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="students.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
+    promoted_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
 
 class StudentImportRecordCreate(StudentImportRecordBase):

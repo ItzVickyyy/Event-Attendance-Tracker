@@ -67,14 +67,17 @@ class StudentImportService:
 
             processed_section_sheets.append(sheet_name)
 
-            header_row = sheet_rows[0]
-            data_rows = sheet_rows[1:]
+            header_index = self._find_header_row(sheet_rows)
+            header_row = sheet_rows[header_index]
+            data_rows = sheet_rows[header_index + 1 :]
 
-            for row_idx, row in enumerate(data_rows, start=2):
+            for row_idx, row in enumerate(data_rows, start=header_index + 2):
                 if self._is_empty_row(row):
                     continue
 
-                row_data = self._extract_row_data(sheet_name, row_idx, row, header_row)
+                row_data = self._extract_row_data(
+                    sheet_name, row_idx, row, header_row
+                )
                 parsed_rows.append(row_data)
 
         workbook.close()
@@ -118,6 +121,30 @@ class StudentImportService:
         """Check if a row is empty or contains only None values"""
         return all(cell is None or str(cell).strip() == "" for cell in row)
 
+    def _find_header_row(self, sheet_rows: List[Tuple[Any, ...]]) -> int:
+        """Find the actual student-table header row in a section sheet.
+
+        The source Masterlist workbook places a title row and a blank row
+        before the column headers. Do not assume the first worksheet row is
+        the header; locate it by the stable field names used by the masterlist.
+        """
+        required_headers = {"student number", "last name", "first name"}
+
+        for row_index, row in enumerate(sheet_rows):
+            normalized_headers = {
+                str(cell).strip().lower()
+                for cell in row
+                if cell is not None and str(cell).strip()
+            }
+            if required_headers.issubset(normalized_headers):
+                return row_index
+
+        raise ValueError(
+            "Could not locate the student-table header row in section sheet. "
+            "Expected headers including 'Student Number', 'Last Name', and "
+            "'First Name'."
+        )
+
     def _extract_row_data(
         self, sheet_name: str, row_idx: int, row: Tuple[Any, ...], header_row: Tuple[Any, ...]
     ) -> Dict[str, Any]:
@@ -125,6 +152,20 @@ class StudentImportService:
         data = {
             "source_sheet": sheet_name,
             "source_row": row_idx,
+            "source_no": None,
+            "raw_student_number": None,
+            "raw_last_name": None,
+            "raw_first_name": None,
+            "raw_middle_name": None,
+            "raw_section": None,
+            "raw_status": None,
+            "raw_program": None,
+            "raw_year_level": None,
+            "raw_academic_year": None,
+            "raw_semester": None,
+            "raw_subjects_enrolled": None,
+            "raw_mobile_number": None,
+            "raw_email": None,
         }
 
         if not header_row:
@@ -214,6 +255,44 @@ class StudentImportService:
         if match:
             return match.group(1).upper()
         return sheet_name.strip().upper()
+
+    def _derive_section_from_sheet(self, sheet_name: str) -> Tuple[str, str, str]:
+        """Parse a real Masterlist section sheet name.
+
+        The source workbook uses these section-sheet forms:
+
+            "CS 1A" -> ("BSCS", "1", "CS 1A")
+            "IT 1A" -> ("BSIT", "1", "IT 1A")
+            "IT AMG 3A" -> ("BSIT", "3", "IT AMG 3A")
+            "IT WMAD 4B" -> ("BSIT", "4", "IT WMAD 4B")
+
+        The program is encoded by the leading CS/IT family, while the full
+        sheet name identifies the academic section. Keep the full section
+        name so AcademicSection matching can distinguish specializations such
+        as AMG, SMP, and WMAD.
+        """
+        normalized = " ".join(sheet_name.strip().split()).upper()
+        match = re.fullmatch(
+            r"(CS|IT)(?:\s+(.+?))?\s+(\d+)\s*([A-Z]+)",
+            normalized,
+        )
+        if not match:
+            raise ValueError(
+                f"Cannot derive program/year/section from sheet name "
+                f"{sheet_name!r}. Expected a Masterlist section name such as "
+                f"'CS 1A', 'IT 1A', or 'IT WMAD 4B'."
+            )
+
+        program_prefix, specialization, year_level, section_letter = match.groups()
+        program_code = "BSCS" if program_prefix == "CS" else "BSIT"
+
+        section_parts = [program_prefix]
+        if specialization:
+            section_parts.append(specialization.strip())
+        section_parts.append(f"{year_level}{section_letter}")
+
+        section_name = " ".join(section_parts)
+        return program_code, year_level, section_name
 
     def _normalize_status(self, raw_status: Optional[str]) -> Optional[str]:
         """Interpret a section sheet's supplied Status value.
@@ -611,9 +690,9 @@ class StudentImportService:
                 source_sheet=row_data["source_sheet"],
                 source_row=row_data["source_row"],
                 source_no=row_data.get("source_no"),
-                raw_student_number=row_data["raw_student_number"],
-                raw_last_name=row_data["raw_last_name"],
-                raw_first_name=row_data["raw_first_name"],
+                raw_student_number=row_data.get("raw_student_number"),
+                raw_last_name=row_data.get("raw_last_name"),
+                raw_first_name=row_data.get("raw_first_name"),
                 raw_middle_name=row_data.get("raw_middle_name"),
                 raw_mobile_number=row_data.get("raw_mobile_number"),
                 raw_email=row_data.get("raw_email"),

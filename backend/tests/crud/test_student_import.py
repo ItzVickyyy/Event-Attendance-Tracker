@@ -19,21 +19,41 @@ def student_import_service(db_session: Session) -> StudentImportService:
     return StudentImportService(session=db_session)
 
 
+DEFAULT_MASTERLIST_HEADERS = [
+    "No.",
+    "Student Number",
+    "Last Name",
+    "First Name",
+    "Middle Name",
+    "Mobile Number",
+    "Email",
+    "Subjects Enrolled",
+    "Status",
+]
+
+
 def create_test_xlsx_sheet(
     sheet_name: str,
     rows: list[dict],
     headers: list[str] = None
 ) -> bytes:
-    """Helper to create a test XLSX workbook in memory"""
+    """Helper that mirrors the real Masterlist sheet layout.
+
+    The real workbook has a title row, a blank row, then the student-table
+    headers. Keep that structure in unit-test fixtures so header detection and
+    source-row provenance are exercised by the same shape as production data.
+    """
     wb = Workbook()
     ws = wb.active
     ws.title = sheet_name
 
-    if headers:
-        ws.append(headers)
+    headers = headers or DEFAULT_MASTERLIST_HEADERS
+    ws.append([f"BSCS — Section {sheet_name} — Class List (test fixture)"])
+    ws.append([])
+    ws.append(headers)
 
     for row_data in rows:
-        ws.append(list(row_data.values()))
+        ws.append([row_data.get(header) for header in headers])
 
     buffer = BytesIO()
     wb.save(buffer)
@@ -635,6 +655,56 @@ def test_sections_as_source_sheet(
     assert parsed_rows[0]["source_sheet"] == "BSCS 1A"
 
 
+def test_header_detection_and_source_row_provenance(
+    student_import_service: StudentImportService,
+    db_session: Session,
+):
+    """The importer must locate the header after the real workbook preamble."""
+    import_batch = ImportBatch(
+        source_filename="test_masterlist.xlsx",
+        academic_year="2026-2027",
+        semester="1st Semester",
+    )
+    db_session.add(import_batch)
+    db_session.commit()
+
+    xlsx_data = create_test_xlsx_sheet(
+        "CS 1A",
+        [{
+            "No.": 1,
+            "Student Number": "0426-0016",
+            "Last Name": "Adona",
+            "First Name": "Patrick John",
+            "Status": "Regular",
+        }],
+    )
+
+    parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
+
+    assert len(parsed_rows) == 1
+    assert parsed_rows[0]["source_row"] == 4
+    assert parsed_rows[0]["raw_student_number"] == "0426-0016"
+    assert parsed_rows[0]["raw_last_name"] == "Adona"
+    assert parsed_rows[0]["raw_first_name"] == "Patrick John"
+
+
+@pytest.mark.parametrize(
+    ("sheet_name", "expected"),
+    [
+        ("CS 1A", ("BSCS", "1", "CS 1A")),
+        ("IT 1A", ("BSIT", "1", "IT 1A")),
+        ("IT AMG 3A", ("BSIT", "3", "IT AMG 3A")),
+        ("IT WMAD 4B", ("BSIT", "4", "IT WMAD 4B")),
+    ],
+)
+def test_derive_section_from_real_masterlist_sheet_names(
+    student_import_service: StudentImportService,
+    sheet_name: str,
+    expected: tuple[str, str, str],
+):
+    assert student_import_service._derive_section_from_sheet(sheet_name) == expected
+
+
 def test_parse_student_import_persists_staging_records():
     """3C-02: parse_student_import() must persist parsed rows into the
     StudentImportRecord staging layer via the existing create_staging_records()
@@ -690,7 +760,7 @@ def test_parse_student_import_persists_staging_records():
     assert isinstance(persisted_record, StudentImportRecord)
     assert persisted_record.import_batch_id == import_batch.id
     assert persisted_record.source_sheet == "BSCS 1A"
-    assert persisted_record.source_row == 2
+    assert persisted_record.source_row == 4
     assert persisted_record.raw_student_number == "00501"
     assert persisted_record.raw_last_name == "Cruz"
     assert persisted_record.raw_first_name == "Ana"
