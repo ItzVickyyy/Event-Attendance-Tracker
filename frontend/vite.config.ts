@@ -119,7 +119,15 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: true,
+        // Disabled: the dev service worker would intercept/cache API requests
+        // via the runtimeCaching rules above (e.g. NetworkFirst for
+        // /api/v1/events, /api/v1/students, /api/v1/attendee-credentials),
+        // which can mask backend/proxy config changes during `vite dev`.
+        // Production builds are unaffected — this only gates dev-mode SW
+        // registration. See development.md ("PWA / Service Worker in
+        // Development") for manual cleanup steps for browsers that already
+        // registered the dev SW.
+        enabled: false,
         type: "module",
       },
     }),

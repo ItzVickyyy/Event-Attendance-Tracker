@@ -35,7 +35,7 @@ uv run fastapi dev
 
 `prestart.sh` needs a reachable PostgreSQL database — see "Database (PostgreSQL)" below.
 
-The backend dev server runs at **http://localhost:8000**, with interactive API docs at **http://localhost:8000/docs**.
+The backend dev server runs at **http://localhost:8001**, with interactive API docs at **http://localhost:8001/docs**.
 
 ## Frontend Setup
 
@@ -50,7 +50,18 @@ bun run dev
 
 `frontend/vite.config.ts` configures the Vite dev server to load a TLS key/cert pair from `frontend/.certs/localhost+lan-key.pem` and `frontend/.certs/localhost+lan.pem`. This directory is gitignored and **must be created locally** — `bun run dev` will fail to start without it. Generate a locally-trusted certificate covering `localhost` and your machine's LAN IP (a LAN-reachable address is needed if you want to test NFC/QR scanning from a phone on the same network) with a tool such as [`mkcert`](https://github.com/FiloSottile/mkcert), and place the resulting key and certificate at the paths above.
 
-Once running, the frontend dev server is served over **HTTPS** (not plain HTTP) — check your terminal output for the exact host/port Vite reports. The dev server proxies `/api` requests to `http://127.0.0.1:8000`, so the backend must be running separately (see "Backend Setup").
+Once running, the frontend dev server is served over **HTTPS** (not plain HTTP) — check your terminal output for the exact host/port Vite reports. The dev server proxies `/api` requests to `http://127.0.0.1:8001`, so the backend must be running separately (see "Backend Setup").
+
+### PWA / Service Worker in Development
+
+`vite-plugin-pwa`'s `devOptions.enabled` is set to `false` in `frontend/vite.config.ts`, so `bun run dev` does not register a service worker. This is intentional: the production Workbox config uses `NetworkFirst` caching for `/api/v1/events`, `/api/v1/students`, and `/api/v1/attendee-credentials`, which — if active during development — can silently serve stale cached API responses and mask backend/proxy configuration changes (e.g. the Vite proxy target). Production builds are unaffected; `bun run build` still generates and registers the service worker with the existing runtime caching (including `NetworkOnly` for `/api/v1/attendance/scan`).
+
+If your browser already has a dev-mode service worker registered from before this change, it will keep intercepting requests at `localhost:5173` until removed:
+
+1. Open DevTools → Application → Service Workers, and unregister any worker scoped to `localhost:5173` (or `192.168.x.x:5173`).
+2. In DevTools → Application → Storage, click "Clear site data" for that origin (this also clears any stale Workbox caches).
+3. Restart `bun run dev`.
+4. Hard-reload the page.
 
 ### Frontend Served by FastAPI
 
