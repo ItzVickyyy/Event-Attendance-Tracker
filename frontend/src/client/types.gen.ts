@@ -586,6 +586,16 @@ export type AttendeesPublic = {
 };
 
 /**
+ * Body_import-batches-upload_import_batch_workbook
+ */
+export type Body_import_batches_upload_import_batch_workbook = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
  * Body_login-login_access_token
  */
 export type Body_login_login_access_token = {
@@ -834,6 +844,122 @@ export type HTTPValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * ImportBatchCreate
+ */
+export type ImportBatchCreate = {
+    /**
+     * Source Filename
+     */
+    source_filename: string;
+    /**
+     * Academic Year
+     */
+    academic_year?: string | null;
+    /**
+     * Semester
+     */
+    semester?: string | null;
+    /**
+     * Imported By
+     */
+    imported_by?: string | null;
+    status?: ImportBatchStatus;
+    /**
+     * Notes
+     */
+    notes?: string | null;
+};
+
+/**
+ * ImportBatchPublic
+ */
+export type ImportBatchPublic = {
+    /**
+     * Source Filename
+     */
+    source_filename: string;
+    /**
+     * Academic Year
+     */
+    academic_year?: string | null;
+    /**
+     * Semester
+     */
+    semester?: string | null;
+    /**
+     * Imported By
+     */
+    imported_by?: string | null;
+    status?: ImportBatchStatus;
+    /**
+     * Notes
+     */
+    notes?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Imported At
+     */
+    imported_at?: string | null;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Updated At
+     */
+    updated_at?: string | null;
+};
+
+/**
+ * ImportBatchStatus
+ */
+export type ImportBatchStatus = 'pending' | 'validated' | 'promoted' | 'cancelled';
+
+/**
+ * ImportBatchUpdate
+ */
+export type ImportBatchUpdate = {
+    /**
+     * Source Filename
+     */
+    source_filename?: string | null;
+    /**
+     * Academic Year
+     */
+    academic_year?: string | null;
+    /**
+     * Semester
+     */
+    semester?: string | null;
+    /**
+     * Imported By
+     */
+    imported_by?: string | null;
+    status?: ImportBatchStatus | null;
+    /**
+     * Notes
+     */
+    notes?: string | null;
+};
+
+/**
+ * ImportBatchesPublic
+ */
+export type ImportBatchesPublic = {
+    /**
+     * Data
+     */
+    data: Array<ImportBatchPublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -3914,6 +4040,231 @@ export type attendanceCorrectionsReadAttendanceCorrectionResponses = {
 };
 
 export type attendanceCorrectionsReadAttendanceCorrectionResponse = attendanceCorrectionsReadAttendanceCorrectionResponses[keyof attendanceCorrectionsReadAttendanceCorrectionResponses];
+
+export type importBatchesReadImportBatchesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Search
+         */
+        search?: string | null;
+    };
+    url: '/api/v1/import-batches/';
+};
+
+export type importBatchesReadImportBatchesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type importBatchesReadImportBatchesError = importBatchesReadImportBatchesErrors[keyof importBatchesReadImportBatchesErrors];
+
+export type importBatchesReadImportBatchesResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImportBatchesPublic;
+};
+
+export type importBatchesReadImportBatchesResponse = importBatchesReadImportBatchesResponses[keyof importBatchesReadImportBatchesResponses];
+
+export type importBatchesCreateImportBatchData = {
+    body: ImportBatchCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/import-batches/';
+};
+
+export type importBatchesCreateImportBatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type importBatchesCreateImportBatchError = importBatchesCreateImportBatchErrors[keyof importBatchesCreateImportBatchErrors];
+
+export type importBatchesCreateImportBatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImportBatchPublic;
+};
+
+export type importBatchesCreateImportBatchResponse = importBatchesCreateImportBatchResponses[keyof importBatchesCreateImportBatchResponses];
+
+export type importBatchesDeleteImportBatchData = {
+    body?: never;
+    path: {
+        /**
+         * Batch Id
+         */
+        batch_id: string;
+    };
+    query?: never;
+    url: '/api/v1/import-batches/{batch_id}';
+};
+
+export type importBatchesDeleteImportBatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type importBatchesDeleteImportBatchError = importBatchesDeleteImportBatchErrors[keyof importBatchesDeleteImportBatchErrors];
+
+export type importBatchesDeleteImportBatchResponses = {
+    /**
+     * Response Import-Batches-Delete Import Batch
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type importBatchesDeleteImportBatchResponse = importBatchesDeleteImportBatchResponses[keyof importBatchesDeleteImportBatchResponses];
+
+export type importBatchesReadImportBatchData = {
+    body?: never;
+    path: {
+        /**
+         * Batch Id
+         */
+        batch_id: string;
+    };
+    query?: never;
+    url: '/api/v1/import-batches/{batch_id}';
+};
+
+export type importBatchesReadImportBatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type importBatchesReadImportBatchError = importBatchesReadImportBatchErrors[keyof importBatchesReadImportBatchErrors];
+
+export type importBatchesReadImportBatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImportBatchPublic;
+};
+
+export type importBatchesReadImportBatchResponse = importBatchesReadImportBatchResponses[keyof importBatchesReadImportBatchResponses];
+
+export type importBatchesUpdateImportBatchData = {
+    body: ImportBatchUpdate;
+    path: {
+        /**
+         * Batch Id
+         */
+        batch_id: string;
+    };
+    query?: never;
+    url: '/api/v1/import-batches/{batch_id}';
+};
+
+export type importBatchesUpdateImportBatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type importBatchesUpdateImportBatchError = importBatchesUpdateImportBatchErrors[keyof importBatchesUpdateImportBatchErrors];
+
+export type importBatchesUpdateImportBatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ImportBatchPublic;
+};
+
+export type importBatchesUpdateImportBatchResponse = importBatchesUpdateImportBatchResponses[keyof importBatchesUpdateImportBatchResponses];
+
+export type importBatchesUploadImportBatchWorkbookData = {
+    body: Body_import_batches_upload_import_batch_workbook;
+    path: {
+        /**
+         * Batch Id
+         */
+        batch_id: string;
+    };
+    query?: never;
+    url: '/api/v1/import-batches/{batch_id}/upload';
+};
+
+export type importBatchesUploadImportBatchWorkbookErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type importBatchesUploadImportBatchWorkbookError = importBatchesUploadImportBatchWorkbookErrors[keyof importBatchesUploadImportBatchWorkbookErrors];
+
+export type importBatchesUploadImportBatchWorkbookResponses = {
+    /**
+     * Response Import-Batches-Upload Import Batch Workbook
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type importBatchesUploadImportBatchWorkbookResponse = importBatchesUploadImportBatchWorkbookResponses[keyof importBatchesUploadImportBatchWorkbookResponses];
+
+export type importBatchesPromoteImportBatchData = {
+    body?: never;
+    path: {
+        /**
+         * Batch Id
+         */
+        batch_id: string;
+    };
+    query?: never;
+    url: '/api/v1/import-batches/{batch_id}/promote';
+};
+
+export type importBatchesPromoteImportBatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type importBatchesPromoteImportBatchError = importBatchesPromoteImportBatchErrors[keyof importBatchesPromoteImportBatchErrors];
+
+export type importBatchesPromoteImportBatchResponses = {
+    /**
+     * Response Import-Batches-Promote Import Batch
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type importBatchesPromoteImportBatchResponse = importBatchesPromoteImportBatchResponses[keyof importBatchesPromoteImportBatchResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;
