@@ -257,41 +257,38 @@ class StudentImportService:
         return sheet_name.strip().upper()
 
     def _derive_section_from_sheet(self, sheet_name: str) -> Tuple[str, str, str]:
-        """Parse a real Masterlist section sheet name.
+        """Parse a section sheet name into its program code, year level, and
+        section name.
 
-        The source workbook uses these section-sheet forms:
+        Sheet names take the generic form
+        "<PROGRAM_CODE> <YEAR_LEVEL><SECTION_LETTERS>", where PROGRAM_CODE is
+        an alphabetic program code (e.g. "BSCS", "BSIT", or any other
+        AcademicProgram.program_code such as a synthetic "PROA"), YEAR_LEVEL
+        is one or more digits, and SECTION_LETTERS is one or more letters:
 
-            "CS 1A" -> ("BSCS", "1", "CS 1A")
-            "IT 1A" -> ("BSIT", "1", "IT 1A")
-            "IT AMG 3A" -> ("BSIT", "3", "IT AMG 3A")
-            "IT WMAD 4B" -> ("BSIT", "4", "IT WMAD 4B")
+            "BSCS 1A"       -> ("BSCS", "1", "A")
+            "BSIT 3A"       -> ("BSIT", "3", "A")
+            "  BSCS   2B  " -> ("BSCS", "2", "B")
+            "PROA 1A"       -> ("PROA", "1", "A")
 
-        The program is encoded by the leading CS/IT family, while the full
-        sheet name identifies the academic section. Keep the full section
-        name so AcademicSection matching can distinguish specializations such
-        as AMG, SMP, and WMAD.
+        The program code is returned unchanged (after normalization) so it
+        can be matched directly against AcademicProgram.program_code.
+
+        Raises ValueError if the sheet name does not match this shape (e.g.
+        the "Summary" sheet, or a name missing the program code, year level,
+        or section letters).
         """
         normalized = " ".join(sheet_name.strip().split()).upper()
-        match = re.fullmatch(
-            r"(CS|IT)(?:\s+(.+?))?\s+(\d+)\s*([A-Z]+)",
-            normalized,
-        )
+        match = re.fullmatch(r"([A-Z]+)\s+(\d+)([A-Z]+)", normalized)
         if not match:
             raise ValueError(
                 f"Cannot derive program/year/section from sheet name "
-                f"{sheet_name!r}. Expected a Masterlist section name such as "
-                f"'CS 1A', 'IT 1A', or 'IT WMAD 4B'."
+                f"{sheet_name!r}. Expected a sheet name of the form "
+                f"'<PROGRAM_CODE> <YEAR_LEVEL><SECTION_LETTERS>', e.g. "
+                f"'BSCS 1A'."
             )
 
-        program_prefix, specialization, year_level, section_letter = match.groups()
-        program_code = "BSCS" if program_prefix == "CS" else "BSIT"
-
-        section_parts = [program_prefix]
-        if specialization:
-            section_parts.append(specialization.strip())
-        section_parts.append(f"{year_level}{section_letter}")
-
-        section_name = " ".join(section_parts)
+        program_code, year_level, section_name = match.groups()
         return program_code, year_level, section_name
 
     def _normalize_status(self, raw_status: Optional[str]) -> Optional[str]:
@@ -596,7 +593,7 @@ class StudentImportService:
                 student_to_sheets[student_number][sheet_name] = 0
             student_to_sheets[student_number][sheet_name] += 1
 
-            if student_number not in student_to_rows[student_number]:
+            if sheet_name not in student_to_rows[student_number]:
                 student_to_rows[student_number][sheet_name] = {}
             student_to_rows[student_number][sheet_name][row_data["source_row"]] = row_data
 
@@ -639,19 +636,27 @@ class StudentImportService:
                 ]
                 row_data["conflict_key"] = student_number
             elif len(sheet_counts) == 1:
-                # Same program, same sheet: unchanged existing duplicate handling.
+                # Same program, same sheet: the first occurrence (in parse
+                # order) stays valid, every later occurrence is flagged as a
+                # duplicate - mirrors the multi-sheet duplicate handling
+                # below (canonical_row = first row encountered for this
+                # student), rather than unconditionally overwriting
+                # validation_status on every outer-loop pass, which
+                # previously let whichever row was processed *last* end up
+                # valid instead of the first.
                 rows_in_sheet = student_to_rows[student_number].get(list(sheet_counts.keys())[0], {})
-                
+
                 if len(rows_in_sheet) > 1:
-                    for other_row in rows_in_sheet.values():
-                        if other_row["source_row"] != row_data["source_row"]:
-                            other_row["validation_status"] = ImportValidationStatus.invalid
-                            other_row["validation_errors"] = [f"Duplicate student number in import: {student_number}"]
-                            other_row["conflict_key"] = student_number
-                    
-                    row_data["validation_status"] = ImportValidationStatus.valid
-                    row_data["validation_errors"] = []
-                    row_data["conflict_key"] = None
+                    canonical_row = student_to_all_rows[student_number][0]
+
+                    if row_data is canonical_row:
+                        row_data["validation_status"] = ImportValidationStatus.valid
+                        row_data["validation_errors"] = []
+                        row_data["conflict_key"] = None
+                    else:
+                        row_data["validation_status"] = ImportValidationStatus.invalid
+                        row_data["validation_errors"] = [f"Duplicate student number in import: {student_number}"]
+                        row_data["conflict_key"] = student_number
                 else:
                     row_data["validation_status"] = ImportValidationStatus.valid
                     row_data["validation_errors"] = []

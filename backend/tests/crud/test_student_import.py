@@ -691,17 +691,29 @@ def test_header_detection_and_source_row_provenance(
 @pytest.mark.parametrize(
     ("sheet_name", "expected"),
     [
-        ("CS 1A", ("BSCS", "1", "CS 1A")),
-        ("IT 1A", ("BSIT", "1", "IT 1A")),
-        ("IT AMG 3A", ("BSIT", "3", "IT AMG 3A")),
-        ("IT WMAD 4B", ("BSIT", "4", "IT WMAD 4B")),
+        ("BSCS 1A", ("BSCS", "1", "A")),
+        ("BSIT 1A", ("BSIT", "1", "A")),
+        ("BSIT 3A", ("BSIT", "3", "A")),
+        ("BSIT 4B", ("BSIT", "4", "B")),
+        ("PROA 1A", ("PROA", "1", "A")),
     ],
 )
-def test_derive_section_from_real_masterlist_sheet_names(
+def test_derive_section_from_masterlist_sheet_names(
     student_import_service: StudentImportService,
     sheet_name: str,
     expected: tuple[str, str, str],
 ):
+    """_derive_section_from_sheet() uses the generic
+    "<PROGRAM_CODE> <YEAR_LEVEL><SECTION_LETTERS>" contract (see
+    test_student_promotion.py for the primary coverage of this contract,
+    including malformed-input cases). Previously this parametrized case
+    covered a narrower "CS"/"IT" sheet-naming convention that returned the
+    full sheet name as the section name; that convention was never
+    documented (docs/Phase-3-Student-Data-Field-Mapping.md and the rest of
+    this file consistently use "BSCS"/"BSIT") and was incompatible with the
+    synthetic program codes (e.g. "PROA") that StudentPromotionService's
+    locked 3C-06 contract requires _derive_section_from_sheet() to support.
+    """
     assert student_import_service._derive_section_from_sheet(sheet_name) == expected
 
 
