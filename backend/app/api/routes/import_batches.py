@@ -1,18 +1,21 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
     ImportBatch,
     ImportBatchCreate,
-    ImportBatchPublic,
     ImportBatchesPublic,
+    ImportBatchPublic,
+    ImportBatchStatus,
     ImportBatchUpdate,
+    ImportValidationStatus,
     get_datetime_utc,
 )
+from app.services.student_import import StudentImportService
 from app.services.student_promotion import StudentPromotionService
 
 router = APIRouter(prefix="/import-batches", tags=["import-batches"])
@@ -107,6 +110,66 @@ def delete_import_batch(
     session.delete(import_batch)
     session.commit()
     return {"message": "Import batch deleted successfully"}
+
+
+@router.post(
+    "/{batch_id}/upload",
+    dependencies=[Depends(require_admin)],
+)
+async def upload_import_batch_workbook(
+    session: SessionDep,
+    _current_user: CurrentUser,
+    batch_id: uuid.UUID,
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    import_batch = session.get(ImportBatch, batch_id)
+    if not import_batch:
+        raise HTTPException(status_code=404, detail="Import batch not found")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    service = StudentImportService(session)
+    try:
+        parsed_rows = service.parse_student_import(import_batch, contents)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # parse_student_import() already ran validation/conflict-classification
+    # and persisted staging records (session.add only - not committed, per
+    # the service's existing convention of leaving commits to the caller).
+    # "validated" is an existing ImportBatchStatus value that nothing else
+    # currently sets; per docs/SOURCE-OF-TRUTH.md's staging -> validated ->
+    # live pipeline, this is where that transition belongs.
+    import_batch.status = ImportBatchStatus.validated
+    import_batch.updated_at = get_datetime_utc()
+    session.add(import_batch)
+    session.commit()
+    session.refresh(import_batch)
+
+    valid_rows = sum(
+        1 for row in parsed_rows
+        if row.get("validation_status") == ImportValidationStatus.valid
+    )
+    invalid_rows = sum(
+        1 for row in parsed_rows
+        if row.get("validation_status") == ImportValidationStatus.invalid
+    )
+    conflict_rows = sum(
+        1 for row in parsed_rows
+        if row.get("validation_status") == ImportValidationStatus.conflict_cross_program
+    )
+
+    return {
+        "import_batch_id": str(import_batch.id),
+        "status": import_batch.status.value,
+        "total_rows": len(parsed_rows),
+        "valid_rows": valid_rows,
+        "invalid_rows": invalid_rows,
+        "conflict_rows": conflict_rows,
+        "summary_reconciliation": service.get_summary_reconciliation(),
+    }
 
 
 @router.post(
