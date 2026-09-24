@@ -14,6 +14,7 @@ import {
   Users,
   Wifi,
   WifiOff,
+  XCircle,
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -386,6 +387,26 @@ function Scanner() {
     string | null
   >(null)
   const [lastScanTime, setLastScanTime] = useState<number>(0)
+  const [lastResult, setLastResult] = useState<{
+    type: "success" | "duplicate" | "error" | "info"
+    message: string
+    name?: string
+    studentNumber?: string
+    timestamp: string
+  } | null>(null)
+
+  const stopNfcScanning = useCallback(() => {
+    if (nfcTimeoutRef.current !== null) {
+      window.clearTimeout(nfcTimeoutRef.current)
+      nfcTimeoutRef.current = null
+    }
+    if (ndefRef.current && nfcHandlerRef.current) {
+      ndefRef.current.removeEventListener("reading", nfcHandlerRef.current)
+    }
+    nfcHandlerRef.current = null
+    ndefRef.current = null
+    setScanning(false)
+  }, [])
 
   const queueScan = useCallback(
     async (credentialValue: string, scanMethod: "nfc" | "qr" | "manual") => {
@@ -393,6 +414,12 @@ function Scanner() {
         toast.error("Please select an event first")
         return
       }
+      const nowStr = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+
       if (!navigator.onLine) {
         try {
           const entry = await getRosterEntryByCredential(
@@ -400,6 +427,11 @@ function Scanner() {
             credentialValue,
           )
           if (!entry) {
+            setLastResult({
+              type: "error",
+              message: "Credential not recognized in offline roster",
+              timestamp: nowStr,
+            })
             toast.error("No offline roster entry for this credential")
             return
           }
@@ -412,6 +444,13 @@ function Scanner() {
                 credentialValue.toUpperCase(),
           )
           if (isDuplicate) {
+            setLastResult({
+              type: "duplicate",
+              message: "Already queued for this attendee",
+              name: entry.person_name,
+              studentNumber: entry.student_number,
+              timestamp: nowStr,
+            })
             toast.info("Already queued for this attendee")
             return
           }
@@ -420,8 +459,20 @@ function Scanner() {
             credential_value: credentialValue,
             scan_method: scanMethod,
           })
+          setLastResult({
+            type: "success",
+            message: "Scan queued locally (Offline)",
+            name: entry.person_name,
+            studentNumber: entry.student_number,
+            timestamp: nowStr,
+          })
           toast.success(`Scan queued - ${entry.person_name}`)
         } catch {
+          setLastResult({
+            type: "error",
+            message: "Failed to queue offline scan",
+            timestamp: nowStr,
+          })
           toast.error("Failed to queue scan")
         }
         return
@@ -432,8 +483,18 @@ function Scanner() {
           credential_value: credentialValue,
           scan_method: scanMethod,
         })
+        setLastResult({
+          type: "success",
+          message: "Scan recorded & queued to sync",
+          timestamp: nowStr,
+        })
         toast.success("Scan queued locally - waiting to sync")
       } catch {
+        setLastResult({
+          type: "error",
+          message: "Failed to queue scan",
+          timestamp: nowStr,
+        })
         toast.error("Failed to queue scan")
       }
     },
@@ -666,6 +727,11 @@ function Scanner() {
         },
         throwOnError: false,
       })
+      const nowStr = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
       if (scanResp.error) {
         const status = (scanResp as any).status
         if (status === 409) {
@@ -675,13 +741,35 @@ function Scanner() {
             : data?.detail?.includes("Already Recorded")
               ? `Already recorded (in: ${data?.detail?.match(/In: (\S+)/)?.[1]})`
               : "Already recorded"
+          setLastResult({
+            type: "duplicate",
+            message: already,
+            name: student.person_name ?? undefined,
+            studentNumber: student.student_number ?? undefined,
+            timestamp: nowStr,
+          })
           toast.error(already)
         } else {
+          setLastResult({
+            type: "error",
+            message: (scanResp as any).data?.detail ?? "Scan failed",
+            name: student.person_name ?? undefined,
+            studentNumber: student.student_number ?? undefined,
+            timestamp: nowStr,
+          })
           toast.error((scanResp as any).data?.detail ?? "Scan failed")
         }
         return
       }
       const data = scanResp.data
+      setLastResult({
+        type: "success",
+        message: data.message,
+        name: student.person_name ?? data.person_name ?? undefined,
+        studentNumber:
+          student.student_number ?? data.student_number ?? undefined,
+        timestamp: nowStr,
+      })
       toast.success(
         `Recorded ${student.person_name ?? student.student_number} (${data.message})`,
       )
@@ -740,6 +828,69 @@ function Scanner() {
         </div>
       </div>
 
+      {lastResult ? (
+        <Card
+          className={`border-2 transition-all ${
+            lastResult.type === "success"
+              ? "border-green-500 bg-green-50/50 dark:bg-green-950/20"
+              : lastResult.type === "duplicate"
+                ? "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20"
+                : "border-destructive bg-destructive/10"
+          }`}
+        >
+          <CardContent className="pt-6 flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant={
+                    lastResult.type === "success"
+                      ? "default"
+                      : lastResult.type === "duplicate"
+                        ? "outline"
+                        : "destructive"
+                  }
+                >
+                  {lastResult.type === "success"
+                    ? "Recorded"
+                    : lastResult.type === "duplicate"
+                      ? "Duplicate"
+                      : "Notice"}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {lastResult.timestamp}
+                </span>
+              </div>
+              <div className="text-lg font-semibold tracking-tight">
+                {lastResult.name ?? lastResult.message}
+              </div>
+              {lastResult.name && (
+                <div className="text-sm text-muted-foreground">
+                  {lastResult.studentNumber && (
+                    <span className="font-mono mr-2">
+                      {lastResult.studentNumber}
+                    </span>
+                  )}
+                  <span>• {lastResult.message}</span>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLastResult(null)}
+              className="text-xs"
+            >
+              Ready for Next
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-dashed text-sm text-muted-foreground bg-muted/30">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <span>Ready for attendee scan or manual lookup</span>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -790,6 +941,12 @@ function Scanner() {
                 "Scan NFC Tag"
               )}
             </LoadingButton>
+            {scanning && (
+              <Button variant="outline" onClick={stopNfcScanning}>
+                <XCircle className="mr-1 h-4 w-4" />
+                Cancel
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
