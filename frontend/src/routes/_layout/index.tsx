@@ -253,6 +253,8 @@ function DashboardContent({ eventId }: { eventId?: string }) {
                     >
                       {scan.scan_method === "nfc" ? (
                         <svg
+                          role="img"
+                          aria-label="NFC Scan"
                           className="h-4 w-4"
                           fill="none"
                           stroke="currentColor"
@@ -267,6 +269,8 @@ function DashboardContent({ eventId }: { eventId?: string }) {
                         </svg>
                       ) : (
                         <svg
+                          role="img"
+                          aria-label="Manual Scan"
                           className="h-4 w-4"
                           fill="none"
                           stroke="currentColor"

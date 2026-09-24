@@ -9,7 +9,6 @@ import PendingStudents from "@/components/Pending/PendingStudents"
 import AddStudent from "@/components/Students/AddStudent"
 import type { StudentTableRow } from "@/components/Students/columns"
 import { studentsColumns } from "@/components/Students/columns"
-import NfcRegister from "@/components/Students/NfcRegister"
 
 function getStudentsQueryOptions(search: string) {
   return {
@@ -80,7 +79,6 @@ function Students() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <NfcRegister />
           <AddStudent />
         </div>
       </div>

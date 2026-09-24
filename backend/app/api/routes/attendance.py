@@ -1,7 +1,10 @@
+import csv
+import io
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, func, select, update
 
@@ -85,6 +88,94 @@ def read_attendances(
     records = session.exec(statement).all()
     return AttendancesPublic(
         data=[AttendancePublic.model_validate(r) for r in records], count=count
+    )
+
+
+@router.get("/export")
+def export_attendances(
+    session: SessionDep,
+    _current_user: CurrentUser,
+    event_id: uuid.UUID | None = None,
+    attendance_status: AttendanceStatus | None = None,
+) -> Response:
+    """Export attendance records to CSV."""
+    event: Event | None = None
+    if event_id:
+        event = session.get(Event, event_id)
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+
+    statement = (
+        select(Attendance, EventRegistration, Event, Attendee, Person, Student)
+        .join(EventRegistration, Attendance.registration_id == EventRegistration.id)
+        .join(Event, EventRegistration.event_id == Event.id)
+        .join(Attendee, EventRegistration.attendee_id == Attendee.id)
+        .join(Person, Attendee.person_id == Person.id)
+        .outerjoin(Student, Student.person_id == Person.id)
+    )
+
+    if event_id:
+        statement = statement.where(EventRegistration.event_id == event_id)
+
+    if attendance_status:
+        statement = statement.where(Attendance.status == attendance_status)
+
+    statement = statement.order_by(col(Attendance.created_at).desc())
+    results = session.exec(statement).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Student Number",
+        "Student Name",
+        "Event",
+        "Time In",
+        "Time Out",
+        "Attendance Status",
+        "Scan Method",
+        "Recorded At",
+    ])
+
+    for attendance, _reg, ev, _attendee, person, student in results:
+        name_parts = [
+            person.first_name,
+            person.middle_name,
+            person.last_name,
+            person.name_extension,
+        ]
+        full_name = " ".join(p for p in name_parts if p) or "Unknown"
+        student_no = student.student_number if student else ""
+        time_in_str = attendance.time_in.isoformat() if attendance.time_in else ""
+        time_out_str = attendance.time_out.isoformat() if attendance.time_out else ""
+        recorded_at_str = (
+            attendance.created_at.isoformat() if attendance.created_at else ""
+        )
+
+        writer.writerow([
+            student_no,
+            full_name,
+            ev.event_name,
+            time_in_str,
+            time_out_str,
+            attendance.status.value
+            if hasattr(attendance.status, "value")
+            else str(attendance.status),
+            attendance.scan_method.value
+            if hasattr(attendance.scan_method, "value")
+            else str(attendance.scan_method),
+            recorded_at_str,
+        ])
+
+    csv_data = output.getvalue()
+    filename_prefix = (
+        event.event_name.replace(" ", "_").lower() if event else "all_events"
+    )
+    filename = f"attendance_{filename_prefix}.csv"
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

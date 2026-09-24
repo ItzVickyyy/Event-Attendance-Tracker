@@ -1,5 +1,5 @@
-import { useMutation } from "@tanstack/react-query"
-import { createFileRoute, redirect, useSearch } from "@tanstack/react-router"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { Html5Qrcode } from "html5-qrcode"
 import {
   Camera,
@@ -54,8 +54,6 @@ import {
   setupSyncStatusListener,
 } from "@/data/sync"
 
-type ScanAction = "time_in" | "time_out"
-
 function extractNfcCredential(event: any): string {
   const msg = event.message
   if (typeof msg === "string" && msg.trim()) return msg.trim()
@@ -85,6 +83,9 @@ function extractNfcCredential(event: any): string {
 }
 
 export const Route = createFileRoute("/_layout/scanner")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    event_id: (search.event_id as string) || undefined,
+  }),
   component: Scanner,
   beforeLoad: async () => {
     const { data: user } = await UsersService.readUserMe().catch(() => ({
@@ -356,15 +357,23 @@ function SyncStatusCard({
 }
 
 function Scanner() {
-  const search = useSearch({ strict: false }) as any
-  const eventId = (search as any)?.event_id as string | undefined
+  const search = Route.useSearch()
+  const navigate = useNavigate()
+  const eventId = search.event_id
   const syncStatus = useSyncStatus(eventId)
+
+  const { data: eventsResponse } = useQuery({
+    queryKey: ["events"],
+    queryFn: async () =>
+      (await EventsService.readEvents({ query: { skip: 0, limit: 100 } })).data,
+  })
+  const events = eventsResponse?.data ?? []
+  const currentEvent = events.find((e) => e.id === eventId)
 
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
   const [permissionGranted, setPermissionGranted] = useState(false)
-  const [scanAction, setScanAction] = useState<ScanAction>("time_in")
   const [manualSearch, setManualSearch] = useState("")
   const ndefRef = useRef<any>(null)
   const nfcHandlerRef = useRef<((event: any) => void) | null>(null)
@@ -696,26 +705,36 @@ function Scanner() {
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Attendance Scanner
           </h1>
           <p className="text-muted-foreground">
-            Scan student IDs or search manually
+            {currentEvent
+              ? `Recording for "${currentEvent.event_name}" (Auto Time-In / Time-Out)`
+              : "Select an event to start recording attendance"}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Select
-            value={scanAction}
-            onValueChange={(value) => setScanAction(value as ScanAction)}
+            value={eventId || ""}
+            onValueChange={(value) =>
+              navigate({
+                to: "/scanner",
+                search: { event_id: value || undefined },
+              })
+            }
           >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Select event..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="time_in">Time-In</SelectItem>
-              <SelectItem value="time_out">Time-Out</SelectItem>
+              {events.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.event_name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

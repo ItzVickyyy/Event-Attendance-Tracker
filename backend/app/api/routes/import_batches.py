@@ -13,6 +13,9 @@ from app.models import (
     ImportBatchStatus,
     ImportBatchUpdate,
     ImportValidationStatus,
+    StudentImportRecord,
+    StudentImportRecordPublic,
+    StudentImportRecordsPublic,
     get_datetime_utc,
 )
 from app.services.student_import import StudentImportService
@@ -73,6 +76,50 @@ def read_import_batch(
     if not import_batch:
         raise HTTPException(status_code=404, detail="Import batch not found")
     return import_batch
+
+@router.get("/{batch_id}/records", response_model=StudentImportRecordsPublic)
+def read_import_batch_records(
+    session: SessionDep,
+    _current_user: CurrentUser,
+    batch_id: uuid.UUID,
+    validation_status: ImportValidationStatus | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> Any:
+    import_batch = session.get(ImportBatch, batch_id)
+    if not import_batch:
+        raise HTTPException(status_code=404, detail="Import batch not found")
+
+    count_stmt = select(func.count()).select_from(StudentImportRecord).where(
+        col(StudentImportRecord.import_batch_id) == batch_id
+    )
+    stmt = select(StudentImportRecord).where(
+        col(StudentImportRecord.import_batch_id) == batch_id
+    )
+
+    if validation_status:
+        count_stmt = count_stmt.where(
+            col(StudentImportRecord.validation_status) == validation_status
+        )
+        stmt = stmt.where(
+            col(StudentImportRecord.validation_status) == validation_status
+        )
+
+    count = session.exec(count_stmt).one()
+    stmt = (
+        stmt.order_by(
+            col(StudentImportRecord.source_sheet),
+            col(StudentImportRecord.source_row),
+        )
+        .offset(skip)
+        .limit(limit)
+    )
+    records = session.exec(stmt).all()
+    return StudentImportRecordsPublic(
+        data=[StudentImportRecordPublic.model_validate(r) for r in records],
+        count=count,
+    )
+
 
 @router.patch(
     "/{batch_id}",

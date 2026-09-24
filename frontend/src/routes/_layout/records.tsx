@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Calendar, Download } from "lucide-react"
+import { Calendar, Download, Loader2 } from "lucide-react"
 import { Suspense, useState } from "react"
+import { toast } from "sonner"
 
 import { AttendanceService, EventsService } from "@/client"
 import { attendanceColumns } from "@/components/Attendance/columns"
@@ -76,9 +77,72 @@ function Records() {
   const { data: eventsResponse } = useSuspenseQuery(getEventsQueryOptions())
   const events = eventsResponse.data
   const [eventId, setEventId] = useState<string | undefined>(undefined)
+  const [isExporting, setIsExporting] = useState(false)
   const selectedEvent = events.find(
     (e: { id: string; event_name: string }) => e.id === eventId,
   )
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true)
+      const token = localStorage.getItem("access_token")
+      const params = new URLSearchParams()
+      if (eventId) {
+        params.append("event_id", eventId)
+      }
+      const queryString = params.toString() ? `?${params.toString()}` : ""
+      const url = `${import.meta.env.VITE_API_URL || ""}/api/v1/attendance/export${queryString}`
+
+      const response = await fetch(url, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        let detail = "Failed to export attendance"
+        try {
+          const parsed = JSON.parse(errorText)
+          if (parsed.detail) detail = parsed.detail
+        } catch {
+          // use default
+        }
+        toast.error(detail)
+        return
+      }
+
+      const blob = await response.blob()
+      if (blob.size === 0) {
+        toast.info("No attendance data to export")
+        return
+      }
+
+      // Extract filename from header if present
+      const disposition = response.headers.get("content-disposition")
+      let filename = `attendance_${selectedEvent?.event_name?.replace(/\s+/g, "_").toLowerCase() || "all"}.csv`
+      if (disposition) {
+        const match = disposition.match(/filename="?([^";]+)"?/)
+        if (match?.[1]) {
+          filename = match[1]
+        }
+      }
+
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = downloadUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(downloadUrl)
+      document.body.removeChild(a)
+      toast.success("Attendance exported successfully")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to export attendance")
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -109,9 +173,17 @@ function Records() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            {isExporting ? "Exporting..." : "Export"}
           </Button>
         </div>
       </div>

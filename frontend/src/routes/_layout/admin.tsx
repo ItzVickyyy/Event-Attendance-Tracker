@@ -1,12 +1,15 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Suspense } from "react"
+import { FileSpreadsheet, Users as UsersIcon } from "lucide-react"
+import { Suspense, useState } from "react"
 
 import { type UserPublic, UsersService } from "@/client"
 import AddUser from "@/components/Admin/AddUser"
 import { columns, type UserTableData } from "@/components/Admin/columns"
+import ImportBatchesTab from "@/components/Admin/ImportBatchesTab"
 import { DataTable } from "@/components/Common/DataTable"
 import PendingUsers from "@/components/Pending/PendingUsers"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import useAuth from "@/hooks/useAuth"
 
 function getUsersQueryOptions() {
@@ -57,18 +60,52 @@ function UsersTable() {
 }
 
 function Admin() {
+  const [activeTab, setActiveTab] = useState("users")
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">
-            Manage user accounts and permissions
-          </p>
-        </div>
-        <AddUser />
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Administration</h1>
+        <p className="text-muted-foreground">
+          Manage system users, permissions, and student masterlist imports
+        </p>
       </div>
-      <UsersTable />
+
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
+        <TabsList>
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <UsersIcon className="h-4 w-4" />
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="imports" className="flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            Import Batches
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">User Accounts</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage user accounts, roles, and administrative permissions
+              </p>
+            </div>
+            <AddUser />
+          </div>
+          <UsersTable />
+        </TabsContent>
+
+        <TabsContent value="imports">
+          <ImportBatchesTab />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
+
+export default Admin

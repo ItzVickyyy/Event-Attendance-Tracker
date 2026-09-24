@@ -1,7 +1,9 @@
+import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Calendar, Clock } from "lucide-react"
+import { Calendar, Clock, ScanLine } from "lucide-react"
 
 import type { EventPublic } from "@/client"
+import { Button } from "@/components/ui/button"
 import DeleteEvent from "./DeleteEvent"
 import EditEvent from "./EditEvent"
 
@@ -88,6 +90,12 @@ export const eventsColumns: ColumnDef<EventPublic>[] = [
     header: "Actions",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/scanner" search={{ event_id: row.original.id }}>
+            <ScanLine className="h-4 w-4 mr-1" />
+            Scan
+          </Link>
+        </Button>
         <EditEvent event={row.original} />
         <DeleteEvent event={row.original} />
       </div>
