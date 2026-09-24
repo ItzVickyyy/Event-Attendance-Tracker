@@ -1,12 +1,10 @@
 """Student Import Service - XLSX parsing and staging"""
 
 import re
-from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
-from uuid import UUID
+from typing import Any
 
 from openpyxl import load_workbook
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.models import ImportBatch, ImportValidationStatus, StudentImportRecord
 
@@ -21,11 +19,11 @@ class StudentImportService:
         # workbook. Kept off the parse_student_import() return value so the
         # existing List[Dict[str, Any]] contract (and every caller/test that
         # depends on it) is left unchanged. See get_summary_reconciliation().
-        self._last_summary_reconciliation: Optional[Dict[str, Any]] = None
+        self._last_summary_reconciliation: dict[str, Any] | None = None
 
     def parse_student_import(
         self, import_batch: ImportBatch, xlsx_file: bytes
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Parse XLSX workbook and create StudentImportRecord staging rows.
 
         Returns:
@@ -41,8 +39,8 @@ class StudentImportService:
             raise ValueError(f"Failed to parse XLSX file: {str(e)}")
 
         parsed_rows = []
-        processed_section_sheets: List[str] = []
-        summary_sheet_rows: Optional[List[Tuple[Any, ...]]] = None
+        processed_section_sheets: list[str] = []
+        summary_sheet_rows: list[tuple[Any, ...]] | None = None
 
         for sheet_name in workbook.sheetnames:
             if sheet_name.strip().lower() == "summary":
@@ -92,7 +90,7 @@ class StudentImportService:
 
         return parsed_rows
 
-    def get_summary_reconciliation(self) -> Optional[Dict[str, Any]]:
+    def get_summary_reconciliation(self) -> dict[str, Any] | None:
         """Return the 3C-04 Summary Reconciliation result for the most
         recently parsed workbook, or None if parse_student_import() has not
         been run yet on this service instance.
@@ -113,15 +111,15 @@ class StudentImportService:
             return False
 
         if not sheet_name.strip():
-            raise ValueError(f"Empty sheet name encountered")
+            raise ValueError("Empty sheet name encountered")
 
         return True
 
-    def _is_empty_row(self, row: Tuple[Any, ...]) -> bool:
+    def _is_empty_row(self, row: tuple[Any, ...]) -> bool:
         """Check if a row is empty or contains only None values"""
         return all(cell is None or str(cell).strip() == "" for cell in row)
 
-    def _find_header_row(self, sheet_rows: List[Tuple[Any, ...]]) -> int:
+    def _find_header_row(self, sheet_rows: list[tuple[Any, ...]]) -> int:
         """Find the actual student-table header row in a section sheet.
 
         The source Masterlist workbook places a title row and a blank row
@@ -146,8 +144,8 @@ class StudentImportService:
         )
 
     def _extract_row_data(
-        self, sheet_name: str, row_idx: int, row: Tuple[Any, ...], header_row: Tuple[Any, ...]
-    ) -> Dict[str, Any]:
+        self, sheet_name: str, row_idx: int, row: tuple[Any, ...], header_row: tuple[Any, ...]
+    ) -> dict[str, Any]:
         """Extract and normalize data from a single row"""
         data = {
             "source_sheet": sheet_name,
@@ -188,7 +186,7 @@ class StudentImportService:
             "email",
         ]
 
-        header_to_col_idx: Dict[str, int] = {}
+        header_to_col_idx: dict[str, int] = {}
         for col_idx, header_value in enumerate(header_row):
             if header_value is not None:
                 header_name = str(header_value).strip().lower()
@@ -222,7 +220,7 @@ class StudentImportService:
 
         return data
 
-    def _safe_cell_value(self, cell_value: Any) -> Optional[str]:
+    def _safe_cell_value(self, cell_value: Any) -> str | None:
         """Safely extract string value from Excel cell, handling None and formatting"""
         if cell_value is None:
             return None
@@ -256,7 +254,7 @@ class StudentImportService:
             return match.group(1).upper()
         return sheet_name.strip().upper()
 
-    def _derive_section_from_sheet(self, sheet_name: str) -> Tuple[str, str, str]:
+    def _derive_section_from_sheet(self, sheet_name: str) -> tuple[str, str, str]:
         """Parse a section sheet name into its program code, year level, and
         section name.
 
@@ -291,7 +289,7 @@ class StudentImportService:
         program_code, year_level, section_name = match.groups()
         return program_code, year_level, section_name
 
-    def _normalize_status(self, raw_status: Optional[str]) -> Optional[str]:
+    def _normalize_status(self, raw_status: str | None) -> str | None:
         """Interpret a section sheet's supplied Status value.
 
         Returns "regular", "irregular", or None when the supplied value is
@@ -312,7 +310,7 @@ class StudentImportService:
 
         return None
 
-    def _safe_numeric(self, cell_value: Any) -> Optional[int]:
+    def _safe_numeric(self, cell_value: Any) -> int | None:
         """Best-effort extraction of a whole-number count from a Summary
         sheet cell. Returns None if the cell does not hold a parseable
         whole number (booleans and non-integer floats are deliberately
@@ -333,7 +331,7 @@ class StudentImportService:
 
         return None
 
-    def _classify_summary_label(self, normalized_label: str) -> Optional[str]:
+    def _classify_summary_label(self, normalized_label: str) -> str | None:
         """Classify a Summary sheet row label into one of the four
         reconciliation metrics. Checked in this order so that "Irregular"
         is never mistakenly classified as "Regular" (it contains that
@@ -351,14 +349,14 @@ class StudentImportService:
         return None
 
     def _read_summary_sheet(
-        self, summary_rows: List[Tuple[Any, ...]]
-    ) -> Dict[str, Optional[int]]:
+        self, summary_rows: list[tuple[Any, ...]]
+    ) -> dict[str, int | None]:
         """Dynamically extract the Summary sheet's declared reconciliation
         figures. Never hardcodes the known example totals - every value is
         read from whatever label/value pairs are actually present on the
         sheet. Supports a label-in-one-cell, value-in-a-later-cell-of-the-
         same-row layout, which is the Summary sheet's stable structure."""
-        declared: Dict[str, Optional[int]] = {
+        declared: dict[str, int | None] = {
             "total_students": None,
             "regular": None,
             "irregular": None,
@@ -369,8 +367,8 @@ class StudentImportService:
             if not row:
                 continue
 
-            label_idx: Optional[int] = None
-            normalized_label: Optional[str] = None
+            label_idx: int | None = None
+            normalized_label: str | None = None
             for idx, cell in enumerate(row):
                 if isinstance(cell, str) and cell.strip():
                     label_idx = idx
@@ -384,7 +382,7 @@ class StudentImportService:
             if metric is None or declared[metric] is not None:
                 continue
 
-            value: Optional[int] = None
+            value: int | None = None
             for cell in row[label_idx + 1 :]:
                 value = self._safe_numeric(cell)
                 if value is not None:
@@ -397,9 +395,9 @@ class StudentImportService:
 
     def _calculate_section_totals(
         self,
-        parsed_rows: List[Dict[str, Any]],
-        processed_section_sheets: List[str],
-    ) -> Dict[str, int]:
+        parsed_rows: list[dict[str, Any]],
+        processed_section_sheets: list[str],
+    ) -> dict[str, int]:
         """Calculate the reconciliation figures from the section-sheet data
         actually discovered by the importer (never from the Summary sheet
         itself)."""
@@ -426,10 +424,10 @@ class StudentImportService:
 
     def _reconcile_summary_sheet(
         self,
-        summary_sheet_rows: Optional[List[Tuple[Any, ...]]],
-        parsed_rows: List[Dict[str, Any]],
-        processed_section_sheets: List[str],
-    ) -> Dict[str, Any]:
+        summary_sheet_rows: list[tuple[Any, ...]] | None,
+        parsed_rows: list[dict[str, Any]],
+        processed_section_sheets: list[str],
+    ) -> dict[str, Any]:
         """3C-04 Summary Reconciliation: compare the Summary sheet's
         declared totals against the section-sheet data discovered during
         import, and report any discrepancies explicitly rather than
@@ -471,15 +469,15 @@ class StudentImportService:
         declared = self._read_summary_sheet(summary_sheet_rows)
         calculated = self._calculate_section_totals(parsed_rows, processed_section_sheets)
 
-        checks: Dict[str, Dict[str, Any]] = {}
-        discrepancies: List[str] = []
+        checks: dict[str, dict[str, Any]] = {}
+        discrepancies: list[str] = []
 
         def add_check(
             metric: str,
             label: str,
-            declared_value: Optional[int],
+            declared_value: int | None,
             calculated_value: int,
-            unavailable_reason: Optional[str] = None,
+            unavailable_reason: str | None = None,
         ) -> None:
             if unavailable_reason is None and declared_value is None:
                 unavailable_reason = (
@@ -525,7 +523,7 @@ class StudentImportService:
             calculated["total_students"],
         )
 
-        unknown_status_reason: Optional[str] = None
+        unknown_status_reason: str | None = None
         if calculated["unknown_status"] > 0:
             unknown_status_reason = (
                 f"{calculated['unknown_status']} section-sheet row(s) have a "
@@ -568,11 +566,11 @@ class StudentImportService:
             "discrepancies": discrepancies,
         }
 
-    def _validate_and_detect_conflicts(self, parsed_rows: List[Dict[str, Any]]) -> None:
+    def _validate_and_detect_conflicts(self, parsed_rows: list[dict[str, Any]]) -> None:
         """Validate rows and detect duplicate/cross-program conflicts across the entire workbook"""
-        student_to_sheets: Dict[str, Dict[str, int]] = {}
-        student_to_rows: Dict[str, Dict[str, Dict[str, Any]]] = {}
-        student_to_all_rows: Dict[str, List[Dict[str, Any]]] = {}
+        student_to_sheets: dict[str, dict[str, int]] = {}
+        student_to_rows: dict[str, dict[str, dict[str, Any]]] = {}
+        student_to_all_rows: dict[str, list[dict[str, Any]]] = {}
 
         for row_data in parsed_rows:
             student_number = row_data.get("raw_student_number")
@@ -613,7 +611,7 @@ class StudentImportService:
 
             first_name = row_data.get("raw_first_name")
             last_name = row_data.get("raw_last_name")
-            
+
             if not first_name or not last_name:
                 row_data["validation_status"] = ImportValidationStatus.invalid
                 row_data["validation_errors"] = ["Missing required name fields"]
@@ -684,8 +682,8 @@ class StudentImportService:
                 row_data["conflict_key"] = None
 
     def create_staging_records(
-        self, import_batch: ImportBatch, parsed_rows: List[Dict[str, Any]]
-    ) -> List[StudentImportRecord]:
+        self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
+    ) -> list[StudentImportRecord]:
         """Create StudentImportRecord staging records from parsed rows"""
         records = []
 
@@ -714,7 +712,7 @@ class StudentImportService:
 
         return records
 
-    def get_validation_summary(self, parsed_rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def get_validation_summary(self, parsed_rows: list[dict[str, Any]]) -> dict[str, Any]:
         """Get validation summary from parsed rows"""
         summary = {
             "total_rows": len(parsed_rows),
@@ -742,7 +740,7 @@ class StudentImportService:
 
 
 # Module-level functions for backward compatibility
-def parse_student_import(session: Session, import_batch: ImportBatch, xlsx_file: bytes) -> List[Dict[str, Any]]:
+def parse_student_import(session: Session, import_batch: ImportBatch, xlsx_file: bytes) -> list[dict[str, Any]]:
     """Parse XLSX workbook and create StudentImportRecord staging rows.
 
     Returns:
@@ -752,7 +750,7 @@ def parse_student_import(session: Session, import_batch: ImportBatch, xlsx_file:
     return service.parse_student_import(import_batch, xlsx_file)
 
 
-def validate_student_import(session: Session, import_batch: ImportBatch, xlsx_file: bytes) -> Dict[str, Any]:
+def validate_student_import(session: Session, import_batch: ImportBatch, xlsx_file: bytes) -> dict[str, Any]:
     """Parse and validate XLSX workbook, returning validation summary."""
     service = StudentImportService(session)
     parsed_rows = service.parse_student_import(import_batch, xlsx_file)
@@ -761,6 +759,7 @@ def validate_student_import(session: Session, import_batch: ImportBatch, xlsx_fi
 
 # Export types for type hints
 from typing import TypedDict
+
 
 class ImportRowData(TypedDict):
     source_sheet: str

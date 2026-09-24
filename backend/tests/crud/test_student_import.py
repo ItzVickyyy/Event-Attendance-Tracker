@@ -1,15 +1,14 @@
 """Tests for Student Import Service"""
 
-import pytest
 from io import BytesIO
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-from uuid import UUID, uuid4
+from unittest.mock import MagicMock
+from uuid import uuid4
 
+import pytest
 from openpyxl import Workbook
 from sqlmodel import Session, select
 
-from app.models import ImportBatch, StudentImportRecord, ImportValidationStatus
+from app.models import ImportBatch, ImportValidationStatus, StudentImportRecord
 from app.services.student_import import StudentImportService
 
 
@@ -204,15 +203,15 @@ def test_preserve_leading_zero_student_numbers(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     test_rows = [
         {"No.": 1, "Student Number": "00423"},  # Has leading zeros
         {"No.": 2, "Student Number": "00423-XXXX"},  # More leading zeros
     ]
-    
+
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows)
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
-    
+
     assert len(parsed_rows) == 2
     assert parsed_rows[0]["raw_student_number"] == "00423"
     assert parsed_rows[1]["raw_student_number"] == "00423-XXXX"
@@ -231,7 +230,7 @@ def test_missing_student_number_validation(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     test_rows = [
         {
             "No.": 1,
@@ -241,10 +240,10 @@ def test_missing_student_number_validation(
             "Middle Name": "Garcia",
         },
     ]
-    
+
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows)
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
-    
+
     assert len(parsed_rows) == 1
     assert parsed_rows[0]["validation_status"] == ImportValidationStatus.invalid
     assert "Missing student number" in parsed_rows[0]["validation_errors"]
@@ -263,7 +262,7 @@ def test_missing_required_name_fields_validation(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     test_rows = [
         {
             "No.": 1,
@@ -272,10 +271,10 @@ def test_missing_required_name_fields_validation(
             "First Name": None,  # Missing first name
         },
     ]
-    
+
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows)
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
-    
+
     assert len(parsed_rows) == 1
     assert parsed_rows[0]["validation_status"] == ImportValidationStatus.invalid
     assert len(parsed_rows[0]["validation_errors"]) > 0
@@ -294,7 +293,7 @@ def test_duplicate_student_numbers_detection(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     test_rows = [
         {
             "No.": 1,
@@ -309,10 +308,10 @@ def test_duplicate_student_numbers_detection(
             "First Name": "Maria",
         }
     ]
-    
+
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows)
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
-    
+
     assert len(parsed_rows) == 2
     assert parsed_rows[0]["validation_status"] == ImportValidationStatus.valid
     assert parsed_rows[1]["validation_status"] == ImportValidationStatus.invalid
@@ -558,9 +557,9 @@ def test_validation_summary(
         {"validation_status": ImportValidationStatus.conflict_cross_program},
         {"validation_status": ImportValidationStatus.invalid},
     ]
-    
+
     summary = student_import_service.get_validation_summary(parsed_rows)
-    
+
     assert summary["total_rows"] == 5
     assert summary["valid_rows"] == 2
     assert summary["invalid_rows"] == 2
@@ -583,10 +582,10 @@ def test_empty_file_handling(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     with pytest.raises(ValueError, match="Failed to parse XLSX file"):
         student_import_service.parse_student_import(
-            import_batch, 
+            import_batch,
             b"invalid not an xlsx file"
         )
 
@@ -604,7 +603,7 @@ def test_whitespace_normalization(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     test_rows = [
         {
             "No.": 1,
@@ -614,10 +613,10 @@ def test_whitespace_normalization(
             "Middle Name": "  Garcia  ",  # Extra whitespace
         },
     ]
-    
+
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows)
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
-    
+
     assert len(parsed_rows) == 1
     assert parsed_rows[0]["raw_student_number"] == "00105"
     assert parsed_rows[0]["raw_last_name"] == "Dela Cruz"
@@ -638,7 +637,7 @@ def test_sections_as_source_sheet(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     test_rows = [
         {
             "No.": 1,
@@ -647,10 +646,10 @@ def test_sections_as_source_sheet(
             "First Name": "Carlos",
         },
     ]
-    
+
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows)
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
-    
+
     assert len(parsed_rows) == 1
     assert parsed_rows[0]["source_sheet"] == "BSCS 1A"
 
@@ -836,7 +835,7 @@ def test_create_staging_records(
     db_session.add(import_batch)
     db_session.commit()
     db_session.refresh(import_batch)
-    
+
     parsed_rows = [
         {
             "source_sheet": "BSCS 1A",
@@ -855,9 +854,9 @@ def test_create_staging_records(
             "conflict_key": None,
         }
     ]
-    
+
     records = student_import_service.create_staging_records(import_batch, parsed_rows)
-    
+
     assert len(records) == 1
     assert isinstance(records[0], StudentImportRecord)
     assert records[0].import_batch_id == import_batch.id

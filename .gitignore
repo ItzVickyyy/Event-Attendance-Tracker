@@ -12,3 +12,4 @@ frontend/.certs/
 /blob-report/
 /playwright/.cache/
 opencode.json
+backups/

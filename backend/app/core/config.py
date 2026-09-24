@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
     DATABASE_URL: PostgresDsn
+    TEST_DATABASE_URL: PostgresDsn | None = None
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
@@ -38,6 +39,32 @@ class Settings(BaseSettings):
             if database_url.startswith(scheme):
                 return database_url.replace(scheme, "postgresql+psycopg://", 1)
         return database_url
+
+    @field_validator("TEST_DATABASE_URL", mode="before")
+    @classmethod
+    def _use_psycopg_driver_test(cls, value: str | PostgresDsn | None) -> str | None:
+        if value is None:
+            return None
+        database_url = str(value)
+        for scheme in ("postgres://", "postgresql://"):
+            if database_url.startswith(scheme):
+                return database_url.replace(scheme, "postgresql+psycopg://", 1)
+        return database_url
+
+    @model_validator(mode="after")
+    def _validate_test_database_not_dev(self) -> Self:
+        if self.TEST_DATABASE_URL is not None:
+            test_url = str(self.TEST_DATABASE_URL)
+            dev_url = str(self.DATABASE_URL)
+            if test_url == dev_url:
+                raise ValueError(
+                    "TEST_DATABASE_URL must not be the same as DATABASE_URL. "
+                    "Tests must use an isolated test database, not the development "
+                    "database. Set TEST_DATABASE_URL to a separate database "
+                    "(e.g. postgresql://postgres:changethis@localhost:5433/app_test). "
+                    "Using the development database for tests will delete real data."
+                )
+        return self
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
