@@ -1118,3 +1118,71 @@ def test_manual_scan_rbac(
     )
     assert r_authorized.status_code == 200, r_authorized.text
     assert r_authorized.json()["attendance"]["scanned_by"] is not None
+
+
+def test_attendance_export_csv(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    # 1. Create Event
+    event_res = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=superuser_token_headers,
+        json={
+            "event_name": f"Export Test Event {random_lower_string()[:5]}",
+            "event_date": "2026-09-15",
+            "attendance_mode": "time_in_time_out",
+            "status": "open",
+        },
+    )
+    assert event_res.status_code == 200
+    event_id = event_res.json()["id"]
+
+    # 2. Create Person, Student, Attendee, and Registration
+    p_res = client.post(
+        f"{settings.API_V1_STR}/people/",
+        headers=superuser_token_headers,
+        json={
+            "first_name": "Export",
+            "last_name": "Student",
+            "email": random_email(),
+        },
+    )
+    assert p_res.status_code == 200
+    person_id = p_res.json()["id"]
+
+    student_num = f"2026-{random_lower_string()[:5].upper()}"
+    client.post(
+        f"{settings.API_V1_STR}/students/",
+        headers=superuser_token_headers,
+        json={"person_id": person_id, "student_number": student_num},
+    )
+
+    att_res = client.post(
+        f"{settings.API_V1_STR}/attendees/",
+        headers=superuser_token_headers,
+        json={"person_id": person_id, "attendee_type": "student"},
+    )
+    assert att_res.status_code == 200
+    att_id = att_res.json()["id"]
+
+    # 3. Perform manual scan
+    scan_res = client.post(
+        f"{settings.API_V1_STR}/attendance/scan-manual",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "attendee_id": att_id, "scan_method": "manual"},
+    )
+    assert scan_res.status_code == 200
+
+    # 4. Test Export for this event
+    res = client.get(
+        f"{settings.API_V1_STR}/attendance/export",
+        headers=superuser_token_headers,
+        params={"event_id": event_id},
+    )
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("text/csv")
+    csv_content = res.text
+    assert "Student Number,Student Name,Event,Time In,Time Out,Attendance Status,Scan Method,Recorded At" in csv_content
+    assert student_num in csv_content
+    assert "Export Student" in csv_content
+
