@@ -1,9 +1,11 @@
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { AttendanceCorrectionsService } from "@/client"
 import { toast } from "sonner"
+import * as z from "zod"
+import type { AttendancePublic, AttendanceStatus } from "@/client"
+import { AttendanceCorrectionsService } from "@/client"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -29,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { AttendancePublic, AttendanceStatus } from "@/client"
 
 const correctionSchema = z.object({
   attendance_id: z.string(),
@@ -53,7 +53,7 @@ export function AttendanceCorrectionDialog({
   onClose,
 }: AttendanceCorrectionDialogProps) {
   const queryClient = useQueryClient()
-  
+
   const form = useForm<CorrectionFormValues>({
     resolver: zodResolver(correctionSchema),
     defaultValues: {
@@ -67,18 +67,20 @@ export function AttendanceCorrectionDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: CorrectionFormValues) => {
-      return await AttendanceCorrectionsService.correctionsCreateAttendanceCorrection({
-        body: {
-          attendance_id: values.attendance_id,
-          reason: values.reason,
-          old_time_in: attendance.time_in || null,
-          new_time_in: values.new_time_in || null,
-          old_time_out: attendance.time_out || null,
-          new_time_out: values.new_time_out || null,
-          old_status: (attendance.status as AttendanceStatus) || null,
-          new_status: (values.new_status as AttendanceStatus) || null,
+      return await AttendanceCorrectionsService.correctionsCreateAttendanceCorrection(
+        {
+          body: {
+            attendance_id: values.attendance_id,
+            reason: values.reason,
+            old_time_in: attendance.time_in || null,
+            new_time_in: values.new_time_in || null,
+            old_time_out: attendance.time_out || null,
+            new_time_out: values.new_time_out || null,
+            old_status: (attendance.status as AttendanceStatus) || null,
+            new_status: (values.new_status as AttendanceStatus) || null,
+          },
         },
-      })
+      )
     },
     onSuccess: () => {
       toast.success("Attendance record corrected successfully")
@@ -100,7 +102,8 @@ export function AttendanceCorrectionDialog({
         <DialogHeader>
           <DialogTitle>Correct Attendance</DialogTitle>
           <DialogDescription>
-            Modify attendance record for registration {attendance.registration_id}
+            Modify attendance record for registration{" "}
+            {attendance.registration_id}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -112,7 +115,10 @@ export function AttendanceCorrectionDialog({
                 <FormItem>
                   <FormLabel>Reason for Correction</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Student arrived late due to traffic" {...field} />
+                    <Input
+                      placeholder="e.g., Student arrived late due to traffic"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -126,10 +132,10 @@ export function AttendanceCorrectionDialog({
                   <FormItem>
                     <FormLabel>New Time-In</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="datetime-local" 
-                        {...field} 
-                        value={field.value ?? ""} 
+                      <Input
+                        type="datetime-local"
+                        {...field}
+                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -143,10 +149,10 @@ export function AttendanceCorrectionDialog({
                   <FormItem>
                     <FormLabel>New Time-Out</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="datetime-local" 
-                        {...field} 
-                        value={field.value ?? ""} 
+                      <Input
+                        type="datetime-local"
+                        {...field}
+                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -160,7 +166,10 @@ export function AttendanceCorrectionDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>New Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value ?? ""}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -178,7 +187,9 @@ export function AttendanceCorrectionDialog({
               )}
             />
             <DialogFooter>
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? "Saving..." : "Save Correction"}
               </Button>

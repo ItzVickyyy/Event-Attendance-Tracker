@@ -538,7 +538,9 @@ test.describe("Offline roster caching and scanning", () => {
     await page.goto("/scanner?event_id=evt-1")
 
     const card = await getSyncStatusCard(page)
-    await expect(card.getByText("Roster not downloaded for this event")).toBeVisible()
+    await expect(
+      card.getByText("Roster not downloaded for this event"),
+    ).toBeVisible()
 
     await page.context().setOffline(true)
 

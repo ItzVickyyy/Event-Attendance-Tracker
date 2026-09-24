@@ -1,13 +1,17 @@
 import type { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
 import { Calendar, Clock, Edit } from "lucide-react"
-
+import { useState } from "react"
 import type { AttendancePublic } from "@/client"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { AttendanceCorrectionDialog } from "./CorrectionDialog"
-import { useState } from "react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import useAuth from "@/hooks/useAuth"
+import { AttendanceCorrectionDialog } from "./CorrectionDialog"
 
 export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
   {
