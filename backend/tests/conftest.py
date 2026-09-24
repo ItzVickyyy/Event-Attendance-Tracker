@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, delete
 
 from app.core.config import settings
-from app.core.db import engine, init_db
+from app.core.db import init_db, test_engine
 from app.main import app
 from app.models import (
     AcademicProgram,
@@ -30,8 +30,13 @@ from tests.utils.utils import get_superuser_token_headers
 
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session]:
-    with Session(engine) as session:
-        init_db(session)
+    assert test_engine is not None, (
+        "TEST_DATABASE_URL is not set. Tests cannot run without an isolated "
+        "test database. Set TEST_DATABASE_URL in .env to a separate database "
+        "(e.g. postgresql+psycopg://postgres:changethis@localhost:5433/app_test)."
+    )
+    with Session(test_engine) as session:
+        init_db(session, test_engine)
         yield session
         for model in [
             StudentImportRecord,
@@ -80,7 +85,8 @@ def db_session(db: Session) -> Generator[Session]:
     this connection is opened; this fixture does not read or write through
     that shared session.
     """
-    connection = engine.connect()
+    assert test_engine is not None
+    connection = test_engine.connect()
     outer_transaction = connection.begin()
     session = Session(bind=connection, join_transaction_mode="create_savepoint")
     try:

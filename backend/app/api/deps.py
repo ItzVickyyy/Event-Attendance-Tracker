@@ -10,7 +10,7 @@ from sqlmodel import Session
 
 from app.core import security
 from app.core.config import settings
-from app.core.db import engine
+from app.core.db import engine, test_engine
 from app.models import TokenPayload, User, UserRole
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -19,7 +19,9 @@ reusable_oauth2 = OAuth2PasswordBearer(
 
 
 def get_db() -> Generator[Session]:
-    with Session(engine) as session:
+    # Use test_engine if available (during testing), otherwise use production engine
+    target_engine = test_engine if test_engine is not None else engine
+    with Session(target_engine) as session:
         yield session
 
 
