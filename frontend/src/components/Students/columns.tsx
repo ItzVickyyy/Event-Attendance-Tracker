@@ -3,6 +3,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import type { PersonPublic, StudentPublic } from "@/client"
 import DeleteStudent from "./DeleteStudent"
 import EditStudent from "./EditStudent"
+import NfcRegister from "./NfcRegister"
 
 export type StudentTableRow = StudentPublic & { person: PersonPublic | null }
 
@@ -39,6 +40,7 @@ export const studentsColumns: ColumnDef<StudentTableRow>[] = [
     header: "Actions",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
+        <NfcRegister student={row.original} />
         <EditStudent student={row.original} />
         <DeleteStudent student={row.original} />
       </div>
