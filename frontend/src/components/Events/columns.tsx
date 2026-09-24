@@ -6,6 +6,7 @@ import type { EventPublic } from "@/client"
 import { Button } from "@/components/ui/button"
 import DeleteEvent from "./DeleteEvent"
 import EditEvent from "./EditEvent"
+import EventRosterDialog from "./EventRosterDialog"
 
 export const eventsColumns: ColumnDef<EventPublic>[] = [
   {
@@ -90,6 +91,7 @@ export const eventsColumns: ColumnDef<EventPublic>[] = [
     header: "Actions",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
+        <EventRosterDialog event={row.original} />
         <Button variant="outline" size="sm" asChild>
           <Link to="/scanner" search={{ event_id: row.original.id }}>
             <ScanLine className="h-4 w-4 mr-1" />
