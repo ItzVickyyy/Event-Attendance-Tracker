@@ -42,5 +42,5 @@ api_router.include_router(attendance_corrections.router)
 
 api_router.include_router(import_batches.router)
 
-if settings.FASTAPI_ENV == "development":
+if settings.FASTAPI_ENV in ("development", "test"):
     api_router.include_router(private.router)

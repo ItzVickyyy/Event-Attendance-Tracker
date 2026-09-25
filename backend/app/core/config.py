@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
-    FASTAPI_ENV: Literal["development"] | None = None
+    FASTAPI_ENV: Literal["development", "test"] | None = None
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
@@ -98,7 +98,7 @@ class Settings(BaseSettings):
                 f'The value of {var_name} is "changethis", '
                 "for security, please change it, at least for deployments."
             )
-            if self.FASTAPI_ENV == "development":
+            if self.FASTAPI_ENV == "development" or self.FASTAPI_ENV == "test":
                 warnings.warn(message, stacklevel=1)
             else:
                 raise ValueError(message)

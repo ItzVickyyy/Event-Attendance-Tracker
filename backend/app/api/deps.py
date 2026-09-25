@@ -19,8 +19,9 @@ reusable_oauth2 = OAuth2PasswordBearer(
 
 
 def get_db() -> Generator[Session]:
-    # Use test_engine if available (during testing), otherwise use production engine
-    target_engine = test_engine if test_engine is not None else engine
+    # Use test_engine only when running tests (FASTAPI_ENV=test),
+    # otherwise use the production/development engine
+    target_engine = test_engine if settings.FASTAPI_ENV == "test" else engine
     with Session(target_engine) as session:
         yield session
 
