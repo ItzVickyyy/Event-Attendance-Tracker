@@ -5,7 +5,13 @@ import {
   type Page,
 } from "@playwright/test"
 
-const SCAN_URL = "http://localhost:8001/api/v1/attendance/scan*"
+// Portable, host/port-independent interception pattern (matches the pattern
+// used by background-sync.spec.ts and foreground-sync.spec.ts). The browser
+// may request either a relative, Vite-proxied URL (VITE_API_URL empty) or
+// an absolute backend origin (VITE_API_URL set) - a CDP pattern hardcoded to
+// one backend origin misses the other case, so this must match the
+// browser-visible request shape rather than assume a specific origin.
+const SCAN_URL = "**/api/v1/attendance/scan*"
 
 interface QueueRecordLike {
   id: string
