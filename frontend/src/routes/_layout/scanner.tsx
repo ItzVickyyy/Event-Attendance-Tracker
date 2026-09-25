@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
 import type { QueuedScanRecord, RosterRecord } from "@/data"
 import {
   enqueueScan,
@@ -55,9 +56,34 @@ import {
   setupSyncStatusListener,
 } from "@/data/sync"
 
+interface NfcDiagnosticRecord {
+  recordType: string
+  mediaType: string | null
+  id: string | null
+  dataLength: number | null
+  decodedData: string | null
+}
+
+interface NfcDiagnostic {
+  timestamp: string
+  serialNumber: string | null
+  recordCount: number
+  records: NfcDiagnosticRecord[]
+}
+
+/**
+ * Normalizes a raw NFC credential value (from an NDEF text record or the
+ * tag's `serialNumber`) into the canonical form used by the backend's
+ * `AttendeeCredential.credential_value` column: uppercase, separators
+ * preserved as-is (the DB already stores values like "8F:49:5B:74").
+ */
+function normalizeNfcCredential(raw: string): string {
+  return raw.trim().toUpperCase()
+}
+
 function extractNfcCredential(event: any): string {
   const msg = event.message
-  if (typeof msg === "string" && msg.trim()) return msg.trim()
+  if (typeof msg === "string" && msg.trim()) return normalizeNfcCredential(msg)
   if (msg?.records && Array.isArray(msg.records)) {
     for (const r of msg.records) {
       if (r.recordType === "text" && r.data instanceof DataView) {
@@ -76,9 +102,15 @@ function extractNfcCredential(event: any): string {
         const uid = new TextDecoder(isUtf16 ? "utf-16" : "utf-8")
           .decode(bytes)
           .trim()
-        if (uid) return uid
+        if (uid) return normalizeNfcCredential(uid)
       }
     }
+  }
+  // No usable NDEF text credential was found. Many physical tags (e.g.
+  // blank/empty NDEF records) only expose their identity via the Web NFC
+  // `serialNumber`, so fall back to that.
+  if (typeof event.serialNumber === "string" && event.serialNumber.trim()) {
+    return normalizeNfcCredential(event.serialNumber)
   }
   return ""
 }
@@ -395,14 +427,10 @@ function Scanner() {
     timestamp: string
   } | null>(null)
 
-  const [diagnosticLog, setDiagnosticLog] = useState<string[]>([])
-
-  const addDiagnostic = useCallback((msg: string) => {
-    setDiagnosticLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`])
-    if (typeof window !== "undefined") {
-      ;(window as any).__nfcDiagnosticLog = diagnosticLog
-    }
-  }, [])
+  // Temporary NFC diagnostic instrumentation (read-only, no effect on
+  // production scanning). Driven by React state so it renders in the UI;
+  // the same object is also exposed on `window` for console inspection.
+  const [nfcDiagnostic, setNfcDiagnostic] = useState<NfcDiagnostic | null>(null)
 
   const stopNfcScanning = useCallback(() => {
     if (nfcTimeoutRef.current !== null) {
@@ -545,36 +573,65 @@ function Scanner() {
           nfcTimeoutRef.current = null
         }
 
-        // Temporary NFC diagnostic capture (read-only, no side effects)
-        if (typeof window !== "undefined") {
-          ;(window as any).__lastNfcEvent = event
-          ;(window as any).__lastNfcSerialNumber = event.serialNumber ?? null
+        // Temporary NFC diagnostic capture (read-only, no side effects on
+        // production scanning/extraction below). Build one diagnostic
+        // object and use it for both React state and the window globals,
+        // so nothing here reads back stale state.
+        {
           const msg = event.message
-          const recs: string[] = []
-          if (msg?.records && Array.isArray(msg.records)) {
-            msg.records.forEach((rec: any, idx: number) => {
-              const dv = rec.data
-              let decoded: string | null = null
-              if (dv instanceof DataView && dv.byteLength > 0) {
-                const arr = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength)
-                try { decoded = new TextDecoder().decode(arr) } catch {
-                  try { decoded = new TextDecoder("utf-16").decode(arr) } catch { decoded = null }
+          const rawRecords: any[] =
+            msg?.records && Array.isArray(msg.records) ? msg.records : []
+
+          const records: NfcDiagnosticRecord[] = rawRecords.map((rec) => {
+            const dv = rec?.data
+            const dataLength = dv instanceof DataView ? dv.byteLength : null
+            let decodedData: string | null = null
+            if (dv instanceof DataView && dv.byteLength > 0) {
+              const arr = new Uint8Array(
+                dv.buffer,
+                dv.byteOffset,
+                dv.byteLength,
+              )
+              try {
+                decodedData = new TextDecoder().decode(arr)
+              } catch {
+                try {
+                  decodedData = new TextDecoder("utf-16").decode(arr)
+                } catch {
+                  decodedData = "Unable to decode"
                 }
               }
-              recs.push(
-                `record[${idx}]: type=${rec.recordType} media=${rec.mediaType ?? "(none)"} id=${rec.id ?? "(none)"} dataLen=${dv?.byteLength ?? 0} decoded=${decoded ? JSON.stringify(decoded.slice(0, 200)) : "(empty)"}`
-              )
-            })
+            }
+            return {
+              recordType: rec?.recordType ?? "N/A",
+              mediaType: rec?.mediaType ?? null,
+              id: rec?.id || null,
+              dataLength,
+              decodedData,
+            }
+          })
+
+          const diagnostic: NfcDiagnostic = {
+            timestamp: new Date().toLocaleTimeString(),
+            serialNumber: event.serialNumber ?? null,
+            recordCount: rawRecords.length,
+            records,
           }
-          const diag = `[serialNumber=${event.serialNumber ?? "(none)"}] recordCount=${msg?.records?.length ?? 0} | ${recs.join("; ")}`
-          ;(window as any).__nfcDiagnosticLog = diag
-          console.log("[NFC Diagnostic]", diag)
+
+          setNfcDiagnostic(diagnostic)
+
+          if (typeof window !== "undefined") {
+            ;(window as any).__lastNfcEvent = event
+            ;(window as any).__lastNfcSerialNumber = diagnostic.serialNumber
+            ;(window as any).__nfcDiagnosticLog = diagnostic
+          }
+          console.log("[NFC Diagnostic]", diagnostic)
         }
 
         const credential = extractNfcCredential(event)
         if (!credential) {
           toast.error(
-            "No credential found. Ensure the tag contains an NDEF text record.",
+            "No credential found. Ensure the tag contains an NDEF text record or exposes a serial number.",
           )
           ndef.removeEventListener("reading", handleReading)
           nfcHandlerRef.current = null
@@ -582,13 +639,12 @@ function Scanner() {
           setScanning(false)
           return
         }
-        const formatted = credential.toUpperCase()
-        setNfcUid(formatted)
+        setNfcUid(credential)
         ndef.removeEventListener("reading", handleReading)
         nfcHandlerRef.current = null
         ndefRef.current = null
         setScanning(false)
-        handleNfcLookup(formatted)
+        handleNfcLookup(credential)
       }
 
       ndef.addEventListener("reading", handleReading)
@@ -984,6 +1040,98 @@ function Scanner() {
               </Button>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <TriangleAlert className="h-4 w-4 text-amber-500" />
+            NFC Diagnostic
+            <Badge variant="outline" className="ml-auto font-normal">
+              Temporary
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {!nfcDiagnostic ? (
+            <p className="text-muted-foreground">
+              No NFC reading captured yet.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>Reading captured at {nfcDiagnostic.timestamp}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="text-xs text-muted-foreground">
+                    Serial Number
+                  </div>
+                  <div className="font-mono break-all">
+                    {nfcDiagnostic.serialNumber ?? "N/A"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Records</div>
+                  <div className="font-mono">{nfcDiagnostic.recordCount}</div>
+                </div>
+              </div>
+
+              {nfcDiagnostic.records.length === 0 ? (
+                <p className="text-muted-foreground">
+                  No NDEF records were present on this reading.
+                </p>
+              ) : (
+                nfcDiagnostic.records.map((rec, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <Separator />
+                    <div className="font-medium">Record #{idx + 1}</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Type
+                        </div>
+                        <div className="font-mono break-all">
+                          {rec.recordType || "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Media Type
+                        </div>
+                        <div className="font-mono break-all">
+                          {rec.mediaType ?? "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">ID</div>
+                        <div className="font-mono break-all">
+                          {rec.id ?? "N/A"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">
+                          Data Length
+                        </div>
+                        <div className="font-mono">
+                          {rec.dataLength ?? "N/A"}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">
+                        Decoded Data
+                      </div>
+                      <div className="font-mono break-all whitespace-pre-wrap">
+                        {rec.decodedData ?? "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
