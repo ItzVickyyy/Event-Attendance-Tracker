@@ -50,11 +50,7 @@ import {
   QUEUE_CHANGED_EVENT,
   ROSTER_CHANGED_EVENT,
 } from "@/data"
-import {
-  registerAttendanceSync,
-  requestImmediateSync,
-  setupSyncStatusListener,
-} from "@/data/sync"
+import { setupSyncStatusListener, syncNow } from "@/data/sync"
 
 interface NfcDiagnosticRecord {
   recordType: string
@@ -213,14 +209,29 @@ function useSyncStatus(eventId?: string) {
     }
   }, [reload, reloadRoster])
 
-  const retrySync = useCallback(() => {
+  const retrySync = useCallback(async () => {
     setIsSyncing(true)
-    void registerAttendanceSync()
-    void requestImmediateSync()
-    window.setTimeout(() => {
+    try {
+      const result = await syncNow()
+      // The service-worker mechanism reports completion asynchronously via
+      // the PWA_SYNC_END message (handled by setupSyncStatusListener above,
+      // which already clears isSyncing and reloads) - nothing further to do
+      // here in that case. The foreground fallback has no such message, so
+      // its actual completion is awaited above and reflected directly.
+      if (result.mechanism === "foreground") {
+        setIsSyncing(false)
+        await reload()
+        if (result.authRequired) {
+          toast.error("Sign in again to sync pending scans")
+        } else if (result.needsRetry) {
+          toast.error("Some scans failed to sync")
+        }
+      }
+    } catch {
       setIsSyncing(false)
-      void reload()
-    }, 10_000)
+      await reload()
+      toast.error("Failed to sync pending scans")
+    }
   }, [reload])
 
   const downloadRoster = useCallback(async () => {

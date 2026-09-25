@@ -226,16 +226,20 @@ export async function getPendingCount(): Promise<number> {
   return all.filter((record) => !record.synced).length
 }
 
-export async function markSynced(localId: string): Promise<void> {
+export async function markSynced(
+  localId: string,
+  options?: { serverTimestamp?: string },
+): Promise<void> {
   const db = await getDB()
   const record = await db.get("attendanceQueue", localId)
   if (!record) return
 
+  const now = new Date().toISOString()
   const updated: QueueRecord = {
     ...record,
     synced: true,
-    synced_at: new Date().toISOString(),
-    synced_at_server: new Date().toISOString(),
+    synced_at: now,
+    synced_at_server: options?.serverTimestamp ?? now,
     retry_count: 0,
     last_error: undefined,
     last_retry_at: undefined,
