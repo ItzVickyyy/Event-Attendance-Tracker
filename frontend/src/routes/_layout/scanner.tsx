@@ -395,6 +395,15 @@ function Scanner() {
     timestamp: string
   } | null>(null)
 
+  const [diagnosticLog, setDiagnosticLog] = useState<string[]>([])
+
+  const addDiagnostic = useCallback((msg: string) => {
+    setDiagnosticLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`])
+    if (typeof window !== "undefined") {
+      ;(window as any).__nfcDiagnosticLog = diagnosticLog
+    }
+  }, [])
+
   const stopNfcScanning = useCallback(() => {
     if (nfcTimeoutRef.current !== null) {
       window.clearTimeout(nfcTimeoutRef.current)
@@ -535,6 +544,33 @@ function Scanner() {
           window.clearTimeout(nfcTimeoutRef.current)
           nfcTimeoutRef.current = null
         }
+
+        // Temporary NFC diagnostic capture (read-only, no side effects)
+        if (typeof window !== "undefined") {
+          ;(window as any).__lastNfcEvent = event
+          ;(window as any).__lastNfcSerialNumber = event.serialNumber ?? null
+          const msg = event.message
+          const recs: string[] = []
+          if (msg?.records && Array.isArray(msg.records)) {
+            msg.records.forEach((rec: any, idx: number) => {
+              const dv = rec.data
+              let decoded: string | null = null
+              if (dv instanceof DataView && dv.byteLength > 0) {
+                const arr = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength)
+                try { decoded = new TextDecoder().decode(arr) } catch {
+                  try { decoded = new TextDecoder("utf-16").decode(arr) } catch { decoded = null }
+                }
+              }
+              recs.push(
+                `record[${idx}]: type=${rec.recordType} media=${rec.mediaType ?? "(none)"} id=${rec.id ?? "(none)"} dataLen=${dv?.byteLength ?? 0} decoded=${decoded ? JSON.stringify(decoded.slice(0, 200)) : "(empty)"}`
+              )
+            })
+          }
+          const diag = `[serialNumber=${event.serialNumber ?? "(none)"}] recordCount=${msg?.records?.length ?? 0} | ${recs.join("; ")}`
+          ;(window as any).__nfcDiagnosticLog = diag
+          console.log("[NFC Diagnostic]", diag)
+        }
+
         const credential = extractNfcCredential(event)
         if (!credential) {
           toast.error(
