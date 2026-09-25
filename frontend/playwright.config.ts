@@ -30,7 +30,8 @@ import 'dotenv/config'
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://localhost:5173'
 
 if (!process.env.VITE_API_URL) {
-  process.env.VITE_API_URL = 'http://localhost:8000'
+  // Browser requests use the empty VITE_API_URL and Vite's /api proxy; Node-side Playwright helpers need an absolute backend URL.
+  process.env.VITE_API_URL = 'http://localhost:8001'
 }
 
 /**
@@ -64,7 +65,13 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    {
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+      use: {
+        ignoreHTTPSErrors: true,
+      },
+    },
 
     {
       name: 'chromium',
