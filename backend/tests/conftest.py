@@ -105,8 +105,8 @@ def client() -> Generator[TestClient]:
 
 @pytest.fixture(scope="module")
 def superuser_token_headers(
-    client: TestClient, db: Session
-) -> dict[str, str]:  # noqa: ARG001
+    client: TestClient, db: Session,  # noqa: ARG001
+) -> dict[str, str]:
     return get_superuser_token_headers(client)
 
 
