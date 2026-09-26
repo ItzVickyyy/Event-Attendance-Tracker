@@ -14,8 +14,8 @@ export function RecordsWorkspace({ mode = "records" }: { mode?: "records" | "his
   const [eventId, setEventId] = useState<string>("all")
   const eventsQuery = useQuery({ queryKey: ["records-events"], queryFn: () => EventsService.readEvents({ query: { skip: 0, limit: 1000 } }) })
   const attendanceQuery = useQuery({ queryKey: ["records-attendance", eventId], queryFn: () => AttendanceService.readAttendances({ query: { event_id: eventId === "all" ? undefined : eventId, skip: 0, limit: 1000 } }) })
-  const events = eventsQuery.data?.data ?? []
-  const allAttendance = attendanceQuery.data?.data ?? []
+  const events = eventsQuery.data?.data?.data ?? []
+  const allAttendance = attendanceQuery.data?.data?.data ?? []
   const attendance = mode === "incomplete" ? allAttendance.filter((record) => record.status === "incomplete" || (record.time_in && !record.time_out)) : allAttendance
   const selectedEvent = events.find((event) => event.id === eventId)
 
