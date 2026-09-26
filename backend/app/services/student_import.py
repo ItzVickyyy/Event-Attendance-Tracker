@@ -1,7 +1,7 @@
 """Student Import Service - XLSX parsing and staging"""
 
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 from openpyxl import load_workbook
 from sqlmodel import Session
@@ -101,7 +101,7 @@ class StudentImportService:
 
     def _validate_sheet_name(self, sheet_name: str) -> bool:
         """Validate that the sheet name is acceptable for processing.
-        
+
         Returns:
             True if the sheet should be processed, False if it should be skipped.
         """
@@ -144,7 +144,11 @@ class StudentImportService:
         )
 
     def _extract_row_data(
-        self, sheet_name: str, row_idx: int, row: tuple[Any, ...], header_row: tuple[Any, ...]
+        self,
+        sheet_name: str,
+        row_idx: int,
+        row: tuple[Any, ...],
+        header_row: tuple[Any, ...],
     ) -> dict[str, Any]:
         """Extract and normalize data from a single row"""
         data = {
@@ -755,10 +759,6 @@ def validate_student_import(session: Session, import_batch: ImportBatch, xlsx_fi
     service = StudentImportService(session)
     parsed_rows = service.parse_student_import(import_batch, xlsx_file)
     return service.get_validation_summary(parsed_rows)
-
-
-# Export types for type hints
-from typing import TypedDict
 
 
 class ImportRowData(TypedDict):

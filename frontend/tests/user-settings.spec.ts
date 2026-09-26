@@ -55,8 +55,8 @@ test.describe("Edit user profile", () => {
     page,
   }) => {
     await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Email").fill("")
-    await page.locator("body").click()
+    await page.getByLabel("Email").fill("not-an-email")
+    await page.getByLabel("Full name").click()
 
     await expect(page.getByText("Invalid email address")).toBeVisible()
   })
@@ -190,16 +190,17 @@ test.describe("Change password validation", () => {
     await expect(page.getByText("The passwords don't match")).toBeVisible()
   })
 
-  test("Current password and new password are the same", async ({ page }) => {
-    await page.getByTestId("current-password-input").fill(password)
-    await page.getByTestId("new-password-input").fill(password)
-    await page.getByTestId("confirm-password-input").fill(password)
-    await page.getByRole("button", { name: "Update Password" }).click()
+  test("Current password and new password are the same", async ({ page }) =>
+    {
+      await page.getByTestId("current-password-input").fill(password)
+      await page.getByTestId("new-password-input").fill(password)
+      await page.getByTestId("confirm-password-input").fill(password)
+      await page.getByRole("button", { name: "Update Password" }).click()
 
-    await expect(
-      page.getByText("New password cannot be the same as the current one"),
-    ).toBeVisible()
-  })
+      await expect(
+        page.getByText("New password cannot be the same as the current one"),
+      ).toBeVisible()
+    })
 })
 
 test("Appearance button is visible in sidebar", async ({ page }) => {

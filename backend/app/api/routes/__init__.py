@@ -20,3 +20,24 @@ from app.api.routes.roster import router as roster_router
 from app.api.routes.students import router as students_router
 from app.api.routes.users import router as users_router
 from app.api.routes.utils import router as utils_router
+
+__all__ = [
+    "academic_programs_router",
+    "academic_sections_router",
+    "attendance_router",
+    "attendance_corrections_router",
+    "attendee_credentials_router",
+    "attendee_relationships_router",
+    "attendees_router",
+    "event_registrations_router",
+    "events_router",
+    "import_batches_router",
+    "login_router",
+    "organizations_router",
+    "people_router",
+    "private_router",
+    "roster_router",
+    "students_router",
+    "users_router",
+    "utils_router",
+]

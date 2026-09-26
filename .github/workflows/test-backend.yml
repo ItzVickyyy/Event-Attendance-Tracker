@@ -11,14 +11,21 @@ permissions:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Configure test environment
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          sed -i 's|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=qa-postgres-password|' .env
+          sed -i 's|^DATABASE_URL=.*|DATABASE_URL=postgresql://postgres:qa-postgres-password@localhost:5433/app|' .env
+          sed -i 's|^TEST_DATABASE_URL=.*|TEST_DATABASE_URL=postgresql://postgres:qa-postgres-password@localhost:5433/app_test|' .env
+          sed -i 's|^SECRET_KEY=.*|SECRET_KEY=r20-qa-only-secret-key-not-for-production|' .env
+          sed -i 's|^FIRST_SUPERUSER_PASSWORD=.*|FIRST_SUPERUSER_PASSWORD=r20-qa-superuser-password|' .env
+          sed -i 's|^SMTP_HOST=.*|SMTP_HOST=localhost|' .env
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -27,14 +34,44 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "latest-known"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2.1.3
+        with:
+          bun-version: 1.3.12
+      - name: Install frontend dependencies
+        run: bun ci
+        working-directory: frontend
+      - name: Build frontend
+        run: bun run build
+        working-directory: frontend
       - run: docker compose down -v --remove-orphans
       - run: docker compose up -d --wait db mailpit
+      - name: Create test database
+        run: docker compose exec -T db psql -U postgres -d app -c 'CREATE DATABASE app_test;'
       - name: Migrate DB
         run: uv run bash scripts/prestart.sh
         working-directory: backend
       - name: Run tests
-        run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
+        id: backend-tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}" 2>&1 | tee /tmp/backend-test.log
         working-directory: backend
+      - name: Upload backend test diagnostic
+        if: steps.backend-tests.outcome == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: backend-test-diagnostic
+          path: /tmp/backend-test.log
+          retention-days: 3
+      - name: Fail job when backend tests fail
+        if: steps.backend-tests.outcome == 'failure'
+        run: exit 1
+      - name: Run Ruff
+        run: uv run ruff check backend/app backend/tests
+      - name: Check Ruff format
+        run: uv run ruff format --check backend/app backend/tests
       - run: docker compose down -v --remove-orphans
       - name: Store coverage files
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -217,9 +217,7 @@ const test = base.extend<{
               })
               return
             }
-            const scanBody = (
-              request.postData ? JSON.parse(request.postData) : {}
-            ) as Record<string, unknown>
+            const scanBody = (request.postData ? JSON.parse(request.postData) : {}) as Record<string, unknown>
             const authHeader = Object.entries(request.headers).find(
               ([k]) => k.toLowerCase() === "authorization",
             )
@@ -545,7 +543,7 @@ test.describe("Manual attendance scan", () => {
     )
     await page.getByRole("button", { name: "Search" }).click()
 
-    await expect(page.getByText("Already recorded")).toBeVisible({
+    await expect(page.getByText("Already recorded", { exact: true })).toBeVisible({
       timeout: 10000,
     })
 
