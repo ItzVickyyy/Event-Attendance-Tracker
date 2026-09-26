@@ -60,7 +60,7 @@ def db() -> Generator[Session]:
 
 
 @pytest.fixture
-def db_session(db: Session) -> Generator[Session]:
+def db_session(db: Session) -> Generator[Session]:  # noqa: ARG001
     """Per-test, transactionally-isolated database session.
 
     `db` (above) is a single session-scoped connection/session shared by the
@@ -104,7 +104,9 @@ def client() -> Generator[TestClient]:
 
 
 @pytest.fixture(scope="module")
-def superuser_token_headers(client: TestClient, db: Session) -> dict[str, str]:
+def superuser_token_headers(
+    client: TestClient, db: Session
+) -> dict[str, str]:  # noqa: ARG001
     return get_superuser_token_headers(client)
 
 
