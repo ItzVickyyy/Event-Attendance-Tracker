@@ -19,14 +19,11 @@ export function SectionDetailsPage({ sectionId }: { sectionId: string }) {
   return <div className="space-y-6">
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div><Button variant="ghost" size="sm" asChild><Link to="/sections"><ArrowLeft />Sections</Link></Button><div className="mt-3"><p className="text-sm text-muted-foreground">Section Details</p><h1 className="text-2xl font-semibold tracking-tight">{section.section_name}</h1><p className="mt-1 text-sm text-muted-foreground">{program ? `${program.program_code} · ${program.program_name}` : "Program unavailable"} · Year {section.year_level} · {section.academic_year}</p></div></div>
-      <Button variant="outline" asChild><Link to="/sections/$sectionId/attendance" params={{ sectionId }}>Section attendance</Link></Button>
     </header>
 
     <Card><CardHeader><CardTitle className="text-base">Section Information</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Info label="Section" value={section.section_name} /><Info label="Program" value={program ? `${program.program_code} · ${program.program_name}` : "—"} /><Info label="Year level" value={section.year_level} /><Info label="Academic year" value={section.academic_year} /></CardContent></Card>
 
     <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><UsersRound className="size-4" />Students</CardTitle></CardHeader><CardContent><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">Students assigned to this section</p><p className="text-sm text-muted-foreground">{count === undefined ? "Loading count…" : `${count} student${count === 1 ? "" : "s"}`}</p></div><Button asChild><Link to="/sections/$sectionId/students" params={{ sectionId }}>View students</Link></Button></div></CardContent></Card>
-
-    <Card className="border-dashed"><CardHeader><CardTitle className="text-base">Section Attendance</CardTitle></CardHeader><CardContent><p className="text-sm text-muted-foreground">Open the section attendance workspace for this section. Detailed attendance reporting is handled in the later Records reconstruction.</p><Button className="mt-4" variant="outline" asChild><Link to="/sections/$sectionId/attendance" params={{ sectionId }}>Open section attendance</Link></Button></CardContent></Card>
   </div>
 }
 
