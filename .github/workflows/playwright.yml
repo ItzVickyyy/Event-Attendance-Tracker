@@ -85,12 +85,14 @@ jobs:
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
     - run: docker compose run --rm backend bash scripts/prestart.sh
+    - run: docker compose up -d --wait backend
     - name: Run Playwright tests
       id: playwright-tests
       continue-on-error: true
       run: |
         set -o pipefail
-        docker compose run --rm playwright bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} 2>&1 | tee /tmp/playwright-test.log
+        bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} 2>&1 | tee /tmp/playwright-test.log
+      working-directory: frontend
     - name: Upload Playwright diagnostic
       if: steps.playwright-tests.outcome == 'failure'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
