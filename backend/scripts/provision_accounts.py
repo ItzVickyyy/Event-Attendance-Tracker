@@ -13,9 +13,8 @@ from sqlmodel import Session, select
 
 from app import crud
 from app.account_assignments import OrganizationMembership, UserSectionAssignment
-from app.core.config import settings
 from app.core.db import engine
-from app.models import AcademicSection, Organization, User, UserCreate, UserRole
+from app.models import AcademicSection, Organization, UserCreate, UserRole
 
 
 REQUIRED_COLUMNS = {
