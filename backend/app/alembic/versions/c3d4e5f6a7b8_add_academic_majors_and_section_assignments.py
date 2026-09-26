@@ -96,7 +96,8 @@ def upgrade() -> None:
                 WHERE p.program_code = :program
                   AND NOT EXISTS (
                       SELECT 1 FROM academic_majors m
-                      WHERE m.program_id = p.id AND m.code::text = :code
+                      WHERE m.program_id = p.id
+                        AND m.code = CAST(:code AS academicmajorcode)
                   )
                 """
             ).bindparams(code=code, name=name, program=program, display=display)
@@ -170,7 +171,7 @@ def upgrade() -> None:
                 WHERE p.program_code = :program
                   AND s.section_name = :section_name
                   AND s.academic_year = '2026-2027'
-                  AND m.code::text = :major_code
+                  AND m.code = CAST(:major_code AS academicmajorcode)
                   AND NOT EXISTS (
                       SELECT 1 FROM academic_section_majors sm WHERE sm.section_id = s.id
                   )
