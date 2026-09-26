@@ -55,7 +55,7 @@ test.describe("Edit user profile", () => {
     page,
   }) => {
     await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Email").fill("")
+    await page.getByLabel("Email").fill("not-an-email")
     await page.locator("body").click()
 
     await expect(page.getByText("Invalid email address")).toBeVisible()
