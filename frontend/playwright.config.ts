@@ -1,25 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 import 'dotenv/config'
 
-/**
- * Server / environment matrix
- * ---------------------------------------------------------------------
- * This config manages exactly one frontend environment: the normal
- * `bun run dev` Vite dev server at PLAYWRIGHT_BASE_URL / baseURL.
- * vite.config.ts intentionally disables VitePWA's `devOptions`, so no
- * service worker is ever registered here - this is exactly the
- * environment foreground-sync.spec.ts exercises (the foreground
- * fallback), and the one every other suite (login, roster, sync-status
- * UI, etc.) already assumes.
- *
- * `background-sync.spec.ts` is NOT part of this config. It needs a real
- * production build + `vite preview` (so a genuine service worker
- * registers), which is a fundamentally different server lifecycle -
- * Playwright's `webServer` option is global to a config file, not
- * project-scoped, so that suite cannot share this config's `webServer`
- * without also starting `bun run dev` for it. It has its own dedicated
- * config instead: see `playwright.background-sync.config.ts`.
- */
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? (process.env.CI ? 'http://localhost:5173' : 'https://localhost:5173')
 
 if (!process.env.VITE_API_URL) {
