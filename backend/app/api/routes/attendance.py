@@ -125,16 +125,18 @@ def export_attendances(
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "Student Number",
-        "Student Name",
-        "Event",
-        "Time In",
-        "Time Out",
-        "Attendance Status",
-        "Scan Method",
-        "Recorded At",
-    ])
+    writer.writerow(
+        [
+            "Student Number",
+            "Student Name",
+            "Event",
+            "Time In",
+            "Time Out",
+            "Attendance Status",
+            "Scan Method",
+            "Recorded At",
+        ]
+    )
 
     for attendance, _reg, ev, _attendee, person, student in results:
         name_parts = [
@@ -151,20 +153,22 @@ def export_attendances(
             attendance.created_at.isoformat() if attendance.created_at else ""
         )
 
-        writer.writerow([
-            student_no,
-            full_name,
-            ev.event_name,
-            time_in_str,
-            time_out_str,
-            attendance.status.value
-            if hasattr(attendance.status, "value")
-            else str(attendance.status),
-            attendance.scan_method.value
-            if hasattr(attendance.scan_method, "value")
-            else str(attendance.scan_method),
-            recorded_at_str,
-        ])
+        writer.writerow(
+            [
+                student_no,
+                full_name,
+                ev.event_name,
+                time_in_str,
+                time_out_str,
+                attendance.status.value
+                if hasattr(attendance.status, "value")
+                else str(attendance.status),
+                attendance.scan_method.value
+                if hasattr(attendance.scan_method, "value")
+                else str(attendance.scan_method),
+                recorded_at_str,
+            ]
+        )
 
     csv_data = output.getvalue()
     filename_prefix = (

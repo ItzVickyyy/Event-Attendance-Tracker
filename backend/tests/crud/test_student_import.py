@@ -32,9 +32,7 @@ DEFAULT_MASTERLIST_HEADERS = [
 
 
 def create_test_xlsx_sheet(
-    sheet_name: str,
-    rows: list[dict],
-    headers: list[str] = None
+    sheet_name: str, rows: list[dict], headers: list[str] = None
 ) -> bytes:
     """Helper that mirrors the real Masterlist sheet layout.
 
@@ -61,8 +59,7 @@ def create_test_xlsx_sheet(
 
 
 def create_test_xlsx_workbook(
-    sheets: dict[str, list[dict]],
-    headers: list[str] = None
+    sheets: dict[str, list[dict]], headers: list[str] = None
 ) -> bytes:
     """Helper to create a test XLSX workbook with multiple sheets in memory"""
     wb = Workbook()
@@ -147,7 +144,7 @@ def test_parse_clean_workbook(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -169,7 +166,7 @@ def test_parse_clean_workbook(
             "Last Name": "Santos",
             "First Name": "Maria",
             "Middle Name": None,
-        }
+        },
     ]
 
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows, headers)
@@ -198,7 +195,7 @@ def test_preserve_leading_zero_student_numbers(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -225,7 +222,7 @@ def test_missing_student_number_validation(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -257,7 +254,7 @@ def test_missing_required_name_fields_validation(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -288,7 +285,7 @@ def test_duplicate_student_numbers_detection(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -306,7 +303,7 @@ def test_duplicate_student_numbers_detection(
             "Student Number": "00104",  # Duplicate
             "Last Name": "Dela Cruz",
             "First Name": "Maria",
-        }
+        },
     ]
 
     xlsx_data = create_test_xlsx_sheet("BSCS 1A", test_rows)
@@ -326,7 +323,7 @@ def test_cross_program_conflicts_detection(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -334,24 +331,27 @@ def test_cross_program_conflicts_detection(
 
     headers = ["No.", "Student Number", "Last Name", "First Name"]
 
-    xlsx_data = create_test_xlsx_workbook({
-        "BSCS 1A": [
-            {
-                "No.": 1,
-                "Student Number": "00201",
-                "Last Name": "Rivera",
-                "First Name": "Carlos",
-            }
-        ],
-        "BSIT 1A": [
-            {
-                "No.": 1,
-                "Student Number": "00201",
-                "Last Name": "Rivera",
-                "First Name": "Carlos",
-            }
-        ]
-    }, headers)
+    xlsx_data = create_test_xlsx_workbook(
+        {
+            "BSCS 1A": [
+                {
+                    "No.": 1,
+                    "Student Number": "00201",
+                    "Last Name": "Rivera",
+                    "First Name": "Carlos",
+                }
+            ],
+            "BSIT 1A": [
+                {
+                    "No.": 1,
+                    "Student Number": "00201",
+                    "Last Name": "Rivera",
+                    "First Name": "Carlos",
+                }
+            ],
+        },
+        headers,
+    )
 
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
 
@@ -392,10 +392,20 @@ def test_same_program_different_sections_not_cross_program_conflict():
     xlsx_data = create_test_xlsx_workbook(
         {
             "BSCS 1A": [
-                {"No.": 1, "Student Number": "01001", "Last Name": "Reyes", "First Name": "Liza"}
+                {
+                    "No.": 1,
+                    "Student Number": "01001",
+                    "Last Name": "Reyes",
+                    "First Name": "Liza",
+                }
             ],
             "BSCS 2A": [
-                {"No.": 1, "Student Number": "01001", "Last Name": "Reyes", "First Name": "Liza"}
+                {
+                    "No.": 1,
+                    "Student Number": "01001",
+                    "Last Name": "Reyes",
+                    "First Name": "Liza",
+                }
             ],
         },
         headers,
@@ -408,8 +418,14 @@ def test_same_program_different_sections_not_cross_program_conflict():
     statuses = {row["validation_status"] for row in parsed_rows}
     assert ImportValidationStatus.conflict_cross_program not in statuses
 
-    valid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.valid]
-    invalid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.invalid]
+    valid_rows = [
+        r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.valid
+    ]
+    invalid_rows = [
+        r
+        for r in parsed_rows
+        if r["validation_status"] == ImportValidationStatus.invalid
+    ]
     assert len(valid_rows) == 1
     assert len(invalid_rows) == 1
     assert "Duplicate student number" in invalid_rows[0]["validation_errors"][0]
@@ -427,10 +443,20 @@ def test_bsit_same_program_different_sections_not_cross_program_conflict():
     xlsx_data = create_test_xlsx_workbook(
         {
             "BSIT 1A": [
-                {"No.": 1, "Student Number": "01002", "Last Name": "Torres", "First Name": "Miko"}
+                {
+                    "No.": 1,
+                    "Student Number": "01002",
+                    "Last Name": "Torres",
+                    "First Name": "Miko",
+                }
             ],
             "BSIT 2A": [
-                {"No.": 1, "Student Number": "01002", "Last Name": "Torres", "First Name": "Miko"}
+                {
+                    "No.": 1,
+                    "Student Number": "01002",
+                    "Last Name": "Torres",
+                    "First Name": "Miko",
+                }
             ],
         },
         headers,
@@ -442,8 +468,14 @@ def test_bsit_same_program_different_sections_not_cross_program_conflict():
     statuses = {row["validation_status"] for row in parsed_rows}
     assert ImportValidationStatus.conflict_cross_program not in statuses
 
-    valid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.valid]
-    invalid_rows = [r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.invalid]
+    valid_rows = [
+        r for r in parsed_rows if r["validation_status"] == ImportValidationStatus.valid
+    ]
+    invalid_rows = [
+        r
+        for r in parsed_rows
+        if r["validation_status"] == ImportValidationStatus.invalid
+    ]
     assert len(valid_rows) == 1
     assert len(invalid_rows) == 1
 
@@ -460,10 +492,20 @@ def test_cross_program_duplicate_still_flagged():
     xlsx_data = create_test_xlsx_workbook(
         {
             "BSCS 1A": [
-                {"No.": 1, "Student Number": "01003", "Last Name": "Gomez", "First Name": "Ella"}
+                {
+                    "No.": 1,
+                    "Student Number": "01003",
+                    "Last Name": "Gomez",
+                    "First Name": "Ella",
+                }
             ],
             "BSIT 1A": [
-                {"No.": 1, "Student Number": "01003", "Last Name": "Gomez", "First Name": "Ella"}
+                {
+                    "No.": 1,
+                    "Student Number": "01003",
+                    "Last Name": "Gomez",
+                    "First Name": "Ella",
+                }
             ],
         },
         headers,
@@ -488,10 +530,20 @@ def test_different_students_across_programs_not_conflicting():
     xlsx_data = create_test_xlsx_workbook(
         {
             "BSCS 1A": [
-                {"No.": 1, "Student Number": "01004", "Last Name": "Diaz", "First Name": "Noel"}
+                {
+                    "No.": 1,
+                    "Student Number": "01004",
+                    "Last Name": "Diaz",
+                    "First Name": "Noel",
+                }
             ],
             "BSIT 1A": [
-                {"No.": 1, "Student Number": "01005", "Last Name": "Fuentes", "First Name": "Rae"}
+                {
+                    "No.": 1,
+                    "Student Number": "01005",
+                    "Last Name": "Fuentes",
+                    "First Name": "Rae",
+                }
             ],
         },
         headers,
@@ -519,10 +571,20 @@ def test_same_program_duplicate_staging_persistence_compatibility():
     xlsx_data = create_test_xlsx_workbook(
         {
             "BSCS 1A": [
-                {"No.": 1, "Student Number": "01006", "Last Name": "Ramos", "First Name": "Kyle"}
+                {
+                    "No.": 1,
+                    "Student Number": "01006",
+                    "Last Name": "Ramos",
+                    "First Name": "Kyle",
+                }
             ],
             "BSCS 2A": [
-                {"No.": 1, "Student Number": "01006", "Last Name": "Ramos", "First Name": "Kyle"}
+                {
+                    "No.": 1,
+                    "Student Number": "01006",
+                    "Last Name": "Ramos",
+                    "First Name": "Kyle",
+                }
             ],
         },
         headers,
@@ -576,7 +638,7 @@ def test_empty_file_handling(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -584,8 +646,7 @@ def test_empty_file_handling(
 
     with pytest.raises(ValueError, match="Failed to parse XLSX file"):
         student_import_service.parse_student_import(
-            import_batch,
-            b"invalid not an xlsx file"
+            import_batch, b"invalid not an xlsx file"
         )
 
 
@@ -597,7 +658,7 @@ def test_whitespace_normalization(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -631,7 +692,7 @@ def test_sections_as_source_sheet(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -668,13 +729,15 @@ def test_header_detection_and_source_row_provenance(
 
     xlsx_data = create_test_xlsx_sheet(
         "CS 1A",
-        [{
-            "No.": 1,
-            "Student Number": "0426-0016",
-            "Last Name": "Adona",
-            "First Name": "Patrick John",
-            "Status": "Regular",
-        }],
+        [
+            {
+                "No.": 1,
+                "Student Number": "0426-0016",
+                "Last Name": "Adona",
+                "First Name": "Patrick John",
+                "Status": "Regular",
+            }
+        ],
     )
 
     parsed_rows = student_import_service.parse_student_import(import_batch, xlsx_data)
@@ -796,10 +859,20 @@ def test_parse_student_import_persists_conflicting_rows():
     xlsx_data = create_test_xlsx_workbook(
         {
             "BSCS 1A": [
-                {"No.": 1, "Student Number": "00601", "Last Name": "Rivera", "First Name": "Carlos"}
+                {
+                    "No.": 1,
+                    "Student Number": "00601",
+                    "Last Name": "Rivera",
+                    "First Name": "Carlos",
+                }
             ],
             "BSIT 1A": [
-                {"No.": 1, "Student Number": "00601", "Last Name": "Rivera", "First Name": "Carlos"}
+                {
+                    "No.": 1,
+                    "Student Number": "00601",
+                    "Last Name": "Rivera",
+                    "First Name": "Carlos",
+                }
             ],
         },
         headers,
@@ -825,7 +898,7 @@ def test_create_staging_records(
     import_batch = ImportBatch(
         source_filename="test_masterlist.xlsx",
         academic_year="2026-2027",
-        semester="1st Semester"
+        semester="1st Semester",
     )
     db_session.add(import_batch)
     db_session.commit()
@@ -886,17 +959,40 @@ def test_summary_reconciliation_matching_workbook():
 
     sections = {
         "BSCS 1A": [
-            {"No.": 1, "Student Number": "10001", "Last Name": "Aquino", "First Name": "Liza", "Status": "Regular"},
-            {"No.": 2, "Student Number": "10002", "Last Name": "Bautista", "First Name": "Marc", "Status": "Irregular"},
+            {
+                "No.": 1,
+                "Student Number": "10001",
+                "Last Name": "Aquino",
+                "First Name": "Liza",
+                "Status": "Regular",
+            },
+            {
+                "No.": 2,
+                "Student Number": "10002",
+                "Last Name": "Bautista",
+                "First Name": "Marc",
+                "Status": "Irregular",
+            },
         ],
         "BSIT 1A": [
-            {"No.": 1, "Student Number": "10003", "Last Name": "Cruz", "First Name": "Nina", "Status": "Regular"},
+            {
+                "No.": 1,
+                "Student Number": "10003",
+                "Last Name": "Cruz",
+                "First Name": "Nina",
+                "Status": "Regular",
+            },
         ],
     }
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        summary_values={"total_students": 3, "regular": 2, "irregular": 1, "sections": 2},
+        summary_values={
+            "total_students": 3,
+            "regular": 2,
+            "irregular": 1,
+            "sections": 2,
+        },
     )
 
     parsed_rows = service.parse_student_import(import_batch, xlsx_data)
@@ -921,14 +1017,31 @@ def test_summary_reconciliation_total_mismatch():
 
     sections = {
         "BSCS 1A": [
-            {"No.": 1, "Student Number": "20001", "Last Name": "Diaz", "First Name": "Tomas", "Status": "Regular"},
-            {"No.": 2, "Student Number": "20002", "Last Name": "Espino", "First Name": "Faye", "Status": "Regular"},
+            {
+                "No.": 1,
+                "Student Number": "20001",
+                "Last Name": "Diaz",
+                "First Name": "Tomas",
+                "Status": "Regular",
+            },
+            {
+                "No.": 2,
+                "Student Number": "20002",
+                "Last Name": "Espino",
+                "First Name": "Faye",
+                "Status": "Regular",
+            },
         ],
     }
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        summary_values={"total_students": 5, "regular": 2, "irregular": 0, "sections": 1},
+        summary_values={
+            "total_students": 5,
+            "regular": 2,
+            "irregular": 0,
+            "sections": 1,
+        },
     )
 
     parsed_rows = service.parse_student_import(import_batch, xlsx_data)
@@ -953,15 +1066,38 @@ def test_summary_reconciliation_regular_irregular_mismatch():
 
     sections = {
         "BSCS 1A": [
-            {"No.": 1, "Student Number": "30001", "Last Name": "Garcia", "First Name": "Ivy", "Status": "Regular"},
-            {"No.": 2, "Student Number": "30002", "Last Name": "Herrera", "First Name": "Joel", "Status": "Irregular"},
-            {"No.": 3, "Student Number": "30003", "Last Name": "Ilagan", "First Name": "Kaye", "Status": "Irregular"},
+            {
+                "No.": 1,
+                "Student Number": "30001",
+                "Last Name": "Garcia",
+                "First Name": "Ivy",
+                "Status": "Regular",
+            },
+            {
+                "No.": 2,
+                "Student Number": "30002",
+                "Last Name": "Herrera",
+                "First Name": "Joel",
+                "Status": "Irregular",
+            },
+            {
+                "No.": 3,
+                "Student Number": "30003",
+                "Last Name": "Ilagan",
+                "First Name": "Kaye",
+                "Status": "Irregular",
+            },
         ],
     }
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        summary_values={"total_students": 3, "regular": 2, "irregular": 1, "sections": 1},
+        summary_values={
+            "total_students": 3,
+            "regular": 2,
+            "irregular": 1,
+            "sections": 1,
+        },
     )
 
     service.parse_student_import(import_batch, xlsx_data)
@@ -990,16 +1126,33 @@ def test_summary_reconciliation_section_count_mismatch():
 
     sections = {
         "BSCS 1A": [
-            {"No.": 1, "Student Number": "40001", "Last Name": "Javier", "First Name": "Lito", "Status": "Regular"},
+            {
+                "No.": 1,
+                "Student Number": "40001",
+                "Last Name": "Javier",
+                "First Name": "Lito",
+                "Status": "Regular",
+            },
         ],
         "BSIT 1A": [
-            {"No.": 1, "Student Number": "40002", "Last Name": "Katigbak", "First Name": "Mae", "Status": "Regular"},
+            {
+                "No.": 1,
+                "Student Number": "40002",
+                "Last Name": "Katigbak",
+                "First Name": "Mae",
+                "Status": "Regular",
+            },
         ],
     }
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        summary_values={"total_students": 2, "regular": 2, "irregular": 0, "sections": 5},
+        summary_values={
+            "total_students": 2,
+            "regular": 2,
+            "irregular": 0,
+            "sections": 5,
+        },
     )
 
     service.parse_student_import(import_batch, xlsx_data)
@@ -1024,24 +1177,53 @@ def test_summary_reconciliation_no_hardcoded_totals():
 
     sections = {
         "BSCS 1A": [
-            {"No.": i, "Student Number": f"5{i:04d}", "Last Name": "Lopez", "First Name": f"Student{i}", "Status": "Regular"}
+            {
+                "No.": i,
+                "Student Number": f"5{i:04d}",
+                "Last Name": "Lopez",
+                "First Name": f"Student{i}",
+                "Status": "Regular",
+            }
             for i in range(1, 6)
         ]
         + [
-            {"No.": i, "Student Number": f"5{i:04d}", "Last Name": "Lopez", "First Name": f"Student{i}", "Status": "Irregular"}
+            {
+                "No.": i,
+                "Student Number": f"5{i:04d}",
+                "Last Name": "Lopez",
+                "First Name": f"Student{i}",
+                "Status": "Irregular",
+            }
             for i in range(6, 8)
         ],
         "BSIT 1A": [
-            {"No.": 1, "Student Number": "59001", "Last Name": "Marquez", "First Name": "Nico", "Status": "Regular"},
+            {
+                "No.": 1,
+                "Student Number": "59001",
+                "Last Name": "Marquez",
+                "First Name": "Nico",
+                "Status": "Regular",
+            },
         ],
         "BSIT 1B": [
-            {"No.": 1, "Student Number": "59002", "Last Name": "Ong", "First Name": "Pia", "Status": "Regular"},
+            {
+                "No.": 1,
+                "Student Number": "59002",
+                "Last Name": "Ong",
+                "First Name": "Pia",
+                "Status": "Regular",
+            },
         ],
     }
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        summary_values={"total_students": 9, "regular": 7, "irregular": 2, "sections": 3},
+        summary_values={
+            "total_students": 9,
+            "regular": 7,
+            "irregular": 2,
+            "sections": 3,
+        },
     )
 
     parsed_rows = service.parse_student_import(import_batch, xlsx_data)
@@ -1066,7 +1248,12 @@ def test_summary_reconciliation_missing_summary_sheet_is_unavailable():
     xlsx_data = create_test_xlsx_workbook(
         {
             "BSCS 1A": [
-                {"No.": 1, "Student Number": "60001", "Last Name": "Perez", "First Name": "Ruel"},
+                {
+                    "No.": 1,
+                    "Student Number": "60001",
+                    "Last Name": "Perez",
+                    "First Name": "Ruel",
+                },
             ],
         },
         ["No.", "Student Number", "Last Name", "First Name"],
@@ -1091,14 +1278,31 @@ def test_summary_reconciliation_unknown_status_values_reported_unavailable():
 
     sections = {
         "BSCS 1A": [
-            {"No.": 1, "Student Number": "70001", "Last Name": "Quimson", "First Name": "Sam", "Status": "Regular"},
-            {"No.": 2, "Student Number": "70002", "Last Name": "Rosales", "First Name": "Tina", "Status": "Leave of Absence"},
+            {
+                "No.": 1,
+                "Student Number": "70001",
+                "Last Name": "Quimson",
+                "First Name": "Sam",
+                "Status": "Regular",
+            },
+            {
+                "No.": 2,
+                "Student Number": "70002",
+                "Last Name": "Rosales",
+                "First Name": "Tina",
+                "Status": "Leave of Absence",
+            },
         ],
     }
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        summary_values={"total_students": 2, "regular": 1, "irregular": 1, "sections": 1},
+        summary_values={
+            "total_students": 2,
+            "regular": 1,
+            "irregular": 1,
+            "sections": 1,
+        },
     )
 
     service.parse_student_import(import_batch, xlsx_data)

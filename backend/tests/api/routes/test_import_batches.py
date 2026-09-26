@@ -113,11 +113,11 @@ def test_upload_valid_workbook_creates_staging_records(
     assert detail_response.status_code == 200
 
 
-def test_upload_requires_authentication(
-    client: TestClient, make_import_batch
-) -> None:
+def test_upload_requires_authentication(client: TestClient, make_import_batch) -> None:
     batch = make_import_batch(source_filename="upload_noauth.xlsx")
-    xlsx_bytes = _make_xlsx("BSCS 1A", HEADERS, [[1, "80101", "Cruz", "Ana", "Regular"]])
+    xlsx_bytes = _make_xlsx(
+        "BSCS 1A", HEADERS, [[1, "80101", "Cruz", "Ana", "Regular"]]
+    )
 
     response = client.post(
         f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
@@ -133,7 +133,9 @@ def test_upload_requires_admin_role(
     make_import_batch,
 ) -> None:
     batch = make_import_batch(source_filename="upload_forbidden.xlsx")
-    xlsx_bytes = _make_xlsx("BSCS 1A", HEADERS, [[1, "80102", "Cruz", "Ana", "Regular"]])
+    xlsx_bytes = _make_xlsx(
+        "BSCS 1A", HEADERS, [[1, "80102", "Cruz", "Ana", "Regular"]]
+    )
 
     response = client.post(
         f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
@@ -147,7 +149,9 @@ def test_upload_requires_admin_role(
 def test_upload_nonexistent_batch_returns_404(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
-    xlsx_bytes = _make_xlsx("BSCS 1A", HEADERS, [[1, "80103", "Cruz", "Ana", "Regular"]])
+    xlsx_bytes = _make_xlsx(
+        "BSCS 1A", HEADERS, [[1, "80103", "Cruz", "Ana", "Regular"]]
+    )
 
     response = client.post(
         f"{settings.API_V1_STR}/import-batches/00000000-0000-0000-0000-000000000000/upload",

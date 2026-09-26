@@ -107,16 +107,19 @@ class StudentPromotionService:
         result.total_staging_rows = len(all_rows)
 
         valid_rows = [
-            row for row in all_rows
+            row
+            for row in all_rows
             if row.validation_status == ImportValidationStatus.valid
         ]
         result.eligible_rows = len(valid_rows)
         result.invalid_rows_skipped = sum(
-            1 for row in all_rows
+            1
+            for row in all_rows
             if row.validation_status == ImportValidationStatus.invalid
         )
         result.conflict_rows_skipped = sum(
-            1 for row in all_rows
+            1
+            for row in all_rows
             if row.validation_status == ImportValidationStatus.conflict_cross_program
         )
 
@@ -152,7 +155,8 @@ class StudentPromotionService:
         remaining_unpromoted_valid = self.session.exec(
             select(StudentImportRecord).where(
                 col(StudentImportRecord.import_batch_id) == import_batch_id,
-                col(StudentImportRecord.validation_status) == ImportValidationStatus.valid,
+                col(StudentImportRecord.validation_status)
+                == ImportValidationStatus.valid,
                 col(StudentImportRecord.promoted_student_id).is_(None),
             )
         ).all()
@@ -215,9 +219,7 @@ class StudentPromotionService:
         )
 
         existing_student = self.session.exec(
-            select(Student).where(
-                col(Student.student_number) == row.raw_student_number
-            )
+            select(Student).where(col(Student.student_number) == row.raw_student_number)
         ).first()
 
         if existing_student is not None:

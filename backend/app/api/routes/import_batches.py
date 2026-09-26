@@ -23,6 +23,7 @@ from app.services.student_promotion import StudentPromotionService
 
 router = APIRouter(prefix="/import-batches", tags=["import-batches"])
 
+
 @router.get("/", response_model=ImportBatchesPublic)
 def read_import_batches(
     session: SessionDep,
@@ -39,9 +40,7 @@ def read_import_batches(
         count_statement = count_statement.where(
             col(ImportBatch.source_filename).ilike(pattern)
         )
-        statement = statement.where(
-            col(ImportBatch.source_filename).ilike(pattern)
-        )
+        statement = statement.where(col(ImportBatch.source_filename).ilike(pattern))
 
     count = session.exec(count_statement).one()
     statement = (
@@ -55,7 +54,10 @@ def read_import_batches(
         count=count,
     )
 
-@router.post("/", response_model=ImportBatchPublic, dependencies=[Depends(require_admin)])
+
+@router.post(
+    "/", response_model=ImportBatchPublic, dependencies=[Depends(require_admin)]
+)
 def create_import_batch(
     *,
     session: SessionDep,
@@ -68,6 +70,7 @@ def create_import_batch(
     session.refresh(import_batch)
     return import_batch
 
+
 @router.get("/{batch_id}", response_model=ImportBatchPublic)
 def read_import_batch(
     session: SessionDep, _current_user: CurrentUser, batch_id: uuid.UUID
@@ -76,6 +79,7 @@ def read_import_batch(
     if not import_batch:
         raise HTTPException(status_code=404, detail="Import batch not found")
     return import_batch
+
 
 @router.get("/{batch_id}/records", response_model=StudentImportRecordsPublic)
 def read_import_batch_records(
@@ -90,8 +94,10 @@ def read_import_batch_records(
     if not import_batch:
         raise HTTPException(status_code=404, detail="Import batch not found")
 
-    count_stmt = select(func.count()).select_from(StudentImportRecord).where(
-        col(StudentImportRecord.import_batch_id) == batch_id
+    count_stmt = (
+        select(func.count())
+        .select_from(StudentImportRecord)
+        .where(col(StudentImportRecord.import_batch_id) == batch_id)
     )
     stmt = select(StudentImportRecord).where(
         col(StudentImportRecord.import_batch_id) == batch_id
@@ -146,6 +152,7 @@ def update_import_batch(
     session.refresh(import_batch)
     return import_batch
 
+
 @router.delete("/{batch_id}", dependencies=[Depends(require_admin)])
 def delete_import_batch(
     session: SessionDep, _current_user: CurrentUser, batch_id: uuid.UUID
@@ -196,15 +203,18 @@ async def upload_import_batch_workbook(
     session.refresh(import_batch)
 
     valid_rows = sum(
-        1 for row in parsed_rows
+        1
+        for row in parsed_rows
         if row.get("validation_status") == ImportValidationStatus.valid
     )
     invalid_rows = sum(
-        1 for row in parsed_rows
+        1
+        for row in parsed_rows
         if row.get("validation_status") == ImportValidationStatus.invalid
     )
     conflict_rows = sum(
-        1 for row in parsed_rows
+        1
+        for row in parsed_rows
         if row.get("validation_status") == ImportValidationStatus.conflict_cross_program
     )
 

@@ -7,7 +7,11 @@ from app.core.config import settings
 from app.models import User, UserCreate, UserRole
 
 engine = create_engine(str(settings.DATABASE_URL), pool_pre_ping=True)
-test_engine = create_engine(str(settings.TEST_DATABASE_URL), pool_pre_ping=True) if settings.TEST_DATABASE_URL else None
+test_engine = (
+    create_engine(str(settings.TEST_DATABASE_URL), pool_pre_ping=True)
+    if settings.TEST_DATABASE_URL
+    else None
+)
 
 
 # make sure all SQLModel models are imported (app.models) before initializing DB

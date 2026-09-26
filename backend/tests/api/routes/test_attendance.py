@@ -1092,7 +1092,9 @@ def test_manual_scan_rbac(
     payload = {"event_id": event_id, "attendee_id": att_id, "scan_method": "manual"}
 
     # 3. Unauthenticated -> 401
-    r_unauth = client.post(f"{settings.API_V1_STR}/attendance/scan-manual", json=payload)
+    r_unauth = client.post(
+        f"{settings.API_V1_STR}/attendance/scan-manual", json=payload
+    )
     assert r_unauth.status_code == 401
 
     # 4. Role without scanner permission -> 403
@@ -1182,7 +1184,9 @@ def test_attendance_export_csv(
     assert res.status_code == 200
     assert res.headers["content-type"].startswith("text/csv")
     csv_content = res.text
-    assert "Student Number,Student Name,Event,Time In,Time Out,Attendance Status,Scan Method,Recorded At" in csv_content
+    assert (
+        "Student Number,Student Name,Event,Time In,Time Out,Attendance Status,Scan Method,Recorded At"
+        in csv_content
+    )
     assert student_num in csv_content
     assert "Export Student" in csv_content
-

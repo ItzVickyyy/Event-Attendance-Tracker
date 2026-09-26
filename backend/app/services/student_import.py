@@ -73,9 +73,7 @@ class StudentImportService:
                 if self._is_empty_row(row):
                     continue
 
-                row_data = self._extract_row_data(
-                    sheet_name, row_idx, row, header_row
-                )
+                row_data = self._extract_row_data(sheet_name, row_idx, row, header_row)
                 parsed_rows.append(row_data)
 
         workbook.close()
@@ -471,7 +469,9 @@ class StudentImportService:
             }
 
         declared = self._read_summary_sheet(summary_sheet_rows)
-        calculated = self._calculate_section_totals(parsed_rows, processed_section_sheets)
+        calculated = self._calculate_section_totals(
+            parsed_rows, processed_section_sheets
+        )
 
         checks: dict[str, dict[str, Any]] = {}
         discrepancies: list[str] = []
@@ -597,7 +597,9 @@ class StudentImportService:
 
             if sheet_name not in student_to_rows[student_number]:
                 student_to_rows[student_number][sheet_name] = {}
-            student_to_rows[student_number][sheet_name][row_data["source_row"]] = row_data
+            student_to_rows[student_number][sheet_name][row_data["source_row"]] = (
+                row_data
+            )
 
             if student_number not in student_to_all_rows:
                 student_to_all_rows[student_number] = []
@@ -631,7 +633,9 @@ class StudentImportService:
                 # The student number appears under section sheets that belong
                 # to more than one program (e.g. BSCS and BSIT) - a genuine
                 # cross-program conflict per docs/Phase-3-Student-Data-Field-Mapping.md.
-                row_data["validation_status"] = ImportValidationStatus.conflict_cross_program
+                row_data["validation_status"] = (
+                    ImportValidationStatus.conflict_cross_program
+                )
                 row_data["validation_errors"] = [
                     f"Conflict across {len(programs_involved)} programs: "
                     f"{', '.join(sorted(programs_involved))}"
@@ -646,7 +650,9 @@ class StudentImportService:
                 # validation_status on every outer-loop pass, which
                 # previously let whichever row was processed *last* end up
                 # valid instead of the first.
-                rows_in_sheet = student_to_rows[student_number].get(list(sheet_counts.keys())[0], {})
+                rows_in_sheet = student_to_rows[student_number].get(
+                    list(sheet_counts.keys())[0], {}
+                )
 
                 if len(rows_in_sheet) > 1:
                     canonical_row = student_to_all_rows[student_number][0]
@@ -657,7 +663,9 @@ class StudentImportService:
                         row_data["conflict_key"] = None
                     else:
                         row_data["validation_status"] = ImportValidationStatus.invalid
-                        row_data["validation_errors"] = [f"Duplicate student number in import: {student_number}"]
+                        row_data["validation_errors"] = [
+                            f"Duplicate student number in import: {student_number}"
+                        ]
                         row_data["conflict_key"] = student_number
                 else:
                     row_data["validation_status"] = ImportValidationStatus.valid
@@ -678,7 +686,9 @@ class StudentImportService:
                     row_data["conflict_key"] = None
                 else:
                     row_data["validation_status"] = ImportValidationStatus.invalid
-                    row_data["validation_errors"] = [f"Duplicate student number in import: {student_number}"]
+                    row_data["validation_errors"] = [
+                        f"Duplicate student number in import: {student_number}"
+                    ]
                     row_data["conflict_key"] = student_number
             else:
                 row_data["validation_status"] = ImportValidationStatus.valid
@@ -716,7 +726,9 @@ class StudentImportService:
 
         return records
 
-    def get_validation_summary(self, parsed_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    def get_validation_summary(
+        self, parsed_rows: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Get validation summary from parsed rows"""
         summary = {
             "total_rows": len(parsed_rows),
@@ -744,7 +756,9 @@ class StudentImportService:
 
 
 # Module-level functions for backward compatibility
-def parse_student_import(session: Session, import_batch: ImportBatch, xlsx_file: bytes) -> list[dict[str, Any]]:
+def parse_student_import(
+    session: Session, import_batch: ImportBatch, xlsx_file: bytes
+) -> list[dict[str, Any]]:
     """Parse XLSX workbook and create StudentImportRecord staging rows.
 
     Returns:
@@ -754,7 +768,9 @@ def parse_student_import(session: Session, import_batch: ImportBatch, xlsx_file:
     return service.parse_student_import(import_batch, xlsx_file)
 
 
-def validate_student_import(session: Session, import_batch: ImportBatch, xlsx_file: bytes) -> dict[str, Any]:
+def validate_student_import(
+    session: Session, import_batch: ImportBatch, xlsx_file: bytes
+) -> dict[str, Any]:
     """Parse and validate XLSX workbook, returning validation summary."""
     service = StudentImportService(session)
     parsed_rows = service.parse_student_import(import_batch, xlsx_file)

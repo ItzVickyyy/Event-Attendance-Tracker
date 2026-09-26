@@ -111,9 +111,7 @@ def test_academic_program_get_or_create(db_session: Session):
     db_session.add(program)
     db_session.commit()
 
-    _make_staging_row(
-        db_session, batch, source_sheet="PROA 1A", student_number="00711"
-    )
+    _make_staging_row(db_session, batch, source_sheet="PROA 1A", student_number="00711")
     service = StudentPromotionService(session=db_session)
     result = service.promote_import_batch(batch.id)
 
@@ -175,8 +173,12 @@ def test_clean_row_creates_person_and_student(db_session: Session):
     db_session.commit()
 
     row = _make_staging_row(
-        db_session, batch, source_sheet="PROD 1A",
-        student_number="00731", last_name="Dela Cruz", first_name="Juan",
+        db_session,
+        batch,
+        source_sheet="PROD 1A",
+        student_number="00731",
+        last_name="Dela Cruz",
+        first_name="Juan",
         status="Regular",
     )
 
@@ -206,9 +208,7 @@ def test_promotion_is_idempotent(db_session: Session):
     db_session.add(AcademicProgram(program_code="PROE", program_name="Test Program E"))
     db_session.commit()
 
-    _make_staging_row(
-        db_session, batch, source_sheet="PROE 1A", student_number="00741"
-    )
+    _make_staging_row(db_session, batch, source_sheet="PROE 1A", student_number="00741")
 
     service = StudentPromotionService(session=db_session)
     first_result = service.promote_import_batch(batch.id)
@@ -245,7 +245,10 @@ def test_invalid_rows_are_not_promoted(db_session: Session):
     db_session.commit()
 
     row = _make_staging_row(
-        db_session, batch, source_sheet="PROF 1A", student_number="00751",
+        db_session,
+        batch,
+        source_sheet="PROF 1A",
+        student_number="00751",
         validation_status=ImportValidationStatus.invalid,
     )
 
@@ -265,7 +268,10 @@ def test_conflict_rows_are_not_promoted(db_session: Session):
     db_session.commit()
 
     row = _make_staging_row(
-        db_session, batch, source_sheet="PROG 1A", student_number="00761",
+        db_session,
+        batch,
+        source_sheet="PROG 1A",
+        student_number="00761",
         validation_status=ImportValidationStatus.conflict_cross_program,
         conflict_key="00761",
     )
@@ -277,7 +283,9 @@ def test_conflict_rows_are_not_promoted(db_session: Session):
     assert result.conflict_rows_skipped == 1
     db_session.refresh(row)
     assert row.promoted_student_id is None
-    assert row.validation_status == ImportValidationStatus.conflict_cross_program  # untouched
+    assert (
+        row.validation_status == ImportValidationStatus.conflict_cross_program
+    )  # untouched
 
 
 def test_existing_student_number_reused_across_batches(db_session: Session):
@@ -287,8 +295,13 @@ def test_existing_student_number_reused_across_batches(db_session: Session):
 
     batch1 = _make_batch(db_session, academic_year="2025-2026")
     row1 = _make_staging_row(
-        db_session, batch1, source_sheet="PROH 1A", student_number="00771",
-        last_name="Reyes", first_name="Liza", status="Regular",
+        db_session,
+        batch1,
+        source_sheet="PROH 1A",
+        student_number="00771",
+        last_name="Reyes",
+        first_name="Liza",
+        status="Regular",
     )
     StudentPromotionService(session=db_session).promote_import_batch(batch1.id)
     db_session.refresh(row1)
@@ -298,10 +311,17 @@ def test_existing_student_number_reused_across_batches(db_session: Session):
     # Later import batch: same student, new section/status.
     batch2 = _make_batch(db_session, academic_year="2026-2027")
     row2 = _make_staging_row(
-        db_session, batch2, source_sheet="PROH 2B", student_number="00771",
-        last_name="Reyes", first_name="Liza", status="Irregular",
+        db_session,
+        batch2,
+        source_sheet="PROH 2B",
+        student_number="00771",
+        last_name="Reyes",
+        first_name="Liza",
+        status="Irregular",
     )
-    result2 = StudentPromotionService(session=db_session).promote_import_batch(batch2.id)
+    result2 = StudentPromotionService(session=db_session).promote_import_batch(
+        batch2.id
+    )
 
     assert result2.newly_promoted_rows == 1
     db_session.refresh(row2)
