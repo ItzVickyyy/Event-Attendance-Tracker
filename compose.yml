@@ -29,6 +29,12 @@ services:
     ports:
       - "5433:5432"
 
+  mailpit:
+    image: axllent/mailpit:v1.29
+    ports:
+      - "1025:1025"
+      - "8026:8025"
+
   adminer:
     image: adminer
     depends_on:
