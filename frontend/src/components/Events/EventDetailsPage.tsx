@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, Calendar, Clock, MapPin, ScanLine } from "lucide-react"
+import { ArrowLeft, Calendar, Clock, ScanLine } from "lucide-react"
 import { EventsService } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ export function EventDetailsPage({ eventId }: { eventId: string }) {
   const status = event.status || "draft"
   return <div className="space-y-6">
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><Button variant="ghost" size="sm" asChild><Link to="/events"><ArrowLeft />Events</Link></Button><div className="mt-4"><div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-semibold tracking-tight">{event.event_name}</h1><Badge variant="outline">{status}</Badge></div><p className="mt-1 text-sm text-muted-foreground">Event workspace</p></div></div><Button asChild><Link to="/scanner" search={{ event_id: event.id }}><ScanLine />Open Scanner</Link></Button></div>
-    <Card><CardHeader><CardTitle className="text-base">Event Information</CardTitle></CardHeader><CardContent className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"><Info icon={<Calendar />} label="Date" value={event.event_date} /><Info icon={<Clock />} label="Start" value={event.start_time || "—"} /><Info icon={<Clock />} label="End" value={event.end_time || "—"} /><Info icon={<MapPin />} label="Location" value={event.location || "—"} /><Info label="Attendance mode" value={mode} /><Info label="Status" value={status} /></CardContent></Card>
+    <Card><CardHeader><CardTitle className="text-base">Event Information</CardTitle></CardHeader><CardContent className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"><Info icon={<Calendar />} label="Date" value={event.event_date} /><Info icon={<Clock />} label="Start" value={event.start_time || "—"} /><Info icon={<Clock />} label="End" value={event.end_time || "—"} /><Info label="Attendance mode" value={mode} /><Info label="Status" value={status} /></CardContent></Card>
     <div className="grid gap-4 md:grid-cols-2"><Card><CardHeader><CardTitle className="text-base">Registration</CardTitle></CardHeader><CardContent><p className="text-sm text-muted-foreground">Configure event eligibility and registration in the event registration workspace.</p><Button className="mt-4" variant="outline" asChild><Link to="/events/$eventId/registration" params={{ eventId }}>Open Registration</Link></Button></CardContent></Card><Card><CardHeader><CardTitle className="text-base">Roster</CardTitle></CardHeader><CardContent><p className="text-sm text-muted-foreground">View the event’s live attendance population and roster state.</p><Button className="mt-4" variant="outline" asChild><Link to="/events/$eventId/roster" params={{ eventId }}>Open Roster</Link></Button></CardContent></Card></div>
   </div>
 }
