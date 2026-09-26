@@ -46,6 +46,8 @@ jobs:
         working-directory: frontend
       - run: docker compose down -v --remove-orphans
       - run: docker compose up -d --wait db mailpit
+      - name: Create test database
+        run: docker compose exec -T db psql -U postgres -d app -c 'CREATE DATABASE app_test;'
       - name: Migrate DB
         run: uv run bash scripts/prestart.sh
         working-directory: backend
