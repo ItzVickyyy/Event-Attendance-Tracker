@@ -592,7 +592,7 @@ test.describe("Offline roster caching and scanning", () => {
     await page.fill('input[placeholder="8F:49:5B:74"]', "CRED-1")
     await page.keyboard.press("Enter")
     await expect(
-      page.getByText("Already queued for this attendee"),
+      page.locator("main").getByText("Already queued for this attendee", { exact: true }),
     ).toBeVisible()
 
     const queue = await readQueue(page)
