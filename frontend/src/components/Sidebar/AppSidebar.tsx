@@ -1,38 +1,12 @@
-import {
-  Briefcase,
-  Calendar,
-  ClipboardList,
-  Home,
-  Users,
-  Wifi,
-} from "lucide-react"
-
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-} from "@/components/ui/sidebar"
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from "@/components/ui/sidebar"
 import useAuth from "@/hooks/useAuth"
-import { type Item, Main } from "./Main"
+import { ReconstructionNavigation } from "./ReconstructionNavigation"
 import { User } from "./User"
 
-const baseItems: Item[] = [
-  { icon: Home, title: "Dashboard", path: "/" },
-  { icon: Calendar, title: "Events", path: "/events" },
-  { icon: Users, title: "Students", path: "/students" },
-  { icon: Wifi, title: "Scanner", path: "/scanner" },
-  { icon: ClipboardList, title: "Records", path: "/records" },
-]
-
 export function AppSidebar() {
-  const { user: currentUser } = useAuth()
-
-  const items = currentUser?.is_superuser
-    ? [...baseItems, { icon: Briefcase, title: "Admin", path: "/admin" }]
-    : baseItems
+  const { user } = useAuth()
 
   return (
     <Sidebar collapsible="icon">
@@ -40,11 +14,11 @@ export function AppSidebar() {
         <Logo variant="responsive" />
       </SidebarHeader>
       <SidebarContent>
-        <Main items={items} />
+        <ReconstructionNavigation />
       </SidebarContent>
       <SidebarFooter>
         <SidebarAppearance />
-        <User user={currentUser} />
+        <User user={user} />
       </SidebarFooter>
     </Sidebar>
   )
