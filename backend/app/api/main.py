@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.routes import (
     academic_catalog,
     academic_programs,
+    academic_registry,
     academic_sections,
     attendance,
     attendance_corrections,
@@ -31,6 +32,7 @@ api_router.include_router(organizations.router)
 api_router.include_router(academic_programs.router)
 api_router.include_router(academic_sections.router)
 api_router.include_router(academic_catalog.router)
+api_router.include_router(academic_registry.router)
 api_router.include_router(people.router)
 api_router.include_router(students.router)
 api_router.include_router(attendees.router)

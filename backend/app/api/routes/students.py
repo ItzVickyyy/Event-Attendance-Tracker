@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
@@ -30,11 +31,12 @@ def read_students(
     limit: int = 100,
     search: str | None = None,
 ) -> Any:
-    count_statement = select(func.count()).select_from(Student)
+    count_statement = select(func.count()).select_from(Student).where(text("students.archived_at IS NULL"))
     statement = (
         select(Student, Person, Attendee)
         .join(Person, col(Student.person_id) == Person.id)
         .join(Attendee, col(Attendee.person_id) == Person.id, isouter=True)
+        .where(text("students.archived_at IS NULL"))
     )
 
     if section_id:
@@ -121,6 +123,9 @@ def read_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    archived = session.execute(text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}).scalar_one_or_none()
+    if archived is not None:
+        raise HTTPException(status_code=404, detail="Student not found")
     return student
 
 
@@ -137,6 +142,9 @@ def update_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    archived = session.execute(text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}).scalar_one_or_none()
+    if archived is not None:
+        raise HTTPException(status_code=404, detail="Student is archived")
 
     update_dict = student_in.model_dump(exclude_unset=True)
 
@@ -192,6 +200,9 @@ def delete_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    session.delete(student)
+    session.execute(
+        text("UPDATE students SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND archived_at IS NULL"),
+        {"id": student_id},
+    )
     session.commit()
-    return {"message": "Student deleted successfully"}
+    return {"message": "Student archived successfully"}
