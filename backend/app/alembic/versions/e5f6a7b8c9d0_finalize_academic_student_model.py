@@ -65,17 +65,71 @@ def upgrade() -> None:
     op.create_index("ix_student_enrollments_section_id", "student_enrollments", ["section_id"])
 
     conn = op.get_bind()
+
+    # Preserve every legacy academic year represented by existing sections.
+    # The previous implementation only created 2026-2027, which left older
+    # sections without an academic_year_id and caused the NOT NULL transition
+    # below to fail on databases containing historical section data.
     conn.execute(text("""
-        INSERT INTO academic_years (id, label, start_year, end_year, is_current, created_at, updated_at)
-        VALUES ('00000000-0000-0000-0000-000000002026', '2026-2027', 2026, 2027, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (label) DO NOTHING
+        INSERT INTO academic_years
+            (id, label, start_year, end_year, is_current, created_at, updated_at)
+        SELECT
+            gen_random_uuid(),
+            ay.label,
+            split_part(ay.label, '-', 1)::integer,
+            split_part(ay.label, '-', 2)::integer,
+            ay.label = '2026-2027',
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+        FROM (
+            SELECT DISTINCT trim(academic_year) AS label
+            FROM academic_sections
+            WHERE academic_year IS NOT NULL
+              AND trim(academic_year) <> ''
+              AND trim(academic_year) ~ '^[0-9]{4}-[0-9]{4}$'
+        ) ay
+        ON CONFLICT (label) DO UPDATE
+        SET is_current = EXCLUDED.is_current
     """))
+
+    # Ensure the current academic year exists even when there are no legacy
+    # sections carrying that label yet.
+    conn.execute(text("""
+        INSERT INTO academic_years
+            (id, label, start_year, end_year, is_current, created_at, updated_at)
+        VALUES
+            ('00000000-0000-0000-0000-000000002026', '2026-2027', 2026, 2027, true,
+             CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (label) DO UPDATE
+        SET is_current = true
+    """))
+
+    # Map legacy section rows to the normalized academic_year records.
     conn.execute(text("""
         UPDATE academic_sections
         SET academic_year_id = ay.id
         FROM academic_years ay
-        WHERE ay.label = academic_sections.academic_year
+        WHERE ay.label = trim(academic_sections.academic_year)
+          AND academic_sections.academic_year_id IS NULL
     """))
+
+    # Every existing section must be mapped before academic_year_id becomes
+    # mandatory. Fail explicitly instead of silently assigning the wrong year
+    # if legacy data contains an invalid or unsupported academic-year label.
+    conn.execute(text("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM academic_sections
+                WHERE academic_year_id IS NULL
+            ) THEN
+                RAISE EXCEPTION
+                    'Cannot finalize academic_sections: one or more rows could not be mapped to academic_years';
+            END IF;
+        END $$;
+    """))
+
     conn.execute(text("""
         UPDATE academic_sections
         SET section_code = trim(regexp_replace(section_name, '^(AMG|SMP|WMAD|IS)[[:space:]]+', ''))
@@ -86,8 +140,10 @@ def upgrade() -> None:
         SET section_code = section_name
         WHERE section_code IS NULL
     """))
+
     conn.execute(text("""
-        INSERT INTO student_enrollments (id, student_id, academic_year_id, section_id, student_status, created_at, updated_at)
+        INSERT INTO student_enrollments
+            (id, student_id, academic_year_id, section_id, student_status, created_at, updated_at)
         SELECT md5(s.id::text || sec.id::text || sec.academic_year_id::text)::uuid,
                s.id, sec.academic_year_id, sec.id,
                COALESCE(CAST(s.academic_status AS TEXT), 'regular'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
