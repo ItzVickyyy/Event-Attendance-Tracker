@@ -13,7 +13,7 @@ on:
         default: 'false'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   changes:
@@ -88,8 +88,28 @@ jobs:
     - run: docker compose run --rm backend bash scripts/prestart.sh
     - run: docker compose up -d --wait backend
     - name: Run Playwright tests
-      run: bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+      id: playwright-tests
+      continue-on-error: true
+      run: |
+        set -o pipefail
+        bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} 2>&1 | tee /tmp/playwright-test.log
       working-directory: frontend
+    - name: Report Playwright failure
+      if: steps.playwright-tests.outcome == 'failure' && github.event_name == 'pull_request'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        {
+          echo "## R20 Playwright diagnostic — shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
+          echo ''
+          echo '```text'
+          tail -n 300 /tmp/playwright-test.log
+          echo '```'
+        } > /tmp/playwright-test-comment.md
+        gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/playwright-test-comment.md
+    - name: Fail job when Playwright fails
+      if: steps.playwright-tests.outcome == 'failure'
+      run: exit 1
     - run: docker compose down -v --remove-orphans
     - name: Upload blob report to GitHub Actions Artifacts
       if: ${{ !cancelled() }}
