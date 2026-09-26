@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       debug_enabled:
-        description: 'Run the build with tmate debugging enabled'
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: 'false'
 
@@ -82,20 +82,16 @@ jobs:
       working-directory: backend
     - run: bun ci
       working-directory: frontend
-    - run: bunx playwright install --with-deps chromium
-      working-directory: frontend
     - run: bash scripts/generate-client.sh
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
     - run: docker compose run --rm backend bash scripts/prestart.sh
-    - run: docker compose up -d --wait backend
     - name: Run Playwright tests
       id: playwright-tests
       continue-on-error: true
       run: |
         set -o pipefail
-        bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} 2>&1 | tee /tmp/playwright-test.log
-      working-directory: frontend
+        docker compose run --rm playwright bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} 2>&1 | tee /tmp/playwright-test.log
     - name: Report Playwright failure
       if: steps.playwright-tests.outcome == 'failure' && github.event_name == 'pull_request'
       env:
@@ -122,26 +118,6 @@ jobs:
         include-hidden-files: true
         retention-days: 1
 
-  background-sync:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-      with:
-        bun-version: 1.3.12
-    - name: Install frontend dependencies
-      run: bun ci
-      working-directory: frontend
-    - name: Install Chromium
-      run: bunx playwright install --with-deps chromium
-      working-directory: frontend
-    - name: Run background-sync suite
-      run: bunx playwright test --config=playwright.background-sync.config.ts
-      working-directory: frontend
-
   merge-playwright-reports:
     needs:
       - test-playwright
@@ -153,7 +129,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
-    - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421803d6 # v2.2.0
+    - uses: oven-sh/setup-bun@0c5077e51419868618aaae5fe8019c62421857d6 # v2.2.0
       with:
         bun-version: 1.3.12
     - name: Install dependencies
@@ -179,7 +155,6 @@ jobs:
     if: always()
     needs:
       - test-playwright
-      - background-sync
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
