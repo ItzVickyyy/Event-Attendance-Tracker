@@ -48,7 +48,7 @@ function SyncSummary() {
           <Badge variant={pendingCount > 0 ? "secondary" : "outline"}>{pendingCount} pending</Badge>
         </div>
         <p className="text-sm text-muted-foreground">{syncing ? "Scanner synchronization is currently in progress." : pendingCount > 0 ? "Pending scans are managed from the Scanner workspace." : "No pending scans are currently queued."}</p>
-        <Button asChild variant="outline" size="sm"><Link to="/scanner">Open Scanner</Link></Button>
+        <Button asChild variant="outline" size="sm"><Link to="/scanner" search={{ event_id: undefined }}>Open Scanner</Link></Button>
       </CardContent>
     </Card>
   )
@@ -83,7 +83,7 @@ export function OperationalDashboard() {
         <div className="mb-3 flex items-center justify-between gap-3"><div><h2 id="recent-events-heading" className="text-lg font-semibold">Recent Event Overview</h2><p className="text-sm text-muted-foreground">Recent events from the existing event service.</p></div><Button asChild variant="outline" size="sm"><Link to="/events">View Events</Link></Button></div>
         <Card><CardContent className="p-0">
           {eventsQuery.isError ? <div className="p-6 text-sm text-destructive">Unable to load recent events.</div> : !eventsQuery.isLoading && recentEvents.length === 0 ? <div className="p-8 text-center text-muted-foreground">No events are available yet.</div> : <div className="divide-y">
-            {eventsQuery.isLoading ? <div className="p-6 text-sm text-muted-foreground">Loading recent events...</div> : recentEvents.map((event: EventPublic) => <Link key={event.id} to="/events/$eventId" params={{ eventId: event.id }} className="block p-4 transition-colors hover:bg-muted/50"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">{event.event_name}</p><p className="text-sm text-muted-foreground">{formatEventDate(event.event_date)}</p></div><div className="flex items-center gap-2">{event.status && <Badge variant="outline">{event.status.replaceAll("_", " ")}</Badge>}{event.attendance_mode && <Badge variant="secondary">{event.attendance_mode === "time_in_only" ? "Time-In only" : "Time-In / Time-Out"}</Badge>}</div></div></Link>)}
+            {eventsQuery.isLoading ? <div className="p-6 text-sm text-muted-foreground">Loading recent events...</div> : recentEvents.map((event: EventPublic) => <Link key={event.id} to="/events/$eventId" params={{ eventId: event.id }} className="block p-4 transition-colors hover:bg-muted/50"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">{event.event_name}</p><p className="text-sm text-muted-foreground">{formatEventDate(event.event_date)}</p></div><div className="flex items-center gap-2">{event.status && <Badge variant="outline">{event.status.replace(/_/g, " ")}</Badge>}{event.attendance_mode && <Badge variant="secondary">{event.attendance_mode === "time_in_only" ? "Time-In only" : "Time-In / Time-Out"}</Badge>}</div></div></Link>)}
           </div>}
         </CardContent></Card>
       </section>
