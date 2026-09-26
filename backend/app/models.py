@@ -318,6 +318,13 @@ class AcademicSection(AcademicSectionBase, table=True):
     )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    section_code: str = Field(max_length=20, index=True)
+    academic_year_id: uuid.UUID = Field(
+        foreign_key="academic_years.id",
+        nullable=False,
+        index=True,
+        ondelete="RESTRICT",
+    )
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
@@ -333,6 +340,8 @@ class AcademicSection(AcademicSectionBase, table=True):
 
 class AcademicSectionPublic(AcademicSectionBase):
     id: uuid.UUID
+    section_code: str
+    academic_year_id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -439,6 +448,11 @@ class Student(StudentBase, table=True):
     __tablename__ = "students"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    archived_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        index=True,
+    )
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
@@ -457,6 +471,7 @@ class Student(StudentBase, table=True):
 
 class StudentPublic(StudentBase):
     id: uuid.UUID
+    archived_at: datetime | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     person_name: str | None = None
@@ -668,6 +683,13 @@ class EventBase(SQLModel):
         nullable=True,
         ondelete="SET NULL",
     )
+    academic_year_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="academic_years.id",
+        nullable=True,
+        index=True,
+        ondelete="RESTRICT",
+    )
     status: EventStatus = Field(default=EventStatus.draft)
 
 
@@ -683,6 +705,7 @@ class EventUpdate(SQLModel):
     end_time: str | None = Field(default=None, max_length=10)
     attendance_mode: AttendanceMode | None = None
     organization_id: uuid.UUID | None = None
+    academic_year_id: uuid.UUID | None = None
     status: EventStatus | None = None
 
 
@@ -816,6 +839,13 @@ class AttendanceBase(SQLModel):
         nullable=False,
         ondelete="CASCADE",
     )
+    academic_year_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="academic_years.id",
+        nullable=True,
+        index=True,
+        ondelete="RESTRICT",
+    )
     time_in: datetime | None = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
@@ -836,6 +866,7 @@ class AttendanceBase(SQLModel):
 
 class AttendanceCreate(SQLModel):
     registration_id: uuid.UUID
+    academic_year_id: uuid.UUID | None = None
     time_in: datetime | None = None
     time_out: datetime | None = None
     status: AttendanceStatus | None = None
