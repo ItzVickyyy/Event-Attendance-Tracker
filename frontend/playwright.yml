@@ -87,6 +87,8 @@ jobs:
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
     - run: docker compose up -d --wait db mailpit
+    - run: docker compose ps
+    - run: curl --fail --retry 10 --retry-delay 1 http://127.0.0.1:8026/api/v1/messages
     - run: docker compose run --rm backend bash scripts/prestart.sh
     - run: docker compose up -d --wait backend
     - name: Run Playwright tests
