@@ -1,0 +1,3 @@
+email,full_name,password,role,position,academic_year,section_name,can_scan
+user@example.com,Example User,CHANGE-ME,admin,Example Position,2026-2027,,true
+classrep@example.com,Example Class Representative,CHANGE-ME,class_representative,,2026-2027,BSIT 3A,false
