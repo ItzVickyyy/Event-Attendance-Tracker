@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   changes:
@@ -92,19 +91,13 @@ jobs:
       run: |
         set -o pipefail
         docker compose run --rm playwright bunx playwright test --fail-on-flaky-tests --trace=retain-on-failure --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} 2>&1 | tee /tmp/playwright-test.log
-    - name: Report Playwright failure
-      if: steps.playwright-tests.outcome == 'failure' && github.event_name == 'pull_request'
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        {
-          echo "## R20 Playwright diagnostic — shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
-          echo ''
-          echo '```text'
-          tail -n 300 /tmp/playwright-test.log
-          echo '```'
-        } > /tmp/playwright-test-comment.md
-        gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/playwright-test-comment.md
+    - name: Upload Playwright diagnostic
+      if: steps.playwright-tests.outcome == 'failure'
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: playwright-diagnostic-${{ matrix.shardIndex }}
+        path: /tmp/playwright-test.log
+        retention-days: 3
     - name: Fail job when Playwright fails
       if: steps.playwright-tests.outcome == 'failure'
       run: exit 1
