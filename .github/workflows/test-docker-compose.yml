@@ -19,7 +19,14 @@ jobs:
         with:
           persist-credentials: false
       - name: Configure test environment
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          cat >> .env <<'EOF'
+          POSTGRES_PASSWORD=qa-postgres-password
+          DATABASE_URL=postgresql://postgres:qa-postgres-password@db:5432/app
+          SECRET_KEY=r20-qa-only-secret-key-not-for-production
+          FIRST_SUPERUSER_PASSWORD=r20-qa-superuser-password
+          EOF
       - run: docker compose build
       - run: docker compose down -v --remove-orphans
       - run: docker compose run --rm backend bash scripts/prestart.sh
