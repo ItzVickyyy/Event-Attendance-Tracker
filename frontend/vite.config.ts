@@ -7,6 +7,15 @@ import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 
 const httpsCertDir = path.resolve(import.meta.dirname, ".certs")
+const httpsKeyPath = path.join(httpsCertDir, "localhost+lan-key.pem")
+const httpsCertPath = path.join(httpsCertDir, "localhost+lan.pem")
+const httpsOptions =
+  fs.existsSync(httpsKeyPath) && fs.existsSync(httpsCertPath)
+    ? {
+        key: fs.readFileSync(httpsKeyPath),
+        cert: fs.readFileSync(httpsCertPath),
+      }
+    : undefined
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -21,10 +30,7 @@ export default defineConfig({
   },
   server: {
     host: true,
-    https: {
-      key: fs.readFileSync(path.join(httpsCertDir, "localhost+lan-key.pem")),
-      cert: fs.readFileSync(path.join(httpsCertDir, "localhost+lan.pem")),
-    },
+    https: httpsOptions,
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8001",
@@ -76,7 +82,7 @@ export default defineConfig({
               cacheName: "events-cache",
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                maxAgeSeconds: 60 * 60 * 24,
               },
               networkTimeoutSeconds: 10,
             },
@@ -88,7 +94,7 @@ export default defineConfig({
               cacheName: "students-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                maxAgeSeconds: 60 * 60 * 24,
               },
               networkTimeoutSeconds: 10,
             },
@@ -100,7 +106,7 @@ export default defineConfig({
               cacheName: "credentials-cache",
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+                maxAgeSeconds: 60 * 60 * 24,
               },
               networkTimeoutSeconds: 10,
             },
@@ -112,21 +118,13 @@ export default defineConfig({
               cacheName: "assets-cache",
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },
           },
         ],
       },
       devOptions: {
-        // Disabled: the dev service worker would intercept/cache API requests
-        // via the runtimeCaching rules above (e.g. NetworkFirst for
-        // /api/v1/events, /api/v1/students, /api/v1/attendee-credentials),
-        // which can mask backend/proxy config changes during `vite dev`.
-        // Production builds are unaffected — this only gates dev-mode SW
-        // registration. See development.md ("PWA / Service Worker in
-        // Development") for manual cleanup steps for browsers that already
-        // registered the dev SW.
         enabled: false,
         type: "module",
       },
