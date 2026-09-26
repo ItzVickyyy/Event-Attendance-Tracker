@@ -178,7 +178,7 @@ def test_parse_clean_workbook(
 
     assert len(parsed_rows) == 2
 
-    for parsed_row, expected in zip(parsed_rows, test_rows):
+    for parsed_row, expected in zip(parsed_rows, test_rows, strict=True):
         assert parsed_row["source_sheet"] == "BSCS 1A"
         assert parsed_row["raw_student_number"] == expected["Student Number"]
         assert parsed_row["raw_last_name"] == expected["Last Name"]
@@ -531,7 +531,6 @@ def test_same_program_duplicate_staging_persistence_compatibility():
     parsed_rows = service.parse_student_import(import_batch, xlsx_data)
 
     assert len(parsed_rows) == 2
-    # Persistence contract from 3C-02 is unchanged: one add() call per parsed row.
     assert mock_session.add.call_count == 2
 
     persisted_records = [call.args[0] for call in mock_session.add.call_args_list]
@@ -607,10 +606,10 @@ def test_whitespace_normalization(
     test_rows = [
         {
             "No.": 1,
-            "Student Number": " 00105 ",  # Extra whitespace
-            "Last Name": "  Dela Cruz  ",  # Extra whitespace
-            "First Name": "  Juan  ",  # Extra whitespace
-            "Middle Name": "  Garcia  ",  # Extra whitespace
+            "Student Number": " 00105 ",
+            "Last Name": "  Dela Cruz  ",
+            "First Name": "  Juan  ",
+            "Middle Name": "  Garcia  ",
         },
     ]
 
@@ -760,11 +759,9 @@ def test_parse_student_import_persists_staging_records():
 
     parsed_rows = service.parse_student_import(import_batch, xlsx_data)
 
-    # The return contract is unchanged: still the parsed row dicts, not ORM objects.
     assert len(parsed_rows) == 1
     assert parsed_rows[0]["raw_student_number"] == "00501"
 
-    # The parser must now persist a staging record via the session.
     assert mock_session.add.call_count == 1
     persisted_record = mock_session.add.call_args[0][0]
 
@@ -784,8 +781,6 @@ def test_parse_student_import_persists_staging_records():
     assert persisted_record.validation_errors == []
     assert persisted_record.conflict_key is None
 
-    # Commit stays the caller's/route's responsibility, matching the project's
-    # existing session convention (create_staging_records already only calls add()).
     mock_session.commit.assert_not_called()
 
 
@@ -876,12 +871,6 @@ def test_create_staging_records(
 
 # ---------------------------------------------------------------------------
 # 3C-04: Summary Reconciliation
-#
-# These tests use a mocked session (like the 3C-02/3C-03 tests above) so
-# they can run without a live database. None of the fixture numbers below
-# are the known Masterlist.xlsx totals (632/557/75/19) - deliberately
-# different numbers are used throughout so a reconciliation implementation
-# that hardcoded the known totals would fail these tests.
 # ---------------------------------------------------------------------------
 
 _RECONCILIATION_HEADERS = ["No.", "Student Number", "Last Name", "First Name", "Status"]
@@ -911,8 +900,6 @@ def test_summary_reconciliation_matching_workbook():
     )
 
     parsed_rows = service.parse_student_import(import_batch, xlsx_data)
-
-    # Summary sheet must not leak into the student rows / staging layer.
     assert len(parsed_rows) == 3
     assert all(row["source_sheet"] != "Summary" for row in parsed_rows)
 
@@ -941,7 +928,6 @@ def test_summary_reconciliation_total_mismatch():
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        # Declared total (5) deliberately does not match the 2 rows actually present.
         summary_values={"total_students": 5, "regular": 2, "irregular": 0, "sections": 1},
     )
 
@@ -975,8 +961,6 @@ def test_summary_reconciliation_regular_irregular_mismatch():
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        # Declares 2 regular / 1 irregular, but the sheets actually supply
-        # 1 regular / 2 irregular.
         summary_values={"total_students": 3, "regular": 2, "irregular": 1, "sections": 1},
     )
 
@@ -992,7 +976,6 @@ def test_summary_reconciliation_regular_irregular_mismatch():
     assert irregular_check["status"] == "mismatched"
     assert irregular_check["declared"] == 1
     assert irregular_check["calculated"] == 2
-    # Total and sections still matched - only the status split is wrong.
     assert reconciliation["checks"]["total_students"]["status"] == "matched"
     assert reconciliation["checks"]["sections"]["status"] == "matched"
 
@@ -1016,7 +999,6 @@ def test_summary_reconciliation_section_count_mismatch():
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
-        # Declares 5 sections; only 2 section sheets actually exist.
         summary_values={"total_students": 2, "regular": 2, "irregular": 0, "sections": 5},
     )
 
@@ -1056,9 +1038,6 @@ def test_summary_reconciliation_no_hardcoded_totals():
             {"No.": 1, "Student Number": "59002", "Last Name": "Ong", "First Name": "Pia", "Status": "Regular"},
         ],
     }
-    # 7 (BSCS 1A: 5 regular + 2 irregular) + 1 (BSIT 1A) + 1 (BSIT 1B)
-    # = 9 total, 7 regular, 2 irregular, 3 sections - none of these are the
-    # known workbook's 632/557/75/19.
     xlsx_data = create_test_xlsx_workbook_with_summary(
         sections,
         _RECONCILIATION_HEADERS,
@@ -1127,7 +1106,6 @@ def test_summary_reconciliation_unknown_status_values_reported_unavailable():
 
     assert reconciliation["checks"]["regular"]["status"] == "unavailable"
     assert reconciliation["checks"]["irregular"]["status"] == "unavailable"
-    # Total students and sections are unaffected by unrecognized status text.
     assert reconciliation["checks"]["total_students"]["status"] == "matched"
     assert reconciliation["checks"]["sections"]["status"] == "matched"
     assert reconciliation["status"] == "unavailable"
