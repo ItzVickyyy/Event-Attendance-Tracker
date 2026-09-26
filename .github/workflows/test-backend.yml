@@ -50,8 +50,28 @@ jobs:
         run: uv run bash scripts/prestart.sh
         working-directory: backend
       - name: Run tests
-        run: uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}"
+        id: backend-tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          uv run bash scripts/tests-start.sh "Coverage for ${{ github.sha }}" 2>&1 | tee /tmp/backend-test.log
         working-directory: backend
+      - name: Report backend test failure
+        if: steps.backend-tests.outcome == 'failure' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '## R20 backend test diagnostic'
+            echo ''
+            echo '```text'
+            tail -n 250 /tmp/backend-test.log
+            echo '```'
+          } > /tmp/backend-test-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/backend-test-comment.md
+      - name: Fail job when backend tests fail
+        if: steps.backend-tests.outcome == 'failure'
+        run: exit 1
       - name: Run Ruff
         run: uv run ruff check backend/app backend/tests
       - name: Check Ruff format
