@@ -86,6 +86,7 @@ jobs:
     - run: bash scripts/generate-client.sh
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
+    - run: docker compose up -d --wait db mailpit
     - run: docker compose run --rm backend bash scripts/prestart.sh
     - run: docker compose up -d --wait backend
     - name: Run Playwright tests
