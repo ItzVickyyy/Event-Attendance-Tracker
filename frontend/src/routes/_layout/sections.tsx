@@ -1,9 +1,6 @@
-import { ArrowRight, Search, UsersRound } from "lucide-react"
-import { createFileRoute, Link } from "@tanstack/react-router"
-
-import { PlaceholderPage } from "@/components/Reconstruction/PlaceholderPage"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { createFileRoute } from "@tanstack/react-router"
+import SectionList from "@/components/Sections/SectionList"
+import { StudentSearch } from "@/components/Sections/StudentSearch"
 
 export const Route = createFileRoute("/_layout/sections")({
   component: Sections,
@@ -11,31 +8,5 @@ export const Route = createFileRoute("/_layout/sections")({
 })
 
 function Sections() {
-  return (
-    <PlaceholderPage
-      title="Sections & Students"
-      description="Browse students through their academic section, with global student search kept as a separate lookup path."
-      detail="Phase 1 establishes Sections as the primary browsing entry point. Section data and student management will be connected in a later phase."
-    >
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><UsersRound className="size-5" />Sections</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">Section List is the primary entry point for student records.</p>
-            <Button variant="outline" asChild><Link to="/sections">Open Section List <ArrowRight /></Link></Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Search className="size-5" />Global Student Search</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">A dedicated lookup mechanism will resolve a student to their section in a later phase.</p>
-          </CardContent>
-        </Card>
-      </div>
-    </PlaceholderPage>
-  )
+  return <div className="space-y-8"><header className="space-y-2"><p className="text-sm font-medium text-muted-foreground">Sections & Students</p><h1 className="text-3xl font-semibold tracking-tight">Sections</h1><p className="max-w-2xl text-muted-foreground">Browse academic sections and the students assigned to them. Use global search when you already know a student.</p></header><SectionList /><StudentSearch /></div>
 }
