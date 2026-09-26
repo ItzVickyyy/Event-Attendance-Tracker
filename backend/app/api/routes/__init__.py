@@ -1,3 +1,4 @@
+from app.api.routes.academic_catalog import router as academic_catalog_router
 from app.api.routes.academic_programs import router as academic_programs_router
 from app.api.routes.academic_sections import router as academic_sections_router
 from app.api.routes.attendance import router as attendance_router
@@ -22,6 +23,7 @@ from app.api.routes.users import router as users_router
 from app.api.routes.utils import router as utils_router
 
 __all__ = [
+    "academic_catalog_router",
     "academic_programs_router",
     "academic_sections_router",
     "attendance_router",
