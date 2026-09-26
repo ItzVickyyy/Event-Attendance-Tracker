@@ -15,14 +15,7 @@ import { toast } from "sonner"
 import { AcademicProgramsService, AcademicSectionsService, StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -145,13 +138,12 @@ function SectionList() {
         : await AcademicSectionsService.sectionsCreateAcademicSection({ body })
       if (!section.data) throw new Error("Section could not be saved")
 
-      const majorCode = needsMajor ? major : ""
-      if (majorCode) {
+      if (needsMajor) {
         const majorResponse = await fetch(apiUrl(`/academic-catalog/majors?program_id=${programId}`), { headers: authHeaders() })
         if (!majorResponse.ok) throw new Error("Unable to load academic majors")
         const majorData = await majorResponse.json()
-        const selectedMajor = majorData.data?.find((item: any) => item.code === majorCode)
-        if (!selectedMajor) throw new Error(`Academic major ${majorCode} is not configured for this program`)
+        const selectedMajor = majorData.data?.find((item: any) => item.code === major)
+        if (!selectedMajor) throw new Error(`Academic major ${major} is not configured for this program`)
         const assignmentResponse = await fetch(apiUrl(`/academic-catalog/sections/${section.data.id}/major`), {
           method: "PUT",
           headers: { ...authHeaders(), "Content-Type": "application/json" },
@@ -187,8 +179,8 @@ function SectionList() {
       const response = await StudentsService.readStudents({ query: { section_id: section.id, skip: 0, limit: 10000 } })
       const rows = response.data.data
       const csv = [
-        ["#", "Student Number", "Last Name", "First Name", "Middle Name", "Extension", "Email", "Contact Number", "Academic Status"],
-        ...rows.map((student: any, index: number) => [index + 1, student.student_number, ...(student.person_name ?? "").split(" "), "", "", "", student.academic_status ?? ""]),
+        ["#", "Student Number", "Name", "Academic Status"],
+        ...rows.map((student: any, index: number) => [index + 1, student.student_number, student.person_name ?? "", student.academic_status ?? ""]),
       ].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\r\n")
       downloadBlob(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }), `${section.section_name}-${section.academic_year}.csv`)
     } catch {
