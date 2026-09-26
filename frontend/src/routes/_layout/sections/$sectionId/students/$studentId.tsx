@@ -7,6 +7,6 @@ export const Route = createFileRoute("/_layout/sections/$sectionId/students/$stu
 })
 
 function StudentDetails() {
-  const { studentId } = Route.useParams()
-  return <StudentDetailsPage studentId={studentId} />
+  const { sectionId, studentId } = Route.useParams()
+  return <StudentDetailsPage sectionId={sectionId} studentId={studentId} />
 }
