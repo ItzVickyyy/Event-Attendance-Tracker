@@ -80,6 +80,8 @@ jobs:
       working-directory: backend
     - run: bun ci
       working-directory: frontend
+    - run: bunx playwright install --with-deps chromium
+      working-directory: frontend
     - run: bash scripts/generate-client.sh
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
@@ -110,6 +112,9 @@ jobs:
         bun-version: 1.3.12
     - name: Install frontend dependencies
       run: bun ci
+      working-directory: frontend
+    - name: Install Chromium
+      run: bunx playwright install --with-deps chromium
       working-directory: frontend
     - name: Run background-sync suite
       run: bunx playwright test --config=playwright.background-sync.config.ts
