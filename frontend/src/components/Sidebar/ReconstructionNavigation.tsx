@@ -9,7 +9,7 @@ type NavigationItem = { title: string; path: string; icon: LucideIcon }
 type NavigationGroup = { title: string; items: NavigationItem[] }
 
 const navigationGroups: NavigationGroup[] = [
-  { title: "Workspace", items: [{ title: "Dashboard", path: "/", icon: LayoutDashboard }] },
+  { title: "Workspace", items: [{ title: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] },
   { title: "Operations", items: [
     { title: "Events", path: "/events", icon: CalendarDays },
     { title: "Sections & Students", path: "/sections", icon: UsersRound },
@@ -17,7 +17,7 @@ const navigationGroups: NavigationGroup[] = [
     { title: "Scanner", path: "/scanner", icon: ScanLine },
   ] },
   { title: "Administration", items: [
-    { title: "Administration", path: "/admin", icon: ShieldCheck },
+    { title: "Administration", path: "/administration", icon: ShieldCheck },
     { title: "System Settings", path: "/settings", icon: Settings },
   ] },
   { title: "Account", items: [{ title: "My Account", path: "/account", icon: UserRound }] },
@@ -46,7 +46,7 @@ export function ReconstructionNavigation() {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        if (item.path === "/admin" || item.path === "/settings") return administrationAllowed
+        if (item.path === "/administration" || item.path === "/settings") return administrationAllowed
         if (item.path === "/scanner") return scannerAllowed
         if (item.path === "/events" || item.path === "/records" || item.path === "/sections") return operationalAllowed
         return true
@@ -62,7 +62,7 @@ export function ReconstructionNavigation() {
           <SidebarGroupContent>
             <SidebarMenu>
               {group.items.map((item) => {
-                const isActive = item.path === "/" ? pathname === "/" : pathname === item.path || pathname.startsWith(`${item.path}/`)
+                const isActive = pathname === item.path || pathname.startsWith(`${item.path}/`)
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>

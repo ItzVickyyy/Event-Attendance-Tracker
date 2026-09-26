@@ -12,7 +12,6 @@ import { Route as LayoutDashboardRouteImport } from './routes/_layout/dashboard'
 import { Route as LayoutAccountRouteImport } from './routes/_layout/account'
 import { Route as LayoutAccountProfileRouteImport } from './routes/_layout/account/profile'
 import { Route as LayoutAccountSecurityRouteImport } from './routes/_layout/account/security'
-import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 import { Route as LayoutAdministrationRouteImport } from './routes/_layout/administration'
 import { Route as LayoutAdministrationUsersRouteImport } from './routes/_layout/administration/users'
 import { Route as LayoutAdministrationRolesRouteImport } from './routes/_layout/administration/roles'
@@ -56,7 +55,6 @@ const LayoutDashboardRoute = LayoutDashboardRouteImport.update({ id: '/dashboard
 const LayoutAccountRoute = LayoutAccountRouteImport.update({ id: '/account', path: '/account', getParentRoute: () => LayoutRoute } as any)
 const LayoutAccountProfileRoute = LayoutAccountProfileRouteImport.update({ id: '/account/profile', path: '/profile', getParentRoute: () => LayoutAccountRoute } as any)
 const LayoutAccountSecurityRoute = LayoutAccountSecurityRouteImport.update({ id: '/account/security', path: '/security', getParentRoute: () => LayoutAccountRoute } as any)
-const LayoutAdminRoute = LayoutAdminRouteImport.update({ id: '/admin', path: '/admin', getParentRoute: () => LayoutRoute } as any)
 const LayoutAdministrationRoute = LayoutAdministrationRouteImport.update({ id: '/administration', path: '/administration', getParentRoute: () => LayoutRoute } as any)
 const LayoutAdministrationUsersRoute = LayoutAdministrationUsersRouteImport.update({ id: '/administration/users', path: '/users', getParentRoute: () => LayoutAdministrationRoute } as any)
 const LayoutAdministrationRolesRoute = LayoutAdministrationRolesRouteImport.update({ id: '/administration/roles', path: '/roles', getParentRoute: () => LayoutAdministrationRoute } as any)
@@ -100,5 +98,5 @@ const LayoutSettingsRouteWithChildren = LayoutSettingsRoute._addFileChildren({ L
 const LayoutSectionsSectionIdStudentsRouteWithChildren = LayoutSectionsSectionIdStudentsRoute._addFileChildren({ LayoutSectionsSectionIdStudentsStudentIdRoute })
 const LayoutSectionsSectionIdRouteWithChildren = LayoutSectionsSectionIdRoute._addFileChildren({ LayoutSectionsSectionIdStudentsRoute: LayoutSectionsSectionIdStudentsRouteWithChildren, LayoutSectionsSectionIdAttendanceRoute })
 const LayoutSectionsRouteWithChildren = LayoutSectionsRoute._addFileChildren({ LayoutSectionsSectionIdRoute: LayoutSectionsSectionIdRouteWithChildren })
-const LayoutRouteWithChildren = LayoutRoute._addFileChildren({ LayoutIndexRoute, LayoutDashboardRoute, LayoutAccountRoute: LayoutAccountRouteWithChildren, LayoutAdminRoute, LayoutAdministrationRoute: LayoutAdministrationRouteWithChildren, LayoutEventsRoute: LayoutEventsRouteWithChildren, LayoutRecordsRoute: LayoutRecordsRouteWithChildren, LayoutScannerRoute: LayoutScannerRouteWithChildren, LayoutSettingsRoute: LayoutSettingsRouteWithChildren, LayoutSectionsRoute: LayoutSectionsRouteWithChildren })
+const LayoutRouteWithChildren = LayoutRoute._addFileChildren({ LayoutIndexRoute, LayoutDashboardRoute, LayoutAccountRoute: LayoutAccountRouteWithChildren, LayoutAdministrationRoute: LayoutAdministrationRouteWithChildren, LayoutEventsRoute: LayoutEventsRouteWithChildren, LayoutRecordsRoute: LayoutRecordsRouteWithChildren, LayoutScannerRoute: LayoutScannerRouteWithChildren, LayoutSettingsRoute: LayoutSettingsRouteWithChildren, LayoutSectionsRoute: LayoutSectionsRouteWithChildren })
 export const routeTree = rootRouteImport._addFileChildren({ LayoutRoute: LayoutRouteWithChildren, LoginRoute, RecoverPasswordRoute, ResetPasswordRoute, SignupRoute })
