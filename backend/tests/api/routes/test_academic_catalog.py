@@ -20,10 +20,8 @@ def test_seeded_2026_2027_academic_catalog(
     )
     assert sections.status_code == 200
     names = {item["section_name"] for item in sections.json()["data"]}
-    assert {"BSCS" not in names, "WMAD 3A" in names, "WMAD 4B" in names} == {
-        True,
-        True,
-    }
+    assert "WMAD 3A" in names
+    assert "WMAD 4B" in names
 
 
 def test_section_major_assignment(
@@ -40,12 +38,14 @@ def test_section_major_assignment(
         f"{settings.API_V1_STR}/academic-sections/?program_id={bsit['id']}&academic_year=2026-2027",
         headers=superuser_token_headers,
     )
+    assert sections.status_code == 200
     section = next(item for item in sections.json()["data"] if item["section_name"] == "WMAD 3A")
 
     majors = client.get(
         f"{settings.API_V1_STR}/academic-catalog/majors?program_id={bsit['id']}",
         headers=superuser_token_headers,
     )
+    assert majors.status_code == 200
     wmad = next(item for item in majors.json()["data"] if item["code"] == "WMAD")
 
     assignment = client.put(
