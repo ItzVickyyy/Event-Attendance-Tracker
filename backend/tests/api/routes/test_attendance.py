@@ -429,6 +429,119 @@ def test_scan_credential_eligibility_validation(
     assert "Credential is inactive" in r_inactive.json()["detail"]
 
 
+def test_scan_unregistered_attendee_rejected(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    """NFC/QR/manual scans must be rejected when the attendee has no
+    registration for the event, rather than silently auto-registering them.
+    """
+    # 1. Create Open Event
+    event_res = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=superuser_token_headers,
+        json={
+            "event_name": f"Unregistered Scan Event {random_lower_string()[:5]}",
+            "event_date": "2026-09-15",
+            "status": "open",
+        },
+    )
+    event_id = event_res.json()["id"]
+
+    # 2. Create person + attendee with NO event registration
+    p_res = client.post(
+        f"{settings.API_V1_STR}/people/",
+        headers=superuser_token_headers,
+        json={
+            "first_name": "Unregistered",
+            "last_name": "Attendee",
+            "email": random_email(),
+        },
+    )
+    person_id = p_res.json()["id"]
+    att_res = client.post(
+        f"{settings.API_V1_STR}/attendees/",
+        headers=superuser_token_headers,
+        json={"person_id": person_id, "attendee_type": "guest"},
+    )
+    att_id = att_res.json()["id"]
+
+    nfc_val = f"NFC_{random_lower_string()[:8].upper()}"
+    client.post(
+        f"{settings.API_V1_STR}/attendee-credentials/",
+        headers=superuser_token_headers,
+        json={
+            "attendee_id": att_id,
+            "credential_type": "nfc",
+            "credential_value": nfc_val,
+            "is_active": True,
+        },
+    )
+    qr_val = f"QR_{random_lower_string()[:8].upper()}"
+    client.post(
+        f"{settings.API_V1_STR}/attendee-credentials/",
+        headers=superuser_token_headers,
+        json={
+            "attendee_id": att_id,
+            "credential_type": "qr",
+            "credential_value": qr_val,
+            "is_active": True,
+        },
+    )
+
+    # 3. NFC scan -> 404, not registered
+    r_nfc = client.post(
+        f"{settings.API_V1_STR}/attendance/scan",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "credential_value": nfc_val, "scan_method": "nfc"},
+    )
+    assert r_nfc.status_code == 404
+    assert "not registered" in r_nfc.json()["detail"].lower()
+
+    # 4. QR scan -> 404, not registered
+    r_qr = client.post(
+        f"{settings.API_V1_STR}/attendance/scan",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "credential_value": qr_val, "scan_method": "qr"},
+    )
+    assert r_qr.status_code == 404
+    assert "not registered" in r_qr.json()["detail"].lower()
+
+    # 5. Manual scan -> 404, not registered
+    r_manual = client.post(
+        f"{settings.API_V1_STR}/attendance/scan-manual",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "attendee_id": att_id, "scan_method": "manual"},
+    )
+    assert r_manual.status_code == 404
+    assert "not registered" in r_manual.json()["detail"].lower()
+
+    # 6. No attendance record should have been created for any of the above
+    list_res = client.get(
+        f"{settings.API_V1_STR}/attendance/?event_id={event_id}&attendee_id={att_id}",
+        headers=superuser_token_headers,
+    )
+    assert list_res.status_code == 200
+    assert list_res.json()["count"] == 0
+
+    # 7. Confirm scanning succeeds once the attendee is actually registered
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=superuser_token_headers,
+        json={
+            "event_id": event_id,
+            "attendee_id": att_id,
+            "registration_status": "registered",
+        },
+    )
+    r_ok = client.post(
+        f"{settings.API_V1_STR}/attendance/scan",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "credential_value": nfc_val, "scan_method": "nfc"},
+    )
+    assert r_ok.status_code == 200
+    assert r_ok.json()["message"] == "Time-In Recorded"
+
+
 def test_scan_registration_cancelled_validation(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
@@ -829,6 +942,105 @@ def test_attendance_read_filtering_and_admin_crud(
     )
     assert del_res.status_code == 200
     assert del_res.json()["message"] == "Attendance record deleted successfully"
+
+
+def test_attendance_scan_method_filter(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    # 1. Create open event
+    event_res = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=superuser_token_headers,
+        json={
+            "event_name": f"ScanMethod Filter Event {random_lower_string()[:5]}",
+            "event_date": "2026-09-15",
+            "status": "open",
+        },
+    )
+    event_id = event_res.json()["id"]
+
+    # 2. NFC attendee + scan
+    p1 = client.post(
+        f"{settings.API_V1_STR}/people/",
+        headers=superuser_token_headers,
+        json={"first_name": "NFC", "last_name": "Scanner", "email": random_email()},
+    ).json()
+    att1 = client.post(
+        f"{settings.API_V1_STR}/attendees/",
+        headers=superuser_token_headers,
+        json={"person_id": p1["id"], "attendee_type": "guest"},
+    ).json()
+    nfc_val = f"NFC_{random_lower_string()[:8].upper()}"
+    client.post(
+        f"{settings.API_V1_STR}/attendee-credentials/",
+        headers=superuser_token_headers,
+        json={
+            "attendee_id": att1["id"],
+            "credential_type": "nfc",
+            "credential_value": nfc_val,
+            "is_active": True,
+        },
+    )
+    client.post(
+        f"{settings.API_V1_STR}/attendance/scan",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "credential_value": nfc_val, "scan_method": "nfc"},
+    )
+
+    # 3. QR attendee + scan
+    p2 = client.post(
+        f"{settings.API_V1_STR}/people/",
+        headers=superuser_token_headers,
+        json={"first_name": "QR", "last_name": "Scanner", "email": random_email()},
+    ).json()
+    att2 = client.post(
+        f"{settings.API_V1_STR}/attendees/",
+        headers=superuser_token_headers,
+        json={"person_id": p2["id"], "attendee_type": "guest"},
+    ).json()
+    qr_val = f"QR_{random_lower_string()[:8].upper()}"
+    client.post(
+        f"{settings.API_V1_STR}/attendee-credentials/",
+        headers=superuser_token_headers,
+        json={
+            "attendee_id": att2["id"],
+            "credential_type": "qr",
+            "credential_value": qr_val,
+            "is_active": True,
+        },
+    )
+    client.post(
+        f"{settings.API_V1_STR}/attendance/scan",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "credential_value": qr_val, "scan_method": "qr"},
+    )
+
+    # 4. scan_method=nfc should return only the NFC record
+    nfc_filtered = client.get(
+        f"{settings.API_V1_STR}/attendance/?event_id={event_id}&scan_method=nfc",
+        headers=superuser_token_headers,
+    )
+    assert nfc_filtered.status_code == 200
+    nfc_data = nfc_filtered.json()
+    assert nfc_data["count"] == 1
+    assert all(r["scan_method"] == "nfc" for r in nfc_data["data"])
+
+    # 5. scan_method=qr should return only the QR record
+    qr_filtered = client.get(
+        f"{settings.API_V1_STR}/attendance/?event_id={event_id}&scan_method=qr",
+        headers=superuser_token_headers,
+    )
+    assert qr_filtered.status_code == 200
+    qr_data = qr_filtered.json()
+    assert qr_data["count"] == 1
+    assert all(r["scan_method"] == "qr" for r in qr_data["data"])
+
+    # 6. Invalid scan_method value -> 422
+    invalid_res = client.get(
+        f"{settings.API_V1_STR}/attendance/?event_id={event_id}&scan_method=banana",
+        headers=superuser_token_headers,
+    )
+    assert invalid_res.status_code == 422
 
 
 def test_manual_scan_time_in_only_for_attendee_without_credential(

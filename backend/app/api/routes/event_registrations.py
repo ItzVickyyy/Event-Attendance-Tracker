@@ -13,6 +13,7 @@ from app.models import (
     EventRegistrationPublic,
     EventRegistrationsPublic,
     EventRegistrationUpdate,
+    EventStatus,
     RegistrationStatus,
     get_datetime_utc,
 )
@@ -76,6 +77,12 @@ def create_event_registration(
     event = session.get(Event, registration_in.event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+
+    if event.status == EventStatus.closed:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot register for a closed event",
+        )
 
     attendee = session.get(Attendee, registration_in.attendee_id)
     if not attendee:

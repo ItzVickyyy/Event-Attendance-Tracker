@@ -3750,6 +3750,10 @@ export type attendanceReadAttendancesData = {
          */
         attendance_status?: AttendanceStatus | null;
         /**
+         * Scan Method
+         */
+        scan_method?: ScanMethod | null;
+        /**
          * Skip
          */
         skip?: number;

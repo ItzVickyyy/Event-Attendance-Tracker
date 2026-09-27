@@ -30,6 +30,7 @@ from app.models import (
     ManualScanRequest,
     Person,
     RegistrationStatus,
+    ScanMethod,
     ScanRequest,
     ScanResponse,
     Student,
@@ -47,6 +48,7 @@ def read_attendances(
     event_id: uuid.UUID | None = None,
     attendee_id: uuid.UUID | None = None,
     attendance_status: AttendanceStatus | None = None,
+    scan_method: ScanMethod | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -80,6 +82,12 @@ def read_attendances(
             col(Attendance.status) == attendance_status
         )
         statement = statement.where(col(Attendance.status) == attendance_status)
+
+    if scan_method:
+        count_statement = count_statement.where(
+            col(Attendance.scan_method) == scan_method
+        )
+        statement = statement.where(col(Attendance.scan_method) == scan_method)
 
     count = session.exec(count_statement).one()
     statement = (
@@ -361,7 +369,7 @@ def scan_attendance(
         if student:
             student_number = student.student_number
 
-    # 7. Validate / obtain EventRegistration
+    # 7. Validate EventRegistration exists and is active
     registration = session.exec(
         select(EventRegistration).where(
             col(EventRegistration.event_id) == event.id,
@@ -369,41 +377,17 @@ def scan_attendance(
         )
     ).first()
 
-    if registration:
-        if registration.registration_status == RegistrationStatus.cancelled:
-            raise HTTPException(
-                status_code=400,
-                detail="Attendee registration is cancelled for this event",
-            )
-    else:
-        # Auto-register attendee with concurrency handling
-        try:
-            registration = EventRegistration(
-                event_id=event.id,
-                attendee_id=attendee.id,
-                registration_status=RegistrationStatus.registered,
-            )
-            session.add(registration)
-            session.commit()
-            session.refresh(registration)
-        except IntegrityError:
-            session.rollback()
-            registration = session.exec(
-                select(EventRegistration).where(
-                    col(EventRegistration.event_id) == event.id,
-                    col(EventRegistration.attendee_id) == attendee.id,
-                )
-            ).first()
-            if not registration:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to retrieve event registration",
-                )
-            if registration.registration_status == RegistrationStatus.cancelled:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Attendee registration is cancelled for this event",
-                )
+    if not registration:
+        raise HTTPException(
+            status_code=404,
+            detail="Attendee is not registered for this event",
+        )
+
+    if registration.registration_status == RegistrationStatus.cancelled:
+        raise HTTPException(
+            status_code=400,
+            detail="Attendee registration is cancelled for this event",
+        )
 
     # 8. Check Existing Attendance
     existing = session.exec(
@@ -550,7 +534,7 @@ def scan_attendance_manual(
         if student:
             student_number = student.student_number
 
-    # 5. Validate / obtain EventRegistration
+    # 5. Validate EventRegistration exists and is active
     registration = session.exec(
         select(EventRegistration).where(
             col(EventRegistration.event_id) == event.id,
@@ -558,41 +542,17 @@ def scan_attendance_manual(
         )
     ).first()
 
-    if registration:
-        if registration.registration_status == RegistrationStatus.cancelled:
-            raise HTTPException(
-                status_code=400,
-                detail="Attendee registration is cancelled for this event",
-            )
-    else:
-        # Auto-register attendee with concurrency handling
-        try:
-            registration = EventRegistration(
-                event_id=event.id,
-                attendee_id=attendee.id,
-                registration_status=RegistrationStatus.registered,
-            )
-            session.add(registration)
-            session.commit()
-            session.refresh(registration)
-        except IntegrityError:
-            session.rollback()
-            registration = session.exec(
-                select(EventRegistration).where(
-                    col(EventRegistration.event_id) == event.id,
-                    col(EventRegistration.attendee_id) == attendee.id,
-                )
-            ).first()
-            if not registration:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to retrieve event registration",
-                )
-            if registration.registration_status == RegistrationStatus.cancelled:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Attendee registration is cancelled for this event",
-                )
+    if not registration:
+        raise HTTPException(
+            status_code=404,
+            detail="Attendee is not registered for this event",
+        )
+
+    if registration.registration_status == RegistrationStatus.cancelled:
+        raise HTTPException(
+            status_code=400,
+            detail="Attendee registration is cancelled for this event",
+        )
 
     # 6. Check Existing Attendance
     existing = session.exec(
