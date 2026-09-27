@@ -4,6 +4,9 @@ import "dotenv/config"
 const swBaseURL = process.env.PLAYWRIGHT_SW_BASE_URL ?? (process.env.CI ? "http://localhost:4173" : "https://localhost:4173")
 
 if (!process.env.VITE_API_URL) {
+  // Node-side Playwright helpers (e.g. tests/utils/privateApi.ts) need an
+  // absolute backend URL; browser-side app requests use the Vite /api proxy
+  // through the intentionally empty VITE_API_URL in .env.
   process.env.VITE_API_URL = "http://localhost:8001"
 }
 

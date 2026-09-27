@@ -1,0 +1,5 @@
+email,full_name,password,role,position,academic_year,section_name,can_scan
+Dev@sample.com,Sample Developer,SampleDev!,developer,Developer,,,true
+SuperAdmin@sample.com,Sample Super Admin,SampleSuperAdmin!,super_admin,Super Admin,,,true
+Admin@sample.com,Sample Admin,SampleAdmin!,admin,Admin,,,true
+ClassRep@sample.com,Sample Class Representative,SampleClassRep!,class_representative,Class Representative,2026-2027,3A,false
