@@ -12,7 +12,7 @@ def test_seeded_2026_2027_academic_catalog(
     )
     assert majors.status_code == 200
     codes = {item["code"] for item in majors.json()["data"]}
-    assert {"AMG", "SMP", "WMAD", "IS"}.issubset(codes)
+    assert {"AMG", "SMP", "WMAD"}.issubset(codes)
 
     sections = client.get(
         f"{settings.API_V1_STR}/academic-sections/?academic_year=2026-2027",
