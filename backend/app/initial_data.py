@@ -11,6 +11,22 @@ logger = logging.getLogger(__name__)
 
 def _seed_academic_catalog(session: Session) -> None:
     session.exec(text("""
+        INSERT INTO academic_years
+            (id, label, start_year, end_year, is_current, created_at, updated_at)
+        SELECT gen_random_uuid(), '2026-2027', 2026, 2027, false, now(), now()
+        WHERE NOT EXISTS (
+            SELECT 1 FROM academic_years WHERE label = '2026-2027'
+        )
+    """))
+    session.exec(text("""
+        UPDATE academic_years
+        SET is_current = true, updated_at = now()
+        WHERE label = '2026-2027'
+          AND NOT EXISTS (
+              SELECT 1 FROM academic_years WHERE is_current = true
+          )
+    """))
+    session.exec(text("""
         INSERT INTO academic_programs (id, program_code, program_name, created_at, updated_at)
         SELECT gen_random_uuid(), 'BSIT', 'Bachelor of Science in Information Technology', now(), now()
         WHERE NOT EXISTS (SELECT 1 FROM academic_programs WHERE program_code = 'BSIT')
@@ -53,10 +69,12 @@ def _seed_academic_catalog(session: Session) -> None:
     for program, year_level, section_name in sections:
         session.exec(text("""
             INSERT INTO academic_sections
-                (id, program_id, year_level, section_name, academic_year, created_at, updated_at)
+                (id, program_id, year_level, section_name, academic_year,
+                 academic_year_id, section_code, created_at, updated_at)
             SELECT gen_random_uuid(), p.id, :year_level, :section_name,
-                   '2026-2027', now(), now()
+                   ay.label, ay.id, :section_name, now(), now()
             FROM academic_programs p
+            JOIN academic_years ay ON ay.label = '2026-2027'
             WHERE p.program_code = :program
               AND NOT EXISTS (
                   SELECT 1 FROM academic_sections s
@@ -66,6 +84,16 @@ def _seed_academic_catalog(session: Session) -> None:
                     AND s.academic_year = '2026-2027'
               )
         """).bindparams(program=program, year_level=year_level, section_name=section_name))
+
+    session.exec(text("""
+        UPDATE academic_sections s
+        SET academic_year_id = ay.id,
+            section_code = COALESCE(s.section_code, s.section_name),
+            updated_at = now()
+        FROM academic_years ay
+        WHERE s.academic_year = ay.label
+          AND s.academic_year_id IS NULL
+    """))
 
     for program, section_name, major_code in [
         ("BSIT", "AMG 3A", "AMG"), ("BSIT", "SMP 3A", "SMP"),
