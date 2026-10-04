@@ -3,12 +3,13 @@ import { Link } from "@tanstack/react-router"
 import { Activity, CalendarDays, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { AttendanceService, EventsService, type EventPublic } from "@/client"
+import { AttendanceService, type EventPublic } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getPendingScans } from "@/data"
 import { setupSyncStatusListener } from "@/data/sync"
+import { useAcademicYear } from "@/context/AcademicYearContext"
 
 function formatEventDate(value: string) {
   const date = new Date(value)
@@ -55,12 +56,20 @@ function SyncSummary() {
 }
 
 export function OperationalDashboard() {
+  const { activeAcademicYear } = useAcademicYear()
   const eventsQuery = useQuery({
-    queryKey: ["dashboard", "events"],
-    queryFn: async () => (await EventsService.readEvents({ query: { skip: 0, limit: 100 } })).data,
+    queryKey: ["dashboard", "events", activeAcademicYear?.id],
+    queryFn: async () => {
+      const token = localStorage.getItem("access_token")
+      const query = activeAcademicYear?.id ? `&academic_year_id=${encodeURIComponent(activeAcademicYear.id)}` : ""
+      const response = await fetch(`${import.meta.env.VITE_API_URL ?? ""}/api/v1/events/?skip=0&limit=100${query}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      if (!response.ok) throw new Error("Unable to load events")
+      return response.json()
+    },
+    enabled: Boolean(activeAcademicYear),
   })
   const attendanceQuery = useQuery({
-    queryKey: ["dashboard", "attendance"],
+    queryKey: ["dashboard", "attendance", activeAcademicYear?.id],
     queryFn: async () => (await AttendanceService.readAttendances({ query: { skip: 0, limit: 1 } })).data,
   })
 
