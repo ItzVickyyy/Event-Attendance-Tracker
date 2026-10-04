@@ -303,11 +303,6 @@ def test_scan_event_eligibility_validation(
         json={"person_id": person_id, "attendee_type": "guest"},
     )
     att_id = att_res.json()["id"]
-    client.post(
-    f"{settings.API_V1_STR}/event-registrations/",
-    headers=superuser_token_headers,
-    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
-    )
     cred_val = f"CRED_{random_lower_string()[:8].upper()}"
     client.post(
         f"{settings.API_V1_STR}/attendee-credentials/",
@@ -424,11 +419,6 @@ def test_scan_credential_eligibility_validation(
         json={"person_id": person_id, "attendee_type": "student"},
     )
     att_id = att_res.json()["id"]
-    client.post(
-    f"{settings.API_V1_STR}/event-registrations/",
-    headers=superuser_token_headers,
-    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
-    )
     inactive_cred = f"INACTIVE_{random_lower_string()[:8].upper()}"
     client.post(
         f"{settings.API_V1_STR}/attendee-credentials/",
@@ -489,11 +479,6 @@ def test_scan_unregistered_attendee_rejected(
         json={"person_id": person_id, "attendee_type": "guest"},
     )
     att_id = att_res.json()["id"]
-    client.post(
-    f"{settings.API_V1_STR}/event-registrations/",
-    headers=superuser_token_headers,
-    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
-    )
 
     nfc_val = f"NFC_{random_lower_string()[:8].upper()}"
     client.post(
@@ -554,11 +539,6 @@ def test_scan_unregistered_attendee_rejected(
     assert list_res.json()["count"] == 0
 
     # 7. Confirm scanning succeeds once the attendee is actually registered
-    client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={
-            "event_id": event_id,
             "attendee_id": att_id,
             "registration_status": "registered",
         },
@@ -604,11 +584,6 @@ def test_scan_registration_cancelled_validation(
         json={"person_id": person_id, "attendee_type": "student"},
     )
     att_id = att_res.json()["id"]
-    client.post(
-    f"{settings.API_V1_STR}/event-registrations/",
-    headers=superuser_token_headers,
-    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
-    )
     cred_val = f"CRED_{random_lower_string()[:8].upper()}"
     client.post(
         f"{settings.API_V1_STR}/attendee-credentials/",
@@ -622,11 +597,6 @@ def test_scan_registration_cancelled_validation(
     )
 
     # 3. Create EventRegistration with cancelled status
-    client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={
-            "event_id": event_id,
             "attendee_id": att_id,
             "registration_status": "cancelled",
         },
@@ -1306,11 +1276,6 @@ def test_manual_scan_eligibility_validation(
         json={"person_id": draft_person_id, "attendee_type": "guest"},
     )
     att_id = att_res.json()["id"]
-    client.post(
-    f"{settings.API_V1_STR}/event-registrations/",
-    headers=superuser_token_headers,
-    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
-    )
     r_draft = client.post(
         f"{settings.API_V1_STR}/attendance/scan-manual",
         headers=superuser_token_headers,
@@ -1320,11 +1285,6 @@ def test_manual_scan_eligibility_validation(
     assert "not open for attendance scanning" in r_draft.json()["detail"]
 
     # 5. Cancelled registration -> 400
-    client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={
-            "event_id": event_id,
             "attendee_id": att_id,
             "registration_status": "cancelled",
         },

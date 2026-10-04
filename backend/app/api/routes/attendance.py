@@ -271,10 +271,11 @@ def scan_attendance(
         raise HTTPException(status_code=400, detail=f"Event is not open for attendance scanning (current status: {event.status.value})")
     credential = session.exec(select(AttendeeCredential).where(
         col(AttendeeCredential.credential_value) == scan_in.credential_value,
-        col(AttendeeCredential.is_active).is_(True),
     )).first()
     if not credential:
         raise HTTPException(status_code=404, detail="Credential not recognized")
+    if not credential.is_active:
+        raise HTTPException(status_code=400, detail="Credential is inactive")
     if scan_in.scan_method in (ScanMethod.nfc, ScanMethod.qr) and credential.credential_type.value != scan_in.scan_method.value:
         raise HTTPException(status_code=400, detail=f"Invalid credential type for {scan_in.scan_method.value} scan")
     attendee = credential.attendee or session.get(Attendee, credential.attendee_id)

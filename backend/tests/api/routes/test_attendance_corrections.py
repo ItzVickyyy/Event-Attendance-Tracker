@@ -15,6 +15,7 @@ def test_attendance_correction_audit(
             "event_name": f"Event {random_lower_string()[:5]}",
             "event_date": "2026-09-15",
             "attendance_mode": "time_in_only",
+            "status": "open",
         },
     )
     event_id = event_res.json()["id"]
