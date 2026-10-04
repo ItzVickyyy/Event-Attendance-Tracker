@@ -894,6 +894,12 @@ class RosterEntry(SQLModel):
     person_name: str
     student_number: str | None = None
     credentials: list[RosterCredential] = Field(default_factory=list)
+    attendance_session_id: uuid.UUID | None = None
+    attendance_status: AttendanceStatus | None = None
+    time_in: datetime | None = None
+    time_out: datetime | None = None
+    is_late: bool = False
+    scan_method: ScanMethod | None = None
 
 
 class RostersPublic(SQLModel):
@@ -1001,6 +1007,7 @@ class ScanRequest(SQLModel):
     event_id: uuid.UUID
     credential_value: str
     scan_method: ScanMethod = ScanMethod.nfc
+    attendance_session_id: uuid.UUID | None = None
 
 
 class ScanResponse(SQLModel):

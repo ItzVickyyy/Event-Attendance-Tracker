@@ -30,11 +30,14 @@ interface CredentialRecord {
 interface QueueRecord {
   id: string
   event_id: string
+  attendance_session_id?: string
+  attendee_id?: string
   credential_value: string
   scan_method: "nfc" | "qr" | "manual"
   client_timestamp: string
   local_id: string
   synced: boolean
+  sync_status: "PENDING" | "SYNCED" | "DUPLICATE" | "REJECTED" | "RETRY"
   synced_at?: string
   retry_count: number
   last_error?: string
@@ -112,7 +115,7 @@ let dbPromise: Promise<IDBPDatabase<OfflineDB>> | null = null
 
 export function getDB(): Promise<IDBPDatabase<OfflineDB>> {
   if (!dbPromise) {
-    dbPromise = openDB<OfflineDB>("attendance-offline", 2, {
+    dbPromise = openDB<OfflineDB>("attendance-offline", 3, {
       upgrade(db) {
         if (!db.objectStoreNames.contains("events")) {
           const eventStore = db.createObjectStore("events", { keyPath: "id" })
@@ -172,6 +175,8 @@ export async function closeDB(): Promise<void> {
 
 export interface QueuedScan {
   event_id: string
+  attendance_session_id?: string
+  attendee_id?: string
   credential_value: string
   scan_method: "nfc" | "qr" | "manual"
 }
@@ -186,11 +191,14 @@ export async function enqueueScan(scan: QueuedScan): Promise<string> {
   const record: QueueRecord = {
     id: local_id,
     event_id: scan.event_id,
+    attendance_session_id: scan.attendance_session_id,
+    attendee_id: scan.attendee_id,
     credential_value: scan.credential_value,
     scan_method: scan.scan_method,
     client_timestamp: new Date().toISOString(),
     local_id,
     synced: false,
+    sync_status: "PENDING",
     retry_count: 0,
     created_at: now,
   }
@@ -228,7 +236,7 @@ export async function getPendingCount(): Promise<number> {
 
 export async function markSynced(
   localId: string,
-  options?: { serverTimestamp?: string },
+  options?: { serverTimestamp?: string; syncStatus?: "SYNCED" | "DUPLICATE" },
 ): Promise<void> {
   const db = await getDB()
   const record = await db.get("attendanceQueue", localId)
@@ -238,6 +246,7 @@ export async function markSynced(
   const updated: QueueRecord = {
     ...record,
     synced: true,
+    sync_status: options?.syncStatus ?? "SYNCED",
     synced_at: now,
     synced_at_server: options?.serverTimestamp ?? now,
     retry_count: 0,
@@ -250,6 +259,7 @@ export async function markSynced(
 export async function markFailed(
   localId: string,
   error: string,
+  syncStatus: "REJECTED" | "RETRY" = "RETRY",
 ): Promise<void> {
   const db = await getDB()
   const record = await db.get("attendanceQueue", localId)
@@ -258,6 +268,7 @@ export async function markFailed(
   const updated: QueueRecord = {
     ...record,
     synced: false,
+    sync_status: syncStatus,
     retry_count: record.retry_count + 1,
     last_error: error,
     last_retry_at: new Date().toISOString(),

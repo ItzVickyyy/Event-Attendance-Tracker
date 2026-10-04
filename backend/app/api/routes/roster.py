@@ -6,6 +6,8 @@ from sqlmodel import Session, col, select
 
 from app.api.deps import SessionDep, require_scanner_permission
 from app.models import (
+    Attendance,
+    AttendanceSession,
     Attendee,
     AttendeeCredential,
     Event,
@@ -26,16 +28,16 @@ router = APIRouter(
 
 
 @router.get("/", response_model=RostersPublic)
-def read_event_roster(*, session: SessionDep, event_id: uuid.UUID) -> Any:
+def read_event_roster(*, session: SessionDep, event_id: uuid.UUID, attendance_session_id: uuid.UUID | None = None) -> Any:
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    entries = _build_roster_entries(session=session, event_id=event.id)
+    entries = _build_roster_entries(session=session, event_id=event.id, attendance_session_id=attendance_session_id)
     return RostersPublic(data=entries, count=len(entries))
 
 
-def _build_roster_entries(session: Session, event_id: uuid.UUID) -> list[RosterEntry]:
+def _build_roster_entries(session: Session, event_id: uuid.UUID, attendance_session_id: uuid.UUID | None = None) -> list[RosterEntry]:
     registrations = session.exec(
         select(EventRegistration).where(
             col(EventRegistration.event_id) == event_id,
@@ -48,6 +50,19 @@ def _build_roster_entries(session: Session, event_id: uuid.UUID) -> list[RosterE
     person_by_id: dict[uuid.UUID, Person] = {}
     student_number_by_person_id: dict[uuid.UUID, str] = {}
     credentials_by_attendee_id: dict[uuid.UUID, list[RosterCredential]] = {}
+    attendance_by_registration_id: dict[uuid.UUID, Attendance] = {}
+
+    if attendance_session_id and registrations:
+        session_record = session.get(AttendanceSession, attendance_session_id)
+        if not session_record or session_record.event_id != event_id:
+            raise HTTPException(status_code=404, detail="Attendance session not found")
+        attendance_records = session.exec(
+            select(Attendance).where(
+                col(Attendance.attendance_session_id) == attendance_session_id,
+                col(Attendance.registration_id).in_([reg.id for reg in registrations]),
+            )
+        ).all()
+        attendance_by_registration_id = {record.registration_id: record for record in attendance_records}
 
     if attendee_ids:
         attendees = session.exec(
@@ -98,6 +113,12 @@ def _build_roster_entries(session: Session, event_id: uuid.UUID) -> list[RosterE
                 person_name=person_name,
                 student_number=student_number_by_person_id.get(attendee.person_id),
                 credentials=credentials_by_attendee_id.get(reg.attendee_id, []),
+                attendance_session_id=attendance_session_id,
+                attendance_status=(attendance_by_registration_id.get(reg.id).status if attendance_by_registration_id.get(reg.id) else None),
+                time_in=(attendance_by_registration_id.get(reg.id).time_in if attendance_by_registration_id.get(reg.id) else None),
+                time_out=(attendance_by_registration_id.get(reg.id).time_out if attendance_by_registration_id.get(reg.id) else None),
+                is_late=(attendance_by_registration_id.get(reg.id).is_late if attendance_by_registration_id.get(reg.id) else False),
+                scan_method=(attendance_by_registration_id.get(reg.id).scan_method if attendance_by_registration_id.get(reg.id) else None),
             )
         )
 

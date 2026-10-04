@@ -66,6 +66,15 @@ def test_attendance_correction_audit(
     corr_id = corr_res.json()["id"]
     assert corr_res.json()["reason"] == "Medical certificate submitted"
     assert corr_res.json()["new_status"] == "completed"
+    assert corr_res.json()["old_status"] == "present"
+
+    # The correction must update the authoritative attendance row as well.
+    attendance_res = client.get(
+        f"{settings.API_V1_STR}/attendance/{attendance_id}",
+        headers=superuser_token_headers,
+    )
+    assert attendance_res.status_code == 200
+    assert attendance_res.json()["status"] == "completed"
 
     # 3. Read Corrections
     get_res = client.get(
