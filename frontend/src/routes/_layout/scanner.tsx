@@ -20,7 +20,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { StudentPublic } from "@/client"
 import {
-  AttendanceService,
   AttendeesService,
   EventsService,
   StudentsService,

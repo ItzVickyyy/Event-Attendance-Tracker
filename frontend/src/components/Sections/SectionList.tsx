@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Download, FileSpreadsheet, FileText, Pencil, Plus, Printer, Search, Trash2, UsersRound } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { AcademicProgramsService } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-const ACADEMIC_YEAR_FALLBACK = "2026-2027"
 
 function apiUrl(path: string) {
   return `${import.meta.env.VITE_API_URL ?? ""}/api/v1${path}`
@@ -89,12 +88,6 @@ function SectionList() {
     queryFn: () => apiJson<any>(`/academic-registry/sections/${printTarget.id}/students`),
     enabled: Boolean(printTarget),
   })
-  const studentQuery = useQuery({
-    queryKey: ["academicRegistryStudent", studentTarget?.id],
-    queryFn: () => apiJson<any>(`/academic-registry/students/${studentTarget.id}`),
-    enabled: Boolean(studentTarget),
-  })
-
   const programs = programsQuery.data?.data.data ?? []
   const years = yearsQuery.data?.data ?? []
   const sections = sectionsQuery.data?.data ?? []
@@ -191,8 +184,8 @@ function SectionList() {
   const exportCsv = async (section: any) => {
     try {
       const roster = await apiJson<any>(`/academic-registry/sections/${section.id}/students`)
-      const rows = roster.data.map((student: any, index: number) => [index + 1, student.student_number, student.last_name, student.first_name, student.middle_name ?? "", student.extension ?? "", student.email ?? "", student.contact_number ?? "", student.student_status])
-      const csv = [["#", "Student Number", "Last Name", "First Name", "Middle Name", "Extension", "Email", "Contact Number", "Status"], ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\r\n")
+      const rows: Array<Array<string | number>> = roster.data.map((student: any, index: number) => [index + 1, student.student_number, student.last_name, student.first_name, student.middle_name ?? "", student.extension ?? "", student.email ?? "", student.contact_number ?? "", student.student_status])
+      const csv = [["#", "Student Number", "Last Name", "First Name", "Middle Name", "Extension", "Email", "Contact Number", "Status"], ...rows].map((row) => row.map((value: string | number) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\r\n")
       downloadBlob(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }), `${section.program_code}-${section.section_code}-${section.academic_year}.csv`)
       setDownloadTarget(null)
     } catch {
