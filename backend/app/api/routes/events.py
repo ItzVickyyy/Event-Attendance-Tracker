@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.student_academics import AcademicYear
+
 from app.models import (
     AttendanceSession,
     AttendanceSessionStatus,
@@ -28,6 +30,7 @@ def read_events(
     _current_user: CurrentUser,
     organization_id: uuid.UUID | None = None,
     status: EventStatus | None = None,
+    academic_year_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -42,6 +45,9 @@ def read_events(
     if status:
         count_statement = count_statement.where(col(Event.status) == status)
         statement = statement.where(col(Event.status) == status)
+    if academic_year_id:
+        count_statement = count_statement.where(col(Event.academic_year_id) == academic_year_id)
+        statement = statement.where(col(Event.academic_year_id) == academic_year_id)
 
     count = session.exec(count_statement).one()
     statement = (
@@ -62,7 +68,22 @@ def create_event(
         if not org:
             raise HTTPException(status_code=404, detail="Organization not found")
 
+    academic_year_id = event_in.academic_year_id
+    if academic_year_id is None:
+        current_year = session.exec(
+            select(AcademicYear).where(AcademicYear.is_current.is_(True))
+        ).first()
+        if not current_year:
+            raise HTTPException(
+                status_code=409,
+                detail="No current academic year is configured",
+            )
+        academic_year_id = current_year.id
+    elif not session.get(AcademicYear, academic_year_id):
+        raise HTTPException(status_code=404, detail="Academic year not found")
+
     event = Event.model_validate(event_in)
+    event.academic_year_id = academic_year_id
     session.add(event)
     session.flush()
     default_session = AttendanceSession(
