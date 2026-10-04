@@ -52,9 +52,9 @@ def test_attendance_time_in_only_prevent_duplicate_scan(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
 
     nfc_uid = f"NFC_{random_lower_string()[:8].upper()}"
@@ -137,9 +137,9 @@ def test_attendance_time_in_time_out_lifecycle(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
 
     qr_code = f"QR_{random_lower_string()[:8].upper()}"
@@ -249,11 +249,11 @@ def test_scan_supported_attendee_types(
             json={"person_id": person_id, "attendee_type": att_type},
         )
         att_id = att_res.json()["id"]
-    client.post(
+        client.post(
         f"{settings.API_V1_STR}/event-registrations/",
         headers=superuser_token_headers,
         json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
-    )
+        )
 
         cred_val = f"CRED_{random_lower_string()[:8].upper()}"
         client.post(
@@ -304,9 +304,9 @@ def test_scan_event_eligibility_validation(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     cred_val = f"CRED_{random_lower_string()[:8].upper()}"
     client.post(
@@ -425,9 +425,9 @@ def test_scan_credential_eligibility_validation(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     inactive_cred = f"INACTIVE_{random_lower_string()[:8].upper()}"
     client.post(
@@ -490,9 +490,9 @@ def test_scan_unregistered_attendee_rejected(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
 
     nfc_val = f"NFC_{random_lower_string()[:8].upper()}"
@@ -605,9 +605,9 @@ def test_scan_registration_cancelled_validation(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     cred_val = f"CRED_{random_lower_string()[:8].upper()}"
     client.post(
@@ -680,9 +680,9 @@ def test_scan_concurrency_race_condition(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     cred_val = f"NFC_{random_lower_string()[:8].upper()}"
     client.post(
@@ -767,9 +767,9 @@ def test_scan_time_out_concurrency(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     cred_val = f"QR_{random_lower_string()[:8].upper()}"
     client.post(
@@ -849,9 +849,9 @@ def test_scan_rbac_and_accountability(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     cred_val = f"NFC_{random_lower_string()[:8].upper()}"
     client.post(
@@ -937,9 +937,9 @@ def test_attendance_read_filtering_and_admin_crud(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     cred_val = f"NFC_{random_lower_string()[:8].upper()}"
     client.post(
@@ -1140,9 +1140,9 @@ def test_manual_scan_time_in_only_for_attendee_without_credential(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
 
     # 3. Manual scan (no credential involved) -> Time-In Recorded
@@ -1206,9 +1206,9 @@ def test_manual_scan_time_in_time_out_lifecycle(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
 
     payload = {"event_id": event_id, "attendee_id": att_id, "scan_method": "manual"}
@@ -1307,9 +1307,9 @@ def test_manual_scan_eligibility_validation(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     r_draft = client.post(
         f"{settings.API_V1_STR}/attendance/scan-manual",
@@ -1371,9 +1371,9 @@ def test_manual_scan_rbac(
     )
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
 
     payload = {"event_id": event_id, "attendee_id": att_id, "scan_method": "manual"}
@@ -1454,9 +1454,9 @@ def test_attendance_export_csv(
     assert att_res.status_code == 200
     att_id = att_res.json()["id"]
     client.post(
-        f"{settings.API_V1_STR}/event-registrations/",
-        headers=superuser_token_headers,
-        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
+    f"{settings.API_V1_STR}/event-registrations/",
+    headers=superuser_token_headers,
+    json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
 
     # 3. Perform manual scan
