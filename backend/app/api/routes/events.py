@@ -6,15 +6,15 @@ from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
+    AttendanceSession,
+    AttendanceSessionStatus,
+    AttendanceSessionType,
     Event,
     EventCreate,
     EventPublic,
     EventsPublic,
     EventStatus,
     EventUpdate,
-    AttendanceSession,
-    AttendanceSessionStatus,
-    AttendanceSessionType,
     Organization,
     get_datetime_utc,
 )
