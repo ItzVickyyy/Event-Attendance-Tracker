@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 def _seed_academic_catalog(session: Session) -> None:
-    session.exec(text("""
+    session.exec(
+        text(
+            """
         INSERT INTO academic_years
             (id, label, start_year, end_year, is_current, created_at, updated_at)
         SELECT gen_random_uuid(), '2026-2027', 2026, 2027, false, now(), now()
