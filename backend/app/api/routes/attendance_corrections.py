@@ -10,8 +10,8 @@ from app.models import (
     AttendanceCorrection,
     AttendanceCorrectionCreate,
     AttendanceCorrectionPublic,
-    AttendanceSession,
     AttendanceCorrectionsPublic,
+    AttendanceSession,
     get_datetime_utc,
 )
 
