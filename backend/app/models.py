@@ -780,7 +780,7 @@ class AttendanceSession(AttendanceSessionBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
 
-    event: Optional["Event"] = Relationship(back_populates="attendance_sessions")
+    event: "Event" | None = Relationship(back_populates="attendance_sessions")
     attendance_records: list["Attendance"] = Relationship(
         back_populates="attendance_session", cascade_delete=True
     )
