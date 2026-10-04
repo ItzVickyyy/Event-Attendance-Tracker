@@ -34,7 +34,9 @@ def read_majors(
     count_statement = select(func.count()).select_from(AcademicMajor)
     if program_id:
         statement = statement.where(col(AcademicMajor.program_id) == program_id)
-        count_statement = count_statement.where(col(AcademicMajor.program_id) == program_id)
+        count_statement = count_statement.where(
+            col(AcademicMajor.program_id) == program_id
+        )
     majors = session.exec(statement.order_by(col(AcademicMajor.code))).all()
     return AcademicMajorsPublic(
         data=[AcademicMajorPublic.model_validate(major) for major in majors],
