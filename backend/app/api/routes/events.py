@@ -45,7 +45,9 @@ def read_events(
         count_statement = count_statement.where(col(Event.status) == status)
         statement = statement.where(col(Event.status) == status)
     if academic_year_id:
-        count_statement = count_statement.where(col(Event.academic_year_id) == academic_year_id)
+        count_statement = count_statement.where(
+            col(Event.academic_year_id) == academic_year_id
+        )
         statement = statement.where(col(Event.academic_year_id) == academic_year_id)
 
     count = session.exec(count_statement).one()
