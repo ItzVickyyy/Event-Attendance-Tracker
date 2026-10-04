@@ -11,6 +11,7 @@ from app.models import (
     AttendanceCorrectionCreate,
     AttendanceCorrectionPublic,
     AttendanceCorrectionsPublic,
+    get_datetime_utc,
 )
 
 router = APIRouter(prefix="/attendance-corrections", tags=["attendance-corrections"])
@@ -67,6 +68,7 @@ def create_attendance_correction(
     if not attendance:
         raise HTTPException(status_code=404, detail="Attendance record not found")
 
+    now = get_datetime_utc()
     correction = AttendanceCorrection(
         attendance_id=correction_in.attendance_id,
         reason=correction_in.reason,
@@ -77,7 +79,16 @@ def create_attendance_correction(
         old_status=correction_in.old_status,
         new_status=correction_in.new_status,
         corrected_by=current_user.id,
+        corrected_at=now,
     )
+    if correction_in.new_time_in is not None:
+        attendance.time_in = correction_in.new_time_in
+    if correction_in.new_time_out is not None:
+        attendance.time_out = correction_in.new_time_out
+    if correction_in.new_status is not None:
+        attendance.status = correction_in.new_status
+    attendance.updated_at = now
+    session.add(attendance)
     session.add(correction)
     session.commit()
     session.refresh(correction)

@@ -6,6 +6,7 @@ from app.api.routes import (
     academic_registry,
     academic_sections,
     attendance,
+    attendance_sessions,
     attendance_corrections,
     attendee_credentials,
     attendee_relationships,
@@ -42,6 +43,7 @@ api_router.include_router(events.router)
 api_router.include_router(roster.router)
 api_router.include_router(event_registrations.router)
 api_router.include_router(attendance.router)
+api_router.include_router(attendance_sessions.router)
 api_router.include_router(attendance_corrections.router)
 api_router.include_router(import_batches.router)
 

@@ -3,10 +3,9 @@ import io
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.responses import Response
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import col, func, select, update
+from sqlmodel import col, func, select
 
 from app.api.deps import (
     CurrentUser,
@@ -19,6 +18,9 @@ from app.models import (
     AttendanceCreate,
     AttendanceMode,
     AttendancePublic,
+    AttendanceResultCode,
+    AttendanceSession,
+    AttendanceResultCode,
     AttendancesPublic,
     AttendanceStatus,
     AttendanceUpdate,
@@ -37,6 +39,10 @@ from app.models import (
     get_datetime_utc,
 )
 
+from app.services.attendance_processing import record_registered_attendance
+
+from app.services.attendance_processing import record_registered_attendance
+
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
@@ -47,56 +53,44 @@ def read_attendances(
     registration_id: uuid.UUID | None = None,
     event_id: uuid.UUID | None = None,
     attendee_id: uuid.UUID | None = None,
+    attendance_session_id: uuid.UUID | None = None,
     attendance_status: AttendanceStatus | None = None,
     scan_method: ScanMethod | None = None,
+    is_late: bool | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
     count_statement = select(func.count()).select_from(Attendance)
     statement = select(Attendance)
-
+    registration_filter = select(EventRegistration.id)
+    has_filter = False
     if registration_id:
-        count_statement = count_statement.where(
-            col(Attendance.registration_id) == registration_id
-        )
-        statement = statement.where(col(Attendance.registration_id) == registration_id)
-
-    if event_id or attendee_id:
-        count_statement = count_statement.join(EventRegistration)
-        statement = statement.join(EventRegistration)
-        if event_id:
-            count_statement = count_statement.where(
-                col(EventRegistration.event_id) == event_id
-            )
-            statement = statement.where(col(EventRegistration.event_id) == event_id)
-        if attendee_id:
-            count_statement = count_statement.where(
-                col(EventRegistration.attendee_id) == attendee_id
-            )
-            statement = statement.where(
-                col(EventRegistration.attendee_id) == attendee_id
-            )
-
+        registration_filter = registration_filter.where(col(EventRegistration.id) == registration_id)
+        has_filter = True
+    if event_id:
+        registration_filter = registration_filter.where(col(EventRegistration.event_id) == event_id)
+        has_filter = True
+    if attendee_id:
+        registration_filter = registration_filter.where(col(EventRegistration.attendee_id) == attendee_id)
+        has_filter = True
+    if has_filter:
+        count_statement = count_statement.where(col(Attendance.registration_id).in_(registration_filter))
+        statement = statement.where(col(Attendance.registration_id).in_(registration_filter))
+    if attendance_session_id:
+        count_statement = count_statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
+        statement = statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
     if attendance_status:
-        count_statement = count_statement.where(
-            col(Attendance.status) == attendance_status
-        )
+        count_statement = count_statement.where(col(Attendance.status) == attendance_status)
         statement = statement.where(col(Attendance.status) == attendance_status)
-
     if scan_method:
-        count_statement = count_statement.where(
-            col(Attendance.scan_method) == scan_method
-        )
+        count_statement = count_statement.where(col(Attendance.scan_method) == scan_method)
         statement = statement.where(col(Attendance.scan_method) == scan_method)
-
+    if is_late is not None:
+        count_statement = count_statement.where(col(Attendance.is_late) == is_late)
+        statement = statement.where(col(Attendance.is_late) == is_late)
     count = session.exec(count_statement).one()
-    statement = (
-        statement.order_by(col(Attendance.created_at).desc()).offset(skip).limit(limit)
-    )
-    records = session.exec(statement).all()
-    return AttendancesPublic(
-        data=[AttendancePublic.model_validate(r) for r in records], count=count
-    )
+    records = session.exec(statement.order_by(col(Attendance.created_at).desc()).offset(skip).limit(limit)).all()
+    return AttendancesPublic(data=[AttendancePublic.model_validate(r) for r in records], count=count)
 
 
 @router.get("/export")
@@ -205,104 +199,19 @@ def create_attendance(
     registration = session.get(EventRegistration, record_in.registration_id)
     if not registration:
         raise HTTPException(status_code=404, detail="Event registration not found")
-
-    if registration.registration_status == RegistrationStatus.cancelled:
-        raise HTTPException(
-            status_code=400,
-            detail="Attendee registration is cancelled for this event",
-        )
-
     event = session.get(Event, registration.event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-
-    existing = session.exec(
-        select(Attendance).where(
-            col(Attendance.registration_id) == record_in.registration_id
-        )
-    ).first()
-
-    now = get_datetime_utc()
-
-    if existing:
-        if event.attendance_mode == AttendanceMode.time_in_only:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Already Recorded - Time-In: {existing.time_in}",
-            )
-        else:
-            if existing.time_out is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            if existing.time_in is None:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Time-In Required before Time-Out",
-                )
-            stmt = (
-                update(Attendance)
-                .where(
-                    col(Attendance.id) == existing.id,
-                    col(Attendance.time_out).is_(None),
-                )
-                .values(
-                    time_out=record_in.time_out or now,
-                    status=record_in.status or AttendanceStatus.completed,
-                    scanned_by=current_user.id,
-                    scan_method=record_in.scan_method,
-                    updated_at=now,
-                )
-            )
-            result = session.exec(stmt)
-            session.commit()
-            if result.rowcount == 0:
-                session.refresh(existing)
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            session.refresh(existing)
-            return existing
-
-    record = Attendance(
-        registration_id=record_in.registration_id,
-        time_in=record_in.time_in or now,
-        time_out=record_in.time_out,
-        status=(
-            record_in.status
-            if record_in.status
-            else (
-                AttendanceStatus.present
-                if event.attendance_mode == AttendanceMode.time_in_only
-                else AttendanceStatus.time_in_only
-            )
-        ),
+    record, _message, _result_code = record_registered_attendance(
+        session=session,
+        event=event,
+        registration=registration,
+        current_user=current_user,
         scan_method=record_in.scan_method,
-        scanned_by=current_user.id,
+        attendance_session_id=record_in.attendance_session_id,
+        now=record_in.time_out or record_in.time_in or get_datetime_utc(),
     )
-    session.add(record)
-    try:
-        session.commit()
-        session.refresh(record)
-        return record
-    except IntegrityError:
-        session.rollback()
-        existing = session.exec(
-            select(Attendance).where(
-                col(Attendance.registration_id) == record_in.registration_id
-            )
-        ).first()
-        if not existing:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to record attendance",
-            )
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Already Recorded - In: {existing.time_in}",
-        )
+    return record
 
 
 @router.post(
@@ -315,181 +224,51 @@ def scan_attendance(
     session: SessionDep,
     current_user: CurrentUser,
     scan_in: ScanRequest,
+    attendance_session_header: str | None = Header(default=None, alias="X-Attendance-Session-ID"),
 ) -> Any:
-    # 1. Validate Event exists
     event = session.get(Event, scan_in.event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-
-    # 2. Validate Event is open for scanning
     if event.status != EventStatus.open:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Event is not open for attendance scanning (current status: {event.status.value})",
-        )
-
-    # 3. Validate Credential exists
-    credential = session.exec(
-        select(AttendeeCredential).where(
-            col(AttendeeCredential.credential_value) == scan_in.credential_value,
-        )
-    ).first()
+        raise HTTPException(status_code=400, detail=f"Event is not open for attendance scanning (current status: {event.status.value})")
+    credential = session.exec(select(AttendeeCredential).where(
+        col(AttendeeCredential.credential_value) == scan_in.credential_value,
+        col(AttendeeCredential.is_active).is_(True),
+    )).first()
     if not credential:
-        raise HTTPException(
-            status_code=404,
-            detail="Credential not recognized",
-        )
-
-    # 4. Validate Credential is active
-    if not credential.is_active:
-        raise HTTPException(
-            status_code=400,
-            detail="Credential is inactive",
-        )
-
-    # 5. Resolve Attendee
+        raise HTTPException(status_code=404, detail="Credential not recognized")
+    if scan_in.scan_method in (ScanMethod.nfc, ScanMethod.qr) and credential.credential_type.value != scan_in.scan_method.value:
+        raise HTTPException(status_code=400, detail=f"Invalid credential type for {scan_in.scan_method.value} scan")
     attendee = credential.attendee or session.get(Attendee, credential.attendee_id)
     if not attendee:
-        raise HTTPException(
-            status_code=404,
-            detail="Attendee not found for this credential",
-        )
-
-    # 6. Resolve Person and optional Student details
-    person = attendee.person or (
-        session.get(Person, attendee.person_id) if attendee.person_id else None
-    )
-    person_name = f"{person.first_name} {person.last_name}" if person else "Unknown"
-
-    student_number = None
-    if person:
-        student = session.exec(
-            select(Student).where(col(Student.person_id) == person.id)
-        ).first()
-        if student:
-            student_number = student.student_number
-
-    # 7. Validate EventRegistration exists and is active
-    registration = session.exec(
-        select(EventRegistration).where(
-            col(EventRegistration.event_id) == event.id,
-            col(EventRegistration.attendee_id) == attendee.id,
-        )
-    ).first()
-
+        raise HTTPException(status_code=404, detail="Attendee not found for this credential")
+    person = attendee.person or session.get(Person, attendee.person_id)
+    person_name = " ".join(p for p in [person.first_name, person.middle_name, person.last_name] if p) if person else "Unknown"
+    student = session.exec(select(Student).where(col(Student.person_id) == person.id)).first() if person else None
+    registration = session.exec(select(EventRegistration).where(
+        col(EventRegistration.event_id) == event.id,
+        col(EventRegistration.attendee_id) == attendee.id,
+    )).first()
     if not registration:
-        raise HTTPException(
-            status_code=404,
-            detail="Attendee is not registered for this event",
-        )
-
-    if registration.registration_status == RegistrationStatus.cancelled:
-        raise HTTPException(
-            status_code=400,
-            detail="Attendee registration is cancelled for this event",
-        )
-
-    # 8. Check Existing Attendance
-    existing = session.exec(
-        select(Attendance).where(col(Attendance.registration_id) == registration.id)
-    ).first()
-
-    now = get_datetime_utc()
-
-    if existing:
-        if event.attendance_mode == AttendanceMode.time_in_only:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Already Recorded - In: {existing.time_in}",
-            )
-        else:
-            if existing.time_out is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            # Concurrency-safe atomic update for time_out
-            stmt = (
-                update(Attendance)
-                .where(
-                    col(Attendance.id) == existing.id,
-                    col(Attendance.time_out).is_(None),
-                )
-                .values(
-                    time_out=now,
-                    status=AttendanceStatus.completed,
-                    scanned_by=current_user.id,
-                    scan_method=scan_in.scan_method,
-                    updated_at=now,
-                )
-            )
-            result = session.exec(stmt)
-            session.commit()
-            if result.rowcount == 0:
-                session.refresh(existing)
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            session.refresh(existing)
-            return ScanResponse(
-                message="Time-Out Recorded",
-                attendance=AttendancePublic.model_validate(existing),
-                attendee_id=attendee.id,
-                person_name=person_name,
-                student_number=student_number,
-            )
-
-    # 9. Insert new Attendance record (Time-In) with concurrency handling
-    record = Attendance(
-        registration_id=registration.id,
-        time_in=now,
-        status=(
-            AttendanceStatus.present
-            if event.attendance_mode == AttendanceMode.time_in_only
-            else AttendanceStatus.time_in_only
-        ),
-        scan_method=scan_in.scan_method,
-        scanned_by=current_user.id,
+        raise HTTPException(status_code=404, detail="Attendee is not registered for this event")
+    session_id = scan_in.attendance_session_id
+    if attendance_session_header:
+        try:
+            session_id = uuid.UUID(attendance_session_header)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid attendance session id")
+    record, message, result_code = record_registered_attendance(
+        session=session, event=event, registration=registration,
+        current_user=current_user, scan_method=scan_in.scan_method,
+        attendance_session_id=session_id,
     )
-    session.add(record)
-    try:
-        session.commit()
-        session.refresh(record)
-        return ScanResponse(
-            message="Time-In Recorded",
-            attendance=AttendancePublic.model_validate(record),
-            attendee_id=attendee.id,
-            person_name=person_name,
-            student_number=student_number,
-        )
-    except IntegrityError:
-        session.rollback()
-        # Another concurrent request already inserted the attendance record
-        existing = session.exec(
-            select(Attendance).where(col(Attendance.registration_id) == registration.id)
-        ).first()
-        if not existing:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to record attendance due to concurrent conflict",
-            )
-        if event.attendance_mode == AttendanceMode.time_in_only:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Already Recorded - In: {existing.time_in}",
-            )
-        else:
-            if existing.time_out is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Recorded - In: {existing.time_in}",
-                )
+    return ScanResponse(
+        message=message, result_code=result_code,
+        attendance=AttendancePublic.model_validate(record),
+        attendee_id=attendee.id, person_name=person_name,
+        student_number=student.student_number if student else None,
+        attendance_session_id=record.attendance_session_id,
+    )
 
 
 @router.post(
@@ -502,159 +281,43 @@ def scan_attendance_manual(
     session: SessionDep,
     current_user: CurrentUser,
     scan_in: ManualScanRequest,
+    attendance_session_header: str | None = Header(default=None, alias="X-Attendance-Session-ID"),
 ) -> Any:
-    # 1. Validate Event exists
     event = session.get(Event, scan_in.event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-
-    # 2. Validate Event is open for scanning
     if event.status != EventStatus.open:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Event is not open for attendance scanning (current status: {event.status.value})",
-        )
-
-    # 3. Resolve Attendee
+        raise HTTPException(status_code=400, detail=f"Event is not open for attendance scanning (current status: {event.status.value})")
     attendee = session.get(Attendee, scan_in.attendee_id)
     if not attendee:
         raise HTTPException(status_code=404, detail="Attendee not found")
-
-    # 4. Resolve Person and optional Student details
-    person = attendee.person or (
-        session.get(Person, attendee.person_id) if attendee.person_id else None
-    )
-    person_name = f"{person.first_name} {person.last_name}" if person else "Unknown"
-
-    student_number = None
-    if person:
-        student = session.exec(
-            select(Student).where(col(Student.person_id) == person.id)
-        ).first()
-        if student:
-            student_number = student.student_number
-
-    # 5. Validate EventRegistration exists and is active
-    registration = session.exec(
-        select(EventRegistration).where(
-            col(EventRegistration.event_id) == event.id,
-            col(EventRegistration.attendee_id) == attendee.id,
-        )
-    ).first()
-
+    person = attendee.person or session.get(Person, attendee.person_id)
+    person_name = " ".join(p for p in [person.first_name, person.middle_name, person.last_name] if p) if person else "Unknown"
+    student = session.exec(select(Student).where(col(Student.person_id) == person.id)).first() if person else None
+    registration = session.exec(select(EventRegistration).where(
+        col(EventRegistration.event_id) == event.id,
+        col(EventRegistration.attendee_id) == attendee.id,
+    )).first()
     if not registration:
-        raise HTTPException(
-            status_code=404,
-            detail="Attendee is not registered for this event",
-        )
-
-    if registration.registration_status == RegistrationStatus.cancelled:
-        raise HTTPException(
-            status_code=400,
-            detail="Attendee registration is cancelled for this event",
-        )
-
-    # 6. Check Existing Attendance
-    existing = session.exec(
-        select(Attendance).where(col(Attendance.registration_id) == registration.id)
-    ).first()
-
-    now = get_datetime_utc()
-
-    if existing:
-        if event.attendance_mode == AttendanceMode.time_in_only:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Already Recorded - In: {existing.time_in}",
-            )
-        else:
-            if existing.time_out is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            # Concurrency-safe atomic update for time_out
-            stmt = (
-                update(Attendance)
-                .where(
-                    col(Attendance.id) == existing.id,
-                    col(Attendance.time_out).is_(None),
-                )
-                .values(
-                    time_out=now,
-                    status=AttendanceStatus.completed,
-                    scanned_by=current_user.id,
-                    scan_method=scan_in.scan_method,
-                    updated_at=now,
-                )
-            )
-            result = session.exec(stmt)
-            session.commit()
-            if result.rowcount == 0:
-                session.refresh(existing)
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            session.refresh(existing)
-            return ScanResponse(
-                message="Time-Out Recorded",
-                attendance=AttendancePublic.model_validate(existing),
-                attendee_id=attendee.id,
-                person_name=person_name,
-                student_number=student_number,
-            )
-
-    # 7. Insert new Attendance record (Time-In) with concurrency handling
-    record = Attendance(
-        registration_id=registration.id,
-        time_in=now,
-        status=(
-            AttendanceStatus.present
-            if event.attendance_mode == AttendanceMode.time_in_only
-            else AttendanceStatus.time_in_only
-        ),
-        scan_method=scan_in.scan_method,
-        scanned_by=current_user.id,
+        raise HTTPException(status_code=404, detail="Attendee is not registered for this event")
+    session_id = scan_in.attendance_session_id
+    if attendance_session_header:
+        try:
+            session_id = uuid.UUID(attendance_session_header)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid attendance session id")
+    record, message, result_code = record_registered_attendance(
+        session=session, event=event, registration=registration,
+        current_user=current_user, scan_method=ScanMethod.manual,
+        attendance_session_id=session_id,
     )
-    session.add(record)
-    try:
-        session.commit()
-        session.refresh(record)
-        return ScanResponse(
-            message="Time-In Recorded",
-            attendance=AttendancePublic.model_validate(record),
-            attendee_id=attendee.id,
-            person_name=person_name,
-            student_number=student_number,
-        )
-    except IntegrityError:
-        session.rollback()
-        # Another concurrent request already inserted the attendance record
-        existing = session.exec(
-            select(Attendance).where(col(Attendance.registration_id) == registration.id)
-        ).first()
-        if not existing:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to record attendance due to concurrent conflict",
-            )
-        if event.attendance_mode == AttendanceMode.time_in_only:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Already Recorded - In: {existing.time_in}",
-            )
-        else:
-            if existing.time_out is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Completed - In: {existing.time_in} / Out: {existing.time_out}",
-                )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Already Recorded - In: {existing.time_in}",
-                )
+    return ScanResponse(
+        message=message, result_code=result_code,
+        attendance=AttendancePublic.model_validate(record),
+        attendee_id=attendee.id, person_name=person_name,
+        student_number=student.student_number if student else None,
+        attendance_session_id=record.attendance_session_id,
+    )
 
 
 @router.get("/{record_id}", response_model=AttendancePublic)
@@ -683,6 +346,10 @@ def update_attendance(
     if not record:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     update_dict = record_in.model_dump(exclude_unset=True)
+    if "attendance_session_id" in update_dict:
+        target = session.get(AttendanceSession, update_dict["attendance_session_id"])
+        if not target:
+            raise HTTPException(status_code=404, detail="Attendance session not found")
     record.sqlmodel_update(update_dict)
     record.updated_at = get_datetime_utc()
     session.add(record)

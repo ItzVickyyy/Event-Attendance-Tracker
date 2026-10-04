@@ -13,6 +13,9 @@ from app.models import (
     AttendeeCredentialsPublic,
     AttendeeCredentialUpdate,
     CredentialType,
+    Person,
+    PublicCredentialLookup,
+    Student,
     get_datetime_utc,
 )
 
@@ -107,6 +110,35 @@ def lookup_credential(
         raise HTTPException(status_code=404, detail="Credential not found")
     return credential
 
+
+@router.get("/public/{credential_value}", response_model=PublicCredentialLookup)
+def public_lookup_credential(
+    session: SessionDep, credential_value: str
+) -> Any:
+    credential = session.exec(
+        select(AttendeeCredential).where(
+            col(AttendeeCredential.credential_value) == credential_value,
+            col(AttendeeCredential.is_active).is_(True),
+        )
+    ).first()
+    if not credential:
+        raise HTTPException(status_code=404, detail="Credential not found")
+    attendee = session.get(Attendee, credential.attendee_id)
+    if not attendee:
+        raise HTTPException(status_code=404, detail="Attendee not found")
+    person = session.get(Person, attendee.person_id)
+    if not person:
+        raise HTTPException(status_code=404, detail="Person not found")
+    student = session.exec(select(Student).where(col(Student.person_id) == person.id)).first()
+    return PublicCredentialLookup(
+        attendee_id=attendee.id,
+        attendee_type=attendee.attendee_type,
+        credential_type=credential.credential_type,
+        credential_value=credential.credential_value,
+        person_name=" ".join(p for p in [person.first_name, person.middle_name, person.last_name, person.name_extension] if p),
+        student_number=student.student_number if student else None,
+        section_name=None,
+    )
 
 @router.get("/{credential_id}", response_model=AttendeeCredentialPublic)
 def read_attendee_credential(
