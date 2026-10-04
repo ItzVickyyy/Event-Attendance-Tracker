@@ -6,6 +6,7 @@ from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
+    AcademicSection,
     Attendee,
     AttendeeCredential,
     AttendeeCredentialCreate,
@@ -16,7 +17,6 @@ from app.models import (
     Person,
     PublicCredentialLookup,
     Student,
-    AcademicSection,
     get_datetime_utc,
 )
 
