@@ -62,7 +62,7 @@ def _build_docx(program_code: str, section: AcademicSection, rows: list[tuple[St
         for index, (student, person) in enumerate(rows, start=1)
     )
     table_xml = "<w:tbl><w:tblPr><w:tblBorders><w:top w:val=\"single\"/><w:left w:val=\"single\"/><w:bottom w:val=\"single\"/><w:right w:val=\"single\"/><w:insideH w:val=\"single\"/><w:insideV w:val=\"single\"/></w:tblBorders></w:tblPr>"
-    for row_index, row in enumerate(table_rows):
+    for _row_index, row in enumerate(table_rows):
         cells = "".join(_docx_cell(value) for value in row)
         table_xml += f"<w:tr>{cells}</w:tr>"
     table_xml += "</w:tbl>"
