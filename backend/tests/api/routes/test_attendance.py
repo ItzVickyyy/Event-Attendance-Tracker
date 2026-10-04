@@ -1013,6 +1013,11 @@ def test_attendance_scan_method_filter(
         },
     )
     client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "attendee_id": att1["id"], "registration_status": "registered"},
+    )
+    client.post(
         f"{settings.API_V1_STR}/attendance/scan",
         headers=superuser_token_headers,
         json={"event_id": event_id, "credential_value": nfc_val, "scan_method": "nfc"},
@@ -1039,6 +1044,11 @@ def test_attendance_scan_method_filter(
             "credential_value": qr_val,
             "is_active": True,
         },
+    )
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "attendee_id": att2["id"], "registration_status": "registered"},
     )
     client.post(
         f"{settings.API_V1_STR}/attendance/scan",
@@ -1448,7 +1458,7 @@ def test_attendance_export_csv(
     assert res.headers["content-type"].startswith("text/csv")
     csv_content = res.text
     assert (
-        "Student Number,Student Name,Event,Time In,Time Out,Attendance Status,Scan Method,Recorded At"
+        "Student Number,Student Name,Event,Time In,Time Out,Attendance Status,Late,Scan Method,Attendance Session,Session Date,Recorded At"
         in csv_content
     )
     assert student_num in csv_content
