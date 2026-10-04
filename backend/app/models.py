@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint
+from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint, text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -147,6 +147,33 @@ class RelationshipType(StrEnum):
 class AttendanceMode(StrEnum):
     time_in_only = "time_in_only"
     time_in_time_out = "time_in_time_out"
+
+
+class AttendanceSessionType(StrEnum):
+    time_in = "TIME_IN"
+    time_out = "TIME_OUT"
+    custom = "CUSTOM"
+
+
+class AttendanceSessionStatus(StrEnum):
+    scheduled = "SCHEDULED"
+    open = "OPEN"
+    closed = "CLOSED"
+    cancelled = "CANCELLED"
+
+
+class AttendanceResultCode(StrEnum):
+    success = "SUCCESS"
+    duplicate = "DUPLICATE"
+    not_found = "NOT_FOUND"
+    not_registered = "NOT_REGISTERED"
+    session_closed = "SESSION_CLOSED"
+    invalid_credential = "INVALID_CREDENTIAL"
+    offline_queued = "OFFLINE_QUEUED"
+    sync_pending = "SYNC_PENDING"
+    rejected = "REJECTED"
+    retry = "RETRY"
+    error = "ERROR"
 
 
 class EventStatus(StrEnum):
@@ -447,6 +474,7 @@ class Student(StudentBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
+    archived_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
 
     person: Person | None = Relationship(back_populates="student")
     section: AcademicSection | None = Relationship(back_populates="students")
@@ -686,6 +714,74 @@ class EventUpdate(SQLModel):
     status: EventStatus | None = None
 
 
+class AttendanceSessionBase(SQLModel):
+    event_id: uuid.UUID = Field(
+        foreign_key="events.id", nullable=False, ondelete="CASCADE"
+    )
+    session_date: str = Field(max_length=20)
+    name: str = Field(max_length=255)
+    session_type: AttendanceSessionType = Field(default=AttendanceSessionType.time_in)
+    start_time: str | None = Field(default=None, max_length=10)
+    end_time: str | None = Field(default=None, max_length=10)
+    late_cutoff: str | None = Field(default=None, max_length=10)
+    status: AttendanceSessionStatus = Field(default=AttendanceSessionStatus.scheduled)
+    display_order: int = Field(default=0)
+    is_active: bool = Field(default=False)
+
+
+class AttendanceSessionCreate(AttendanceSessionBase):
+    pass
+
+
+class AttendanceSessionUpdate(SQLModel):
+    session_date: str | None = Field(default=None, max_length=20)
+    name: str | None = Field(default=None, max_length=255)
+    session_type: AttendanceSessionType | None = None
+    start_time: str | None = Field(default=None, max_length=10)
+    end_time: str | None = Field(default=None, max_length=10)
+    late_cutoff: str | None = Field(default=None, max_length=10)
+    status: AttendanceSessionStatus | None = None
+    display_order: int | None = None
+
+
+class AttendanceSession(AttendanceSessionBase, table=True):
+    __tablename__ = "attendance_sessions"
+    __table_args__ = (
+        Index(
+            "uq_attendance_sessions_active_event",
+            "event_id",
+            unique=True,
+            postgresql_where=text("is_active = true"),
+        ),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    event: Optional["Event"] | None = Relationship(back_populates="attendance_sessions")
+    attendance_records: list["Attendance"] = Relationship(
+        back_populates="attendance_session", cascade_delete=True
+    )
+
+
+class AttendanceSessionPublic(AttendanceSessionBase):
+    id: uuid.UUID
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class AttendanceSessionsPublic(SQLModel):
+    data: list[AttendanceSessionPublic]
+    count: int
+
+
 class Event(EventBase, table=True):
     __tablename__ = "events"
 
@@ -701,6 +797,9 @@ class Event(EventBase, table=True):
 
     organization: Organization | None = Relationship(back_populates="events")
     registrations: list["EventRegistration"] = Relationship(
+        back_populates="event", cascade_delete=True
+    )
+    attendance_sessions: list["AttendanceSession"] = Relationship(
         back_populates="event", cascade_delete=True
     )
 
@@ -767,7 +866,7 @@ class EventRegistration(EventRegistrationBase, table=True):
 
     event: Optional["Event"] = Relationship(back_populates="registrations")  # noqa: UP037, UP045
     attendee: Optional["Attendee"] = Relationship(back_populates="registrations")  # noqa: UP037, UP045
-    attendance: Optional["Attendance"] = Relationship(  # noqa: UP037, UP045
+    attendance: list["Attendance"] = Relationship(  # noqa: UP037, UP045
         back_populates="registration", cascade_delete=True
     )
 
@@ -796,6 +895,12 @@ class RosterEntry(SQLModel):
     person_name: str
     student_number: str | None = None
     credentials: list[RosterCredential] = Field(default_factory=list)
+    attendance_session_id: uuid.UUID | None = None
+    attendance_status: AttendanceStatus | None = None
+    time_in: datetime | None = None
+    time_out: datetime | None = None
+    is_late: bool = False
+    scan_method: ScanMethod | None = None
 
 
 class RostersPublic(SQLModel):
@@ -811,7 +916,12 @@ class RostersPublic(SQLModel):
 class AttendanceBase(SQLModel):
     registration_id: uuid.UUID = Field(
         foreign_key="event_registrations.id",
-        unique=True,
+        index=True,
+        nullable=False,
+        ondelete="CASCADE",
+    )
+    attendance_session_id: uuid.UUID = Field(
+        foreign_key="attendance_sessions.id",
         index=True,
         nullable=False,
         ondelete="CASCADE",
@@ -826,6 +936,7 @@ class AttendanceBase(SQLModel):
     )
     status: AttendanceStatus = Field(default=AttendanceStatus.present)
     scan_method: ScanMethod = Field(default=ScanMethod.nfc)
+    is_late: bool = Field(default=False)
     scanned_by: uuid.UUID | None = Field(
         default=None,
         foreign_key="user.id",
@@ -836,6 +947,7 @@ class AttendanceBase(SQLModel):
 
 class AttendanceCreate(SQLModel):
     registration_id: uuid.UUID
+    attendance_session_id: uuid.UUID | None = None
     time_in: datetime | None = None
     time_out: datetime | None = None
     status: AttendanceStatus | None = None
@@ -844,6 +956,7 @@ class AttendanceCreate(SQLModel):
 
 
 class AttendanceUpdate(SQLModel):
+    attendance_session_id: uuid.UUID | None = None
     time_in: datetime | None = None
     time_out: datetime | None = None
     status: AttendanceStatus | None = None
@@ -852,6 +965,13 @@ class AttendanceUpdate(SQLModel):
 
 class Attendance(AttendanceBase, table=True):
     __tablename__ = "attendance"
+    __table_args__ = (
+        UniqueConstraint(
+            "registration_id",
+            "attendance_session_id",
+            name="uq_attendance_registration_session",
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
@@ -864,6 +984,9 @@ class Attendance(AttendanceBase, table=True):
     )
 
     registration: EventRegistration | None = Relationship(back_populates="attendance")
+    attendance_session: AttendanceSession | None = Relationship(
+        back_populates="attendance_records"
+    )
     corrections: list["AttendanceCorrection"] = Relationship(
         back_populates="attendance", cascade_delete=True
     )
@@ -885,25 +1008,37 @@ class ScanRequest(SQLModel):
     event_id: uuid.UUID
     credential_value: str
     scan_method: ScanMethod = ScanMethod.nfc
+    attendance_session_id: uuid.UUID | None = None
 
 
 class ScanResponse(SQLModel):
     message: str
+    result_code: AttendanceResultCode = AttendanceResultCode.success
     attendance: AttendancePublic
     attendee_id: uuid.UUID
     person_name: str | None = None
     student_number: str | None = None
+    attendance_session_id: uuid.UUID | None = None
 
 
 class ManualScanRequest(SQLModel):
     event_id: uuid.UUID
     attendee_id: uuid.UUID
     scan_method: ScanMethod = ScanMethod.manual
+    attendance_session_id: uuid.UUID | None = None
 
 
 # ===========================================================================
 # 12. Attendance Correction (Audit Trail)
 # ===========================================================================
+
+
+class PublicCredentialLookup(SQLModel):
+    attendee_id: uuid.UUID
+    attendee_type: AttendeeType
+    person_name: str
+    student_number: str | None = None
+    section_name: str | None = None
 
 
 class AttendanceCorrectionBase(SQLModel):
@@ -941,8 +1076,16 @@ class AttendanceCorrectionBase(SQLModel):
     )
 
 
-class AttendanceCorrectionCreate(AttendanceCorrectionBase):
-    pass
+class AttendanceCorrectionCreate(SQLModel):
+    attendance_id: uuid.UUID
+    reason: str = Field(max_length=500)
+    new_time_in: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
+    new_time_out: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
+    new_status: AttendanceStatus | None = None
+    # Legacy clients may still send these fields. The server derives the actual old values.
+    old_time_in: datetime | None = None
+    old_time_out: datetime | None = None
+    old_status: AttendanceStatus | None = None
 
 
 class AttendanceCorrection(AttendanceCorrectionBase, table=True):

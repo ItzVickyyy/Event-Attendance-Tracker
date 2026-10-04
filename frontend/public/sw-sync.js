@@ -18,7 +18,7 @@
 
 const SYNC_TAG = "sync-attendance"
 const QUEUE_DB_NAME = "attendance-offline"
-const QUEUE_DB_VERSION = 2
+const QUEUE_DB_VERSION = 3
 const TOKEN_TIMEOUT_MS = 3000
 
 let syncRunning = false
@@ -129,25 +129,25 @@ function getPendingRecords(db) {
 }
 
 async function syncRecord(db, token, apiBase, record) {
-  const url = `${apiBase}/api/v1/attendance/scan`
+  const url = record.scan_method === "manual"
+    ? `${apiBase}/api/v1/attendance/scan-manual`
+    : `${apiBase}/api/v1/attendance/scan`
   const now = () => new Date().toISOString()
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  }
+  if (record.attendance_session_id) headers["X-Attendance-Session-ID"] = record.attendance_session_id
 
   let response
   try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        event_id: record.event_id,
-        credential_value: record.credential_value,
-        scan_method: record.scan_method,
-      }),
-    })
+    const body = record.scan_method === "manual"
+      ? { event_id: record.event_id, attendee_id: record.attendee_id, scan_method: "manual" }
+      : { event_id: record.event_id, credential_value: record.credential_value, scan_method: record.scan_method }
+    response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) })
   } catch (_error) {
     await markRecord(db, record.id, {
+      sync_status: "RETRY",
       retry_count: record.retry_count + 1,
       last_error: "network-error",
       last_retry_at: now(),
@@ -156,9 +156,9 @@ async function syncRecord(db, token, apiBase, record) {
   }
 
   const status = response.status
-
   if (status >= 200 && status < 300) {
     await markRecord(db, record.id, {
+      sync_status: "SYNCED",
       synced: true,
       synced_at: now(),
       synced_at_server: now(),
@@ -168,10 +168,9 @@ async function syncRecord(db, token, apiBase, record) {
     })
     return "synced"
   }
-
   if (status === 409) {
-    // Duplicate scan: treat as resolved so it is not re-sent.
     await markRecord(db, record.id, {
+      sync_status: "DUPLICATE",
       synced: true,
       synced_at: now(),
       synced_at_server: now(),
@@ -181,13 +180,10 @@ async function syncRecord(db, token, apiBase, record) {
     })
     return "duplicate"
   }
-
-  if (status === 401) {
-    // Invalid/expired token: leave pending untouched; retried after re-login.
-    return "unauthorized"
-  }
+  if (status === 401) return "unauthorized"
 
   await markRecord(db, record.id, {
+    sync_status: status >= 500 ? "RETRY" : "REJECTED",
     retry_count: record.retry_count + 1,
     last_error: `http-${status}`,
     last_retry_at: now(),

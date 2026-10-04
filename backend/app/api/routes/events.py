@@ -12,6 +12,9 @@ from app.models import (
     EventsPublic,
     EventStatus,
     EventUpdate,
+    AttendanceSession,
+    AttendanceSessionStatus,
+    AttendanceSessionType,
     Organization,
     get_datetime_utc,
 )
@@ -61,6 +64,19 @@ def create_event(
 
     event = Event.model_validate(event_in)
     session.add(event)
+    session.flush()
+    default_session = AttendanceSession(
+        event_id=event.id,
+        session_date=event.event_date,
+        name="Default Attendance",
+        session_type=AttendanceSessionType.time_in,
+        start_time=event.start_time,
+        end_time=event.end_time,
+        status=(AttendanceSessionStatus.open if event.status == EventStatus.open else AttendanceSessionStatus.closed if event.status == EventStatus.closed else AttendanceSessionStatus.scheduled),
+        is_active=event.status == EventStatus.open,
+        display_order=0,
+    )
+    session.add(default_session)
     session.commit()
     session.refresh(event)
     return event
@@ -96,9 +112,28 @@ def update_event(
         if not org:
             raise HTTPException(status_code=404, detail="Organization not found")
 
+    previous_status = event.status
     event.sqlmodel_update(update_dict)
     event.updated_at = get_datetime_utc()
     session.add(event)
+    session.flush()
+    if event.status == EventStatus.open and previous_status != EventStatus.open:
+        active = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id, col(AttendanceSession.is_active).is_(True))).first()
+        if active:
+            active.status = AttendanceSessionStatus.open
+            active.updated_at = get_datetime_utc()
+        else:
+            next_session = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id).order_by(col(AttendanceSession.display_order))).first()
+            if next_session:
+                next_session.status = AttendanceSessionStatus.open
+                next_session.is_active = True
+                next_session.updated_at = get_datetime_utc()
+    elif event.status == EventStatus.closed and previous_status != EventStatus.closed:
+        active_sessions = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id, col(AttendanceSession.is_active).is_(True))).all()
+        for active in active_sessions:
+            active.status = AttendanceSessionStatus.closed
+            active.is_active = False
+            active.updated_at = get_datetime_utc()
     session.commit()
     session.refresh(event)
     return event

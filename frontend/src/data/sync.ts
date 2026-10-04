@@ -215,50 +215,48 @@ async function executeForegroundSync(): Promise<ForegroundSyncResult> {
 async function syncOneQueuedRecord(
   record: Awaited<ReturnType<typeof getPendingScans>>[number],
 ): Promise<RecordOutcome> {
+  const headers = record.attendance_session_id
+    ? { "X-Attendance-Session-ID": record.attendance_session_id }
+    : undefined
   try {
-    const response = await AttendanceService.scanAttendance({
-      body: {
-        event_id: record.event_id,
-        credential_value: record.credential_value,
-        scan_method: record.scan_method,
-      },
-    })
+    const response =
+      record.scan_method === "manual"
+        ? await AttendanceService.scanAttendanceManual({
+            body: {
+              event_id: record.event_id,
+              attendee_id: record.attendee_id ?? "",
+              scan_method: "manual",
+            },
+            headers,
+          })
+        : await AttendanceService.scanAttendance({
+            body: {
+              event_id: record.event_id,
+              credential_value: record.credential_value,
+              scan_method: record.scan_method,
+            },
+            headers,
+          })
     const serverTimestamp =
       response.data?.attendance?.time_in ??
+      response.data?.attendance?.time_out ??
       response.data?.attendance?.created_at ??
       undefined
-    await markSynced(record.id, {
-      serverTimestamp: serverTimestamp ?? undefined,
-    })
+    await markSynced(record.id, { serverTimestamp: serverTimestamp ?? undefined })
     return "synced"
   } catch (error) {
-    if (
-      !(error instanceof AxiosError) ||
-      error.response?.status === undefined
-    ) {
-      // No HTTP response at all: a genuine network failure. Keep the
-      // record pending and bump its retry metadata, same as sw-sync.js.
-      await markFailed(record.id, "network-error")
+    if (!(error instanceof AxiosError) || error.response?.status === undefined) {
+      await markFailed(record.id, "network-error", "RETRY")
       return "retry"
     }
-
-    const status = error.response.status
-
-    if (status === 409) {
-      // Duplicate scan: the same resolution the service worker applies.
-      await markSynced(record.id)
+    const httpStatus = error.response.status
+    if (httpStatus === 409) {
+      await markSynced(record.id, { syncStatus: "DUPLICATE" })
       return "duplicate"
     }
-
-    if (status === 401) {
-      // Invalid/expired token: leave the record pending and untouched.
-      // It is retried automatically once the user has a valid session
-      // again; never mark it synced on an auth failure.
-      return "unauthorized"
-    }
-
-    await markFailed(record.id, `http-${status}`)
-    return status >= 500 ? "retry" : "failed"
+    if (httpStatus === 401) return "unauthorized"
+    await markFailed(record.id, `http-${httpStatus}`, httpStatus >= 500 ? "RETRY" : "REJECTED")
+    return httpStatus >= 500 ? "retry" : "failed"
   }
 }
 
