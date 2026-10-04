@@ -1,3 +1,5 @@
+# ruff: noqa: I001
+
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
