@@ -33,7 +33,7 @@ def _seed_academic_catalog(session: Session) -> None:
             WHERE p.program_code = :program
               AND NOT EXISTS (
                   SELECT 1 FROM academic_majors m
-                  WHERE m.program_id = p.id AND m.code = :code
+                  WHERE m.program_id = p.id AND m.code::text = :code
               )
         """).bindparams(code=code, name=name, program=program))
 
@@ -83,7 +83,7 @@ def _seed_academic_catalog(session: Session) -> None:
             FROM academic_sections s
             JOIN academic_programs p ON p.id = s.program_id
             JOIN academic_majors m
-              ON m.program_id = p.id AND m.code = :major_code
+              ON m.program_id = p.id AND m.code::text = :major_code
             WHERE p.program_code = :program
               AND s.section_name = :section_name
               AND s.academic_year = '2026-2027'
