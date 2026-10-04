@@ -598,6 +598,11 @@ def test_scan_registration_cancelled_validation(
     )
 
     # 3. Create EventRegistration with cancelled status
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=superuser_token_headers,
+        json={
+            "event_id": event_id,
             "attendee_id": att_id,
             "registration_status": "cancelled",
         },
