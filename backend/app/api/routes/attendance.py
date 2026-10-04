@@ -112,6 +112,7 @@ def export_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
     event_id: uuid.UUID | None = None,
+    academic_year_id: uuid.UUID | None = None,
     attendance_status: AttendanceStatus | None = None,
     attendance_session_id: uuid.UUID | None = None,
     scan_method: ScanMethod | None = None,
@@ -139,6 +140,8 @@ def export_attendances(
 
     if event_id:
         statement = statement.where(EventRegistration.event_id == event_id)
+    if academic_year_id:
+        statement = statement.where(Attendance.academic_year_id == academic_year_id)
 
     if attendance_status:
         statement = statement.where(Attendance.status == attendance_status)
