@@ -319,6 +319,14 @@ class AcademicSectionBase(SQLModel):
     year_level: str = Field(max_length=20)
     section_name: str = Field(max_length=50)
     academic_year: str = Field(max_length=50)
+    academic_year_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="academic_years.id",
+        index=True,
+        nullable=True,
+        ondelete="RESTRICT",
+    )
+    section_code: str | None = Field(default=None, max_length=50)
 
 
 class AcademicSectionCreate(AcademicSectionBase):
