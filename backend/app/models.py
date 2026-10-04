@@ -685,6 +685,13 @@ class AttendeeRelationshipsPublic(SQLModel):
 
 class EventBase(SQLModel):
     event_name: str = Field(index=True, max_length=255)
+    academic_year_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="academic_years.id",
+        index=True,
+        nullable=True,
+        ondelete="RESTRICT",
+    )
     description: str | None = Field(default=None, max_length=1000)
     event_date: str = Field(max_length=20)
     start_time: str | None = Field(default=None, max_length=10)
@@ -914,6 +921,13 @@ class RostersPublic(SQLModel):
 
 
 class AttendanceBase(SQLModel):
+    academic_year_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="academic_years.id",
+        index=True,
+        nullable=True,
+        ondelete="RESTRICT",
+    )
     registration_id: uuid.UUID = Field(
         foreign_key="event_registrations.id",
         index=True,
