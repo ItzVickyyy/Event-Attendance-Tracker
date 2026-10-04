@@ -63,7 +63,9 @@ def read_attendances(
     registration_filter = select(EventRegistration.id)
     has_filter = False
     if registration_id:
-        registration_filter = registration_filter.where(col(EventRegistration.id) == registration_id)
+        registration_filter = registration_filter.where(
+            col(EventRegistration.id) == registration_id
+        )
         has_filter = True
     if event_id:
         registration_filter = registration_filter.where(col(EventRegistration.event_id) == event_id)
