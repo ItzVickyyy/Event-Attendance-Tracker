@@ -3,6 +3,7 @@ import { Download, FileSpreadsheet, FileText, Pencil, Plus, Printer, Search, Tra
 import { useState } from "react"
 import { toast } from "sonner"
 import { AcademicProgramsService } from "@/client"
+import { useAcademicYear } from "@/context/AcademicYearContext"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -60,6 +61,7 @@ function SectionList() {
   const [sectionCode, setSectionCode] = useState("")
   const [majorId, setMajorId] = useState("")
   const [studentForm, setStudentForm] = useState<Record<string, string>>({})
+  const { activeAcademicYear } = useAcademicYear()
 
   const programsQuery = useQuery({
     queryKey: ["academicPrograms", "section-registry"],
@@ -70,8 +72,9 @@ function SectionList() {
     queryFn: () => apiJson<any>("/academic-registry/academic-years"),
   })
   const sectionsQuery = useQuery({
-    queryKey: ["academicRegistrySections"],
-    queryFn: () => apiJson<any>("/academic-registry/sections"),
+    queryKey: ["academicRegistrySections", activeAcademicYear?.id],
+    queryFn: () => apiJson<any>(`/academic-registry/sections${activeAcademicYear?.id ? `?academic_year_id=${encodeURIComponent(activeAcademicYear.id)}` : ""}`),
+    enabled: Boolean(activeAcademicYear),
   })
   const majorsQuery = useQuery({
     queryKey: ["academicMajors", programId],
