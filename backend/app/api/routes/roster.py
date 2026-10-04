@@ -28,7 +28,12 @@ router = APIRouter(
 
 
 @router.get("/", response_model=RostersPublic)
-def read_event_roster(*, session: SessionDep, event_id: uuid.UUID, attendance_session_id: uuid.UUID | None = None) -> Any:
+def read_event_roster(
+    *,
+    session: SessionDep,
+    event_id: uuid.UUID,
+    attendance_session_id: uuid.UUID | None = None,
+) -> Any:
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
