@@ -53,13 +53,10 @@ def _seed_academic_catalog(session: Session) -> None:
         session.exec(text("""
             INSERT INTO academic_sections
                 (id, program_id, year_level, section_name, academic_year,
-                 academic_year_id, section_code, created_at, updated_at)
+                 created_at, updated_at)
             SELECT gen_random_uuid(), p.id, :year_level, :section_name,
-                   '2026-2027', ay.id,
-                   trim(regexp_replace(:section_name, '^(AMG|SMP|WMAD)[[:space:]]+', '')),
-                   now(), now()
+                   '2026-2027', now(), now()
             FROM academic_programs p
-            JOIN academic_years ay ON ay.label = '2026-2027'
             WHERE p.program_code = :program
               AND NOT EXISTS (
                   SELECT 1 FROM academic_sections s
