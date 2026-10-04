@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router"
 import { Activity, CalendarDays, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { AttendanceService, type EventPublic } from "@/client"
+import { type EventPublic } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -70,7 +70,13 @@ export function OperationalDashboard() {
   })
   const attendanceQuery = useQuery({
     queryKey: ["dashboard", "attendance", activeAcademicYear?.id],
-    queryFn: async () => (await AttendanceService.readAttendances({ query: { skip: 0, limit: 1 } })).data,
+    queryFn: async () => {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${import.meta.env.VITE_API_URL ?? ""}/api/v1/attendance/?skip=0&limit=1&academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      if (!response.ok) throw new Error("Unable to load attendance")
+      return response.json()
+    },
+    enabled: Boolean(activeAcademicYear),
   })
 
   const events = eventsQuery.data?.data ?? []
