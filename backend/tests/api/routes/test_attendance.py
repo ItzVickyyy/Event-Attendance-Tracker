@@ -539,9 +539,10 @@ def test_scan_unregistered_attendee_rejected(
     assert list_res.json()["count"] == 0
 
     # 7. Confirm scanning succeeds once the attendee is actually registered
-            "attendee_id": att_id,
-            "registration_status": "registered",
-        },
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=superuser_token_headers,
+        json={"event_id": event_id, "attendee_id": att_id, "registration_status": "registered"},
     )
     r_ok = client.post(
         f"{settings.API_V1_STR}/attendance/scan",
