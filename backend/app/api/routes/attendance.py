@@ -20,6 +20,7 @@ from app.models import (
     AttendancePublic,
     AttendanceResultCode,
     AttendanceSession,
+    AttendeeType,
     AttendancesPublic,
     AttendanceStatus,
     AttendanceUpdate,
@@ -54,6 +55,9 @@ def read_attendances(
     attendance_status: AttendanceStatus | None = None,
     scan_method: ScanMethod | None = None,
     is_late: bool | None = None,
+    attendee_type: AttendeeType | None = None,
+    section_id: uuid.UUID | None = None,
+    session_date: str | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -70,12 +74,24 @@ def read_attendances(
     if attendee_id:
         registration_filter = registration_filter.where(col(EventRegistration.attendee_id) == attendee_id)
         has_filter = True
+    if attendee_type:
+        registration_filter = registration_filter.join(Attendee).where(col(Attendee.attendee_type) == attendee_type)
+        has_filter = True
+    if section_id:
+        registration_filter = registration_filter.join(Attendee).join(
+            Student, Student.person_id == Attendee.person_id
+        ).where(col(Student.section_id) == section_id)
+        has_filter = True
     if has_filter:
         count_statement = count_statement.where(col(Attendance.registration_id).in_(registration_filter))
         statement = statement.where(col(Attendance.registration_id).in_(registration_filter))
     if attendance_session_id:
         count_statement = count_statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
         statement = statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
+    if session_date:
+        session_ids = select(AttendanceSession.id).where(col(AttendanceSession.session_date) == session_date)
+        count_statement = count_statement.where(col(Attendance.attendance_session_id).in_(session_ids))
+        statement = statement.where(col(Attendance.attendance_session_id).in_(session_ids))
     if attendance_status:
         count_statement = count_statement.where(col(Attendance.status) == attendance_status)
         statement = statement.where(col(Attendance.status) == attendance_status)
@@ -96,6 +112,12 @@ def export_attendances(
     _current_user: CurrentUser,
     event_id: uuid.UUID | None = None,
     attendance_status: AttendanceStatus | None = None,
+    attendance_session_id: uuid.UUID | None = None,
+    scan_method: ScanMethod | None = None,
+    session_date: str | None = None,
+    attendee_type: AttendeeType | None = None,
+    section_id: uuid.UUID | None = None,
+    is_late: bool | None = None,
 ) -> Response:
     """Export attendance records to CSV."""
     event: Event | None = None
@@ -105,11 +127,12 @@ def export_attendances(
             raise HTTPException(status_code=404, detail="Event not found")
 
     statement = (
-        select(Attendance, EventRegistration, Event, Attendee, Person, Student)
+        select(Attendance, EventRegistration, Event, Attendee, Person, Student, AttendanceSession)
         .join(EventRegistration, Attendance.registration_id == EventRegistration.id)
         .join(Event, EventRegistration.event_id == Event.id)
         .join(Attendee, EventRegistration.attendee_id == Attendee.id)
         .join(Person, Attendee.person_id == Person.id)
+        .join(AttendanceSession, Attendance.attendance_session_id == AttendanceSession.id)
         .outerjoin(Student, Student.person_id == Person.id)
     )
 
@@ -118,6 +141,18 @@ def export_attendances(
 
     if attendance_status:
         statement = statement.where(Attendance.status == attendance_status)
+    if attendance_session_id:
+        statement = statement.where(Attendance.attendance_session_id == attendance_session_id)
+    if scan_method:
+        statement = statement.where(Attendance.scan_method == scan_method)
+    if session_date:
+        statement = statement.where(AttendanceSession.session_date == session_date)
+    if attendee_type:
+        statement = statement.where(Attendee.attendee_type == attendee_type)
+    if section_id:
+        statement = statement.where(Student.section_id == section_id)
+    if is_late is not None:
+        statement = statement.where(Attendance.is_late == is_late)
 
     statement = statement.order_by(col(Attendance.created_at).desc())
     results = session.exec(statement).all()
@@ -132,12 +167,15 @@ def export_attendances(
             "Time In",
             "Time Out",
             "Attendance Status",
+            "Late",
             "Scan Method",
+            "Attendance Session",
+            "Session Date",
             "Recorded At",
         ]
     )
 
-    for attendance, _reg, ev, _attendee, person, student in results:
+    for attendance, _reg, ev, _attendee, person, student, attendance_session in results:
         name_parts = [
             person.first_name,
             person.middle_name,
@@ -162,9 +200,12 @@ def export_attendances(
                 attendance.status.value
                 if hasattr(attendance.status, "value")
                 else str(attendance.status),
+                "Yes" if attendance.is_late else "No",
                 attendance.scan_method.value
                 if hasattr(attendance.scan_method, "value")
                 else str(attendance.scan_method),
+                attendance_session.name,
+                attendance_session.session_date,
                 recorded_at_str,
             ]
         )
