@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { activateAttendanceSession, closeAttendanceSession, createAttendanceSession, getAttendanceSessions, type AttendanceSession, type AttendanceSessionType } from "@/data/attendanceSessions"
 import { Button } from "@/components/ui/button"
@@ -18,11 +18,11 @@ function SessionsPage() {
   const [lateCutoff, setLateCutoff] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function reload() {
+  const reload = useCallback(async () => {
     try { setSessions(await getAttendanceSessions(eventId)) }
     catch (error) { toast.error(error instanceof Error ? error.message : "Failed to load sessions") }
-  }
-  useEffect(() => { void reload() }, [eventId])
+  }, [eventId])
+  useEffect(() => { void reload() }, [reload])
 
   async function create() {
     if (!name.trim()) { toast.error("Session name is required"); return }
