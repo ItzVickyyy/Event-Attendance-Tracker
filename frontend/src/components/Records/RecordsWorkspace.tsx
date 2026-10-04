@@ -3,17 +3,32 @@ import { Link } from "@tanstack/react-router"
 import { Download, History, Loader2, AlertCircle, ClipboardList } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import { AttendanceService, EventsService } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
 import { attendanceColumns } from "@/components/Attendance/recordsColumns"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useAcademicYear } from "@/context/AcademicYearContext"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function RecordsWorkspace({ mode = "records" }: { mode?: "records" | "history" | "incomplete" | "export" }) {
   const [eventId, setEventId] = useState<string>("all")
-  const eventsQuery = useQuery({ queryKey: ["records-events"], queryFn: () => EventsService.readEvents({ query: { skip: 0, limit: 1000 } }) })
-  const attendanceQuery = useQuery({ queryKey: ["records-attendance", eventId], queryFn: () => AttendanceService.readAttendances({ query: { event_id: eventId === "all" ? undefined : eventId, skip: 0, limit: 1000 } }) })
+  const { activeAcademicYear } = useAcademicYear()
+  const fetchJson = async <T,>(path: string): Promise<T> => {
+    const token = localStorage.getItem("access_token")
+    const response = await fetch(`${import.meta.env.VITE_API_URL ?? ""}/api/v1${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (!response.ok) throw new Error("Request failed")
+    return response.json()
+  }
+  const eventsQuery = useQuery({
+    queryKey: ["records-events", activeAcademicYear?.id],
+    queryFn: () => fetchJson<any>(`/events/?skip=0&limit=1000&academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}`),
+    enabled: Boolean(activeAcademicYear),
+  })
+  const attendanceQuery = useQuery({
+    queryKey: ["records-attendance", eventId, activeAcademicYear?.id],
+    queryFn: () => fetchJson<any>(`/attendance/?skip=0&limit=1000&academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}${eventId === "all" ? "" : `&event_id=${encodeURIComponent(eventId)}`}`),
+    enabled: Boolean(activeAcademicYear),
+  })
   const events = eventsQuery.data?.data?.data ?? []
   const allAttendance = attendanceQuery.data?.data?.data ?? []
   const attendance = mode === "incomplete" ? allAttendance.filter((record) => record.status === "incomplete" || (record.time_in && !record.time_out)) : allAttendance
@@ -24,6 +39,7 @@ export function RecordsWorkspace({ mode = "records" }: { mode?: "records" | "his
       const token = localStorage.getItem("access_token")
       const params = new URLSearchParams()
       if (eventId !== "all") params.set("event_id", eventId)
+      if (activeAcademicYear) params.set("academic_year_id", activeAcademicYear.id)
       const response = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/v1/attendance/export${params.toString() ? `?${params}` : ""}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       if (!response.ok) throw new Error("Failed to export attendance")
       const blob = await response.blob()
