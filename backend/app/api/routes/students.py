@@ -31,7 +31,9 @@ def read_students(
     limit: int = 100,
     search: str | None = None,
 ) -> Any:
-    count_statement = select(func.count()).select_from(Student).where(text("students.archived_at IS NULL"))
+    count_statement = select(func.count()).select_from(Student).where(
+        text("students.archived_at IS NULL")
+    )
     statement = (
         select(Student, Person, Attendee)
         .join(Person, col(Student.person_id) == Person.id)
