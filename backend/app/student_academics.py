@@ -36,6 +36,18 @@ class AcademicYearPublic(SQLModel):
     is_current: bool
 
 
+class AcademicYearCreate(SQLModel):
+    label: str = Field(min_length=9, max_length=20)
+    start_year: int
+    end_year: int
+
+
+class AcademicYearUpdate(SQLModel):
+    label: str | None = Field(default=None, min_length=9, max_length=20)
+    start_year: int | None = None
+    end_year: int | None = None
+
+
 class AcademicYearsPublic(SQLModel):
     data: list[AcademicYearPublic]
     count: int
