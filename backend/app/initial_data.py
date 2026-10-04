@@ -28,7 +28,7 @@ def _seed_academic_catalog(session: Session) -> None:
         session.exec(text("""
             INSERT INTO academic_majors
                 (id, program_id, code, name, display_in_section_name, created_at, updated_at)
-            SELECT gen_random_uuid(), p.id, :code, :name, true, now(), now()
+            SELECT gen_random_uuid(), p.id, CAST(:code AS academicmajorcode), :name, true, now(), now()
             FROM academic_programs p
             WHERE p.program_code = :program
               AND NOT EXISTS (
