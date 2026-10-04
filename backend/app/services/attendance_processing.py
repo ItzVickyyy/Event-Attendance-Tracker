@@ -144,6 +144,7 @@ def record_registered_attendance(
 
     if attendance_session.session_type == AttendanceSessionType.time_out:
         record = Attendance(
+            academic_year_id=event.academic_year_id,
             registration_id=registration.id,
             attendance_session_id=attendance_session.id,
             time_in=None,
@@ -156,6 +157,7 @@ def record_registered_attendance(
         message = "Time-Out Recorded"
     else:
         record = Attendance(
+            academic_year_id=event.academic_year_id,
             registration_id=registration.id,
             attendance_session_id=attendance_session.id,
             time_in=now,
