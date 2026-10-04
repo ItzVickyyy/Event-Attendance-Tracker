@@ -12,9 +12,8 @@ from app.models import (
     AttendanceSessionsPublic,
     AttendanceSessionStatus,
     AttendanceSessionUpdate,
-    AttendanceSessionType,
-    EventStatus,
     Event,
+    EventStatus,
     get_datetime_utc,
 )
 
