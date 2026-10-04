@@ -6,10 +6,12 @@ from sqlalchemy import text
 from sqlmodel import select
 
 from app.academic_catalog import AcademicMajor
-from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
 from app.models import AcademicSection, Student
 from app.student_academics import (
     AcademicYear,
+    AcademicYear,
+    AcademicYearCreate,
     AcademicYearPublic,
     AcademicYearsPublic,
     SectionRegistryPublic,
@@ -48,6 +50,75 @@ def _section_row_query() -> str:
 def read_academic_years(session: SessionDep, _current_user: CurrentUser) -> Any:
     years = session.exec(select(AcademicYear).order_by(AcademicYear.start_year.desc())).all()
     return AcademicYearsPublic(data=[AcademicYearPublic.model_validate(year) for year in years], count=len(years))
+
+
+@router.post(
+    "/academic-years",
+    response_model=AcademicYearPublic,
+    dependencies=[Depends(require_super_admin)],
+)
+def create_academic_year(
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    academic_year_in: AcademicYearCreate,
+) -> AcademicYear:
+    if academic_year_in.end_year != academic_year_in.start_year + 1:
+        raise HTTPException(
+            status_code=422,
+            detail="Academic year end_year must be exactly one year after start_year",
+        )
+    label = academic_year_in.label.strip()
+    expected_label = f"{academic_year_in.start_year}-{academic_year_in.end_year}"
+    if label != expected_label:
+        raise HTTPException(
+            status_code=422,
+            detail="Academic year label must match start_year-end_year",
+        )
+    existing = session.exec(
+        select(AcademicYear).where(AcademicYear.label == label)
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Academic year already exists")
+    academic_year = AcademicYear(
+        label=label,
+        start_year=academic_year_in.start_year,
+        end_year=academic_year_in.end_year,
+        is_current=False,
+    )
+    session.add(academic_year)
+    session.commit()
+    session.refresh(academic_year)
+    return academic_year
+
+
+@router.post(
+    "/academic-years/{academic_year_id}/set-current",
+    response_model=AcademicYearPublic,
+    dependencies=[Depends(require_super_admin)],
+)
+def set_current_academic_year(
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    academic_year_id: uuid.UUID,
+) -> AcademicYear:
+    academic_year = session.get(AcademicYear, academic_year_id)
+    if not academic_year:
+        raise HTTPException(status_code=404, detail="Academic year not found")
+
+    session.exec(
+        select(AcademicYear).where(AcademicYear.id != academic_year_id)
+    ).all()
+    session.execute(
+        text("UPDATE academic_years SET is_current = false, updated_at = CURRENT_TIMESTAMP")
+    )
+    academic_year.is_current = True
+    academic_year.updated_at = __import__("app.models", fromlist=["get_datetime_utc"]).get_datetime_utc()
+    session.add(academic_year)
+    session.commit()
+    session.refresh(academic_year)
+    return academic_year
 
 
 @router.get("/sections", response_model=SectionRegistryPublic)
