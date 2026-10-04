@@ -75,7 +75,7 @@ jobs:
       - name: Run Ruff
         run: uv run ruff check backend/app backend/tests
       - name: Check Ruff format
-        run: uv run ruff format --diff backend/app backend/tests || true
+        run: uv run ruff format --check backend/app backend/tests
       - run: docker compose down -v --remove-orphans
       - name: Store coverage files
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
