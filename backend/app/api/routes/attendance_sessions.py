@@ -161,6 +161,7 @@ def activate_attendance_session(
         active.is_active = False
         active.status = AttendanceSessionStatus.closed
         active.updated_at = get_datetime_utc()
+    session.flush()
     record.is_active = True
     record.status = AttendanceSessionStatus.open
     record.updated_at = get_datetime_utc()
