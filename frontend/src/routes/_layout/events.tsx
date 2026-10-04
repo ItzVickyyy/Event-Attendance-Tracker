@@ -2,6 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Calendar, Search } from "lucide-react"
 import { Suspense, useState } from "react"
+import { useAcademicYear } from "@/context/AcademicYearContext"
 
 import { EventsService } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
@@ -9,12 +10,16 @@ import AddEvent from "@/components/Events/AddEvent"
 import { eventsColumns } from "@/components/Events/columns"
 import PendingEvents from "@/components/Pending/PendingEvents"
 
-function getEventsQueryOptions() {
+function getEventsQueryOptions(academicYearId: string | undefined) {
   return {
-    queryFn: async () =>
-      (await EventsService.readEvents({ query: { skip: 0, limit: 1000 } }))
-        .data,
-    queryKey: ["events"],
+    queryFn: async () => {
+      const token = localStorage.getItem("access_token")
+      const url = `${import.meta.env.VITE_API_URL ?? ""}/api/v1/events/?skip=0&limit=1000${academicYearId ? `&academic_year_id=${encodeURIComponent(academicYearId)}` : ""}`
+      const response = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      if (!response.ok) throw new Error("Unable to load events")
+      return response.json()
+    },
+    queryKey: ["events", academicYearId],
   }
 }
 
@@ -30,7 +35,7 @@ export const Route = createFileRoute("/_layout/events")({
 })
 
 function EventsTableContent({ search }: { search: string }) {
-  const { data: eventsResponse } = useSuspenseQuery(getEventsQueryOptions())
+  const { data: eventsResponse } = useSuspenseQuery(getEventsQueryOptions(useAcademicYear().activeAcademicYear?.id))
   const events = eventsResponse.data
 
   let filtered = events
