@@ -49,6 +49,7 @@ def read_attendances(
     event_id: uuid.UUID | None = None,
     attendee_id: uuid.UUID | None = None,
     attendance_session_id: uuid.UUID | None = None,
+    academic_year_id: uuid.UUID | None = None,
     attendance_status: AttendanceStatus | None = None,
     scan_method: ScanMethod | None = None,
     is_late: bool | None = None,
@@ -85,6 +86,9 @@ def read_attendances(
     if attendance_session_id:
         count_statement = count_statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
         statement = statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
+    if academic_year_id:
+        count_statement = count_statement.where(col(Attendance.academic_year_id) == academic_year_id)
+        statement = statement.where(col(Attendance.academic_year_id) == academic_year_id)
     if session_date:
         session_ids = select(AttendanceSession.id).where(col(AttendanceSession.session_date) == session_date)
         count_statement = count_statement.where(col(Attendance.attendance_session_id).in_(session_ids))
