@@ -4,12 +4,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.account_assignments import (
-    AssignmentStatus,
-    UserSectionAssignment,
-    UserSectionAssignmentBase,
-    UserSectionAssignmentPublic,
-)
 from app.academic_catalog import (
     AcademicMajor,
     AcademicMajorPublic,
@@ -17,7 +11,12 @@ from app.academic_catalog import (
     AcademicSectionMajor,
     AcademicSectionMajorCreate,
     AcademicSectionMajorPublic,
-    AcademicSectionMajorUpdate,
+)
+from app.account_assignments import (
+    AssignmentStatus,
+    UserSectionAssignment,
+    UserSectionAssignmentBase,
+    UserSectionAssignmentPublic,
 )
 from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
 from app.models import AcademicSection, User, UserRole
