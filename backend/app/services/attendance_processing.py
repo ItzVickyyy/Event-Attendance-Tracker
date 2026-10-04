@@ -18,8 +18,8 @@ from app.models import (
     EventStatus,
     RegistrationStatus,
     ScanMethod,
-    get_datetime_utc,
     User,
+    get_datetime_utc,
 )
 
 
