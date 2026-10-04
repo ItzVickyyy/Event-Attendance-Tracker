@@ -10,7 +10,6 @@ from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_a
 from app.models import AcademicSection, Student, get_datetime_utc
 from app.student_academics import (
     AcademicYear,
-    AcademicYear,
     AcademicYearCreate,
     AcademicYearPublic,
     AcademicYearsPublic,
@@ -119,8 +118,20 @@ def set_current_academic_year(
 
 
 @router.get("/sections", response_model=SectionRegistryPublic)
-def read_sections(session: SessionDep, _current_user: CurrentUser) -> Any:
-    rows = session.execute(text(_section_row_query())).mappings().all()
+def read_sections(
+    session: SessionDep,
+    _current_user: CurrentUser,
+    academic_year_id: uuid.UUID | None = None,
+) -> Any:
+    query = _section_row_query()
+    if academic_year_id:
+        query = query.replace(
+            "GROUP BY s.id,",
+            "WHERE ay.id = :academic_year_id\n        GROUP BY s.id,",
+        )
+        rows = session.execute(text(query), {"academic_year_id": academic_year_id}).mappings().all()
+    else:
+        rows = session.execute(text(query)).mappings().all()
     return SectionRegistryPublic(data=[SectionRegistryRow(**dict(row)) for row in rows], count=len(rows))
 
 
