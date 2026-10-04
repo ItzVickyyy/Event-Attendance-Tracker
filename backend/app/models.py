@@ -1291,6 +1291,3 @@ class StudentImportRecord(StudentImportRecordBase, table=True):
 
     import_batch: ImportBatch | None = Relationship(back_populates="records")
 
-
-# Register academic-year models with SQLModel metadata before create_all is used.
-from app import student_academics as _student_academics  # noqa: E402, F401
