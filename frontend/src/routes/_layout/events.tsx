@@ -4,7 +4,6 @@ import { Calendar, Search } from "lucide-react"
 import { Suspense, useState } from "react"
 import { useAcademicYear } from "@/context/AcademicYearContext"
 
-import { EventsService } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
 import AddEvent from "@/components/Events/AddEvent"
 import { eventsColumns } from "@/components/Events/columns"
