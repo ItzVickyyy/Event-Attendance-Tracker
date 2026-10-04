@@ -2,7 +2,6 @@ from typing import Any
 
 from sqlmodel import Session, create_engine, select
 
-from app import crud, student_academics as _student_academics  # noqa: F401
 from app.account_assignments import (  # noqa: F401
     OrganizationMembership,
     UserSectionAssignment,
@@ -24,6 +23,7 @@ test_engine = (
 
 
 def init_db(session: Session, engine_to_use: Any = None) -> None:
+    from app import student_academics as _student_academics  # noqa: F401
     from sqlmodel import SQLModel
 
     target_engine = engine_to_use or engine
