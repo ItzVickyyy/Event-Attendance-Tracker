@@ -474,6 +474,7 @@ class Student(StudentBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
+    archived_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
 
     person: Person | None = Relationship(back_populates="student")
     section: AcademicSection | None = Relationship(back_populates="students")

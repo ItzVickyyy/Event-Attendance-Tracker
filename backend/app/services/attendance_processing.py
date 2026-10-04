@@ -160,7 +160,12 @@ def record_registered_attendance(
             attendance_session_id=attendance_session.id,
             time_in=now,
             time_out=None,
-            status=AttendanceStatus.present,
+            status=(
+                AttendanceStatus.time_in_only
+                if event.attendance_mode == AttendanceMode.time_in_time_out
+                and attendance_session.session_type == AttendanceSessionType.time_in
+                else AttendanceStatus.present
+            ),
             scan_method=scan_method,
             is_late=_late_status(attendance_session, now),
             scanned_by=current_user.id,
