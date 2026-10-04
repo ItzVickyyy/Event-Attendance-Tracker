@@ -1291,6 +1291,11 @@ def test_manual_scan_eligibility_validation(
     assert "not open for attendance scanning" in r_draft.json()["detail"]
 
     # 5. Cancelled registration -> 400
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=superuser_token_headers,
+        json={
+            "event_id": event_id,
             "attendee_id": att_id,
             "registration_status": "cancelled",
         },
