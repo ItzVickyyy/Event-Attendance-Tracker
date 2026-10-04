@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from app.academic_catalog import AcademicMajor
 from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
-from app.models import AcademicSection, Student
+from app.models import AcademicSection, Student, get_datetime_utc
 from app.student_academics import (
     AcademicYear,
     AcademicYear,
@@ -107,14 +107,11 @@ def set_current_academic_year(
     if not academic_year:
         raise HTTPException(status_code=404, detail="Academic year not found")
 
-    session.exec(
-        select(AcademicYear).where(AcademicYear.id != academic_year_id)
-    ).all()
     session.execute(
         text("UPDATE academic_years SET is_current = false, updated_at = CURRENT_TIMESTAMP")
     )
     academic_year.is_current = True
-    academic_year.updated_at = __import__("app.models", fromlist=["get_datetime_utc"]).get_datetime_utc()
+    academic_year.updated_at = get_datetime_utc()
     session.add(academic_year)
     session.commit()
     session.refresh(academic_year)
