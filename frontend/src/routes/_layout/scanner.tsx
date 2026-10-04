@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { StudentPublic } from "@/client"
 import {
+  AttendanceService,
   AttendeesService,
   EventsService,
   StudentsService,
@@ -442,56 +443,81 @@ function Scanner() {
     async (credentialValue: string, scanMethod: "nfc" | "qr") => {
       if (!eventId) { toast.error("Please select an event first"); return }
       const activeSession = await getActiveAttendanceSession(eventId)
-      if (!activeSession) {
-        toast.error("No active attendance session")
-        return
-      }
+      if (!activeSession) { toast.error("No active attendance session"); return }
       const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
 
-      if (!navigator.onLine) {
-        try {
-          const entry = await getRosterEntryByCredential(eventId, credentialValue)
-          if (!entry) {
-            setLastResult({ type: "error", message: "Credential not recognized in offline roster", timestamp: nowStr })
-            toast.error("No offline roster entry for this credential")
-            return
-          }
-          const queued = await getAllQueuedScans()
-          const isDuplicate = queued.some(
-            (record) =>
-              !record.synced &&
-              record.event_id === eventId &&
-              record.attendance_session_id === activeSession.id &&
-              record.credential_value.toUpperCase() === credentialValue.toUpperCase(),
-          )
-          if (isDuplicate) {
-            setLastResult({ type: "duplicate", message: "Already queued for this attendee", name: entry.person_name, studentNumber: entry.student_number, timestamp: nowStr })
-            toast.info("Already queued for this attendee")
-            return
-          }
-          await enqueueScan({
-            event_id: eventId,
-            attendance_session_id: activeSession.id,
-            credential_value: credentialValue,
-            scan_method: scanMethod,
+      if (navigator.onLine) {
+        const result = await AttendanceService.scanAttendance({
+          body: { event_id: eventId, credential_value: credentialValue, scan_method: scanMethod },
+          headers: { "X-Attendance-Session-ID": activeSession.id },
+          throwOnError: false,
+        })
+        if (!result.error) {
+          setLastResult({
+            type: "success",
+            message: result.data?.message ?? "Attendance recorded",
+            name: result.data?.person_name ?? undefined,
+            studentNumber: result.data?.student_number ?? undefined,
+            timestamp: nowStr,
           })
-          setLastResult({ type: "success", message: "Saved offline", name: entry.person_name, studentNumber: entry.student_number, timestamp: nowStr })
-          toast.success(`Scan queued - ${entry.person_name}`)
-        } catch {
-          setLastResult({ type: "error", message: "Failed to queue offline scan", timestamp: nowStr })
-          toast.error("Failed to queue scan")
+          toast.success(result.data?.message ?? "Attendance recorded")
+          return
         }
-        return
+        const statusCode = (result as any).status
+        const detail = (result as any).data?.detail ?? "Scan failed"
+        if (statusCode === 409) {
+          setLastResult({ type: "duplicate", message: detail, timestamp: nowStr })
+          toast.error(detail)
+          return
+        }
+        if (statusCode && statusCode < 500) {
+          setLastResult({ type: "error", message: detail, timestamp: nowStr })
+          toast.error(detail)
+          return
+        }
+        // A network/server failure falls through to the durable queue.
       }
+
       try {
+        const entry = await getRosterEntryByCredential(eventId, credentialValue)
+        if (!navigator.onLine && !entry) {
+          setLastResult({ type: "error", message: "Credential not recognized in offline roster", timestamp: nowStr })
+          toast.error("No offline roster entry for this credential")
+          return
+        }
+        const queued = await getAllQueuedScans()
+        const isDuplicate = queued.some(
+          (record) =>
+            !record.synced &&
+            record.event_id === eventId &&
+            record.attendance_session_id === activeSession.id &&
+            record.credential_value.toUpperCase() === credentialValue.toUpperCase(),
+        )
+        if (isDuplicate) {
+          setLastResult({
+            type: "duplicate",
+            message: "Already queued for this attendee",
+            name: entry?.person_name,
+            studentNumber: entry?.student_number,
+            timestamp: nowStr,
+          })
+          toast.info("Already queued for this attendee")
+          return
+        }
         await enqueueScan({
           event_id: eventId,
           attendance_session_id: activeSession.id,
           credential_value: credentialValue,
           scan_method: scanMethod,
         })
-        setLastResult({ type: "success", message: "Scan queued for sync", timestamp: nowStr })
-        toast.success("Scan queued locally")
+        setLastResult({
+          type: "success",
+          message: navigator.onLine ? "Saved for automatic retry" : "Saved offline",
+          name: entry?.person_name,
+          studentNumber: entry?.student_number,
+          timestamp: nowStr,
+        })
+        toast.success(navigator.onLine ? "Saved for automatic retry" : "Saved offline")
       } catch {
         setLastResult({ type: "error", message: "Failed to queue scan", timestamp: nowStr })
         toast.error("Failed to queue scan")
@@ -770,7 +796,34 @@ function Scanner() {
       if (!attendeeId) { toast.error("No attendee record found for this student"); return }
       const activeSession = await getActiveAttendanceSession(eventId)
       if (!activeSession) { toast.error("No active attendance session"); return }
+
       const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      if (navigator.onLine) {
+        const result = await AttendanceService.scanAttendanceManual({
+          body: { event_id: eventId, attendee_id: attendeeId, scan_method: "manual" },
+          headers: { "X-Attendance-Session-ID": activeSession.id },
+          throwOnError: false,
+        })
+        if (!result.error) {
+          setLastResult({
+            type: "success",
+            message: result.data?.message ?? "Attendance recorded",
+            name: student.person_name ?? result.data?.person_name ?? undefined,
+            studentNumber: student.student_number ?? result.data?.student_number ?? undefined,
+            timestamp: nowStr,
+          })
+          toast.success(result.data?.message ?? "Attendance recorded")
+          return
+        }
+        const statusCode = (result as any).status
+        const detail = (result as any).data?.detail ?? "Scan failed"
+        if (statusCode && statusCode < 500) {
+          setLastResult({ type: statusCode === 409 ? "duplicate" : "error", message: detail, name: student.person_name ?? undefined, studentNumber: student.student_number ?? undefined, timestamp: nowStr })
+          toast.error(detail)
+          return
+        }
+      }
+
       await enqueueScan({
         event_id: eventId,
         attendance_session_id: activeSession.id,
@@ -780,12 +833,12 @@ function Scanner() {
       })
       setLastResult({
         type: "success",
-        message: navigator.onLine ? "Manual attendance queued" : "Saved offline",
+        message: navigator.onLine ? "Saved for automatic retry" : "Saved offline",
         name: student.person_name ?? undefined,
         studentNumber: student.student_number ?? undefined,
         timestamp: nowStr,
       })
-      toast.success(`Attendance queued - ${student.person_name ?? student.student_number}`)
+      toast.success(navigator.onLine ? "Saved for automatic retry" : "Saved offline")
     } catch {
       toast.error("Failed to submit manual scan")
     } finally {
