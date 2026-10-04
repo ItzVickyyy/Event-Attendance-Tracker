@@ -40,7 +40,9 @@ def _student_status(student: Student) -> str:
 
 def _docx_cell(value: object) -> str:
     text = escape(str(value or ""))
-    return f"<w:tc><w:tcPr/><w:p><w:r><w:t xml:space=\"preserve\">{text}</w:t></w:r></w:p></w:tc>"
+    return (
+        f"<w:tc><w:tcPr/><w:p><w:r><w:t xml:space=\"preserve\">{text}</w:t></w:r></w:p></w:tc>"
+    )
 
 
 def _build_docx(program_code: str, section: AcademicSection, rows: list[tuple[Student, Person]]) -> io.BytesIO:
