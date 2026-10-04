@@ -3,7 +3,7 @@ import io
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
 from sqlmodel import col, func, select
 
@@ -16,9 +16,7 @@ from app.api.deps import (
 from app.models import (
     Attendance,
     AttendanceCreate,
-    AttendanceMode,
     AttendancePublic,
-    AttendanceResultCode,
     AttendanceSession,
     AttendeeType,
     AttendancesPublic,
@@ -31,7 +29,6 @@ from app.models import (
     EventStatus,
     ManualScanRequest,
     Person,
-    RegistrationStatus,
     ScanMethod,
     ScanRequest,
     ScanResponse,
