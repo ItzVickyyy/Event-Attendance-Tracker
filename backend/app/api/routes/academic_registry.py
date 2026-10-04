@@ -48,7 +48,9 @@ def _section_row_query() -> str:
 @router.get("/academic-years", response_model=AcademicYearsPublic)
 def read_academic_years(session: SessionDep, _current_user: CurrentUser) -> Any:
     years = session.exec(select(AcademicYear).order_by(AcademicYear.start_year.desc())).all()
-    return AcademicYearsPublic(data=[AcademicYearPublic.model_validate(year) for year in years], count=len(years))
+    return AcademicYearsPublic(
+        data=[AcademicYearPublic.model_validate(year) for year in years], count=len(years)
+    )
 
 
 @router.post(
