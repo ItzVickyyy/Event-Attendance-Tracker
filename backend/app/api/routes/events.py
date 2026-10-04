@@ -5,8 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
-from app.student_academics import AcademicYear
-
 from app.models import (
     AttendanceSession,
     AttendanceSessionStatus,
@@ -20,6 +18,7 @@ from app.models import (
     Organization,
     get_datetime_utc,
 )
+from app.student_academics import AcademicYear
 
 router = APIRouter(prefix="/events", tags=["events"])
 
