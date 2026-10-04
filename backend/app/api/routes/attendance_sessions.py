@@ -39,7 +39,9 @@ def read_attendance_sessions(
     count_statement = select(func.count()).select_from(AttendanceSession)
     statement = select(AttendanceSession)
     if event_id:
-        count_statement = count_statement.where(col(AttendanceSession.event_id) == event_id)
+        count_statement = count_statement.where(
+            col(AttendanceSession.event_id) == event_id
+        )
         statement = statement.where(col(AttendanceSession.event_id) == event_id)
     if status:
         count_statement = count_statement.where(col(AttendanceSession.status) == status)
