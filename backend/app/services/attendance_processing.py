@@ -13,7 +13,6 @@ from app.models import (
     AttendanceSessionStatus,
     AttendanceSessionType,
     AttendanceStatus,
-    Attendee,
     Event,
     EventRegistration,
     EventStatus,

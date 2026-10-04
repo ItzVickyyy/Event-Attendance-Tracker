@@ -1028,8 +1028,6 @@ class ManualScanRequest(SQLModel):
 class PublicCredentialLookup(SQLModel):
     attendee_id: uuid.UUID
     attendee_type: AttendeeType
-    credential_type: CredentialType
-    credential_value: str
     person_name: str
     student_number: str | None = None
     section_name: str | None = None
@@ -1070,8 +1068,16 @@ class AttendanceCorrectionBase(SQLModel):
     )
 
 
-class AttendanceCorrectionCreate(AttendanceCorrectionBase):
-    pass
+class AttendanceCorrectionCreate(SQLModel):
+    attendance_id: uuid.UUID
+    reason: str = Field(max_length=500)
+    new_time_in: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
+    new_time_out: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
+    new_status: AttendanceStatus | None = None
+    # Legacy clients may still send these fields. The server derives the actual old values.
+    old_time_in: datetime | None = None
+    old_time_out: datetime | None = None
+    old_status: AttendanceStatus | None = None
 
 
 class AttendanceCorrection(AttendanceCorrectionBase, table=True):

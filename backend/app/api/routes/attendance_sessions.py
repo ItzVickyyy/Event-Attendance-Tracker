@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin, require_scanner_permission
+from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
     AttendanceSession,
     AttendanceSessionCreate,
@@ -13,6 +13,7 @@ from app.models import (
     AttendanceSessionStatus,
     AttendanceSessionUpdate,
     AttendanceSessionType,
+    EventStatus,
     Event,
     get_datetime_utc,
 )
@@ -78,7 +79,7 @@ def create_attendance_session(
     *, session: SessionDep, _current_user: CurrentUser, session_in: AttendanceSessionCreate
 ) -> Any:
     event = _validate_event(session, session_in.event_id)
-    if event.status == "closed":
+    if event.status == EventStatus.closed:
         raise HTTPException(status_code=400, detail="Cannot create a session for a closed event")
     if session_in.is_active and session_in.status != AttendanceSessionStatus.open:
         raise HTTPException(status_code=400, detail="An active session must be open")
@@ -147,7 +148,7 @@ def activate_attendance_session(
     if not record:
         raise HTTPException(status_code=404, detail="Attendance session not found")
     event = _validate_event(session, record.event_id)
-    if event.status != "open":
+    if event.status != EventStatus.open:
         raise HTTPException(status_code=400, detail="Event must be open before a session can be activated")
     active_sessions = session.exec(
         select(AttendanceSession).where(

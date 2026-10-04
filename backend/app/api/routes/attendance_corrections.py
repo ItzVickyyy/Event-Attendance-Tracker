@@ -10,6 +10,7 @@ from app.models import (
     AttendanceCorrection,
     AttendanceCorrectionCreate,
     AttendanceCorrectionPublic,
+    AttendanceSession,
     AttendanceCorrectionsPublic,
     get_datetime_utc,
 )
@@ -69,24 +70,34 @@ def create_attendance_correction(
         raise HTTPException(status_code=404, detail="Attendance record not found")
 
     now = get_datetime_utc()
-    correction = AttendanceCorrection(
-        attendance_id=correction_in.attendance_id,
-        reason=correction_in.reason,
-        old_time_in=correction_in.old_time_in,
-        new_time_in=correction_in.new_time_in,
-        old_time_out=correction_in.old_time_out,
-        new_time_out=correction_in.new_time_out,
-        old_status=correction_in.old_status,
-        new_status=correction_in.new_status,
-        corrected_by=current_user.id,
-        corrected_at=now,
-    )
+    attendance_session = session.get(AttendanceSession, attendance.attendance_session_id)
+    old_time_in = attendance.time_in
+    old_time_out = attendance.time_out
+    old_status = attendance.status
     if correction_in.new_time_in is not None:
         attendance.time_in = correction_in.new_time_in
     if correction_in.new_time_out is not None:
         attendance.time_out = correction_in.new_time_out
     if correction_in.new_status is not None:
         attendance.status = correction_in.new_status
+    if attendance_session and attendance.time_in and attendance_session.late_cutoff:
+        try:
+            hour, minute = attendance_session.late_cutoff.split(":", 1)
+            attendance.is_late = attendance.time_in.hour * 60 + attendance.time_in.minute > int(hour) * 60 + int(minute)
+        except (TypeError, ValueError):
+            pass
+    correction = AttendanceCorrection(
+        attendance_id=correction_in.attendance_id,
+        reason=correction_in.reason,
+        old_time_in=old_time_in,
+        new_time_in=attendance.time_in,
+        old_time_out=old_time_out,
+        new_time_out=attendance.time_out,
+        old_status=old_status,
+        new_status=attendance.status,
+        corrected_by=current_user.id,
+        corrected_at=now,
+    )
     attendance.updated_at = now
     session.add(attendance)
     session.add(correction)

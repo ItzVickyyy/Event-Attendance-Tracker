@@ -16,6 +16,7 @@ from app.models import (
     Person,
     PublicCredentialLookup,
     Student,
+    AcademicSection,
     get_datetime_utc,
 )
 
@@ -133,11 +134,9 @@ def public_lookup_credential(
     return PublicCredentialLookup(
         attendee_id=attendee.id,
         attendee_type=attendee.attendee_type,
-        credential_type=credential.credential_type,
-        credential_value=credential.credential_value,
         person_name=" ".join(p for p in [person.first_name, person.middle_name, person.last_name, person.name_extension] if p),
         student_number=student.student_number if student else None,
-        section_name=None,
+        section_name=(session.get(AcademicSection, student.section_id).section_name if student and student.section_id and session.get(AcademicSection, student.section_id) else None),
     )
 
 @router.get("/{credential_id}", response_model=AttendeeCredentialPublic)

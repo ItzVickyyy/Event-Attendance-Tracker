@@ -20,7 +20,6 @@ from app.models import (
     AttendancePublic,
     AttendanceResultCode,
     AttendanceSession,
-    AttendanceResultCode,
     AttendancesPublic,
     AttendanceStatus,
     AttendanceUpdate,
@@ -38,8 +37,6 @@ from app.models import (
     Student,
     get_datetime_utc,
 )
-
-from app.services.attendance_processing import record_registered_attendance
 
 from app.services.attendance_processing import record_registered_attendance
 
