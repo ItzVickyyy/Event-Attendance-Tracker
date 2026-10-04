@@ -2,6 +2,7 @@ from typing import Any
 
 from sqlmodel import Session, create_engine, select
 
+from app import crud
 from app.account_assignments import (  # noqa: F401
     OrganizationMembership,
     UserSectionAssignment,
