@@ -137,7 +137,7 @@ def read_sections(
         academic_year_id = assignment["academic_year_id"]
         query = _section_row_query().replace(
             "GROUP BY s.id,",
-            "WHERE s.id = :section_id AND ay.id = :academic_year_id\\n        GROUP BY s.id,",
+            "WHERE s.id = :section_id AND ay.id = :academic_year_id\n        GROUP BY s.id,",
         )
         rows = session.execute(
             text(query),
