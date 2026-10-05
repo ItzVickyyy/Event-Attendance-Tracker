@@ -26,6 +26,7 @@ from app.models import (
 )
 from app.services.reference_codes import next_student_reference_code
 from app.services.student_import import StudentImportService
+from app.student_academics import StudentEnrollment, StudentStatus
 
 
 @dataclass
@@ -217,6 +218,7 @@ class StudentPromotionService:
             existing_student.updated_at = get_datetime_utc()
             self.session.add(existing_student)
             self.session.flush()
+            self._sync_enrollment(existing_student, academic_section, academic_status)
             return existing_student
 
         person = Person(
@@ -239,7 +241,44 @@ class StudentPromotionService:
         )
         self.session.add(student)
         self.session.flush()
+        self._sync_enrollment(student, academic_section, academic_status)
         return student
+
+    def _sync_enrollment(
+        self,
+        student: Student,
+        academic_section: AcademicSection,
+        academic_status: str | None,
+    ) -> None:
+        """Create or update the year-scoped enrollment used by the roster."""
+        enrollment = self.session.exec(
+            select(StudentEnrollment).where(
+                col(StudentEnrollment.student_id) == student.id,
+                col(StudentEnrollment.academic_year_id)
+                == academic_section.academic_year_id,
+            )
+        ).first()
+
+        status = (
+            StudentStatus(academic_status)
+            if academic_status
+            else StudentStatus.regular
+        )
+
+        if enrollment is None:
+            enrollment = StudentEnrollment(
+                student_id=student.id,
+                academic_year_id=academic_section.academic_year_id,
+                section_id=academic_section.id,
+                student_status=status,
+            )
+        else:
+            enrollment.section_id = academic_section.id
+            enrollment.student_status = status
+            enrollment.updated_at = get_datetime_utc()
+
+        self.session.add(enrollment)
+        self.session.flush()
 
     def _resolve_section(
         self, section_reference: str, academic_year: str
