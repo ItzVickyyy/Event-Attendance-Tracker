@@ -4,10 +4,6 @@ from sqlmodel import Session, create_engine, select
 
 from app import crud
 from app.academic_catalog import AcademicMajor, AcademicSectionMajor  # noqa: F401
-from app.account_assignments import (  # noqa: F401
-    OrganizationMembership,
-    UserSectionAssignment,
-)
 from app.core.config import settings
 from app.models import User, UserCreate, UserRole
 
