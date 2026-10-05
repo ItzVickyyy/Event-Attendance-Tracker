@@ -154,6 +154,34 @@ def _seed_academic_catalog(session: Session) -> None:
             )
         )
 
+    # Seed the development Class Representative account with a real assignment.
+    # The account is created by the authentication seed, while this assignment
+    # depends on the academic catalog created above.
+    session.exec(
+        text("""
+        INSERT INTO class_representative_assignments
+            (id, user_id, academic_year_id, section_id, created_at, updated_at)
+        SELECT gen_random_uuid(), u.id, ay.id, s.id, now(), now()
+        FROM "user" u
+        JOIN academic_years ay
+          ON ay.label = '2026-2027'
+        JOIN academic_sections s
+          ON s.academic_year_id = ay.id
+         AND s.section_name = 'WMAD 3A'
+        JOIN academic_programs p
+          ON p.id = s.program_id
+         AND p.program_code = 'BSIT'
+        WHERE lower(u.email) = lower('ClassRep@sample.com')
+          AND u.role = 'class_representative'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM class_representative_assignments cra
+              WHERE cra.user_id = u.id
+                AND cra.academic_year_id = ay.id
+          )
+    """)
+    )
+
     session.commit()
 
 
