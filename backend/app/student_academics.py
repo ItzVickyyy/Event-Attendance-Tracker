@@ -130,3 +130,37 @@ class StudentRosterRow(SQLModel):
 class StudentRosterPublic(SQLModel):
     data: list[StudentRosterRow]
     count: int
+
+
+class ClassRepresentativeAssignment(SQLModel, table=True):
+    __tablename__ = "class_representative_assignments"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
+    academic_year_id: uuid.UUID = Field(
+        foreign_key="academic_years.id", index=True, ondelete="RESTRICT"
+    )
+    section_id: uuid.UUID = Field(
+        foreign_key="academic_sections.id", index=True, ondelete="RESTRICT"
+    )
+    created_at: datetime | None = Field(default_factory=get_datetime_utc)
+    updated_at: datetime | None = Field(default_factory=get_datetime_utc)
+
+
+class ClassRepresentativeAssignmentPublic(SQLModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    academic_year_id: uuid.UUID
+    section_id: uuid.UUID
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class ClassRepresentativeCreate(SQLModel):
+    email: str
+    first_name: str = Field(min_length=1, max_length=100)
+    middle_initial: str | None = Field(default=None, max_length=5)
+    last_name: str = Field(min_length=1, max_length=100)
+    extension: str | None = Field(default=None, max_length=20)
+    academic_year_id: uuid.UUID
+    section_id: uuid.UUID

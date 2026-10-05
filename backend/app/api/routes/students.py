@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.api.deps import CurrentUser, SessionDep, class_rep_assignment, require_admin
 from app.models import (
     AcademicSection,
     Attendee,
@@ -43,6 +43,13 @@ def read_students(
         .where(text("students.archived_at IS NULL"))
     )
 
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment:
+            raise HTTPException(
+            status_code=403, detail="No Class Representative assignment found"
+        )
+        section_id = assignment["section_id"]
     if section_id:
         count_statement = count_statement.where(col(Student.section_id) == section_id)
         statement = statement.where(col(Student.section_id) == section_id)
@@ -127,6 +134,12 @@ def read_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment or student.section_id != assignment["section_id"]:
+            raise HTTPException(
+            status_code=403, detail="Student is outside your assigned section"
+        )
     archived = session.execute(
         text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
     ).scalar_one_or_none()
@@ -135,9 +148,7 @@ def read_student(
     return student
 
 
-@router.patch(
-    "/{student_id}", response_model=StudentPublic, dependencies=[Depends(require_admin)]
-)
+@router.patch("/{student_id}", response_model=StudentPublic)
 def update_student(
     *,
     session: SessionDep,
@@ -172,6 +183,16 @@ def update_student(
                 detail="A student with this student number already exists.",
             )
 
+    if (
+        _current_user.role.value == "class_representative"
+        and "section_id" in update_dict
+    ):
+        if update_dict["section_id"] != student.section_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Class Representatives cannot move students between sections",
+            )
+
     if "section_id" in update_dict and update_dict["section_id"] is not None:
         section = session.get(AcademicSection, update_dict["section_id"])
         if not section:
@@ -201,13 +222,17 @@ def update_student(
     return student
 
 
-@router.delete("/{student_id}", dependencies=[Depends(require_admin)])
+@router.delete("/{student_id}")
 def delete_student(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> dict[str, str]:
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment or student.section_id != assignment["section_id"]:
+            raise HTTPException(status_code=403, detail="Student is outside your assigned section")
     session.execute(
         text(
             "UPDATE students SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND archived_at IS NULL"

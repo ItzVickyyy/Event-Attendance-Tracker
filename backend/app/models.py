@@ -40,6 +40,7 @@ class UserBase(SQLModel):
         description="Explicit attendance scanning permission",
     )
     full_name: str | None = Field(default=None, max_length=255)
+    must_change_password: bool = Field(default=False)
 
 
 # Properties to receive via API on creation

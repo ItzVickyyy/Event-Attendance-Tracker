@@ -39,13 +39,15 @@ export function ReconstructionNavigation() {
   const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || role === "developer" || user?.can_scan)
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
+  const classRep = role === "class_representative" && !isSuperuser
 
   const groups = navigationGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
         if (item.path === "/administration" || item.path === "/settings") return administrationAllowed
-        if (item.path === "/scanner") return scannerAllowed
+        if (item.path === "/scanner") return scannerAllowed && !classRep
+        if (classRep && (item.path === "/events" || item.path === "/scanner")) return false
         if (item.path === "/events" || item.path === "/records" || item.path === "/sections") return operationalAllowed
         return true
       }),

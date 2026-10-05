@@ -6,7 +6,13 @@ from sqlalchemy import text
 from sqlmodel import select
 
 from app.academic_catalog import AcademicMajor
-from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
+    class_rep_assignment,
+    require_admin,
+    require_super_admin,
+)
 from app.models import AcademicSection, Student, get_datetime_utc
 from app.student_academics import (
     AcademicYear,
@@ -130,6 +136,28 @@ def read_sections(
     _current_user: CurrentUser,
     academic_year_id: uuid.UUID | None = None,
 ) -> Any:
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
+        if not assignment:
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
+        academic_year_id = assignment["academic_year_id"]
+        query = _section_row_query().replace(
+            "GROUP BY s.id,",
+            "WHERE s.id = :section_id AND ay.id = :academic_year_id\n        GROUP BY s.id,",
+        )
+        rows = session.execute(
+            text(query),
+            {
+                "section_id": assignment["section_id"],
+                "academic_year_id": academic_year_id,
+            },
+        ).mappings().all()
+        return SectionRegistryPublic(
+            data=[SectionRegistryRow(**dict(row)) for row in rows], count=len(rows)
+        )
+
     query = _section_row_query()
     if academic_year_id:
         query = query.replace(
@@ -155,6 +183,12 @@ def read_section_students(
     section_id: uuid.UUID,
     include_archived: bool = False,
 ) -> Any:
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment or assignment["section_id"] != section_id:
+            raise HTTPException(
+                status_code=403, detail="Section is outside your assignment"
+            )
     archived_filter = "" if include_archived else "AND s.archived_at IS NULL"
     rows = (
         session.execute(
@@ -182,6 +216,30 @@ def read_section_students(
 def read_student_details(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> dict[str, Any]:
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        allowed = session.execute(
+            text("""
+                SELECT 1
+                FROM student_enrollments
+                WHERE student_id = :student_id
+                  AND section_id = :section_id
+                  AND academic_year_id = :academic_year_id
+                LIMIT 1
+            """),
+            {
+                "student_id": student_id,
+                "section_id": assignment["section_id"],
+                "academic_year_id": assignment["academic_year_id"],
+            },
+        ).first()
+        if not allowed:
+            raise HTTPException(
+                status_code=403, detail="Student is outside your assigned section"
+            )
+
     row = (
         session.execute(
             text("""
@@ -202,7 +260,7 @@ def read_student_details(
     return dict(row)
 
 
-@router.patch("/students/{student_id}", dependencies=[Depends(require_admin)])
+@router.patch("/students/{student_id}")
 def update_student_details(
     *,
     session: SessionDep,
@@ -210,6 +268,29 @@ def update_student_details(
     student_id: uuid.UUID,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        allowed = session.execute(
+            text("""
+                SELECT 1 FROM student_enrollments
+                WHERE student_id=:student_id
+                  AND section_id=:section_id
+                  AND academic_year_id=:academic_year_id
+                LIMIT 1
+            """),
+            {
+                "student_id": student_id,
+                "section_id": assignment["section_id"],
+                "academic_year_id": assignment["academic_year_id"],
+            },
+        ).first()
+        if not allowed:
+            raise HTTPException(status_code=403, detail="Student is outside your assigned section")
+        if payload.get("section_id") and str(payload["section_id"]) != str(assignment["section_id"]):
+            raise HTTPException(status_code=403, detail="Class Representatives cannot move students between sections")
+
     row = (
         session.execute(
             text("SELECT person_id FROM students WHERE id=:id AND archived_at IS NULL"),
