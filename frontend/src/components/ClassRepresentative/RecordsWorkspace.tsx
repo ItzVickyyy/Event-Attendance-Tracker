@@ -10,7 +10,8 @@ import { useAcademicYear } from "@/context/AcademicYearContext"
 export function ClassRepresentativeRecordsWorkspace() {
   const { activeAcademicYear } = useAcademicYear()
   const token = localStorage.getItem("access_token")
-  const headers = token ? { Authorization: "Bearer " + token } : {}
+  const headers: Record<string, string> = {}
+  if (token) headers.Authorization = "Bearer " + token
   const query = useQuery({
     queryKey: ["class-representative-records", activeAcademicYear?.id],
     queryFn: async () => {
