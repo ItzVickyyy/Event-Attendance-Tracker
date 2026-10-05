@@ -221,7 +221,16 @@ def export_attendances(
     if attendee_type:
         statement = statement.where(Attendee.attendee_type == attendee_type)
     if section_id:
-        statement = statement.where(Student.section_id == section_id)
+        if _current_user.role.value == "class_representative":
+            statement = statement.join(
+                StudentEnrollment,
+                StudentEnrollment.student_id == Student.id,
+            ).where(
+                StudentEnrollment.section_id == section_id,
+                StudentEnrollment.academic_year_id == academic_year_id,
+            )
+        else:
+            statement = statement.where(Student.section_id == section_id)
     if is_late is not None:
         statement = statement.where(Attendance.is_late == is_late)
 
