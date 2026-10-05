@@ -6,7 +6,6 @@ import {
 } from "@playwright/test"
 
 const SCAN_URL = "http://localhost:8001/api/v1/attendance/scan*"
-const OFFLINE_DB_VERSION = 3
 const ROSTER_URL = "**/api/v1/events/evt-1/roster**"
 const USERS_ME_URL = "**/api/v1/users/me*"
 
@@ -244,7 +243,7 @@ async function _seedRecords(
   await page.evaluate(
     (recs) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", OFFLINE_DB_VERSION)
+        const request = indexedDB.open("attendance-offline", 3)
         request.onupgradeneeded = () => {
           const db = request.result
           if (!db.objectStoreNames.contains("attendanceQueue")) {
@@ -280,7 +279,7 @@ async function seedRoster(page: Page, roster: RosterRecordLike): Promise<void> {
   await page.evaluate(
     (r) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", OFFLINE_DB_VERSION)
+        const request = indexedDB.open("attendance-offline", 3)
         request.onupgradeneeded = () => {
           const db = request.result
           if (!db.objectStoreNames.contains("attendanceQueue")) {
@@ -315,7 +314,7 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
   return page.evaluate(
     () =>
       new Promise<QueueRecordLike[]>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", OFFLINE_DB_VERSION)
+        const request = indexedDB.open("attendance-offline", 3)
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("attendanceQueue", "readonly")
@@ -343,7 +342,7 @@ async function readRoster(page: Page): Promise<RosterRecordLike | undefined> {
   return page.evaluate(
     () =>
       new Promise<RosterRecordLike | undefined>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", OFFLINE_DB_VERSION)
+        const request = indexedDB.open("attendance-offline", 3)
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("rosters", "readonly")
