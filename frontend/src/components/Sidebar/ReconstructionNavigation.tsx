@@ -47,7 +47,7 @@ export function ReconstructionNavigation() {
       items: group.items.filter((item) => {
         if (item.path === "/administration" || item.path === "/settings") return administrationAllowed
         if (item.path === "/scanner") return scannerAllowed && !classRep
-        if (classRep && (item.path === "/events" || item.path === "/scanner")) return false
+        if (classRep && (item.path === "/events")) return false
         if (item.path === "/events" || item.path === "/records" || item.path === "/sections") return operationalAllowed
         return true
       }),

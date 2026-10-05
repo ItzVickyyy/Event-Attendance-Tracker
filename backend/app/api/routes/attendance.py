@@ -60,12 +60,9 @@ def read_attendances(
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
-    if _current_user.role.value == "class_representative":
-        assignment = class_rep_assignment(session, _current_user, academic_year_id)
-        if not assignment:
-            raise HTTPException(
-                status_code=403, detail="No Class Representative assignment found"
-            )
+    # Authorization: Class Representatives can only access their assigned section
+    if _current_user.role == UserRole.class_representative:
+        assignment = require_class_rep_assignment(session, _current_user, academic_year_id)
         section_id = assignment["section_id"]
         academic_year_id = assignment["academic_year_id"]
     count_statement = select(func.count()).select_from(Attendance)

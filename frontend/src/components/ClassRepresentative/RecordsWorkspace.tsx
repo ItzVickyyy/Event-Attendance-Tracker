@@ -15,17 +15,21 @@ export function ClassRepresentativeRecordsWorkspace() {
   const query = useQuery({
     queryKey: ["class-representative-records", activeAcademicYear?.id],
     queryFn: async () => {
-      const params = new URLSearchParams({ skip: "0", limit: "1000", academic_year_id: activeAcademicYear!.id })
-      const response = await fetch("/api/v1/attendance/?" + params, { headers })
-      if (!response.ok) throw new Error("Unable to load attendance records")
-      return response.json()
+      if (!activeAcademicYear) return { data: [] };
+      const headersWithScope = { ...headers, "X-Academic-Year-ID": activeAcademicYear.id };
+      const params = new URLSearchParams({ skip: "0", limit: "1000", academic_year_id: activeAcademicYear.id });
+      const response = await fetch("/api/v1/attendance/?" + params, { headers: headersWithScope });
+      if (!response.ok) throw new Error("Unable to load attendance records");
+      return response.json();
     },
     enabled: Boolean(activeAcademicYear),
-  })
-  const records = query.data?.data ?? []
+  });
+
   const exportRecords = async () => {
-    const params = new URLSearchParams({ academic_year_id: activeAcademicYear!.id })
-    const response = await fetch("/api/v1/attendance/export?" + params, { headers })
+    if (!activeAcademicYear) return;
+    const headersWithScope = { ...headers, "X-Academic-Year-ID": activeAcademicYear.id };
+    const params = new URLSearchParams({ academic_year_id: activeAcademicYear.id });
+    const response = await fetch("/api/v1/attendance/export?" + params, { headers: headersWithScope });
     if (!response.ok) { toast.error("Unable to export attendance records"); return }
     const blob = await response.blob()
     const url = URL.createObjectURL(blob)

@@ -29,7 +29,8 @@ def init_db(session: Session, engine_to_use: Any = None) -> None:
     from app import student_academics as _student_academics  # noqa: F401
 
     target_engine = engine_to_use or engine
-    SQLModel.metadata.create_all(target_engine)
+    # SQLModel.metadata.create_all(target_engine)
+    # The DB is managed by Alembic
 
     user = session.exec(
         select(User).where(User.email == settings.FIRST_SUPERUSER)

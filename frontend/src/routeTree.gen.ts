@@ -28,6 +28,7 @@ import { Route as LayoutAccountProfileRouteImport } from './routes/_layout/accou
 import { Route as LayoutAccountSecurityRouteImport } from './routes/_layout/account/security'
 import { Route as LayoutAdministrationAttendanceRouteImport } from './routes/_layout/administration/attendance'
 import { Route as LayoutAdministrationAuditLogsRouteImport } from './routes/_layout/administration/audit-logs'
+import { Route as LayoutAdministrationClassRepresentativesRouteImport } from './routes/_layout/administration/class-representatives'
 import { Route as LayoutAdministrationRolesRouteImport } from './routes/_layout/administration/roles'
 import { Route as LayoutAdministrationScannerPermissionsRouteImport } from './routes/_layout/administration/scanner-permissions'
 import { Route as LayoutAdministrationUsersRouteImport } from './routes/_layout/administration/users'
@@ -48,6 +49,7 @@ import { Route as LayoutSettingsOrganizationRouteImport } from './routes/_layout
 import { Route as LayoutSettingsTimeOutRouteImport } from './routes/_layout/settings/time-out'
 import { Route as LayoutEventsEventIdRegistrationRouteImport } from './routes/_layout/events/$eventId/registration'
 import { Route as LayoutEventsEventIdRosterRouteImport } from './routes/_layout/events/$eventId/roster'
+import { Route as LayoutEventsEventIdSessionsRouteImport } from './routes/_layout/events/$eventId/sessions'
 import { Route as LayoutSectionsSectionIdStudentsRouteImport } from './routes/_layout/sections/$sectionId/students'
 import { Route as LayoutSectionsSectionIdStudentsStudentIdRouteImport } from './routes/_layout/sections/$sectionId/students/$studentId'
 
@@ -145,6 +147,12 @@ const LayoutAdministrationAuditLogsRoute =
   LayoutAdministrationAuditLogsRouteImport.update({
     id: '/audit-logs',
     path: '/audit-logs',
+    getParentRoute: () => LayoutAdministrationRoute,
+  } as any)
+const LayoutAdministrationClassRepresentativesRoute =
+  LayoutAdministrationClassRepresentativesRouteImport.update({
+    id: '/class-representatives',
+    path: '/class-representatives',
     getParentRoute: () => LayoutAdministrationRoute,
   } as any)
 const LayoutAdministrationRolesRoute =
@@ -254,6 +262,12 @@ const LayoutEventsEventIdRosterRoute =
     path: '/roster',
     getParentRoute: () => LayoutEventsEventIdRoute,
   } as any)
+const LayoutEventsEventIdSessionsRoute =
+  LayoutEventsEventIdSessionsRouteImport.update({
+    id: '/sessions',
+    path: '/sessions',
+    getParentRoute: () => LayoutEventsEventIdRoute,
+  } as any)
 const LayoutSectionsSectionIdStudentsRoute =
   LayoutSectionsSectionIdStudentsRouteImport.update({
     id: '/students',
@@ -285,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/account/security': typeof LayoutAccountSecurityRoute
   '/administration/attendance': typeof LayoutAdministrationAttendanceRoute
   '/administration/audit-logs': typeof LayoutAdministrationAuditLogsRoute
+  '/administration/class-representatives': typeof LayoutAdministrationClassRepresentativesRoute
   '/administration/roles': typeof LayoutAdministrationRolesRoute
   '/administration/scanner-permissions': typeof LayoutAdministrationScannerPermissionsRoute
   '/administration/users': typeof LayoutAdministrationUsersRoute
@@ -306,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof LayoutSettingsIndexRoute
   '/events/$eventId/registration': typeof LayoutEventsEventIdRegistrationRoute
   '/events/$eventId/roster': typeof LayoutEventsEventIdRosterRoute
+  '/events/$eventId/sessions': typeof LayoutEventsEventIdSessionsRoute
   '/sections/$sectionId/students': typeof LayoutSectionsSectionIdStudentsRouteWithChildren
   '/sections/$sectionId/students/$studentId': typeof LayoutSectionsSectionIdStudentsStudentIdRoute
 }
@@ -325,6 +341,7 @@ export interface FileRoutesByTo {
   '/account/security': typeof LayoutAccountSecurityRoute
   '/administration/attendance': typeof LayoutAdministrationAttendanceRoute
   '/administration/audit-logs': typeof LayoutAdministrationAuditLogsRoute
+  '/administration/class-representatives': typeof LayoutAdministrationClassRepresentativesRoute
   '/administration/roles': typeof LayoutAdministrationRolesRoute
   '/administration/scanner-permissions': typeof LayoutAdministrationScannerPermissionsRoute
   '/administration/users': typeof LayoutAdministrationUsersRoute
@@ -346,6 +363,7 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsIndexRoute
   '/events/$eventId/registration': typeof LayoutEventsEventIdRegistrationRoute
   '/events/$eventId/roster': typeof LayoutEventsEventIdRosterRoute
+  '/events/$eventId/sessions': typeof LayoutEventsEventIdSessionsRoute
   '/sections/$sectionId/students': typeof LayoutSectionsSectionIdStudentsRouteWithChildren
   '/sections/$sectionId/students/$studentId': typeof LayoutSectionsSectionIdStudentsStudentIdRoute
 }
@@ -369,6 +387,7 @@ export interface FileRoutesById {
   '/_layout/account/security': typeof LayoutAccountSecurityRoute
   '/_layout/administration/attendance': typeof LayoutAdministrationAttendanceRoute
   '/_layout/administration/audit-logs': typeof LayoutAdministrationAuditLogsRoute
+  '/_layout/administration/class-representatives': typeof LayoutAdministrationClassRepresentativesRoute
   '/_layout/administration/roles': typeof LayoutAdministrationRolesRoute
   '/_layout/administration/scanner-permissions': typeof LayoutAdministrationScannerPermissionsRoute
   '/_layout/administration/users': typeof LayoutAdministrationUsersRoute
@@ -390,6 +409,7 @@ export interface FileRoutesById {
   '/_layout/settings/': typeof LayoutSettingsIndexRoute
   '/_layout/events/$eventId/registration': typeof LayoutEventsEventIdRegistrationRoute
   '/_layout/events/$eventId/roster': typeof LayoutEventsEventIdRosterRoute
+  '/_layout/events/$eventId/sessions': typeof LayoutEventsEventIdSessionsRoute
   '/_layout/sections/$sectionId/students': typeof LayoutSectionsSectionIdStudentsRouteWithChildren
   '/_layout/sections/$sectionId/students/$studentId': typeof LayoutSectionsSectionIdStudentsStudentIdRoute
 }
@@ -413,6 +433,7 @@ export interface FileRouteTypes {
     | '/account/security'
     | '/administration/attendance'
     | '/administration/audit-logs'
+    | '/administration/class-representatives'
     | '/administration/roles'
     | '/administration/scanner-permissions'
     | '/administration/users'
@@ -434,6 +455,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/events/$eventId/registration'
     | '/events/$eventId/roster'
+    | '/events/$eventId/sessions'
     | '/sections/$sectionId/students'
     | '/sections/$sectionId/students/$studentId'
   fileRoutesByTo: FileRoutesByTo
@@ -453,6 +475,7 @@ export interface FileRouteTypes {
     | '/account/security'
     | '/administration/attendance'
     | '/administration/audit-logs'
+    | '/administration/class-representatives'
     | '/administration/roles'
     | '/administration/scanner-permissions'
     | '/administration/users'
@@ -474,6 +497,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/events/$eventId/registration'
     | '/events/$eventId/roster'
+    | '/events/$eventId/sessions'
     | '/sections/$sectionId/students'
     | '/sections/$sectionId/students/$studentId'
   id:
@@ -496,6 +520,7 @@ export interface FileRouteTypes {
     | '/_layout/account/security'
     | '/_layout/administration/attendance'
     | '/_layout/administration/audit-logs'
+    | '/_layout/administration/class-representatives'
     | '/_layout/administration/roles'
     | '/_layout/administration/scanner-permissions'
     | '/_layout/administration/users'
@@ -517,6 +542,7 @@ export interface FileRouteTypes {
     | '/_layout/settings/'
     | '/_layout/events/$eventId/registration'
     | '/_layout/events/$eventId/roster'
+    | '/_layout/events/$eventId/sessions'
     | '/_layout/sections/$sectionId/students'
     | '/_layout/sections/$sectionId/students/$studentId'
   fileRoutesById: FileRoutesById
@@ -664,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdministrationAuditLogsRouteImport
       parentRoute: typeof LayoutAdministrationRoute
     }
+    '/_layout/administration/class-representatives': {
+      id: '/_layout/administration/class-representatives'
+      path: '/class-representatives'
+      fullPath: '/administration/class-representatives'
+      preLoaderRoute: typeof LayoutAdministrationClassRepresentativesRouteImport
+      parentRoute: typeof LayoutAdministrationRoute
+    }
     '/_layout/administration/roles': {
       id: '/_layout/administration/roles'
       path: '/roles'
@@ -804,6 +837,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutEventsEventIdRosterRouteImport
       parentRoute: typeof LayoutEventsEventIdRoute
     }
+    '/_layout/events/$eventId/sessions': {
+      id: '/_layout/events/$eventId/sessions'
+      path: '/sessions'
+      fullPath: '/events/$eventId/sessions'
+      preLoaderRoute: typeof LayoutEventsEventIdSessionsRouteImport
+      parentRoute: typeof LayoutEventsEventIdRoute
+    }
     '/_layout/sections/$sectionId/students': {
       id: '/_layout/sections/$sectionId/students'
       path: '/students'
@@ -840,6 +880,7 @@ const LayoutAccountRouteWithChildren = LayoutAccountRoute._addFileChildren(
 interface LayoutAdministrationRouteChildren {
   LayoutAdministrationAttendanceRoute: typeof LayoutAdministrationAttendanceRoute
   LayoutAdministrationAuditLogsRoute: typeof LayoutAdministrationAuditLogsRoute
+  LayoutAdministrationClassRepresentativesRoute: typeof LayoutAdministrationClassRepresentativesRoute
   LayoutAdministrationRolesRoute: typeof LayoutAdministrationRolesRoute
   LayoutAdministrationScannerPermissionsRoute: typeof LayoutAdministrationScannerPermissionsRoute
   LayoutAdministrationUsersRoute: typeof LayoutAdministrationUsersRoute
@@ -848,6 +889,8 @@ interface LayoutAdministrationRouteChildren {
 const LayoutAdministrationRouteChildren: LayoutAdministrationRouteChildren = {
   LayoutAdministrationAttendanceRoute: LayoutAdministrationAttendanceRoute,
   LayoutAdministrationAuditLogsRoute: LayoutAdministrationAuditLogsRoute,
+  LayoutAdministrationClassRepresentativesRoute:
+    LayoutAdministrationClassRepresentativesRoute,
   LayoutAdministrationRolesRoute: LayoutAdministrationRolesRoute,
   LayoutAdministrationScannerPermissionsRoute:
     LayoutAdministrationScannerPermissionsRoute,
@@ -860,11 +903,13 @@ const LayoutAdministrationRouteWithChildren =
 interface LayoutEventsEventIdRouteChildren {
   LayoutEventsEventIdRegistrationRoute: typeof LayoutEventsEventIdRegistrationRoute
   LayoutEventsEventIdRosterRoute: typeof LayoutEventsEventIdRosterRoute
+  LayoutEventsEventIdSessionsRoute: typeof LayoutEventsEventIdSessionsRoute
 }
 
 const LayoutEventsEventIdRouteChildren: LayoutEventsEventIdRouteChildren = {
   LayoutEventsEventIdRegistrationRoute: LayoutEventsEventIdRegistrationRoute,
   LayoutEventsEventIdRosterRoute: LayoutEventsEventIdRosterRoute,
+  LayoutEventsEventIdSessionsRoute: LayoutEventsEventIdSessionsRoute,
 }
 
 const LayoutEventsEventIdRouteWithChildren =

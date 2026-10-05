@@ -80,7 +80,7 @@ function AcademicYearSelector() {
           <DropdownMenuLabel>Academic Year</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={activeAcademicYear?.id ?? ""}
-            onValueChange={setActiveAcademicYearId}
+            onValueChange={user?.role === "class_representative" ? undefined : setActiveAcademicYearId}
           >
             {academicYears.map((year) => (
               <DropdownMenuRadioItem key={year.id} value={year.id}>

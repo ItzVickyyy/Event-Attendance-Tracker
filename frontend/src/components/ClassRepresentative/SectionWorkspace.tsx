@@ -40,9 +40,15 @@ export function ClassRepresentativeSectionWorkspace() {
   const students = useQuery({
     queryKey: ["class-representative-students", activeAcademicYear?.id],
     queryFn: async () => {
-      const response = await fetch(api + "/class-representatives/me/students?academic_year_id=" + encodeURIComponent(activeAcademicYear!.id), { headers: authHeaders() })
-      if (!response.ok) throw new Error("Unable to load students")
-      return response.json()
+      if (!activeAcademicYear) return { data: [], count: 0 };
+      const response = await fetch(api + "/class-representatives/me/students?academic_year_id=" + encodeURIComponent(activeAcademicYear.id), {
+        headers: {
+          ...authHeaders(),
+          "X-Academic-Year-ID": activeAcademicYear.id,
+        },
+      });
+      if (!response.ok) throw new Error("Unable to load students");
+      return response.json();
     },
     enabled: Boolean(activeAcademicYear),
   })
