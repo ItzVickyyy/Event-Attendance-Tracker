@@ -10,6 +10,7 @@ from sqlmodel import col, func, select
 from app.api.deps import (
     CurrentUser,
     SessionDep,
+    class_rep_assignment,
     require_admin,
     require_scanner_permission,
 )
@@ -58,6 +59,12 @@ def read_attendances(
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        section_id = assignment["section_id"]
+        academic_year_id = assignment["academic_year_id"]
     count_statement = select(func.count()).select_from(Attendance)
     statement = select(Attendance)
     registration_filter = select(EventRegistration.id)
@@ -157,6 +164,13 @@ def export_attendances(
     is_late: bool | None = None,
 ) -> Response:
     """Export attendance records to CSV."""
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        section_id = assignment["section_id"]
+        academic_year_id = assignment["academic_year_id"]
+
     event: Event | None = None
     if event_id:
         event = session.get(Event, event_id)
@@ -475,6 +489,21 @@ def read_attendance(
     record = session.get(Attendance, record_id)
     if not record:
         raise HTTPException(status_code=404, detail="Attendance record not found")
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user, record.academic_year_id)
+        if not assignment:
+            raise HTTPException(status_code=403, detail="Attendance record is outside your assigned section")
+        allowed = session.execute(
+            select(Student.id)
+            .join(Attendee, Attendee.person_id == Student.person_id)
+            .join(EventRegistration, EventRegistration.attendee_id == Attendee.id)
+            .where(
+                EventRegistration.id == record.registration_id,
+                Student.section_id == assignment["section_id"],
+            )
+        ).first()
+        if not allowed:
+            raise HTTPException(status_code=403, detail="Attendance record is outside your assigned section")
     return record
 
 
