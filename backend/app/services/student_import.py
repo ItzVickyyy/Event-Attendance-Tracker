@@ -108,7 +108,12 @@ class StudentImportService:
         return {
             "source_sheet": source_sheet,
             "source_row": source_row,
-            "source_no": self._safe_cell_value(source_no),
+            "source_no": (
+                int(self._safe_cell_value(source_no))
+                if self._safe_cell_value(source_no)
+                and self._safe_cell_value(source_no).isdigit()
+                else None
+            ),
             "raw_student_number": values.get("student number"),
             "raw_last_name": values.get("last name"),
             "raw_first_name": values.get("first name"),
