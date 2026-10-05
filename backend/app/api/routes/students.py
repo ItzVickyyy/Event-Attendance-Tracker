@@ -46,7 +46,7 @@ def read_students(
     if _current_user.role.value == "class_representative":
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
-            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+            raise HTTPException(\n            status_code=403, detail="No Class Representative assignment found"\n        )
         section_id = assignment["section_id"]
     if section_id:
         count_statement = count_statement.where(col(Student.section_id) == section_id)
@@ -135,7 +135,7 @@ def read_student(
     if _current_user.role.value == "class_representative":
         assignment = class_rep_assignment(session, _current_user)
         if not assignment or student.section_id != assignment["section_id"]:
-            raise HTTPException(status_code=403, detail="Student is outside your assigned section")
+            raise HTTPException(\n            status_code=403, detail="Student is outside your assigned section"\n        )
     archived = session.execute(
         text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
     ).scalar_one_or_none()
@@ -179,9 +179,15 @@ def update_student(
                 detail="A student with this student number already exists.",
             )
 
-    if _current_user.role.value == "class_representative" and "section_id" in update_dict:
+    if (
+        _current_user.role.value == "class_representative"
+        and "section_id" in update_dict
+    ):
         if update_dict["section_id"] != student.section_id:
-            raise HTTPException(status_code=403, detail="Class Representatives cannot move students between sections")
+            raise HTTPException(
+                status_code=403,
+                detail="Class Representatives cannot move students between sections",
+            )
 
     if "section_id" in update_dict and update_dict["section_id"] is not None:
         section = session.get(AcademicSection, update_dict["section_id"])
