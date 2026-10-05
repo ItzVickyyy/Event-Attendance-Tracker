@@ -24,6 +24,7 @@ from app.models import (
     StudentImportRecord,
     get_datetime_utc,
 )
+from app.services.reference_codes import next_student_reference_code
 from app.services.student_import import StudentImportService
 
 
@@ -234,6 +235,7 @@ class StudentPromotionService:
             student_number=row.raw_student_number,
             section_id=academic_section.id,
             academic_status=academic_status_enum,
+            reference_code=next_student_reference_code(self.session),
         )
         self.session.add(student)
         self.session.flush()
