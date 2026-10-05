@@ -41,10 +41,28 @@ def upgrade() -> None:
             SELECT setval(
                 '"{sequence}"',
                 COALESCE(
-                    (SELECT MAX(CAST(SUBSTRING(reference_code FROM '[0-9]+$') AS BIGINT)) FROM {quoted}),
+                    (SELECT MAX(CAST(SUBSTRING(reference_code FROM '[0-9]+
+            )
+        """)
+        op.alter_column(
+            table,
+            "reference_code",
+            nullable=False,
+            server_default=f"'{prefix}-' || LPAD(nextval('\"{sequence}\"')::text, 6, '0')",
+        )
+        constraint = f"uq_{table.replace('user', 'usr')}_reference_code"
+        op.create_unique_constraint(constraint, table, ["reference_code"])
+
+def downgrade() -> None:
+    for table, _prefix, sequence in reversed(TABLES):
+        constraint = f"uq_{table.replace('user', 'usr')}_reference_code"
+        op.drop_constraint(constraint, table, type_="unique")
+        op.drop_column(table, "reference_code")
+        op.execute(f'DROP SEQUENCE IF EXISTS "{sequence}"')
+) AS BIGINT)) FROM {quoted}),
                     1
                 ),
-                true
+                (SELECT COUNT(*) > 0 FROM {quoted})
             )
         """)
         op.alter_column(
