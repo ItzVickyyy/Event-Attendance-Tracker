@@ -182,7 +182,8 @@ def list_class_representatives(
         )
         .mappings()
         .all()
-    )    return {"data": [dict(row) for row in rows], "count": len(rows)}
+    )
+    return {"data": [dict(row) for row in rows], "count": len(rows)}
 
 
 @router.post(
