@@ -117,6 +117,8 @@ def create_event(
 def read_event(
     session: SessionDep, _current_user: CurrentUser, event_id: uuid.UUID
 ) -> Any:
+    if _current_user.role.value == "class_representative":
+        raise HTTPException(status_code=403, detail="Class Representatives do not have access to events")
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
