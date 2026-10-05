@@ -6,7 +6,7 @@ import re
 from typing import Any, TypedDict
 
 from openpyxl import load_workbook
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from app.models import (
     AcademicProgram,
@@ -686,6 +686,36 @@ class StudentImportService:
             "checks": checks,
             "discrepancies": discrepancies,
         }
+
+    def _resolve_import_section(self, import_batch: ImportBatch, section_reference: str) -> AcademicSection | None:
+        normalized = " ".join(section_reference.strip().split()).upper()
+        if not import_batch.academic_year:
+            return None
+        parts = normalized.split()
+        if len(parts) >= 3:
+            program_code = parts[0]
+            section_name = " ".join(parts[1:])
+            program = self.session.exec(select(AcademicProgram).where(col(AcademicProgram.program_code) == program_code)).first()
+            if not program:
+                return None
+            return self.session.exec(select(AcademicSection).where(
+                col(AcademicSection.academic_year) == import_batch.academic_year,
+                col(AcademicSection.program_id) == program.id,
+                col(AcademicSection.section_name) == section_name,
+            )).first()
+        try:
+            program_code, year_level, section_name = self._derive_section_from_sheet(normalized)
+        except ValueError:
+            return None
+        program = self.session.exec(select(AcademicProgram).where(col(AcademicProgram.program_code) == program_code)).first()
+        if not program:
+            return None
+        return self.session.exec(select(AcademicSection).where(
+            col(AcademicSection.academic_year) == import_batch.academic_year,
+            col(AcademicSection.program_id) == program.id,
+            col(AcademicSection.year_level) == year_level,
+            col(AcademicSection.section_name) == section_name,
+        )).first()
 
     def _validate_and_detect_conflicts(self, parsed_rows: list[dict[str, Any]]) -> None:
         """Validate rows and detect duplicate/cross-program conflicts across the entire workbook"""
