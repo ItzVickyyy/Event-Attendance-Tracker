@@ -689,41 +689,96 @@ class StudentImportService:
         }
 
     def _resolve_import_section(self, import_batch: ImportBatch, section_reference: str) -> AcademicSection | None:
+        """Resolve a human-readable section reference against the academic registry.
+
+        Canonical import references are formatted as:
+            BSCS 1A
+            BSIT 1A
+            BSIT AMG 3A
+            BSIT WMAD 3A
+
+        The registry stores the program separately and stores the complete
+        section identity in section_name, for example:
+            BSCS + 1A
+            BSIT + WMAD 3A
+
+        Therefore, the resolver matches the actual section_name rather than
+        reconstructing it from year_level/section_code.
+        """
         normalized = " ".join(section_reference.strip().split()).upper()
-        if not import_batch.academic_year:
+        if not normalized or not import_batch.academic_year:
             return None
+
         parts = normalized.split()
-        if len(parts) >= 3:
-            program_code = parts[0]
-            section_name = " ".join(parts[1:])
-            program = self.session.exec(select(AcademicProgram).where(col(AcademicProgram.program_code) == program_code)).first()
-            if not program:
-                return None
-            return self.session.exec(select(AcademicSection).where(
-                col(AcademicSection.academic_year) == import_batch.academic_year,
-                col(AcademicSection.program_id) == program.id,
-                col(AcademicSection.section_name) == section_name,
-            )).first()
-        try:
-            program_code, year_level, section_name = self._derive_section_from_sheet(normalized)
-        except ValueError:
+        program_code = parts[0]
+        section_name = " ".join(parts[1:]).strip()
+        if not section_name:
             return None
-        program = self.session.exec(select(AcademicProgram).where(col(AcademicProgram.program_code) == program_code)).first()
+
+        program = self.session.exec(
+            select(AcademicProgram).where(
+                col(AcademicProgram.program_code) == program_code
+            )
+        ).first()
         if not program:
             return None
 
-        # Accept both section storage conventions used by the registry:
-        # section_name="A" with section_code="1A", or section_name="1A".
-        # The import format uses the human-readable "BSCS 1A" form.
-        section_code = f"{year_level}{section_name}"
-        return self.session.exec(select(AcademicSection).where(
-            col(AcademicSection.academic_year) == import_batch.academic_year,
-            col(AcademicSection.program_id) == program.id,
-            col(AcademicSection.year_level) == year_level,
-            (col(AcademicSection.section_name) == section_name)
-            | (col(AcademicSection.section_name) == section_code)
-            | (col(AcademicSection.section_code) == section_code),
-        )).first()
+        # Primary match: exact program + section_name + selected academic year.
+        section = self.session.exec(
+            select(AcademicSection).where(
+                col(AcademicSection.academic_year) == import_batch.academic_year,
+                col(AcademicSection.program_id) == program.id,
+                col(AcademicSection.section_name) == section_name,
+            )
+        ).first()
+        if section:
+            return section
+
+        # Compatibility fallback for simpler registry representations such as
+        # section_name="1A" / section_code="1A".
+        try:
+            match = re.fullmatch(r"(\d+)([A-Z]+)", section_name)
+        except re.error:
+            match = None
+
+        if not match:
+            return None
+
+        year_level_number, section_letters = match.groups()
+        section_code = f"{year_level_number}{section_letters}"
+        year_level_names = {
+            "1": "1st Year",
+            "2": "2nd Year",
+            "3": "3rd Year",
+            "4": "4th Year",
+        }
+        year_level = year_level_names.get(year_level_number)
+
+        conditions = [
+            col(AcademicSection.section_name) == section_code,
+            col(AcademicSection.section_code) == section_code,
+        ]
+        if year_level:
+            conditions = [
+                col(AcademicSection.year_level) == year_level,
+                (col(AcademicSection.section_name) == section_code)
+                | (col(AcademicSection.section_code) == section_code),
+            ]
+
+        return self.session.exec(
+            select(AcademicSection).where(
+                col(AcademicSection.academic_year) == import_batch.academic_year,
+                col(AcademicSection.program_id) == program.id,
+                conditions[0] if len(conditions) == 1 else conditions[0],
+            )
+        ).first() if len(conditions) == 1 else self.session.exec(
+            select(AcademicSection).where(
+                col(AcademicSection.academic_year) == import_batch.academic_year,
+                col(AcademicSection.program_id) == program.id,
+                conditions[0],
+                conditions[1],
+            )
+        ).first()
 
     def _validate_and_detect_conflicts(
         self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
