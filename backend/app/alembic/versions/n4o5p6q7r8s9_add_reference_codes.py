@@ -51,7 +51,7 @@ def upgrade() -> None:
             table,
             "reference_code",
             nullable=False,
-            server_default=f"'{prefix}-' || LPAD(nextval('"{sequence}"')::text, 6, '0')",
+            server_default=f"'{prefix}-' || LPAD(nextval('\"{sequence}\"')::text, 6, '0')",
         )
         constraint = f"uq_{table.replace('user', 'usr')}_reference_code"
         op.create_unique_constraint(constraint, table, ["reference_code"])
