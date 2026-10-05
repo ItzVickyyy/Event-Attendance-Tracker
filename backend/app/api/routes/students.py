@@ -46,7 +46,9 @@ def read_students(
     if _current_user.role.value == "class_representative":
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
-            raise HTTPException(\n            status_code=403, detail="No Class Representative assignment found"\n        )
+            raise HTTPException(
+            status_code=403, detail="No Class Representative assignment found"
+        )
         section_id = assignment["section_id"]
     if section_id:
         count_statement = count_statement.where(col(Student.section_id) == section_id)
@@ -135,7 +137,9 @@ def read_student(
     if _current_user.role.value == "class_representative":
         assignment = class_rep_assignment(session, _current_user)
         if not assignment or student.section_id != assignment["section_id"]:
-            raise HTTPException(\n            status_code=403, detail="Student is outside your assigned section"\n        )
+            raise HTTPException(
+            status_code=403, detail="Student is outside your assigned section"
+        )
     archived = session.execute(
         text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
     ).scalar_one_or_none()
