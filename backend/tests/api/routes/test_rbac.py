@@ -273,7 +273,11 @@ def test_scanner_permission_matrix(client: TestClient, db: Session) -> None:
     client.post(
         f"{settings.API_V1_STR}/event-registrations/",
         headers=get_token_headers_for_role(client, db, role=UserRole.admin),
-        json={"event_id": event_id, "attendee_id": att2["id"], "registration_status": "registered"},
+        json={
+            "event_id": event_id,
+            "attendee_id": att2["id"],
+            "registration_status": "registered",
+        },
     )
 
     scan_payload2 = {
@@ -326,7 +330,11 @@ def test_scanner_permission_matrix(client: TestClient, db: Session) -> None:
     client.post(
         f"{settings.API_V1_STR}/event-registrations/",
         headers=get_token_headers_for_role(client, db, role=UserRole.admin),
-        json={"event_id": event_id, "attendee_id": att3["id"], "registration_status": "registered"},
+        json={
+            "event_id": event_id,
+            "attendee_id": att3["id"],
+            "registration_status": "registered",
+        },
     )
 
     scan_payload3 = {

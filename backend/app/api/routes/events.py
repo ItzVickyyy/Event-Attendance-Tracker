@@ -94,7 +94,13 @@ def create_event(
         session_type=AttendanceSessionType.time_in,
         start_time=event.start_time,
         end_time=event.end_time,
-        status=(AttendanceSessionStatus.open if event.status == EventStatus.open else AttendanceSessionStatus.closed if event.status == EventStatus.closed else AttendanceSessionStatus.scheduled),
+        status=(
+            AttendanceSessionStatus.open
+            if event.status == EventStatus.open
+            else AttendanceSessionStatus.closed
+            if event.status == EventStatus.closed
+            else AttendanceSessionStatus.scheduled
+        ),
         is_active=event.status == EventStatus.open,
         display_order=0,
     )
@@ -140,18 +146,32 @@ def update_event(
     session.add(event)
     session.flush()
     if event.status == EventStatus.open and previous_status != EventStatus.open:
-        active = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id, col(AttendanceSession.is_active).is_(True))).first()
+        active = session.exec(
+            select(AttendanceSession).where(
+                col(AttendanceSession.event_id) == event.id,
+                col(AttendanceSession.is_active).is_(True),
+            )
+        ).first()
         if active:
             active.status = AttendanceSessionStatus.open
             active.updated_at = get_datetime_utc()
         else:
-            next_session = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id).order_by(col(AttendanceSession.display_order))).first()
+            next_session = session.exec(
+                select(AttendanceSession)
+                .where(col(AttendanceSession.event_id) == event.id)
+                .order_by(col(AttendanceSession.display_order))
+            ).first()
             if next_session:
                 next_session.status = AttendanceSessionStatus.open
                 next_session.is_active = True
                 next_session.updated_at = get_datetime_utc()
     elif event.status == EventStatus.closed and previous_status != EventStatus.closed:
-        active_sessions = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id, col(AttendanceSession.is_active).is_(True))).all()
+        active_sessions = session.exec(
+            select(AttendanceSession).where(
+                col(AttendanceSession.event_id) == event.id,
+                col(AttendanceSession.is_active).is_(True),
+            )
+        ).all()
         for active in active_sessions:
             active.status = AttendanceSessionStatus.closed
             active.is_active = False

@@ -32,14 +32,18 @@ def test_section_major_assignment(
         headers=superuser_token_headers,
     )
     assert programs.status_code == 200
-    bsit = next(item for item in programs.json()["data"] if item["program_code"] == "BSIT")
+    bsit = next(
+        item for item in programs.json()["data"] if item["program_code"] == "BSIT"
+    )
 
     sections = client.get(
         f"{settings.API_V1_STR}/academic-sections/?program_id={bsit['id']}&academic_year=2026-2027",
         headers=superuser_token_headers,
     )
     assert sections.status_code == 200
-    section = next(item for item in sections.json()["data"] if item["section_name"] == "WMAD 3A")
+    section = next(
+        item for item in sections.json()["data"] if item["section_name"] == "WMAD 3A"
+    )
 
     majors = client.get(
         f"{settings.API_V1_STR}/academic-catalog/majors?program_id={bsit['id']}",

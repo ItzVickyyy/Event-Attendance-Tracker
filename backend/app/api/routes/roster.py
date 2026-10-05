@@ -38,11 +38,17 @@ def read_event_roster(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    entries = _build_roster_entries(session=session, event_id=event.id, attendance_session_id=attendance_session_id)
+    entries = _build_roster_entries(
+        session=session, event_id=event.id, attendance_session_id=attendance_session_id
+    )
     return RostersPublic(data=entries, count=len(entries))
 
 
-def _build_roster_entries(session: Session, event_id: uuid.UUID, attendance_session_id: uuid.UUID | None = None) -> list[RosterEntry]:
+def _build_roster_entries(
+    session: Session,
+    event_id: uuid.UUID,
+    attendance_session_id: uuid.UUID | None = None,
+) -> list[RosterEntry]:
     registrations = session.exec(
         select(EventRegistration).where(
             col(EventRegistration.event_id) == event_id,
@@ -67,7 +73,9 @@ def _build_roster_entries(session: Session, event_id: uuid.UUID, attendance_sess
                 col(Attendance.registration_id).in_([reg.id for reg in registrations]),
             )
         ).all()
-        attendance_by_registration_id = {record.registration_id: record for record in attendance_records}
+        attendance_by_registration_id = {
+            record.registration_id: record for record in attendance_records
+        }
 
     if attendee_ids:
         attendees = session.exec(
@@ -119,11 +127,31 @@ def _build_roster_entries(session: Session, event_id: uuid.UUID, attendance_sess
                 student_number=student_number_by_person_id.get(attendee.person_id),
                 credentials=credentials_by_attendee_id.get(reg.attendee_id, []),
                 attendance_session_id=attendance_session_id,
-                attendance_status=(attendance_by_registration_id.get(reg.id).status if attendance_by_registration_id.get(reg.id) else None),
-                time_in=(attendance_by_registration_id.get(reg.id).time_in if attendance_by_registration_id.get(reg.id) else None),
-                time_out=(attendance_by_registration_id.get(reg.id).time_out if attendance_by_registration_id.get(reg.id) else None),
-                is_late=(attendance_by_registration_id.get(reg.id).is_late if attendance_by_registration_id.get(reg.id) else False),
-                scan_method=(attendance_by_registration_id.get(reg.id).scan_method if attendance_by_registration_id.get(reg.id) else None),
+                attendance_status=(
+                    attendance_by_registration_id.get(reg.id).status
+                    if attendance_by_registration_id.get(reg.id)
+                    else None
+                ),
+                time_in=(
+                    attendance_by_registration_id.get(reg.id).time_in
+                    if attendance_by_registration_id.get(reg.id)
+                    else None
+                ),
+                time_out=(
+                    attendance_by_registration_id.get(reg.id).time_out
+                    if attendance_by_registration_id.get(reg.id)
+                    else None
+                ),
+                is_late=(
+                    attendance_by_registration_id.get(reg.id).is_late
+                    if attendance_by_registration_id.get(reg.id)
+                    else False
+                ),
+                scan_method=(
+                    attendance_by_registration_id.get(reg.id).scan_method
+                    if attendance_by_registration_id.get(reg.id)
+                    else None
+                ),
             )
         )
 

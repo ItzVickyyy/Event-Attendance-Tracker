@@ -70,7 +70,9 @@ def create_attendance_correction(
         raise HTTPException(status_code=404, detail="Attendance record not found")
 
     now = get_datetime_utc()
-    attendance_session = session.get(AttendanceSession, attendance.attendance_session_id)
+    attendance_session = session.get(
+        AttendanceSession, attendance.attendance_session_id
+    )
     old_time_in = attendance.time_in
     old_time_out = attendance.time_out
     old_status = attendance.status
@@ -83,8 +85,11 @@ def create_attendance_correction(
     if attendance_session and attendance.time_in and attendance_session.late_cutoff:
         try:
             hour, minute = attendance_session.late_cutoff.split(":", 1)
-            attendance.is_late = attendance.time_in.hour * 60 + attendance.time_in.minute > int(hour) * 60 + int(minute)
-        except (TypeError, ValueError):
+            attendance.is_late = (
+                attendance.time_in.hour * 60 + attendance.time_in.minute
+                > int(hour) * 60 + int(minute)
+            )
+        except TypeError, ValueError:
             pass
     correction = AttendanceCorrection(
         attendance_id=correction_in.attendance_id,

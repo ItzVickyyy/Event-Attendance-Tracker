@@ -4,11 +4,17 @@ from app.core.config import settings
 from tests.utils.utils import random_email, random_lower_string
 
 
-def _create_registered_attendee(client: TestClient, headers: dict[str, str], event_id: str) -> tuple[str, str]:
+def _create_registered_attendee(
+    client: TestClient, headers: dict[str, str], event_id: str
+) -> tuple[str, str]:
     person = client.post(
         f"{settings.API_V1_STR}/people/",
         headers=headers,
-        json={"first_name": "Session", "last_name": random_lower_string()[:8], "email": random_email()},
+        json={
+            "first_name": "Session",
+            "last_name": random_lower_string()[:8],
+            "email": random_email(),
+        },
     ).json()
     attendee = client.post(
         f"{settings.API_V1_STR}/attendees/",
@@ -28,7 +34,11 @@ def _create_registered_attendee(client: TestClient, headers: dict[str, str], eve
     client.post(
         f"{settings.API_V1_STR}/event-registrations/",
         headers=headers,
-        json={"event_id": event_id, "attendee_id": attendee["id"], "registration_status": "registered"},
+        json={
+            "event_id": event_id,
+            "attendee_id": attendee["id"],
+            "registration_status": "registered",
+        },
     )
     return attendee["id"], person["id"]
 
@@ -48,7 +58,9 @@ def test_attendance_sessions_allow_multiple_records_per_registration(
     ).json()
     event_id = event["id"]
 
-    attendee_id, _ = _create_registered_attendee(client, superuser_token_headers, event_id)
+    attendee_id, _ = _create_registered_attendee(
+        client, superuser_token_headers, event_id
+    )
 
     sessions = client.get(
         f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
@@ -66,7 +78,11 @@ def test_attendance_sessions_allow_multiple_records_per_registration(
     first_scan = client.post(
         f"{settings.API_V1_STR}/attendance/scan",
         headers={**superuser_token_headers, "X-Attendance-Session-ID": first["id"]},
-        json={"event_id": event_id, "credential_value": credential, "scan_method": "nfc"},
+        json={
+            "event_id": event_id,
+            "credential_value": credential,
+            "scan_method": "nfc",
+        },
     )
     assert first_scan.status_code == 200
 
@@ -93,8 +109,15 @@ def test_attendance_sessions_allow_multiple_records_per_registration(
 
     second_scan = client.post(
         f"{settings.API_V1_STR}/attendance/scan",
-        headers={**superuser_token_headers, "X-Attendance-Session-ID": second_session["id"]},
-        json={"event_id": event_id, "credential_value": credential, "scan_method": "nfc"},
+        headers={
+            **superuser_token_headers,
+            "X-Attendance-Session-ID": second_session["id"],
+        },
+        json={
+            "event_id": event_id,
+            "credential_value": credential,
+            "scan_method": "nfc",
+        },
     )
     assert second_scan.status_code == 200
 
@@ -124,7 +147,9 @@ def test_session_late_cutoff_is_calculated_server_side(
         },
     ).json()
     event_id = event["id"]
-    attendee_id, _ = _create_registered_attendee(client, superuser_token_headers, event_id)
+    attendee_id, _ = _create_registered_attendee(
+        client, superuser_token_headers, event_id
+    )
     credential = client.get(
         f"{settings.API_V1_STR}/attendee-credentials/?attendee_id={attendee_id}",
         headers=superuser_token_headers,
@@ -146,7 +171,11 @@ def test_session_late_cutoff_is_calculated_server_side(
     scan = client.post(
         f"{settings.API_V1_STR}/attendance/scan",
         headers={**superuser_token_headers, "X-Attendance-Session-ID": session_id},
-        json={"event_id": event_id, "credential_value": credential, "scan_method": "nfc"},
+        json={
+            "event_id": event_id,
+            "credential_value": credential,
+            "scan_method": "nfc",
+        },
     )
     assert scan.status_code == 200
     assert scan.json()["attendance"]["is_late"] is True

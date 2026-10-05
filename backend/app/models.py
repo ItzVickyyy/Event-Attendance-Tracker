@@ -1290,4 +1290,3 @@ class StudentImportRecord(StudentImportRecordBase, table=True):
     )
 
     import_batch: ImportBatch | None = Relationship(back_populates="records")
-
