@@ -10,7 +10,7 @@ fileConfig(config.config_file_name)
 
 from app.models import SQLModel  # noqa: E402
 from app.core.config import settings  # noqa: E402
-from app import academic_catalog, account_assignments  # noqa: F401,E402
+from app import academic_catalog  # noqa: F401,E402
 
 target_metadata = SQLModel.metadata
 
