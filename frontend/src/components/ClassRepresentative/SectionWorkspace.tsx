@@ -11,9 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAcademicYear } from "@/context/AcademicYearContext"
 
 const api = "/api/v1"
-const authHeaders = () => {
+const authHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
   const token = localStorage.getItem("access_token")
-  return token ? { Authorization: "Bearer " + token, "Content-Type": "application/json" } : { "Content-Type": "application/json" }
+  if (token) headers.Authorization = "Bearer " + token
+  return headers
 }
 
 const emptyForm = { student_number: "", first_name: "", middle_name: "", last_name: "", extension: "", email: "", contact_number: "" }
