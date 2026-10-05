@@ -37,6 +37,7 @@ from app.models import (
     get_datetime_utc,
 )
 from app.services.attendance_processing import record_registered_attendance
+from app.student_academics import StudentEnrollment
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
@@ -93,8 +94,13 @@ def read_attendances(
         registration_filter = (
             registration_filter.join(Attendee)
             .join(Student, Student.person_id == Attendee.person_id)
-            .where(col(Student.section_id) == section_id)
+            .join(StudentEnrollment, StudentEnrollment.student_id == Student.id)
+            .where(col(StudentEnrollment.section_id) == section_id)
         )
+        if academic_year_id:
+            registration_filter = registration_filter.where(
+                col(StudentEnrollment.academic_year_id) == academic_year_id
+            )
         has_filter = True
     if has_filter:
         count_statement = count_statement.where(
