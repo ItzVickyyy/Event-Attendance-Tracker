@@ -82,7 +82,7 @@ class StudentImportService:
                 )
             )
 
-        self._validate_and_detect_conflicts(parsed_rows)
+        self._validate_and_detect_conflicts(import_batch, parsed_rows)
         self.create_staging_records(import_batch, parsed_rows)
         self._last_summary_reconciliation = None
         return parsed_rows
@@ -717,7 +717,9 @@ class StudentImportService:
             col(AcademicSection.section_name) == section_name,
         )).first()
 
-    def _validate_and_detect_conflicts(self, parsed_rows: list[dict[str, Any]]) -> None:
+    def _validate_and_detect_conflicts(
+        self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
+    ) -> None:
         """Validate rows and detect duplicate/cross-program conflicts across the entire workbook"""
         for row_data in parsed_rows:
             errors: list[str] = []
