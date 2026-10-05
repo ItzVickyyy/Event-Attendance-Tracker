@@ -174,44 +174,21 @@ class StudentPromotionService:
     def _promote_row(
         self, import_batch: ImportBatch, row: StudentImportRecord
     ) -> Student:
-        """Promote a single eligible staging row. Raises _PromotionBlocked
-        (caught by the caller, which rolls back just this row's savepoint)
-        if required reference data is missing or ambiguous. Never fabricates
-        data to work around a missing prerequisite."""
-
-        try:
-            program_code, year_level, section_name = (
-                self._import_service._derive_section_from_sheet(row.source_sheet)
-            )
-        except ValueError as exc:
-            raise _PromotionBlocked(str(exc)) from exc
-
-        academic_program = self.session.exec(
-            select(AcademicProgram).where(
-                col(AcademicProgram.program_code) == program_code
-            )
-        ).first()
-        if academic_program is None:
-            # AcademicProgram.program_name is required and the staging data
-            # never supplies a full program name (only the sheet-derived
-            # code) - so a missing program cannot be safely auto-created.
-            # Per the project's data model, this must be created via the
-            # existing /academic-programs endpoint before promotion.
-            raise _PromotionBlocked(
-                f"AcademicProgram with program_code={program_code!r} does not "
-                f"exist. Create it via the academic-programs API before "
-                f"promoting this batch."
-            )
-
+        """Promote one validated staging row into the operational schema."""
         if not import_batch.academic_year:
             raise _PromotionBlocked(
-                "ImportBatch has no academic_year set; cannot resolve/create "
-                "the AcademicSection it belongs to."
+                "ImportBatch has no academic_year set; cannot resolve the AcademicSection."
             )
 
-        academic_section = self._get_or_create_section(
-            academic_program.id, year_level, section_name, import_batch.academic_year
+        academic_section = self._resolve_section(
+            row.raw_section or row.source_sheet,
+            import_batch.academic_year,
         )
+        if academic_section is None:
+            raise _PromotionBlocked(
+                f"Academic section {row.raw_section or row.source_sheet!r} "
+                f"does not exist for academic year {import_batch.academic_year!r}."
+            )
 
         academic_status = self._import_service._normalize_status(row.raw_status)
         academic_status_enum = (
@@ -223,10 +200,19 @@ class StudentPromotionService:
         ).first()
 
         if existing_student is not None:
-            # Design decision #2: reuse the existing Student/Person, do not
-            # create a duplicate. Update section/status only.
+            person = self.session.get(Person, existing_student.person_id)
+            if person is not None:
+                person.first_name = row.raw_first_name
+                person.middle_name = row.raw_middle_name
+                person.last_name = row.raw_last_name
+                person.name_extension = row.raw_name_extension
+                person.contact_number = row.raw_mobile_number
+                person.email = row.raw_email
+                person.updated_at = get_datetime_utc()
+                self.session.add(person)
             existing_student.section_id = academic_section.id
             existing_student.academic_status = academic_status_enum
+            existing_student.archived_at = None
             existing_student.updated_at = get_datetime_utc()
             self.session.add(existing_student)
             self.session.flush()
@@ -236,6 +222,9 @@ class StudentPromotionService:
             first_name=row.raw_first_name,
             middle_name=row.raw_middle_name,
             last_name=row.raw_last_name,
+            name_extension=row.raw_name_extension,
+            contact_number=row.raw_mobile_number,
+            email=row.raw_email,
         )
         self.session.add(person)
         self.session.flush()
@@ -249,6 +238,32 @@ class StudentPromotionService:
         self.session.add(student)
         self.session.flush()
         return student
+
+    def _resolve_section(
+        self, section_reference: str, academic_year: str
+    ) -> AcademicSection | None:
+        """Resolve canonical section names such as 'BSIT WMAD 3A'."""
+        normalized = " ".join(section_reference.strip().split()).upper()
+        parts = normalized.split(maxsplit=1)
+        if len(parts) != 2:
+            return None
+
+        program_code, section_name = parts
+        academic_program = self.session.exec(
+            select(AcademicProgram).where(
+                col(AcademicProgram.program_code) == program_code
+            )
+        ).first()
+        if academic_program is None:
+            return None
+
+        return self.session.exec(
+            select(AcademicSection).where(
+                col(AcademicSection.program_id) == academic_program.id,
+                col(AcademicSection.section_name) == section_name,
+                col(AcademicSection.academic_year) == academic_year,
+            )
+        ).first()
 
     def _get_or_create_section(
         self,
