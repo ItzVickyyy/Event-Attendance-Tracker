@@ -36,6 +36,18 @@ class AcademicYearPublic(SQLModel):
     is_current: bool
 
 
+class AcademicYearCreate(SQLModel):
+    label: str = Field(min_length=9, max_length=20)
+    start_year: int
+    end_year: int
+
+
+class AcademicYearUpdate(SQLModel):
+    label: str | None = Field(default=None, min_length=9, max_length=20)
+    start_year: int | None = None
+    end_year: int | None = None
+
+
 class AcademicYearsPublic(SQLModel):
     data: list[AcademicYearPublic]
     count: int
@@ -45,9 +57,15 @@ class StudentEnrollment(SQLModel, table=True):
     __tablename__ = "student_enrollments"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    student_id: uuid.UUID = Field(foreign_key="students.id", index=True, ondelete="CASCADE")
-    academic_year_id: uuid.UUID = Field(foreign_key="academic_years.id", index=True, ondelete="RESTRICT")
-    section_id: uuid.UUID = Field(foreign_key="academic_sections.id", index=True, ondelete="RESTRICT")
+    student_id: uuid.UUID = Field(
+        foreign_key="students.id", index=True, ondelete="CASCADE"
+    )
+    academic_year_id: uuid.UUID = Field(
+        foreign_key="academic_years.id", index=True, ondelete="RESTRICT"
+    )
+    section_id: uuid.UUID = Field(
+        foreign_key="academic_sections.id", index=True, ondelete="RESTRICT"
+    )
     student_status: StudentStatus = Field(default=StudentStatus.regular, max_length=50)
     created_at: datetime | None = Field(default_factory=get_datetime_utc)
     updated_at: datetime | None = Field(default_factory=get_datetime_utc)

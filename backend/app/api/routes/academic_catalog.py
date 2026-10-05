@@ -4,12 +4,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.account_assignments import (
-    AssignmentStatus,
-    UserSectionAssignment,
-    UserSectionAssignmentBase,
-    UserSectionAssignmentPublic,
-)
 from app.academic_catalog import (
     AcademicMajor,
     AcademicMajorPublic,
@@ -17,7 +11,12 @@ from app.academic_catalog import (
     AcademicSectionMajor,
     AcademicSectionMajorCreate,
     AcademicSectionMajorPublic,
-    AcademicSectionMajorUpdate,
+)
+from app.account_assignments import (
+    AssignmentStatus,
+    UserSectionAssignment,
+    UserSectionAssignmentBase,
+    UserSectionAssignmentPublic,
 )
 from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
 from app.models import AcademicSection, User, UserRole
@@ -35,7 +34,9 @@ def read_majors(
     count_statement = select(func.count()).select_from(AcademicMajor)
     if program_id:
         statement = statement.where(col(AcademicMajor.program_id) == program_id)
-        count_statement = count_statement.where(col(AcademicMajor.program_id) == program_id)
+        count_statement = count_statement.where(
+            col(AcademicMajor.program_id) == program_id
+        )
     majors = session.exec(statement.order_by(col(AcademicMajor.code))).all()
     return AcademicMajorsPublic(
         data=[AcademicMajorPublic.model_validate(major) for major in majors],
@@ -43,7 +44,9 @@ def read_majors(
     )
 
 
-@router.get("/sections/{section_id}/major", response_model=AcademicSectionMajorPublic | None)
+@router.get(
+    "/sections/{section_id}/major", response_model=AcademicSectionMajorPublic | None
+)
 def read_section_major(
     session: SessionDep, _current_user: CurrentUser, section_id: uuid.UUID
 ) -> Any:
@@ -74,13 +77,17 @@ def set_section_major(
     assignment_in: AcademicSectionMajorCreate,
 ) -> Any:
     if assignment_in.section_id != section_id:
-        raise HTTPException(status_code=400, detail="Section ID does not match the path")
+        raise HTTPException(
+            status_code=400, detail="Section ID does not match the path"
+        )
     section = session.get(AcademicSection, section_id)
     major = session.get(AcademicMajor, assignment_in.major_id)
     if not section or not major:
         raise HTTPException(status_code=404, detail="Section or major not found")
     if section.program_id != major.program_id:
-        raise HTTPException(status_code=400, detail="Major does not belong to the section program")
+        raise HTTPException(
+            status_code=400, detail="Major does not belong to the section program"
+        )
     assignment = session.exec(
         select(AcademicSectionMajor).where(
             AcademicSectionMajor.section_id == section_id
@@ -98,9 +105,7 @@ def set_section_major(
     )
 
 
-@router.delete(
-    "/sections/{section_id}/major", dependencies=[Depends(require_admin)]
-)
+@router.delete("/sections/{section_id}/major", dependencies=[Depends(require_admin)])
 def clear_section_major(
     session: SessionDep, _current_user: CurrentUser, section_id: uuid.UUID
 ) -> dict[str, str]:
@@ -126,12 +131,16 @@ def read_class_representatives(
     section_id: uuid.UUID | None = None,
     academic_year: str | None = None,
 ) -> list[UserSectionAssignmentPublic]:
-    statement = select(UserSectionAssignment).join(User, User.id == UserSectionAssignment.user_id)
+    statement = select(UserSectionAssignment).join(
+        User, User.id == UserSectionAssignment.user_id
+    )
     statement = statement.where(User.role == UserRole.class_representative)
     if section_id:
         statement = statement.where(UserSectionAssignment.section_id == section_id)
     if academic_year:
-        statement = statement.where(UserSectionAssignment.academic_year == academic_year)
+        statement = statement.where(
+            UserSectionAssignment.academic_year == academic_year
+        )
     assignments = session.exec(statement).all()
     return [UserSectionAssignmentPublic.model_validate(item) for item in assignments]
 
@@ -152,7 +161,9 @@ def assign_class_representative(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.role != UserRole.class_representative:
-        raise HTTPException(status_code=400, detail="User must have the class_representative role")
+        raise HTTPException(
+            status_code=400, detail="User must have the class_representative role"
+        )
     if not section:
         raise HTTPException(status_code=404, detail="Academic section not found")
     existing = session.exec(
@@ -176,14 +187,17 @@ def assign_class_representative(
 
 
 @router.delete(
-    "/class-representatives/{assignment_id}", dependencies=[Depends(require_super_admin)]
+    "/class-representatives/{assignment_id}",
+    dependencies=[Depends(require_super_admin)],
 )
 def remove_class_representative(
     session: SessionDep, _current_user: CurrentUser, assignment_id: uuid.UUID
 ) -> dict[str, str]:
     assignment = session.get(UserSectionAssignment, assignment_id)
     if not assignment:
-        raise HTTPException(status_code=404, detail="Class representative assignment not found")
+        raise HTTPException(
+            status_code=404, detail="Class representative assignment not found"
+        )
     session.delete(assignment)
     session.commit()
     return {"message": "Class representative assignment removed successfully"}

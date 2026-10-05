@@ -55,7 +55,10 @@ class AcademicMajorsPublic(SQLModel):
 
 class AcademicSectionMajorBase(SQLModel):
     section_id: uuid.UUID = Field(
-        foreign_key="academic_sections.id", nullable=False, ondelete="CASCADE", unique=True
+        foreign_key="academic_sections.id",
+        nullable=False,
+        ondelete="CASCADE",
+        unique=True,
     )
     major_id: uuid.UUID = Field(
         foreign_key="academic_majors.id", nullable=False, ondelete="RESTRICT"

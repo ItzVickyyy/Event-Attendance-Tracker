@@ -6,18 +6,19 @@ from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
+    AttendanceSession,
+    AttendanceSessionStatus,
+    AttendanceSessionType,
     Event,
     EventCreate,
     EventPublic,
     EventsPublic,
     EventStatus,
     EventUpdate,
-    AttendanceSession,
-    AttendanceSessionStatus,
-    AttendanceSessionType,
     Organization,
     get_datetime_utc,
 )
+from app.student_academics import AcademicYear
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -28,6 +29,7 @@ def read_events(
     _current_user: CurrentUser,
     organization_id: uuid.UUID | None = None,
     status: EventStatus | None = None,
+    academic_year_id: uuid.UUID | None = None,
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
@@ -42,6 +44,11 @@ def read_events(
     if status:
         count_statement = count_statement.where(col(Event.status) == status)
         statement = statement.where(col(Event.status) == status)
+    if academic_year_id:
+        count_statement = count_statement.where(
+            col(Event.academic_year_id) == academic_year_id
+        )
+        statement = statement.where(col(Event.academic_year_id) == academic_year_id)
 
     count = session.exec(count_statement).one()
     statement = (
@@ -62,7 +69,22 @@ def create_event(
         if not org:
             raise HTTPException(status_code=404, detail="Organization not found")
 
+    academic_year_id = event_in.academic_year_id
+    if academic_year_id is None:
+        current_year = session.exec(
+            select(AcademicYear).where(AcademicYear.is_current.is_(True))
+        ).first()
+        if not current_year:
+            raise HTTPException(
+                status_code=409,
+                detail="No current academic year is configured",
+            )
+        academic_year_id = current_year.id
+    elif not session.get(AcademicYear, academic_year_id):
+        raise HTTPException(status_code=404, detail="Academic year not found")
+
     event = Event.model_validate(event_in)
+    event.academic_year_id = academic_year_id
     session.add(event)
     session.flush()
     default_session = AttendanceSession(
@@ -72,7 +94,13 @@ def create_event(
         session_type=AttendanceSessionType.time_in,
         start_time=event.start_time,
         end_time=event.end_time,
-        status=(AttendanceSessionStatus.open if event.status == EventStatus.open else AttendanceSessionStatus.closed if event.status == EventStatus.closed else AttendanceSessionStatus.scheduled),
+        status=(
+            AttendanceSessionStatus.open
+            if event.status == EventStatus.open
+            else AttendanceSessionStatus.closed
+            if event.status == EventStatus.closed
+            else AttendanceSessionStatus.scheduled
+        ),
         is_active=event.status == EventStatus.open,
         display_order=0,
     )
@@ -118,18 +146,32 @@ def update_event(
     session.add(event)
     session.flush()
     if event.status == EventStatus.open and previous_status != EventStatus.open:
-        active = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id, col(AttendanceSession.is_active).is_(True))).first()
+        active = session.exec(
+            select(AttendanceSession).where(
+                col(AttendanceSession.event_id) == event.id,
+                col(AttendanceSession.is_active).is_(True),
+            )
+        ).first()
         if active:
             active.status = AttendanceSessionStatus.open
             active.updated_at = get_datetime_utc()
         else:
-            next_session = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id).order_by(col(AttendanceSession.display_order))).first()
+            next_session = session.exec(
+                select(AttendanceSession)
+                .where(col(AttendanceSession.event_id) == event.id)
+                .order_by(col(AttendanceSession.display_order))
+            ).first()
             if next_session:
                 next_session.status = AttendanceSessionStatus.open
                 next_session.is_active = True
                 next_session.updated_at = get_datetime_utc()
     elif event.status == EventStatus.closed and previous_status != EventStatus.closed:
-        active_sessions = session.exec(select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id, col(AttendanceSession.is_active).is_(True))).all()
+        active_sessions = session.exec(
+            select(AttendanceSession).where(
+                col(AttendanceSession.event_id) == event.id,
+                col(AttendanceSession.is_active).is_(True),
+            )
+        ).all()
         for active in active_sessions:
             active.status = AttendanceSessionStatus.closed
             active.is_active = False

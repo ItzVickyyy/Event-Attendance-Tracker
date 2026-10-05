@@ -12,9 +12,8 @@ from app.models import (
     AttendanceSessionsPublic,
     AttendanceSessionStatus,
     AttendanceSessionUpdate,
-    AttendanceSessionType,
-    EventStatus,
     Event,
+    EventStatus,
     get_datetime_utc,
 )
 
@@ -40,14 +39,18 @@ def read_attendance_sessions(
     count_statement = select(func.count()).select_from(AttendanceSession)
     statement = select(AttendanceSession)
     if event_id:
-        count_statement = count_statement.where(col(AttendanceSession.event_id) == event_id)
+        count_statement = count_statement.where(
+            col(AttendanceSession.event_id) == event_id
+        )
         statement = statement.where(col(AttendanceSession.event_id) == event_id)
     if status:
         count_statement = count_statement.where(col(AttendanceSession.status) == status)
         statement = statement.where(col(AttendanceSession.status) == status)
     count = session.exec(count_statement).one()
     records = session.exec(
-        statement.order_by(col(AttendanceSession.display_order), col(AttendanceSession.session_date))
+        statement.order_by(
+            col(AttendanceSession.display_order), col(AttendanceSession.session_date)
+        )
         .offset(skip)
         .limit(limit)
     ).all()
@@ -74,18 +77,28 @@ def read_active_attendance_session(
     return record
 
 
-@router.post("/", response_model=AttendanceSessionPublic, dependencies=[Depends(require_admin)])
+@router.post(
+    "/", response_model=AttendanceSessionPublic, dependencies=[Depends(require_admin)]
+)
 def create_attendance_session(
-    *, session: SessionDep, _current_user: CurrentUser, session_in: AttendanceSessionCreate
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    session_in: AttendanceSessionCreate,
 ) -> Any:
     event = _validate_event(session, session_in.event_id)
     if event.status == EventStatus.closed:
-        raise HTTPException(status_code=400, detail="Cannot create a session for a closed event")
+        raise HTTPException(
+            status_code=400, detail="Cannot create a session for a closed event"
+        )
     if session_in.is_active and session_in.status != AttendanceSessionStatus.open:
         raise HTTPException(status_code=400, detail="An active session must be open")
     if session_in.is_active:
         active_sessions = session.exec(
-            select(AttendanceSession).where(col(AttendanceSession.event_id) == event.id, col(AttendanceSession.is_active).is_(True))
+            select(AttendanceSession).where(
+                col(AttendanceSession.event_id) == event.id,
+                col(AttendanceSession.is_active).is_(True),
+            )
         ).all()
         for active in active_sessions:
             active.is_active = False
@@ -108,9 +121,17 @@ def read_attendance_session(
     return record
 
 
-@router.patch("/{session_id}", response_model=AttendanceSessionPublic, dependencies=[Depends(require_admin)])
+@router.patch(
+    "/{session_id}",
+    response_model=AttendanceSessionPublic,
+    dependencies=[Depends(require_admin)],
+)
 def update_attendance_session(
-    *, session: SessionDep, _current_user: CurrentUser, session_id: uuid.UUID, session_in: AttendanceSessionUpdate
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    session_id: uuid.UUID,
+    session_in: AttendanceSessionUpdate,
 ) -> Any:
     record = session.get(AttendanceSession, session_id)
     if not record:
@@ -118,7 +139,10 @@ def update_attendance_session(
     update_dict = session_in.model_dump(exclude_unset=True)
     if update_dict.get("status") == AttendanceSessionStatus.open:
         update_dict["is_active"] = True
-    if update_dict.get("status") in (AttendanceSessionStatus.closed, AttendanceSessionStatus.cancelled):
+    if update_dict.get("status") in (
+        AttendanceSessionStatus.closed,
+        AttendanceSessionStatus.cancelled,
+    ):
         update_dict["is_active"] = False
     record.sqlmodel_update(update_dict)
     record.updated_at = get_datetime_utc()
@@ -140,7 +164,11 @@ def update_attendance_session(
     return record
 
 
-@router.post("/{session_id}/activate", response_model=AttendanceSessionPublic, dependencies=[Depends(require_admin)])
+@router.post(
+    "/{session_id}/activate",
+    response_model=AttendanceSessionPublic,
+    dependencies=[Depends(require_admin)],
+)
 def activate_attendance_session(
     *, session: SessionDep, _current_user: CurrentUser, session_id: uuid.UUID
 ) -> Any:
@@ -149,7 +177,10 @@ def activate_attendance_session(
         raise HTTPException(status_code=404, detail="Attendance session not found")
     event = _validate_event(session, record.event_id)
     if event.status != EventStatus.open:
-        raise HTTPException(status_code=400, detail="Event must be open before a session can be activated")
+        raise HTTPException(
+            status_code=400,
+            detail="Event must be open before a session can be activated",
+        )
     active_sessions = session.exec(
         select(AttendanceSession).where(
             col(AttendanceSession.event_id) == record.event_id,
@@ -161,6 +192,7 @@ def activate_attendance_session(
         active.is_active = False
         active.status = AttendanceSessionStatus.closed
         active.updated_at = get_datetime_utc()
+    session.flush()
     record.is_active = True
     record.status = AttendanceSessionStatus.open
     record.updated_at = get_datetime_utc()
@@ -170,7 +202,11 @@ def activate_attendance_session(
     return record
 
 
-@router.post("/{session_id}/close", response_model=AttendanceSessionPublic, dependencies=[Depends(require_admin)])
+@router.post(
+    "/{session_id}/close",
+    response_model=AttendanceSessionPublic,
+    dependencies=[Depends(require_admin)],
+)
 def close_attendance_session(
     *, session: SessionDep, _current_user: CurrentUser, session_id: uuid.UUID
 ) -> Any:
@@ -194,7 +230,9 @@ def delete_attendance_session(
     if not record:
         raise HTTPException(status_code=404, detail="Attendance session not found")
     if record.is_active:
-        raise HTTPException(status_code=400, detail="Close the active session before deleting it")
+        raise HTTPException(
+            status_code=400, detail="Close the active session before deleting it"
+        )
     session.delete(record)
     session.commit()
     return {"message": "Attendance session deleted successfully"}

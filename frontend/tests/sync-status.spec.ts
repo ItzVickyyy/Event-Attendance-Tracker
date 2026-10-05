@@ -195,7 +195,7 @@ async function seedRecords(
   await page.evaluate(
     (recs) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 2)
+        const request = indexedDB.open("attendance-offline", 3)
         request.onupgradeneeded = () => {
           const db = request.result
           if (!db.objectStoreNames.contains("attendanceQueue")) {
@@ -231,7 +231,7 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
   return page.evaluate(
     () =>
       new Promise<QueueRecordLike[]>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 2)
+        const request = indexedDB.open("attendance-offline", 3)
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("attendanceQueue", "readonly")

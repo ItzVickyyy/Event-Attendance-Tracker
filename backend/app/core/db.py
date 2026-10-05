@@ -3,8 +3,11 @@ from typing import Any
 from sqlmodel import Session, create_engine, select
 
 from app import crud
-from app.account_assignments import OrganizationMembership, UserSectionAssignment  # noqa: F401
 from app.academic_catalog import AcademicMajor, AcademicSectionMajor  # noqa: F401
+from app.account_assignments import (  # noqa: F401
+    OrganizationMembership,
+    UserSectionAssignment,
+)
 from app.core.config import settings
 from app.models import User, UserCreate, UserRole
 
@@ -22,6 +25,8 @@ test_engine = (
 
 def init_db(session: Session, engine_to_use: Any = None) -> None:
     from sqlmodel import SQLModel
+
+    from app import student_academics as _student_academics  # noqa: F401
 
     target_engine = engine_to_use or engine
     SQLModel.metadata.create_all(target_engine)

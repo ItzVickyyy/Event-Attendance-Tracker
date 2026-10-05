@@ -3,7 +3,7 @@ import io
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
 from sqlmodel import col, func, select
 
@@ -16,29 +16,25 @@ from app.api.deps import (
 from app.models import (
     Attendance,
     AttendanceCreate,
-    AttendanceMode,
     AttendancePublic,
-    AttendanceResultCode,
     AttendanceSession,
-    AttendeeType,
     AttendancesPublic,
     AttendanceStatus,
     AttendanceUpdate,
     Attendee,
     AttendeeCredential,
+    AttendeeType,
     Event,
     EventRegistration,
     EventStatus,
     ManualScanRequest,
     Person,
-    RegistrationStatus,
     ScanMethod,
     ScanRequest,
     ScanResponse,
     Student,
     get_datetime_utc,
 )
-
 from app.services.attendance_processing import record_registered_attendance
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
@@ -52,6 +48,7 @@ def read_attendances(
     event_id: uuid.UUID | None = None,
     attendee_id: uuid.UUID | None = None,
     attendance_session_id: uuid.UUID | None = None,
+    academic_year_id: uuid.UUID | None = None,
     attendance_status: AttendanceStatus | None = None,
     scan_method: ScanMethod | None = None,
     is_late: bool | None = None,
@@ -66,44 +63,83 @@ def read_attendances(
     registration_filter = select(EventRegistration.id)
     has_filter = False
     if registration_id:
-        registration_filter = registration_filter.where(col(EventRegistration.id) == registration_id)
+        registration_filter = registration_filter.where(
+            col(EventRegistration.id) == registration_id
+        )
         has_filter = True
     if event_id:
-        registration_filter = registration_filter.where(col(EventRegistration.event_id) == event_id)
+        registration_filter = registration_filter.where(
+            col(EventRegistration.event_id) == event_id
+        )
         has_filter = True
     if attendee_id:
-        registration_filter = registration_filter.where(col(EventRegistration.attendee_id) == attendee_id)
+        registration_filter = registration_filter.where(
+            col(EventRegistration.attendee_id) == attendee_id
+        )
         has_filter = True
     if attendee_type:
-        registration_filter = registration_filter.join(Attendee).where(col(Attendee.attendee_type) == attendee_type)
+        registration_filter = registration_filter.join(Attendee).where(
+            col(Attendee.attendee_type) == attendee_type
+        )
         has_filter = True
     if section_id:
-        registration_filter = registration_filter.join(Attendee).join(
-            Student, Student.person_id == Attendee.person_id
-        ).where(col(Student.section_id) == section_id)
+        registration_filter = (
+            registration_filter.join(Attendee)
+            .join(Student, Student.person_id == Attendee.person_id)
+            .where(col(Student.section_id) == section_id)
+        )
         has_filter = True
     if has_filter:
-        count_statement = count_statement.where(col(Attendance.registration_id).in_(registration_filter))
-        statement = statement.where(col(Attendance.registration_id).in_(registration_filter))
+        count_statement = count_statement.where(
+            col(Attendance.registration_id).in_(registration_filter)
+        )
+        statement = statement.where(
+            col(Attendance.registration_id).in_(registration_filter)
+        )
     if attendance_session_id:
-        count_statement = count_statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
-        statement = statement.where(col(Attendance.attendance_session_id) == attendance_session_id)
+        count_statement = count_statement.where(
+            col(Attendance.attendance_session_id) == attendance_session_id
+        )
+        statement = statement.where(
+            col(Attendance.attendance_session_id) == attendance_session_id
+        )
+    if academic_year_id:
+        count_statement = count_statement.where(
+            col(Attendance.academic_year_id) == academic_year_id
+        )
+        statement = statement.where(
+            col(Attendance.academic_year_id) == academic_year_id
+        )
     if session_date:
-        session_ids = select(AttendanceSession.id).where(col(AttendanceSession.session_date) == session_date)
-        count_statement = count_statement.where(col(Attendance.attendance_session_id).in_(session_ids))
-        statement = statement.where(col(Attendance.attendance_session_id).in_(session_ids))
+        session_ids = select(AttendanceSession.id).where(
+            col(AttendanceSession.session_date) == session_date
+        )
+        count_statement = count_statement.where(
+            col(Attendance.attendance_session_id).in_(session_ids)
+        )
+        statement = statement.where(
+            col(Attendance.attendance_session_id).in_(session_ids)
+        )
     if attendance_status:
-        count_statement = count_statement.where(col(Attendance.status) == attendance_status)
+        count_statement = count_statement.where(
+            col(Attendance.status) == attendance_status
+        )
         statement = statement.where(col(Attendance.status) == attendance_status)
     if scan_method:
-        count_statement = count_statement.where(col(Attendance.scan_method) == scan_method)
+        count_statement = count_statement.where(
+            col(Attendance.scan_method) == scan_method
+        )
         statement = statement.where(col(Attendance.scan_method) == scan_method)
     if is_late is not None:
         count_statement = count_statement.where(col(Attendance.is_late) == is_late)
         statement = statement.where(col(Attendance.is_late) == is_late)
     count = session.exec(count_statement).one()
-    records = session.exec(statement.order_by(col(Attendance.created_at).desc()).offset(skip).limit(limit)).all()
-    return AttendancesPublic(data=[AttendancePublic.model_validate(r) for r in records], count=count)
+    records = session.exec(
+        statement.order_by(col(Attendance.created_at).desc()).offset(skip).limit(limit)
+    ).all()
+    return AttendancesPublic(
+        data=[AttendancePublic.model_validate(r) for r in records], count=count
+    )
 
 
 @router.get("/export")
@@ -111,6 +147,7 @@ def export_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
     event_id: uuid.UUID | None = None,
+    academic_year_id: uuid.UUID | None = None,
     attendance_status: AttendanceStatus | None = None,
     attendance_session_id: uuid.UUID | None = None,
     scan_method: ScanMethod | None = None,
@@ -127,22 +164,36 @@ def export_attendances(
             raise HTTPException(status_code=404, detail="Event not found")
 
     statement = (
-        select(Attendance, EventRegistration, Event, Attendee, Person, Student, AttendanceSession)
+        select(
+            Attendance,
+            EventRegistration,
+            Event,
+            Attendee,
+            Person,
+            Student,
+            AttendanceSession,
+        )
         .join(EventRegistration, Attendance.registration_id == EventRegistration.id)
         .join(Event, EventRegistration.event_id == Event.id)
         .join(Attendee, EventRegistration.attendee_id == Attendee.id)
         .join(Person, Attendee.person_id == Person.id)
-        .join(AttendanceSession, Attendance.attendance_session_id == AttendanceSession.id)
+        .join(
+            AttendanceSession, Attendance.attendance_session_id == AttendanceSession.id
+        )
         .outerjoin(Student, Student.person_id == Person.id)
     )
 
     if event_id:
         statement = statement.where(EventRegistration.event_id == event_id)
+    if academic_year_id:
+        statement = statement.where(Attendance.academic_year_id == academic_year_id)
 
     if attendance_status:
         statement = statement.where(Attendance.status == attendance_status)
     if attendance_session_id:
-        statement = statement.where(Attendance.attendance_session_id == attendance_session_id)
+        statement = statement.where(
+            Attendance.attendance_session_id == attendance_session_id
+        )
     if scan_method:
         statement = statement.where(Attendance.scan_method == scan_method)
     if session_date:
@@ -262,34 +313,63 @@ def scan_attendance(
     session: SessionDep,
     current_user: CurrentUser,
     scan_in: ScanRequest,
-    attendance_session_header: str | None = Header(default=None, alias="X-Attendance-Session-ID"),
+    attendance_session_header: str | None = Header(
+        default=None, alias="X-Attendance-Session-ID"
+    ),
 ) -> Any:
     event = session.get(Event, scan_in.event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     if event.status != EventStatus.open:
-        raise HTTPException(status_code=400, detail=f"Event is not open for attendance scanning (current status: {event.status.value})")
-    credential = session.exec(select(AttendeeCredential).where(
-        col(AttendeeCredential.credential_value) == scan_in.credential_value,
-    )).first()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Event is not open for attendance scanning (current status: {event.status.value})",
+        )
+    credential = session.exec(
+        select(AttendeeCredential).where(
+            col(AttendeeCredential.credential_value) == scan_in.credential_value,
+        )
+    ).first()
     if not credential:
         raise HTTPException(status_code=404, detail="Credential not recognized")
     if not credential.is_active:
         raise HTTPException(status_code=400, detail="Credential is inactive")
-    if scan_in.scan_method in (ScanMethod.nfc, ScanMethod.qr) and credential.credential_type.value != scan_in.scan_method.value:
-        raise HTTPException(status_code=400, detail=f"Invalid credential type for {scan_in.scan_method.value} scan")
+    if (
+        scan_in.scan_method in (ScanMethod.nfc, ScanMethod.qr)
+        and credential.credential_type.value != scan_in.scan_method.value
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid credential type for {scan_in.scan_method.value} scan",
+        )
     attendee = credential.attendee or session.get(Attendee, credential.attendee_id)
     if not attendee:
-        raise HTTPException(status_code=404, detail="Attendee not found for this credential")
+        raise HTTPException(
+            status_code=404, detail="Attendee not found for this credential"
+        )
     person = attendee.person or session.get(Person, attendee.person_id)
-    person_name = " ".join(p for p in [person.first_name, person.middle_name, person.last_name] if p) if person else "Unknown"
-    student = session.exec(select(Student).where(col(Student.person_id) == person.id)).first() if person else None
-    registration = session.exec(select(EventRegistration).where(
-        col(EventRegistration.event_id) == event.id,
-        col(EventRegistration.attendee_id) == attendee.id,
-    )).first()
+    person_name = (
+        " ".join(
+            p for p in [person.first_name, person.middle_name, person.last_name] if p
+        )
+        if person
+        else "Unknown"
+    )
+    student = (
+        session.exec(select(Student).where(col(Student.person_id) == person.id)).first()
+        if person
+        else None
+    )
+    registration = session.exec(
+        select(EventRegistration).where(
+            col(EventRegistration.event_id) == event.id,
+            col(EventRegistration.attendee_id) == attendee.id,
+        )
+    ).first()
     if not registration:
-        raise HTTPException(status_code=404, detail="Attendee is not registered for this event")
+        raise HTTPException(
+            status_code=404, detail="Attendee is not registered for this event"
+        )
     session_id = scan_in.attendance_session_id
     if attendance_session_header:
         try:
@@ -297,14 +377,19 @@ def scan_attendance(
         except ValueError:
             raise HTTPException(status_code=422, detail="Invalid attendance session id")
     record, message, result_code = record_registered_attendance(
-        session=session, event=event, registration=registration,
-        current_user=current_user, scan_method=scan_in.scan_method,
+        session=session,
+        event=event,
+        registration=registration,
+        current_user=current_user,
+        scan_method=scan_in.scan_method,
         attendance_session_id=session_id,
     )
     return ScanResponse(
-        message=message, result_code=result_code,
+        message=message,
+        result_code=result_code,
         attendance=AttendancePublic.model_validate(record),
-        attendee_id=attendee.id, person_name=person_name,
+        attendee_id=attendee.id,
+        person_name=person_name,
         student_number=student.student_number if student else None,
         attendance_session_id=record.attendance_session_id,
     )
@@ -320,25 +405,44 @@ def scan_attendance_manual(
     session: SessionDep,
     current_user: CurrentUser,
     scan_in: ManualScanRequest,
-    attendance_session_header: str | None = Header(default=None, alias="X-Attendance-Session-ID"),
+    attendance_session_header: str | None = Header(
+        default=None, alias="X-Attendance-Session-ID"
+    ),
 ) -> Any:
     event = session.get(Event, scan_in.event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
     if event.status != EventStatus.open:
-        raise HTTPException(status_code=400, detail=f"Event is not open for attendance scanning (current status: {event.status.value})")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Event is not open for attendance scanning (current status: {event.status.value})",
+        )
     attendee = session.get(Attendee, scan_in.attendee_id)
     if not attendee:
         raise HTTPException(status_code=404, detail="Attendee not found")
     person = attendee.person or session.get(Person, attendee.person_id)
-    person_name = " ".join(p for p in [person.first_name, person.middle_name, person.last_name] if p) if person else "Unknown"
-    student = session.exec(select(Student).where(col(Student.person_id) == person.id)).first() if person else None
-    registration = session.exec(select(EventRegistration).where(
-        col(EventRegistration.event_id) == event.id,
-        col(EventRegistration.attendee_id) == attendee.id,
-    )).first()
+    person_name = (
+        " ".join(
+            p for p in [person.first_name, person.middle_name, person.last_name] if p
+        )
+        if person
+        else "Unknown"
+    )
+    student = (
+        session.exec(select(Student).where(col(Student.person_id) == person.id)).first()
+        if person
+        else None
+    )
+    registration = session.exec(
+        select(EventRegistration).where(
+            col(EventRegistration.event_id) == event.id,
+            col(EventRegistration.attendee_id) == attendee.id,
+        )
+    ).first()
     if not registration:
-        raise HTTPException(status_code=404, detail="Attendee is not registered for this event")
+        raise HTTPException(
+            status_code=404, detail="Attendee is not registered for this event"
+        )
     session_id = scan_in.attendance_session_id
     if attendance_session_header:
         try:
@@ -346,14 +450,19 @@ def scan_attendance_manual(
         except ValueError:
             raise HTTPException(status_code=422, detail="Invalid attendance session id")
     record, message, result_code = record_registered_attendance(
-        session=session, event=event, registration=registration,
-        current_user=current_user, scan_method=ScanMethod.manual,
+        session=session,
+        event=event,
+        registration=registration,
+        current_user=current_user,
+        scan_method=ScanMethod.manual,
         attendance_session_id=session_id,
     )
     return ScanResponse(
-        message=message, result_code=result_code,
+        message=message,
+        result_code=result_code,
         attendance=AttendancePublic.model_validate(record),
-        attendee_id=attendee.id, person_name=person_name,
+        attendee_id=attendee.id,
+        person_name=person_name,
         student_number=student.student_number if student else None,
         attendance_session_id=record.attendance_session_id,
     )

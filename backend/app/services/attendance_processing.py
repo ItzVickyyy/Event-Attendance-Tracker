@@ -18,8 +18,8 @@ from app.models import (
     EventStatus,
     RegistrationStatus,
     ScanMethod,
-    get_datetime_utc,
     User,
+    get_datetime_utc,
 )
 
 
@@ -57,7 +57,9 @@ def resolve_attendance_session(
         session_type=AttendanceSessionType.time_in,
         start_time=event.start_time,
         end_time=event.end_time,
-        status=AttendanceSessionStatus.open if event.status == EventStatus.open else AttendanceSessionStatus.scheduled,
+        status=AttendanceSessionStatus.open
+        if event.status == EventStatus.open
+        else AttendanceSessionStatus.scheduled,
         display_order=0,
         is_active=event.status == EventStatus.open,
     )
@@ -75,7 +77,7 @@ def _late_status(attendance_session: AttendanceSession, now: datetime) -> bool:
         hour, minute = attendance_session.late_cutoff.split(":", 1)
         cutoff_minutes = int(hour) * 60 + int(minute)
         return now.hour * 60 + now.minute > cutoff_minutes
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return False
 
 
@@ -90,12 +92,17 @@ def record_registered_attendance(
     now: datetime | None = None,
 ) -> tuple[Attendance, str, AttendanceResultCode]:
     if registration.registration_status == RegistrationStatus.cancelled:
-        raise HTTPException(status_code=400, detail="Attendee registration is cancelled for this event")
+        raise HTTPException(
+            status_code=400, detail="Attendee registration is cancelled for this event"
+        )
 
     attendance_session = resolve_attendance_session(
         session=session, event=event, session_id=attendance_session_id
     )
-    if attendance_session.status != AttendanceSessionStatus.open or not attendance_session.is_active:
+    if (
+        attendance_session.status != AttendanceSessionStatus.open
+        or not attendance_session.is_active
+    ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Attendance session is not open",
@@ -119,7 +126,10 @@ def record_registered_attendance(
         ):
             stmt = (
                 update(Attendance)
-                .where(col(Attendance.id) == existing.id, col(Attendance.time_out).is_(None))
+                .where(
+                    col(Attendance.id) == existing.id,
+                    col(Attendance.time_out).is_(None),
+                )
                 .values(
                     time_out=now,
                     status=AttendanceStatus.completed,
@@ -132,7 +142,10 @@ def record_registered_attendance(
             session.commit()
             if result.rowcount == 0:
                 session.refresh(existing)
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Attendance already completed")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Attendance already completed",
+                )
             session.refresh(existing)
             return existing, "Time-Out Recorded", AttendanceResultCode.success
         detail = (
@@ -144,6 +157,7 @@ def record_registered_attendance(
 
     if attendance_session.session_type == AttendanceSessionType.time_out:
         record = Attendance(
+            academic_year_id=event.academic_year_id,
             registration_id=registration.id,
             attendance_session_id=attendance_session.id,
             time_in=None,
@@ -156,6 +170,7 @@ def record_registered_attendance(
         message = "Time-Out Recorded"
     else:
         record = Attendance(
+            academic_year_id=event.academic_year_id,
             registration_id=registration.id,
             attendance_session_id=attendance_session.id,
             time_in=now,

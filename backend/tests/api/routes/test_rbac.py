@@ -204,6 +204,16 @@ def test_scanner_permission_matrix(client: TestClient, db: Session) -> None:
     )
     event_id = event_res.json()["id"]
 
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=get_token_headers_for_role(client, db, role=UserRole.admin),
+        json={
+            "event_id": event_id,
+            "attendee_id": attendee_id,
+            "registration_status": "registered",
+        },
+    )
+
     scan_payload = {
         "event_id": event_id,
         "credential_value": cred_val1,
@@ -260,6 +270,16 @@ def test_scanner_permission_matrix(client: TestClient, db: Session) -> None:
         },
     )
 
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=get_token_headers_for_role(client, db, role=UserRole.admin),
+        json={
+            "event_id": event_id,
+            "attendee_id": att2["id"],
+            "registration_status": "registered",
+        },
+    )
+
     scan_payload2 = {
         "event_id": event_id,
         "credential_value": cred_val2,
@@ -304,6 +324,16 @@ def test_scanner_permission_matrix(client: TestClient, db: Session) -> None:
             "credential_type": "nfc",
             "credential_value": cred_val3,
             "is_active": True,
+        },
+    )
+
+    client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=get_token_headers_for_role(client, db, role=UserRole.admin),
+        json={
+            "event_id": event_id,
+            "attendee_id": att3["id"],
+            "registration_status": "registered",
         },
     )
 
