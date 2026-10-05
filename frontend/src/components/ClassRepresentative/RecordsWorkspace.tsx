@@ -39,6 +39,8 @@ export function ClassRepresentativeRecordsWorkspace() {
     anchor.click()
     URL.revokeObjectURL(url)
   }
+  const records = query.data?.data ?? []
+
   return <div className="space-y-6">
     <div className="flex items-center justify-between"><div><h1 className="text-2xl font-semibold tracking-tight">Attendance Records</h1><p className="mt-1 text-sm text-muted-foreground">Attendance for your assigned section only.</p></div><Button variant="outline" onClick={() => void exportRecords()}><Download />Export</Button></div>
     <Card><CardHeader><CardTitle>{activeAcademicYear?.label ?? "Academic Year"}</CardTitle></CardHeader><CardContent>
