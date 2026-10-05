@@ -185,6 +185,8 @@ def update_student(
     if archived is not None:
         raise HTTPException(status_code=404, detail="Student is archived")
 
+    _ensure_class_rep_student_access(session, _current_user, student_id)
+
     update_dict = student_in.model_dump(exclude_unset=True)
 
     if (
