@@ -76,7 +76,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=(
                 f"'{prefix}-' || "
-                f"LPAD(nextval('\\\"{sequence}\\\"')::text, 6, '0')"
+                f"LPAD(nextval('\\"{sequence}\\"')::text, 6, '0')"
             ),
         )
 
