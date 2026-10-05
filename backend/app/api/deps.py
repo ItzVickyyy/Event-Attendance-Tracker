@@ -105,7 +105,10 @@ def class_rep_assignment(
     current_user: User,
     academic_year_id=None,
 ):
-    if current_user.role != UserRole.class_representative and not current_user.is_superuser:
+    if (
+        current_user.role != UserRole.class_representative
+        and not current_user.is_superuser
+    ):
         return None
     query = """
         SELECT id, academic_year_id, section_id
