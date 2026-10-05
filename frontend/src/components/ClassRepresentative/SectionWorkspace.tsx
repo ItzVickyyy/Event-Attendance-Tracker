@@ -46,7 +46,7 @@ export function ClassRepresentativeSectionWorkspace() {
   })
 
   const save = async () => {
-    const url = editing ? api + "/students/" + editing.id : api + "/class-representatives/me/students"
+    const url = editing ? api + "/academic-registry/students/" + editing.id : api + "/class-representatives/me/students"
     const response = await fetch(url, { method: editing ? "PATCH" : "POST", headers: authHeaders(), body: JSON.stringify(form) })
     if (!response.ok) {
       const body = await response.json().catch(() => null)
