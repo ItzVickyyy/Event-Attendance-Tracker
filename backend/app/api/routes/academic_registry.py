@@ -241,7 +241,7 @@ def read_student_details(
     return dict(row)
 
 
-@router.patch("/students/{student_id}", dependencies=[Depends(require_admin)])
+@router.patch("/students/{student_id}")
 def update_student_details(
     *,
     session: SessionDep,
@@ -249,6 +249,29 @@ def update_student_details(
     student_id: uuid.UUID,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
+    if _current_user.role.value == "class_representative":
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment:
+            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        allowed = session.execute(
+            text("""
+                SELECT 1 FROM student_enrollments
+                WHERE student_id=:student_id
+                  AND section_id=:section_id
+                  AND academic_year_id=:academic_year_id
+                LIMIT 1
+            """),
+            {
+                "student_id": student_id,
+                "section_id": assignment["section_id"],
+                "academic_year_id": assignment["academic_year_id"],
+            },
+        ).first()
+        if not allowed:
+            raise HTTPException(status_code=403, detail="Student is outside your assigned section")
+        if payload.get("section_id") and str(payload["section_id"]) != str(assignment["section_id"]):
+            raise HTTPException(status_code=403, detail="Class Representatives cannot move students between sections")
+
     row = (
         session.execute(
             text("SELECT person_id FROM students WHERE id=:id AND archived_at IS NULL"),
