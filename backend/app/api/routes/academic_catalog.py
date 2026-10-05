@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.academic_catalog import (
@@ -13,7 +14,7 @@ from app.academic_catalog import (
     AcademicSectionMajorPublic,
 )
 from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
-from app.models import AcademicSection, User, UserRole
+from app.models import AcademicSection, User, UserRole, get_datetime_utc
 from app.student_academics import ClassRepresentativeAssignment
 
 router = APIRouter(prefix="/academic-catalog", tags=["academic-catalog"])
@@ -182,7 +183,7 @@ def assign_class_representative(
     ).first()
     if existing:
         existing.section_id = section_id
-        existing.updated_at = __import__("app.models", fromlist=["get_datetime_utc"]).get_datetime_utc()
+        existing.updated_at = get_datetime_utc()
         session.add(existing)
         session.commit()
         session.refresh(existing)
