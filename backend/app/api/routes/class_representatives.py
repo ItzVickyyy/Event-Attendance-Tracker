@@ -60,10 +60,14 @@ def read_my_assignment(
     academic_year_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     if current_user.role != UserRole.class_representative:
-        raise HTTPException(\n            status_code=403, detail="Class Representative access required"\n        )
+        raise HTTPException(
+            status_code=403, detail="Class Representative access required"
+        )
     row = _assignment_row(session, current_user.id, academic_year_id)
     if not row:
-        raise HTTPException(\n            status_code=404, detail="No Class Representative assignment found"\n        )
+        raise HTTPException(
+            status_code=404, detail="No Class Representative assignment found"
+        )
     return row
 
 
@@ -110,18 +114,29 @@ def create_my_student(
         raise HTTPException(status_code=403, detail="No Class Representative assignment found")
     required = {"student_number", "first_name", "last_name"}
     if not required.issubset(payload):
-        raise HTTPException(\n            status_code=422,\n            detail="student_number, first_name, and last_name are required",\n        )
+        raise HTTPException(
+            status_code=422,
+            detail="student_number, first_name, and last_name are required",
+        )
     if session.exec(
         select(Student).where(Student.student_number == str(payload["student_number"]))
     ).first():
-        raise HTTPException(\n            status_code=409, detail="A student with this student number already exists"\n        )
+        raise HTTPException(
+            status_code=409, detail="A student with this student number already exists"
+        )
     person = Person(
         first_name=str(payload["first_name"]).strip(),
-        middle_name=str(payload["middle_name"]).strip()\n        if payload.get("middle_name")\n        else None,
+        middle_name=str(payload["middle_name"]).strip()
+        if payload.get("middle_name")
+        else None,
         last_name=str(payload["last_name"]).strip(),
-        name_extension=str(payload["extension"]).strip()\n        if payload.get("extension")\n        else None,
+        name_extension=str(payload["extension"]).strip()
+        if payload.get("extension")
+        else None,
         email=str(payload["email"]).strip() if payload.get("email") else None,
-        contact_number=str(payload["contact_number"]).strip()\n        if payload.get("contact_number")\n        else None,
+        contact_number=str(payload["contact_number"]).strip()
+        if payload.get("contact_number")
+        else None,
     )
     session.add(person)
     session.flush()
@@ -170,7 +185,9 @@ def list_class_representatives(
     )    return {"data": [dict(row) for row in rows], "count": len(rows)}
 
 
-@router.post(\n    "/", response_model=UserPublic, dependencies=[Depends(require_super_admin)]\n)
+@router.post(
+    "/", response_model=UserPublic, dependencies=[Depends(require_super_admin)]
+)
 def create_class_representative(
     *,
     session: SessionDep,
@@ -178,7 +195,9 @@ def create_class_representative(
     payload: ClassRepresentativeCreate,
 ) -> User:
     if crud.get_user_by_email(session=session, email=payload.email):
-        raise HTTPException(\n            status_code=409, detail="A user with this email already exists"\n        )
+        raise HTTPException(
+            status_code=409, detail="A user with this email already exists"
+        )
     year = session.get(AcademicYear, payload.academic_year_id)
     section = (
         session.execute(
@@ -189,9 +208,13 @@ def create_class_representative(
         .first()
     )
     if not year or not section:
-        raise HTTPException(\n            status_code=404, detail="Academic year or section not found"\n        )
+        raise HTTPException(
+            status_code=404, detail="Academic year or section not found"
+        )
     if section["academic_year_id"] != year.id:
-        raise HTTPException(\n            status_code=400, detail="Section does not belong to the selected academic year"\n        )
+        raise HTTPException(
+            status_code=400, detail="Section does not belong to the selected academic year"
+        )
     full_name = " ".join(
         part
         for part in [
@@ -233,5 +256,9 @@ def create_class_representative(
             username=user.email,
             password=TEMPORARY_PASSWORD,
         )
-        send_email(\n            email_to=user.email,\n            subject=email_data.subject,\n            html_content=email_data.html_content,\n        )
+        send_email(
+            email_to=user.email,
+            subject=email_data.subject,
+            html_content=email_data.html_content,
+        )
     return user
