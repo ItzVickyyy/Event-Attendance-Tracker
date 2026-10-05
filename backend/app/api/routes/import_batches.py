@@ -1,8 +1,11 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import col, func, select
+from openpyxl import Workbook
+import csv
+import io
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
@@ -55,6 +58,61 @@ def read_import_batches(
     )
 
 
+@router.get("/template/xlsx", dependencies=[Depends(require_admin)])
+def download_xlsx_template() -> Response:
+    """Download the minimal canonical student import workbook."""
+    headers = [
+        "Student Number",
+        "Last Name",
+        "First Name",
+        "Middle Name",
+        "Name Extension",
+        "Mobile Number",
+        "Email",
+        "Section",
+        "Academic Status",
+    ]
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Students"
+    sheet.append(headers)
+    output = io.BytesIO()
+    workbook.save(output)
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": 'attachment; filename="Event_Attendance_Tracker_Student_Import_Template.xlsx"'
+        },
+    )
+
+
+@router.get("/template/csv", dependencies=[Depends(require_admin)])
+def download_csv_template() -> Response:
+    """Download the minimal canonical student import CSV."""
+    headers = [
+        "Student Number",
+        "Last Name",
+        "First Name",
+        "Middle Name",
+        "Name Extension",
+        "Mobile Number",
+        "Email",
+        "Section",
+        "Academic Status",
+    ]
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    return Response(
+        content=output.getvalue().encode("utf-8-sig"),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="Event_Attendance_Tracker_Student_Import_Template.csv"'
+        },
+    )
+
+
 @router.post(
     "/", response_model=ImportBatchPublic, dependencies=[Depends(require_admin)]
 )
@@ -65,6 +123,7 @@ def create_import_batch(
     import_batch_in: ImportBatchCreate,
 ) -> Any:
     import_batch = ImportBatch.model_validate(import_batch_in)
+    import_batch.imported_by = _current_user.id
     session.add(import_batch)
     session.commit()
     session.refresh(import_batch)
@@ -180,13 +239,21 @@ async def upload_import_batch_workbook(
     if not import_batch:
         raise HTTPException(status_code=404, detail="Import batch not found")
 
+    filename = file.filename or "student-import"
+    extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if extension not in {"xlsx", "csv"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file type. Upload an .xlsx or .csv file.",
+        )
+
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
     service = StudentImportService(session)
     try:
-        parsed_rows = service.parse_student_import(import_batch, contents)
+        parsed_rows = service.parse_student_import_file(import_batch, contents, filename)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

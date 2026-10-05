@@ -1,12 +1,20 @@
 """Student Import Service - XLSX parsing and staging"""
 
+import csv
+import io
 import re
 from typing import Any, TypedDict
 
 from openpyxl import load_workbook
 from sqlmodel import Session
 
-from app.models import ImportBatch, ImportValidationStatus, StudentImportRecord
+from app.models import (
+    AcademicProgram,
+    AcademicSection,
+    ImportBatch,
+    ImportValidationStatus,
+    StudentImportRecord,
+)
 
 
 class StudentImportService:
@@ -20,6 +28,107 @@ class StudentImportService:
         # existing List[Dict[str, Any]] contract (and every caller/test that
         # depends on it) is left unchanged. See get_summary_reconciliation().
         self._last_summary_reconciliation: dict[str, Any] | None = None
+
+    def parse_student_import_file(
+        self, import_batch: ImportBatch, file_bytes: bytes, filename: str
+    ) -> list[dict[str, Any]]:
+        """Parse a supported CSV/XLSX student import file into staging rows."""
+        extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if extension == "xlsx":
+            return self.parse_student_import(import_batch, file_bytes)
+        if extension == "csv":
+            return self.parse_csv_student_import(import_batch, file_bytes)
+        raise ValueError("Unsupported file type. Upload an .xlsx or .csv file.")
+
+    def parse_csv_student_import(
+        self, import_batch: ImportBatch, csv_file: bytes
+    ) -> list[dict[str, Any]]:
+        """Parse the canonical CSV template or a compatible CSV."""
+        try:
+            text = csv_file.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise ValueError("CSV file must be UTF-8 encoded.") from exc
+
+        reader = csv.DictReader(io.StringIO(text))
+        if not reader.fieldnames:
+            raise ValueError("CSV file has no header row.")
+
+        headers = {str(h).strip().lower() for h in reader.fieldnames if h}
+        required = {"student number", "last name", "first name"}
+        missing = sorted(required - headers)
+        if missing:
+            raise ValueError("Missing required columns: " + ", ".join(missing))
+
+        parsed_rows: list[dict[str, Any]] = []
+        for row_number, raw_row in enumerate(reader, start=2):
+            if all(value is None or str(value).strip() == "" for value in raw_row.values()):
+                continue
+            normalized = {
+                str(k).strip().lower(): self._safe_cell_value(v)
+                for k, v in raw_row.items()
+                if k is not None
+            }
+            section = normalized.get("section") or self._default_section_name(import_batch)
+            if not section:
+                raise ValueError(
+                    f"Row {row_number} has no Section. Add a Section column or select a section before uploading."
+                )
+            parsed_rows.append(
+                self._build_row_data(
+                    source_sheet=section,
+                    source_row=row_number,
+                    source_no=normalized.get("no"),
+                    values=normalized,
+                )
+            )
+
+        self._validate_and_detect_conflicts(parsed_rows)
+        self.create_staging_records(import_batch, parsed_rows)
+        self._last_summary_reconciliation = None
+        return parsed_rows
+
+    def _default_section_name(self, import_batch: ImportBatch) -> str | None:
+        if not import_batch.default_section_id:
+            return None
+        section = self.session.get(AcademicSection, import_batch.default_section_id)
+        if not section:
+            raise ValueError("The selected default section no longer exists.")
+        program = self.session.get(AcademicProgram, section.program_id)
+        if not program:
+            raise ValueError("The selected section has no academic program.")
+        return f"{program.program_code} {section.year_level}{section.section_name}"
+
+    def _build_row_data(
+        self,
+        source_sheet: str,
+        source_row: int,
+        source_no: Any,
+        values: dict[str, Any],
+    ) -> dict[str, Any]:
+        return {
+            "source_sheet": source_sheet,
+            "source_row": source_row,
+            "source_no": (
+                int(self._safe_cell_value(source_no))
+                if self._safe_cell_value(source_no)
+                and self._safe_cell_value(source_no).isdigit()
+                else None
+            ),
+            "raw_student_number": values.get("student number"),
+            "raw_last_name": values.get("last name"),
+            "raw_first_name": values.get("first name"),
+            "raw_middle_name": values.get("middle name"),
+            "raw_name_extension": values.get("name extension"),
+            "raw_section": values.get("section") or source_sheet,
+            "raw_status": values.get("academic status") or values.get("status"),
+            "raw_program": values.get("program"),
+            "raw_year_level": values.get("year level"),
+            "raw_academic_year": values.get("academic year"),
+            "raw_semester": values.get("semester"),
+            "raw_subjects_enrolled": values.get("subjects enrolled"),
+            "raw_mobile_number": values.get("mobile number"),
+            "raw_email": values.get("email"),
+        }
 
     def parse_student_import(
         self, import_batch: ImportBatch, xlsx_file: bytes
@@ -74,6 +183,11 @@ class StudentImportService:
                     continue
 
                 row_data = self._extract_row_data(sheet_name, row_idx, row, header_row)
+                row_data["source_sheet"] = (
+                    row_data.get("raw_section")
+                    or self._default_section_name(import_batch)
+                    or sheet_name
+                )
                 parsed_rows.append(row_data)
 
         workbook.close()
@@ -157,6 +271,7 @@ class StudentImportService:
             "raw_last_name": None,
             "raw_first_name": None,
             "raw_middle_name": None,
+            "raw_name_extension": None,
             "raw_section": None,
             "raw_status": None,
             "raw_program": None,
@@ -177,6 +292,7 @@ class StudentImportService:
             "last name",
             "first name",
             "middle name",
+            "name extension",
             "section",
             "status",
             "program",
@@ -204,6 +320,7 @@ class StudentImportService:
             "raw_last_name": "last name",
             "raw_first_name": "first name",
             "raw_middle_name": "middle name",
+            "raw_name_extension": "name extension",
             "raw_section": "section",
             "raw_status": "status",
             "raw_program": "program",

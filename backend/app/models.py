@@ -1158,6 +1158,12 @@ class ImportBatchStatus(StrEnum):
 class ImportBatchBase(SQLModel):
     source_filename: str = Field(max_length=255)
     academic_year: str | None = Field(default=None, max_length=50)
+    default_section_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="academic_sections.id",
+        nullable=True,
+        ondelete="SET NULL",
+    )
     semester: str | None = Field(default=None, max_length=50)
     imported_by: uuid.UUID | None = Field(
         default=None,
@@ -1176,6 +1182,7 @@ class ImportBatchCreate(ImportBatchBase):
 class ImportBatchUpdate(SQLModel):
     source_filename: str | None = Field(default=None, max_length=255)
     academic_year: str | None = Field(default=None, max_length=50)
+    default_section_id: uuid.UUID | None = None
     semester: str | None = Field(default=None, max_length=50)
     imported_by: uuid.UUID | None = None
     status: ImportBatchStatus | None = None
@@ -1228,6 +1235,8 @@ class StudentImportRecordBase(SQLModel):
     raw_last_name: str = Field(max_length=255)
     raw_first_name: str = Field(max_length=255)
     raw_middle_name: str | None = Field(default=None, max_length=255)
+    raw_name_extension: str | None = Field(default=None, max_length=50)
+    raw_section: str | None = Field(default=None, max_length=100)
     raw_mobile_number: str | None = Field(default=None, max_length=50)
     raw_email: str | None = Field(default=None, max_length=255)
     raw_subjects_enrolled: str | None = Field(default=None, max_length=4000)
@@ -1262,6 +1271,8 @@ class StudentImportRecordUpdate(SQLModel):
     raw_last_name: str | None = Field(default=None, max_length=255)
     raw_first_name: str | None = Field(default=None, max_length=255)
     raw_middle_name: str | None = Field(default=None, max_length=255)
+    raw_name_extension: str | None = Field(default=None, max_length=50)
+    raw_section: str | None = Field(default=None, max_length=100)
     raw_mobile_number: str | None = Field(default=None, max_length=50)
     raw_email: str | None = Field(default=None, max_length=255)
     raw_subjects_enrolled: str | None = Field(default=None, max_length=4000)
