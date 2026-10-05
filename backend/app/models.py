@@ -1173,6 +1173,7 @@ class ImportBatchBase(SQLModel):
     )
     status: ImportBatchStatus = Field(default=ImportBatchStatus.pending)
     notes: str | None = Field(default=None, max_length=2000)
+    validation_summary: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
 
 
 class ImportBatchCreate(ImportBatchBase):
@@ -1187,6 +1188,7 @@ class ImportBatchUpdate(SQLModel):
     imported_by: uuid.UUID | None = None
     status: ImportBatchStatus | None = None
     notes: str | None = Field(default=None, max_length=2000)
+    validation_summary: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
 
 
 class ImportBatchPublic(ImportBatchBase):
@@ -1194,6 +1196,7 @@ class ImportBatchPublic(ImportBatchBase):
     imported_at: datetime | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    validation_summary: dict | None = None
 
 
 class ImportBatchesPublic(SQLModel):
