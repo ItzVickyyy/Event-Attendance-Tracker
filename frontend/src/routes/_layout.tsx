@@ -5,7 +5,16 @@ import { CalendarDays, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import useAuth from "@/hooks/useAuth"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { isLoggedIn } from "@/hooks/useAuth"
@@ -18,17 +27,26 @@ export const Route = createFileRoute("/_layout")({
 })
 
 function AcademicYearSelector() {
-  const { academicYears, activeAcademicYear, currentAcademicYear, setActiveAcademicYearId, isLoading } = useAcademicYear()
+  const {
+    academicYears,
+    activeAcademicYear,
+    currentAcademicYear,
+    setActiveAcademicYearId,
+    isLoading,
+  } = useAcademicYear()
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const setDefaultMutation = useMutation({
     mutationFn: async () => {
       if (!activeAcademicYear) throw new Error("Select an academic year first")
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`${import.meta.env.VITE_API_URL ?? ""}/api/v1/academic-registry/academic-years/${activeAcademicYear.id}/set-current`, {
-        method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL ?? ""}/api/v1/academic-registry/academic-years/${activeAcademicYear.id}/set-current`,
+        {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      )
       if (!response.ok) {
         const body = await response.json().catch(() => null)
         throw new Error(body?.detail ?? "Unable to change the default academic year")
@@ -42,40 +60,58 @@ function AcademicYearSelector() {
   })
 
   return (
-    <div className="ml-auto flex items-center gap-2">
-      <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
-      <span className="hidden text-sm text-muted-foreground sm:inline">Academic Year</span>
-      <Select
-        value={activeAcademicYear?.id ?? ""}
-        onValueChange={setActiveAcademicYearId}
-        disabled={isLoading || academicYears.length === 0}
-      >
-        <SelectTrigger className="h-9 w-[125px]" aria-label="Academic Year">
-          <SelectValue placeholder="Academic Year" />
-        </SelectTrigger>
-        <SelectContent>
-          {academicYears.map((year) => (
-            <SelectItem key={year.id} value={year.id}>{year.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {user?.role === "super_admin" && activeAcademicYear && activeAcademicYear.id !== currentAcademicYear?.id && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          title={`Make ${activeAcademicYear.label} the system default`}
-          aria-label={`Make ${activeAcademicYear.label} the system default`}
-          onClick={() => setDefaultMutation.mutate()}
-          disabled={setDefaultMutation.isPending}
-        >
-          <Check className="size-4" />
-        </Button>
-      )}
+    <div className="ml-auto">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="min-h-10 min-w-10"
+            aria-label={activeAcademicYear ? `Academic Year: ${activeAcademicYear.label}` : "Academic Year"}
+            title={activeAcademicYear ? `Academic Year: ${activeAcademicYear.label}` : "Academic Year"}
+            disabled={isLoading || academicYears.length === 0}
+          >
+            <CalendarDays className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Academic Year</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={activeAcademicYear?.id ?? ""}
+            onValueChange={setActiveAcademicYearId}
+          >
+            {academicYears.map((year) => (
+              <DropdownMenuRadioItem key={year.id} value={year.id}>
+                {year.label}
+                {year.id === currentAcademicYear?.id && (
+                  <span className="ml-auto text-xs text-muted-foreground">Default</span>
+                )}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+          {user?.role === "super_admin" &&
+            activeAcademicYear &&
+            activeAcademicYear.id !== currentAcademicYear?.id && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={setDefaultMutation.isPending}
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    setDefaultMutation.mutate()
+                  }}
+                >
+                  <Check className="size-4" />
+                  Make {activeAcademicYear.label} default
+                </DropdownMenuItem>
+              </>
+            )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
-
 function Layout() {
   return (
     <AcademicYearProvider>
