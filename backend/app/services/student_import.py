@@ -887,6 +887,8 @@ class StudentImportService:
                 raw_last_name=row_data.get("raw_last_name"),
                 raw_first_name=row_data.get("raw_first_name"),
                 raw_middle_name=row_data.get("raw_middle_name"),
+                raw_name_extension=row_data.get("raw_name_extension"),
+                raw_section=row_data.get("raw_section"),
                 raw_mobile_number=row_data.get("raw_mobile_number"),
                 raw_email=row_data.get("raw_email"),
                 raw_subjects_enrolled=row_data.get("raw_subjects_enrolled"),
