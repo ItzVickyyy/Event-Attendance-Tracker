@@ -13,6 +13,7 @@ from app.student_academics import (
     AcademicYear,
     ClassRepresentativeAssignment,
     ClassRepresentativeCreate,
+    StudentEnrollment,
 )
 from app.utils import generate_new_account_email, send_email
 
@@ -126,7 +127,7 @@ def create_my_student(
     )
     session.add(student)
     session.flush()
-    enrollment = __import__("app.student_academics", fromlist=["StudentEnrollment"]).StudentEnrollment(
+    enrollment = StudentEnrollment(
         student_id=student.id,
         academic_year_id=assignment["academic_year_id"],
         section_id=assignment["section_id"],
