@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session
+from sqlalchemy import text
 
 from app.core import security
 from app.core.config import settings
@@ -99,6 +100,40 @@ def require_scanner_permission(current_user: CurrentUser) -> User:
 require_developer = require_role([UserRole.developer])
 require_super_admin = require_role([UserRole.developer, UserRole.super_admin])
 require_admin = require_role([UserRole.developer, UserRole.super_admin, UserRole.admin])
+def class_rep_assignment(
+    session: Session,
+    current_user: User,
+    academic_year_id=None,
+):
+    if current_user.role != UserRole.class_representative and not current_user.is_superuser:
+        return None
+    query = """
+        SELECT id, academic_year_id, section_id
+        FROM class_representative_assignments
+        WHERE user_id = :user_id
+    """
+    params = {"user_id": current_user.id}
+    if academic_year_id is not None:
+        query += " AND academic_year_id = :academic_year_id"
+        params["academic_year_id"] = academic_year_id
+    query += " ORDER BY created_at DESC LIMIT 1"
+    return session.execute(text(query), params).mappings().first()
+
+
+def require_class_rep_assignment(
+    session: Session,
+    current_user: User,
+    academic_year_id=None,
+):
+    assignment = class_rep_assignment(session, current_user, academic_year_id)
+    if current_user.role == UserRole.class_representative and assignment is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No Class Representative section is assigned for this academic year",
+        )
+    return assignment
+
+
 require_class_rep_or_higher = require_role(
     [
         UserRole.developer,
