@@ -1,8 +1,9 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import { Outlet, createFileRoute, redirect, useLocation, useNavigate } from "@tanstack/react-router"
 import { Footer } from "@/components/Common/Footer"
 import { AcademicYearProvider, useAcademicYear } from "@/context/AcademicYearContext"
 import { CalendarDays, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useEffect } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import useAuth from "@/hooks/useAuth"
 import {
@@ -113,6 +114,17 @@ function AcademicYearSelector() {
   )
 }
 function Layout() {
+  const { user } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const mustChangePassword = Boolean((user as any)?.must_change_password)
+
+  useEffect(() => {
+    if (mustChangePassword && location.pathname !== "/account") {
+      void navigate({ to: "/account", replace: true })
+    }
+  }, [mustChangePassword, location.pathname, navigate])
+
   return (
     <AcademicYearProvider>
       <SidebarProvider>
