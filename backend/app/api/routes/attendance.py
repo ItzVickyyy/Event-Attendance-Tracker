@@ -12,6 +12,7 @@ from app.api.deps import (
     SessionDep,
     class_rep_assignment,
     require_admin,
+    require_class_rep_assignment,
     require_scanner_permission,
 )
 from app.models import (
@@ -23,6 +24,7 @@ from app.models import (
     AttendanceStatus,
     AttendanceUpdate,
     Attendee,
+    UserRole,
     AttendeeCredential,
     AttendeeType,
     Event,
