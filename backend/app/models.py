@@ -79,6 +79,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     __tablename__ = "user"
 
+    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     created_at: datetime | None = Field(
@@ -88,6 +89,7 @@ class User(UserBase, table=True):
 
 
 class UserPublic(UserBase):
+    reference_code: str | None = None
     id: uuid.UUID
     created_at: datetime | None = None
 
@@ -236,6 +238,7 @@ class OrganizationUpdate(SQLModel):
 class Organization(OrganizationBase, table=True):
     __tablename__ = "organizations"
 
+    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -250,6 +253,7 @@ class Organization(OrganizationBase, table=True):
 
 
 class OrganizationPublic(OrganizationBase):
+    reference_code: str | None = None
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -282,6 +286,7 @@ class AcademicProgramUpdate(SQLModel):
 class AcademicProgram(AcademicProgramBase, table=True):
     __tablename__ = "academic_programs"
 
+    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -298,6 +303,7 @@ class AcademicProgram(AcademicProgramBase, table=True):
 
 
 class AcademicProgramPublic(AcademicProgramBase):
+    reference_code: str | None = None
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -353,6 +359,7 @@ class AcademicSection(AcademicSectionBase, table=True):
         ),
     )
 
+    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -368,6 +375,7 @@ class AcademicSection(AcademicSectionBase, table=True):
 
 
 class AcademicSectionPublic(AcademicSectionBase):
+    reference_code: str | None = None
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -474,6 +482,7 @@ class StudentUpdate(SQLModel):
 class Student(StudentBase, table=True):
     __tablename__ = "students"
 
+    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -493,6 +502,7 @@ class Student(StudentBase, table=True):
 
 
 class StudentPublic(StudentBase):
+    reference_code: str | None = None
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -771,6 +781,7 @@ class AttendanceSession(AttendanceSessionBase, table=True):
         ),
     )
 
+    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -788,6 +799,7 @@ class AttendanceSession(AttendanceSessionBase, table=True):
 
 
 class AttendanceSessionPublic(AttendanceSessionBase):
+    reference_code: str | None = None
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
@@ -801,6 +813,7 @@ class AttendanceSessionsPublic(SQLModel):
 class Event(EventBase, table=True):
     __tablename__ = "events"
 
+    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -821,6 +834,7 @@ class Event(EventBase, table=True):
 
 
 class EventPublic(EventBase):
+    reference_code: str | None = None
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
