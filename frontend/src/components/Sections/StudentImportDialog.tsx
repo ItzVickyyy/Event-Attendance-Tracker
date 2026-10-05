@@ -186,10 +186,10 @@ export function StudentImportDialog({
       setStep(3)
       return
     }
-  }
 
-  const previousStep = () => {
-    if (step > 0 && !result) setStep(step - 1)
+    if (step === 3) {
+      void upload()
+    }
   }
 
   const skipTutorial = () => {
@@ -460,27 +460,6 @@ export function StudentImportDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => close(false)}>Cancel</Button>
-
-          {!result && step > 0 ? (
-            <Button variant="outline" onClick={previousStep}>Back</Button>
-          ) : null}
-
-          {!result && step === 0 && tutorialSeen ? (
-            <Button variant="ghost" onClick={skipTutorial}>Skip tutorial</Button>
-          ) : null}
-
-          {!result && step < 3 ? (
-            <Button onClick={nextStep}>Next</Button>
-          ) : null}
-
-          {!result && step === 3 ? (
-            <Button onClick={() => void upload()} disabled={!file || uploading}>
-              <Upload />
-              {uploading ? "Validating…" : "Upload and Validate"}
-            </Button>
-          ) : null}
-
           {result ? (
             <>
               <Button variant="outline" onClick={restartUpload}>Upload another file</Button>
@@ -488,7 +467,17 @@ export function StudentImportDialog({
                 {promoting ? "Importing…" : "Confirm Import"}
               </Button>
             </>
-          ) : null}
+          ) : (
+            <>
+              {tutorialSeen ? (
+                <Button variant="ghost" onClick={skipTutorial}>Skip Tutorial</Button>
+              ) : null}
+              <Button variant="outline" onClick={() => close(false)}>Cancel</Button>
+              <Button onClick={nextStep} disabled={step === 3 && (!file || uploading)}>
+                {step === 3 ? (uploading ? "Validating…" : "Next") : "Next"}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
