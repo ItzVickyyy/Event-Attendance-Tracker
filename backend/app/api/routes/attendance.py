@@ -63,7 +63,9 @@ def read_attendances(
     if _current_user.role.value == "class_representative":
         assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
-            raise HTTPException(\n                status_code=403, detail="No Class Representative assignment found"\n            )
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
         section_id = assignment["section_id"]
         academic_year_id = assignment["academic_year_id"]
     count_statement = select(func.count()).select_from(Attendance)
@@ -505,9 +507,14 @@ def read_attendance(
     if not record:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     if _current_user.role.value == "class_representative":
-        assignment = class_rep_assignment(\n            session, _current_user, record.academic_year_id\n        )
+        assignment = class_rep_assignment(
+            session, _current_user, record.academic_year_id
+        )
         if not assignment:
-            raise HTTPException(\n                status_code=403,\n                detail="Attendance record is outside your assigned section",\n            )
+            raise HTTPException(
+                status_code=403,
+                detail="Attendance record is outside your assigned section",
+            )
         allowed = session.execute(
             select(Student.id)
             .join(Attendee, Attendee.person_id == Student.person_id)
