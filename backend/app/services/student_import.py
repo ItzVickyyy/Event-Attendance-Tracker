@@ -719,6 +719,32 @@ class StudentImportService:
 
     def _validate_and_detect_conflicts(self, parsed_rows: list[dict[str, Any]]) -> None:
         """Validate rows and detect duplicate/cross-program conflicts across the entire workbook"""
+        for row_data in parsed_rows:
+            errors: list[str] = []
+            student_number = (row_data.get("raw_student_number") or "").strip()
+            first_name = (row_data.get("raw_first_name") or "").strip()
+            last_name = (row_data.get("raw_last_name") or "").strip()
+            section_ref = (row_data.get("raw_section") or row_data.get("source_sheet") or "").strip()
+            status = self._normalize_status(row_data.get("raw_status"))
+
+            if not student_number:
+                errors.append("Missing Student Number.")
+            if not first_name:
+                errors.append("Missing First Name.")
+            if not last_name:
+                errors.append("Missing Last Name.")
+            if not section_ref:
+                errors.append("Missing Section.")
+            if not status:
+                errors.append("Academic Status must be Regular or Irregular.")
+            if section_ref and self._resolve_import_section(import_batch, section_ref) is None:
+                errors.append(f"Section '{section_ref}' does not exist in Academic Year '{import_batch.academic_year}'.")
+
+            if errors:
+                row_data["validation_status"] = ImportValidationStatus.invalid
+                row_data["validation_errors"] = errors
+                row_data["conflict_key"] = student_number or None
+
         student_to_sheets: dict[str, dict[str, int]] = {}
         student_to_rows: dict[str, dict[str, dict[str, Any]]] = {}
         student_to_all_rows: dict[str, list[dict[str, Any]]] = {}
@@ -758,6 +784,9 @@ class StudentImportService:
                 continue
 
             student_number = student_number.strip()
+
+            if row_data.get("validation_status") == ImportValidationStatus.invalid:
+                continue
 
             if student_number not in student_to_sheets:
                 continue
