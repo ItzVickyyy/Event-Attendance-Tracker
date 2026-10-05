@@ -6,7 +6,13 @@ from sqlalchemy import text
 from sqlmodel import select
 
 from app.academic_catalog import AcademicMajor
-from app.api.deps import CurrentUser, SessionDep, class_rep_assignment, require_admin, require_super_admin
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
+    class_rep_assignment,
+    require_admin,
+    require_super_admin,
+)
 from app.models import AcademicSection, Student, get_datetime_utc
 from app.student_academics import (
     AcademicYear,
