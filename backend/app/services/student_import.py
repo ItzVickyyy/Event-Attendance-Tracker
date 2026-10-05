@@ -192,7 +192,7 @@ class StudentImportService:
 
         workbook.close()
 
-        self._validate_and_detect_conflicts(parsed_rows)
+        self._validate_and_detect_conflicts(import_batch, parsed_rows)
 
         self.create_staging_records(import_batch, parsed_rows)
 
