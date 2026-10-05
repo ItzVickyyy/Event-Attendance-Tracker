@@ -21,6 +21,31 @@ from app.models import (
 router = APIRouter(prefix="/students", tags=["students"])
 
 
+def _ensure_class_rep_student_access(session: SessionDep, current_user: CurrentUser, student_id: uuid.UUID) -> None:
+    if current_user.role.value != "class_representative":
+        return
+    assignment = class_rep_assignment(session, current_user)
+    if not assignment:
+        raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+    allowed = session.execute(
+        text("""
+            SELECT 1
+            FROM student_enrollments
+            WHERE student_id = :student_id
+              AND section_id = :section_id
+              AND academic_year_id = :academic_year_id
+            LIMIT 1
+        """),
+        {
+            "student_id": student_id,
+            "section_id": assignment["section_id"],
+            "academic_year_id": assignment["academic_year_id"],
+        },
+    ).first()
+    if not allowed:
+        raise HTTPException(status_code=403, detail="Student is outside your assigned section")
+
+
 @router.get("/", response_model=StudentsPublic)
 def read_students(
     session: SessionDep,
@@ -134,12 +159,7 @@ def read_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    if _current_user.role.value == "class_representative":
-        assignment = class_rep_assignment(session, _current_user)
-        if not assignment or student.section_id != assignment["section_id"]:
-            raise HTTPException(
-            status_code=403, detail="Student is outside your assigned section"
-        )
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     archived = session.execute(
         text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
     ).scalar_one_or_none()
@@ -229,10 +249,7 @@ def delete_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    if _current_user.role.value == "class_representative":
-        assignment = class_rep_assignment(session, _current_user)
-        if not assignment or student.section_id != assignment["section_id"]:
-            raise HTTPException(status_code=403, detail="Student is outside your assigned section")
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     session.execute(
         text(
             "UPDATE students SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND archived_at IS NULL"
