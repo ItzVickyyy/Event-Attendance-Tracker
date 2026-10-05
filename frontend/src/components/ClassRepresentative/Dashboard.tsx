@@ -9,7 +9,9 @@ export function ClassRepresentativeDashboard() {
   const query = useQuery({
     queryKey: ["class-representative-assignment", activeAcademicYear?.id],
     queryFn: async () => {
-      const response = await fetch("/api/v1/class-representatives/me?academic_year_id=" + encodeURIComponent(activeAcademicYear!.id), { headers: token ? { Authorization: "Bearer " + token } : {} })
+      const headers: Record<string, string> = {}
+      if (token) headers.Authorization = "Bearer " + token
+      const response = await fetch("/api/v1/class-representatives/me?academic_year_id=" + encodeURIComponent(activeAcademicYear!.id), { headers })
       if (!response.ok) throw new Error("No section assignment found")
       return response.json()
     },
