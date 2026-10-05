@@ -98,7 +98,8 @@ def read_my_students(
             "section_id": assignment["section_id"],
             "academic_year_id": assignment["academic_year_id"],
         },
-    ).mappings().all()
+        ).mappings().all()
+    )
     return {"data": [dict(row) for row in rows], "count": len(rows)}
 
 
