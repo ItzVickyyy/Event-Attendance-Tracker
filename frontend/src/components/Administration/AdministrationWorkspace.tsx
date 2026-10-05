@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Activity, ClipboardCheck, KeyRound, Shield, Users } from "lucide-react"
+import { Activity, ClipboardCheck, KeyRound, Shield, Users, UserRoundCheck } from "lucide-react"
 import { AttendanceCorrectionsService, UsersService } from "@/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 const items = [
   { to: "/administration/users", title: "User Accounts", description: "View and manage application user accounts.", icon: Users },
+  { to: "/administration/class-representatives", title: "Class Representatives", description: "Create and manage section representative accounts and assignments.", icon: UserRoundCheck },
   { to: "/administration/roles", title: "Roles & Permissions", description: "Review application roles and their available permission controls.", icon: Shield },
   { to: "/administration/attendance", title: "Attendance Administration", description: "Review controlled attendance corrections and their reasons.", icon: ClipboardCheck },
   { to: "/administration/scanner-permissions", title: "Scanner Permissions", description: "Manage explicit attendance scanning capability without creating a scanner role.", icon: KeyRound },
