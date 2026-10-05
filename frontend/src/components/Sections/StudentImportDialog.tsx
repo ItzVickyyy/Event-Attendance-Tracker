@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileUp, Upload } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileUp } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -110,7 +110,7 @@ export function StudentImportDialog({
 
     setUploading(true)
     try {
-      const batch = await apiJson<any>("/import-batches", {
+      const batch = await apiJson<any>("/import-batches/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
