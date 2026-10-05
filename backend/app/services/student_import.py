@@ -711,11 +711,18 @@ class StudentImportService:
         program = self.session.exec(select(AcademicProgram).where(col(AcademicProgram.program_code) == program_code)).first()
         if not program:
             return None
+
+        # Accept both section storage conventions used by the registry:
+        # section_name="A" with section_code="1A", or section_name="1A".
+        # The import format uses the human-readable "BSCS 1A" form.
+        section_code = f"{year_level}{section_name}"
         return self.session.exec(select(AcademicSection).where(
             col(AcademicSection.academic_year) == import_batch.academic_year,
             col(AcademicSection.program_id) == program.id,
             col(AcademicSection.year_level) == year_level,
-            col(AcademicSection.section_name) == section_name,
+            (col(AcademicSection.section_name) == section_name)
+            | (col(AcademicSection.section_name) == section_code)
+            | (col(AcademicSection.section_code) == section_code),
         )).first()
 
     def _validate_and_detect_conflicts(
