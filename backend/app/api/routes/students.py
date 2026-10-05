@@ -6,6 +6,8 @@ from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, class_rep_assignment, require_admin
+from app.services.reference_codes import next_student_reference_code
+
 from app.models import (
     AcademicSection,
     Attendee,
@@ -146,6 +148,7 @@ def create_student(
             raise HTTPException(status_code=404, detail="Academic section not found")
 
     student = Student.model_validate(student_in)
+    student.reference_code = next_student_reference_code(session)
     session.add(student)
     session.commit()
     session.refresh(student)
