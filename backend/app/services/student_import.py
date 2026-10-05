@@ -6,7 +6,7 @@ import re
 from typing import Any, TypedDict
 
 from openpyxl import load_workbook
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from app.models import (
     AcademicProgram,
@@ -687,8 +687,64 @@ class StudentImportService:
             "discrepancies": discrepancies,
         }
 
+    def _resolve_import_section(self, import_batch: ImportBatch, section_reference: str) -> AcademicSection | None:
+        normalized = " ".join(section_reference.strip().split()).upper()
+        if not import_batch.academic_year:
+            return None
+        parts = normalized.split()
+        if len(parts) >= 3:
+            program_code = parts[0]
+            section_name = " ".join(parts[1:])
+            program = self.session.exec(select(AcademicProgram).where(col(AcademicProgram.program_code) == program_code)).first()
+            if not program:
+                return None
+            return self.session.exec(select(AcademicSection).where(
+                col(AcademicSection.academic_year) == import_batch.academic_year,
+                col(AcademicSection.program_id) == program.id,
+                col(AcademicSection.section_name) == section_name,
+            )).first()
+        try:
+            program_code, year_level, section_name = self._derive_section_from_sheet(normalized)
+        except ValueError:
+            return None
+        program = self.session.exec(select(AcademicProgram).where(col(AcademicProgram.program_code) == program_code)).first()
+        if not program:
+            return None
+        return self.session.exec(select(AcademicSection).where(
+            col(AcademicSection.academic_year) == import_batch.academic_year,
+            col(AcademicSection.program_id) == program.id,
+            col(AcademicSection.year_level) == year_level,
+            col(AcademicSection.section_name) == section_name,
+        )).first()
+
     def _validate_and_detect_conflicts(self, parsed_rows: list[dict[str, Any]]) -> None:
         """Validate rows and detect duplicate/cross-program conflicts across the entire workbook"""
+        for row_data in parsed_rows:
+            errors: list[str] = []
+            student_number = (row_data.get("raw_student_number") or "").strip()
+            first_name = (row_data.get("raw_first_name") or "").strip()
+            last_name = (row_data.get("raw_last_name") or "").strip()
+            section_ref = (row_data.get("raw_section") or row_data.get("source_sheet") or "").strip()
+            status = self._normalize_status(row_data.get("raw_status"))
+
+            if not student_number:
+                errors.append("Missing Student Number.")
+            if not first_name:
+                errors.append("Missing First Name.")
+            if not last_name:
+                errors.append("Missing Last Name.")
+            if not section_ref:
+                errors.append("Missing Section.")
+            if not status:
+                errors.append("Academic Status must be Regular or Irregular.")
+            if section_ref and self._resolve_import_section(import_batch, section_ref) is None:
+                errors.append(f"Section '{section_ref}' does not exist in Academic Year '{import_batch.academic_year}'.")
+
+            if errors:
+                row_data["validation_status"] = ImportValidationStatus.invalid
+                row_data["validation_errors"] = errors
+                row_data["conflict_key"] = student_number or None
+
         student_to_sheets: dict[str, dict[str, int]] = {}
         student_to_rows: dict[str, dict[str, dict[str, Any]]] = {}
         student_to_all_rows: dict[str, list[dict[str, Any]]] = {}
@@ -728,6 +784,9 @@ class StudentImportService:
                 continue
 
             student_number = student_number.strip()
+
+            if row_data.get("validation_status") == ImportValidationStatus.invalid:
+                continue
 
             if student_number not in student_to_sheets:
                 continue
@@ -828,6 +887,8 @@ class StudentImportService:
                 raw_last_name=row_data.get("raw_last_name"),
                 raw_first_name=row_data.get("raw_first_name"),
                 raw_middle_name=row_data.get("raw_middle_name"),
+                raw_name_extension=row_data.get("raw_name_extension"),
+                raw_section=row_data.get("raw_section"),
                 raw_mobile_number=row_data.get("raw_mobile_number"),
                 raw_email=row_data.get("raw_email"),
                 raw_subjects_enrolled=row_data.get("raw_subjects_enrolled"),

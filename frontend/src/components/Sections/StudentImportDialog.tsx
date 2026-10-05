@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Download, FileSpreadsheet, FileUp, Upload } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileUp, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -140,12 +140,18 @@ export function StudentImportDialog({
     }
   }
 
+  const reconciliation = result?.summary_reconciliation
+  const reconciliationBlocked = Boolean(
+    reconciliation && reconciliation.status !== "matched" && reconciliation.summary_sheet_found,
+  )
   const canConfirm = Boolean(
     batchId &&
       result &&
       result.valid_rows > 0 &&
       result.invalid_rows === 0 &&
-      result.conflict_rows === 0,
+      result.conflict_rows === 0 &&
+      !reconciliationBlocked &&
+      result.can_promote !== false,
   )
 
   return (
@@ -189,8 +195,17 @@ export function StudentImportDialog({
                 </Button>
               </div>
 
+              {file?.name.toLowerCase().endsWith(".xlsx") ? (
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+                  <p className="font-medium">Section detection is automatic</p>
+                  <p className="mt-1 text-muted-foreground">
+                    For Excel workbooks, the system reads the section from each sheet and checks it against the selected Academic Year. You do not need to choose sections manually.
+                  </p>
+                </div>
+              ) : null}
+
               <div className="space-y-2">
-                <p className="text-sm font-medium">Default section for single-section files</p>
+                <p className="text-sm font-medium">Default section for a CSV without Section</p>
                 <Select value={defaultSectionId} onValueChange={setDefaultSectionId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Optional. Select only when Section is not in the file" />
@@ -229,7 +244,24 @@ export function StudentImportDialog({
                 </div>
               </div>
 
-              {result.invalid_rows > 0 || result.conflict_rows > 0 ? (
+              {reconciliationBlocked ? (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">Source totals do not match</p>
+                      <p className="mt-1 text-muted-foreground">
+                        The workbook Summary does not match the student rows that were actually detected. Nothing will be imported until the source workbook is corrected.
+                      </p>
+                      {reconciliation?.discrepancies?.length ? (
+                        <ul className="mt-2 list-disc pl-5">
+                          {reconciliation.discrepancies.map((item: string) => <li key={item}>{item}</li>)}
+                        </ul>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : result.invalid_rows > 0 || result.conflict_rows > 0 ? (
                 <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
                   <p className="font-medium">Import cannot be confirmed yet.</p>
                   <p className="mt-1 text-muted-foreground">
@@ -238,7 +270,10 @@ export function StudentImportDialog({
                 </div>
               ) : (
                 <div className="rounded-lg border p-4 text-sm">
-                  <p className="font-medium">Ready to import</p>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="size-4" />
+                    <p className="font-medium">Ready to import</p>
+                  </div>
                   <p className="mt-1 text-muted-foreground">
                     {result.valid_rows} validated row(s) will be promoted into the selected academic year.
                   </p>

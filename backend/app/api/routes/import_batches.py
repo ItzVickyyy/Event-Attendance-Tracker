@@ -263,6 +263,13 @@ async def upload_import_batch_workbook(
     # "validated" is an existing ImportBatchStatus value that nothing else
     # currently sets; per docs/SOURCE-OF-TRUTH.md's staging -> validated ->
     # live pipeline, this is where that transition belongs.
+    reconciliation = service.get_summary_reconciliation()
+    import_batch.validation_summary = {
+        "total_rows": len(parsed_rows),
+        "invalid_rows": invalid_rows,
+        "conflict_rows": conflict_rows,
+        "summary_reconciliation": reconciliation,
+    }
     import_batch.status = ImportBatchStatus.validated
     import_batch.updated_at = get_datetime_utc()
     session.add(import_batch)
@@ -292,7 +299,13 @@ async def upload_import_batch_workbook(
         "valid_rows": valid_rows,
         "invalid_rows": invalid_rows,
         "conflict_rows": conflict_rows,
-        "summary_reconciliation": service.get_summary_reconciliation(),
+        "summary_reconciliation": reconciliation,
+        "can_promote": (
+            valid_rows > 0
+            and invalid_rows == 0
+            and conflict_rows == 0
+            and (reconciliation is None or reconciliation.get("status") == "matched")
+        ),
     }
 
 
@@ -306,6 +319,23 @@ def promote_import_batch(
     import_batch = session.get(ImportBatch, batch_id)
     if not import_batch:
         raise HTTPException(status_code=404, detail="Import batch not found")
+
+    if import_batch.status != ImportBatchStatus.validated:
+        raise HTTPException(status_code=400, detail="This import batch is not ready for promotion.")
+
+    summary = import_batch.validation_summary or {}
+    if summary.get("invalid_rows", 0) > 0 or summary.get("conflict_rows", 0) > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Import blocked because the validation result contains errors or unresolved conflicts.",
+        )
+
+    reconciliation = summary.get("summary_reconciliation")
+    if reconciliation and reconciliation.get("status") != "matched":
+        raise HTTPException(
+            status_code=400,
+            detail="Import blocked because the workbook Summary does not reconcile with the imported section data.",
+        )
 
     service = StudentPromotionService(session)
     try:
