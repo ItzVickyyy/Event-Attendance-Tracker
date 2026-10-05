@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Download, FileSpreadsheet, FileText, FileUp, Pencil, Plus, Printer, Search, Trash2, UsersRound } from "lucide-react"
+import { Download, FileSpreadsheet, FileText, FileUp, Pencil, Plus, Printer, Trash2, UsersRound } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { AcademicProgramsService } from "@/client"
@@ -48,7 +48,6 @@ function escapeHtml(value: unknown) {
 
 function SectionList() {
   const queryClient = useQueryClient()
-  const [search, setSearch] = useState("")
   const [sectionDialog, setSectionDialog] = useState(false)
   const [editingSection, setEditingSection] = useState<any>(null)
   const [studentsTarget, setStudentsTarget] = useState<any>(null)
@@ -96,10 +95,7 @@ function SectionList() {
   const programs = programsQuery.data?.data.data ?? []
   const years = yearsQuery.data?.data ?? []
   const sections = sectionsQuery.data?.data ?? []
-  const term = search.trim().toLowerCase()
-  const filteredSections = term
-    ? sections.filter((section: any) => `${section.program_code} ${section.major_code ?? ""} ${section.section_code} ${section.year_level} ${section.academic_year}`.toLowerCase().includes(term))
-    : sections
+  const filteredSections = sections
 
   const selectedProgram = programs.find((program: any) => program.id === programId)
   const majorOptions = majorsQuery.data?.data ?? []
@@ -217,7 +213,7 @@ function SectionList() {
   return <div className="space-y-6">
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <p className="text-sm text-muted-foreground">Manage academic sections and their year-scoped student enrollments.</p>
-      <div className="flex flex-col gap-2 sm:flex-row"><div className="relative w-full sm:w-72"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search sections" className="pl-9" /></div><Button variant="outline" onClick={() => setImportDialog(true)}><FileUp />Import students</Button><Button onClick={openCreate}><Plus />Add section</Button></div>
+      <div className="flex flex-col gap-2 sm:flex-row"><Button variant="outline" onClick={() => setImportDialog(true)}><FileUp />Import students</Button><Button onClick={openCreate}><Plus />Add section</Button></div>
     </div>
     {sectionsQuery.isLoading ? <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">Loading sections…</CardContent></Card> : sectionsQuery.isError ? <Card><CardContent className="py-12 text-center">Unable to load sections.</CardContent></Card> : <Table><TableHeader><TableRow><TableHead>#</TableHead><TableHead>Course</TableHead><TableHead>Major</TableHead><TableHead>Section</TableHead><TableHead>Year Level</TableHead><TableHead>Enrolled</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filteredSections.map((section: any, index: number) => <TableRow key={section.id}><TableCell>{index + 1}</TableCell><TableCell className="font-medium">{section.program_code}</TableCell><TableCell>{section.major_code ?? ""}</TableCell><TableCell className="font-medium">{section.section_code}</TableCell><TableCell>{section.year_level}</TableCell><TableCell>{section.enrolled}</TableCell><TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" title="Students" onClick={() => setStudentsTarget(section)}><UsersRound /></Button><Button variant="ghost" size="icon" title="Edit" onClick={() => openEdit(section)}><Pencil /></Button><Button variant="ghost" size="icon" title="Print preview" onClick={() => setPrintTarget(section)}><Printer /></Button><Button variant="ghost" size="icon" title="Download" onClick={() => setDownloadTarget(section)}><Download /></Button></div></TableCell></TableRow>)}</TableBody></Table>}
 
