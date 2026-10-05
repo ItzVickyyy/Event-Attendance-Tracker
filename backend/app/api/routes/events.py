@@ -34,6 +34,9 @@ def read_events(
     limit: int = 100,
 ) -> Any:
     count_statement = select(func.count()).select_from(Event)
+    if _current_user.role.value == "class_representative":
+        raise HTTPException(status_code=403, detail="Class Representatives do not have access to events")
+
     statement = select(Event)
 
     if organization_id:
