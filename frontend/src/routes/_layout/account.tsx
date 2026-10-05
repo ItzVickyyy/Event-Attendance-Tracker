@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -24,7 +24,7 @@ function Account() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
-  if (profile && !fullName && !email) { setFullName(profile.full_name ?? ""); setEmail(profile.email ?? "") }
+  useEffect(() => { if (profile) { setFullName(profile.full_name ?? ""); setEmail(profile.email ?? "") } }, [profile])
 
   const saveProfile = async () => {
     const response = await fetch("/api/v1/users/me", { method: "PATCH", headers: { Authorization: "Bearer " + localStorage.getItem("access_token"), "Content-Type": "application/json" }, body: JSON.stringify({ full_name: fullName, email }) })
