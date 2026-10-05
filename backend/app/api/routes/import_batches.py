@@ -266,6 +266,8 @@ async def upload_import_batch_workbook(
     reconciliation = service.get_summary_reconciliation()
     import_batch.validation_summary = {
         "total_rows": len(parsed_rows),
+        "invalid_rows": invalid_rows,
+        "conflict_rows": conflict_rows,
         "summary_reconciliation": reconciliation,
     }
     import_batch.status = ImportBatchStatus.validated
@@ -322,6 +324,12 @@ def promote_import_batch(
         raise HTTPException(status_code=400, detail="This import batch is not ready for promotion.")
 
     summary = import_batch.validation_summary or {}
+    if summary.get("invalid_rows", 0) > 0 or summary.get("conflict_rows", 0) > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Import blocked because the validation result contains errors or unresolved conflicts.",
+        )
+
     reconciliation = summary.get("summary_reconciliation")
     if reconciliation and reconciliation.get("status") != "matched":
         raise HTTPException(
