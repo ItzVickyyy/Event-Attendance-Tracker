@@ -22,57 +22,67 @@ TABLES = (
     ("attendance_sessions", "SES", "attendance_session_reference_code_seq"),
 )
 
+
 def upgrade() -> None:
     for table, prefix, sequence in TABLES:
         quoted = '"user"' if table == "user" else table
+
         op.execute(f'CREATE SEQUENCE IF NOT EXISTS "{sequence}"')
-        op.add_column(table, sa.Column("reference_code", sa.String(20), nullable=True))
-        op.execute(f"""
+
+        op.add_column(
+            table,
+            sa.Column("reference_code", sa.String(20), nullable=True),
+        )
+
+        op.execute(
+            f"""
             WITH numbered AS (
-                SELECT id, ROW_NUMBER() OVER (ORDER BY created_at NULLS FIRST, id) AS n
+                SELECT
+                    id,
+                    ROW_NUMBER() OVER (ORDER BY created_at NULLS FIRST, id) AS n
                 FROM {quoted}
             )
-            UPDATE {quoted} t
+            UPDATE {quoted} AS t
             SET reference_code = '{prefix}-' || LPAD(numbered.n::text, 6, '0')
             FROM numbered
             WHERE t.id = numbered.id
-        """)
-        op.execute(f"""
+            """
+        )
+
+        op.execute(
+            f"""
             SELECT setval(
                 '"{sequence}"',
                 COALESCE(
-                    (SELECT MAX(CAST(SUBSTRING(reference_code FROM '[0-9]+
-            )
-        """)
-        op.alter_column(
-            table,
-            "reference_code",
-            nullable=False,
-            server_default=f"'{prefix}-' || LPAD(nextval('\"{sequence}\"')::text, 6, '0')",
-        )
-        constraint = f"uq_{table.replace('user', 'usr')}_reference_code"
-        op.create_unique_constraint(constraint, table, ["reference_code"])
-
-def downgrade() -> None:
-    for table, _prefix, sequence in reversed(TABLES):
-        constraint = f"uq_{table.replace('user', 'usr')}_reference_code"
-        op.drop_constraint(constraint, table, type_="unique")
-        op.drop_column(table, "reference_code")
-        op.execute(f'DROP SEQUENCE IF EXISTS "{sequence}"')
-) AS BIGINT)) FROM {quoted}),
+                    (
+                        SELECT MAX(
+                            CAST(
+                                SUBSTRING(reference_code FROM '[0-9]+$')
+                                AS BIGINT
+                            )
+                        )
+                        FROM {quoted}
+                    ),
                     1
                 ),
                 (SELECT COUNT(*) > 0 FROM {quoted})
             )
-        """)
+            """
+        )
+
         op.alter_column(
             table,
             "reference_code",
             nullable=False,
-            server_default=f"'{prefix}-' || LPAD(nextval('\"{sequence}\"')::text, 6, '0')",
+            server_default=(
+                f"'{prefix}-' || "
+                f"LPAD(nextval('\\\"{sequence}\\\"')::text, 6, '0')"
+            ),
         )
+
         constraint = f"uq_{table.replace('user', 'usr')}_reference_code"
         op.create_unique_constraint(constraint, table, ["reference_code"])
+
 
 def downgrade() -> None:
     for table, _prefix, sequence in reversed(TABLES):
