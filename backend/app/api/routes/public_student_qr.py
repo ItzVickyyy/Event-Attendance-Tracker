@@ -9,9 +9,9 @@ import time
 from collections import defaultdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from sqlmodel import Session
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy import text
 
 from app.api.deps import SessionDep
 from app.models import AttendeeCredential
@@ -47,9 +47,10 @@ def _allow_request(client_key: str) -> bool:
 def lookup_student_qr(
     payload: StudentQrLookupRequest,
     session: SessionDep,
+    request: Request,
 ) -> dict[str, Any]:
     """Verify a student's identity and return their stable QR credential."""
-    client_key = "public"
+    client_key = request.client.host if request.client else "unknown"
     if not _allow_request(client_key):
         raise HTTPException(status_code=429, detail="Too many attempts. Please try again later.")
 
@@ -62,7 +63,7 @@ def lookup_student_qr(
         raise HTTPException(status_code=400, detail="Invalid lookup input.")
 
     row = session.execute(
-        __import__("sqlalchemy").text(
+        text(
             """
             SELECT
                 s.student_number,
