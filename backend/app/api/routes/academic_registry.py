@@ -13,7 +13,8 @@ from app.api.deps import (
     require_admin,
     require_super_admin,
 )
-from app.models import AcademicSection, Student, get_datetime_utc
+from app.models import AcademicSection, Person, Student, get_datetime_utc
+from app.services.reference_codes import next_student_reference_code
 from app.student_academics import (
     AcademicYear,
     AcademicYearCreate,
@@ -26,6 +27,7 @@ from app.student_academics import (
     StudentEnrollmentPublic,
     StudentEnrollmentUpdate,
     StudentRosterPublic,
+    StudentStatus,
     StudentRosterRow,
 )
 
@@ -258,6 +260,71 @@ def read_student_details(
     if not row:
         raise HTTPException(status_code=404, detail="Student not found")
     return dict(row)
+
+
+@router.post(
+    "/students",
+    dependencies=[Depends(require_admin)],
+)
+def create_student_in_section(
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    required = {"student_number", "first_name", "last_name", "section_id", "academic_year_id"}
+    if not required.issubset(payload):
+        raise HTTPException(status_code=422, detail=f"Required fields: {', '.join(sorted(required))}")
+
+    section_id = uuid.UUID(str(payload["section_id"]))
+    academic_year_id = uuid.UUID(str(payload["academic_year_id"]))
+    section = session.get(AcademicSection, section_id)
+    year = session.get(AcademicYear, academic_year_id)
+    if not section or not year or section.academic_year_id != academic_year_id:
+        raise HTTPException(status_code=404, detail="Section or academic year not found")
+
+    student_number = str(payload["student_number"]).strip()
+    if not student_number:
+        raise HTTPException(status_code=422, detail="Student number is required")
+    if session.execute(text("SELECT 1 FROM students WHERE student_number=:student_number"), {"student_number": student_number}).first():
+        raise HTTPException(status_code=409, detail="A student with this student number already exists")
+
+    status_value = str(payload.get("student_status", "regular"))
+    try:
+        student_status = StudentStatus(status_value)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid student status") from exc
+
+    person = Person(
+        first_name=str(payload["first_name"]).strip(),
+        middle_name=str(payload.get("middle_name") or "").strip() or None,
+        last_name=str(payload["last_name"]).strip(),
+        name_extension=str(payload.get("name_extension") or "").strip() or None,
+        email=str(payload.get("email") or "").strip() or None,
+        contact_number=str(payload.get("contact_number") or "").strip() or None,
+    )
+    session.add(person)
+    session.flush()
+
+    student = Student(
+        person_id=person.id,
+        student_number=student_number,
+        section_id=section_id,
+        academic_status="irregular" if student_status == StudentStatus.irregular else "regular",
+        reference_code=next_student_reference_code(session),
+    )
+    session.add(student)
+    session.flush()
+
+    enrollment = StudentEnrollment(
+        student_id=student.id,
+        academic_year_id=academic_year_id,
+        section_id=section_id,
+        student_status=student_status,
+    )
+    session.add(enrollment)
+    session.commit()
+    return read_student_details(session, _current_user, student.id)
 
 
 @router.patch("/students/{student_id}")
