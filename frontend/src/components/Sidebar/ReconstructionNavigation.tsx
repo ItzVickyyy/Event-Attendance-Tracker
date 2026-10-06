@@ -64,7 +64,9 @@ export function ReconstructionNavigation() {
           <SidebarGroupContent>
             <SidebarMenu>
               {group.items.map((item) => {
-                const isActive = pathname === item.path || pathname.startsWith(`${item.path}/`)
+                const isActive = item.path === "/administration"
+                  ? pathname === item.path
+                  : pathname === item.path || pathname.startsWith(`${item.path}/`)
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="min-h-10">
