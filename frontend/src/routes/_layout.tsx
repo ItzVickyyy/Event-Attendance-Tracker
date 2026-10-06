@@ -1,7 +1,7 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import { Footer } from "@/components/Common/Footer"
 import { AcademicYearProvider, useAcademicYear } from "@/context/AcademicYearContext"
-import { CalendarDays, Check, KeyRound, ShieldAlert } from "lucide-react"
+import { CalendarDays, Check, Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -128,6 +128,9 @@ function Layout() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [changingPassword, setChangingPassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
     if (mustChangePassword) setPasswordModalOpen(true)
@@ -217,38 +220,73 @@ function Layout() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="initial-current-password">Temporary password</Label>
-                <Input
-                  id="initial-current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
-                  autoComplete="current-password"
-                  placeholder="Enter your temporary password"
-                />
+                <div className="relative">
+                  <Input
+                    id="initial-current-password"
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(event) => setState(event.target.value)}
+                    autoComplete="current-password"
+                    placeholder="Enter your temporary password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    onClick={() => setShow(!showCurrentPassword)}
+                    aria-label={showCurrentPassword ? "Hide temporary password" : "Show temporary password"}
+                    title={showCurrentPassword ? "Hide password" : "Show password"}
+                  >
+                    {showCurrentPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="initial-new-password">New password</Label>
-                <Input
-                  id="initial-new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  autoComplete="new-password"
-                  placeholder="Create a new password"
-                />
+                <div className="relative">
+                  <Input
+                    id="initial-new-password"
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(event) => setState(event.target.value)}
+                    autoComplete="new-password"
+                    placeholder="Create a new password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    onClick={() => setShow(!showNewPassword)}
+                    aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                    title={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="initial-confirm-password">Confirm new password</Label>
-                <Input
-                  id="initial-confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  autoComplete="new-password"
-                  placeholder="Re-enter your new password"
-                />
-              </div>
-            </div>
+                <div className="relative">
+                  <Input
+                    id="initial-confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(event) => setState(event.target.value)}
+                    autoComplete="new-password"
+                    placeholder="Re-enter your new password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                    onClick={() => setShow(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? "Hide confirm new password" : "Show confirm new password"}
+                    title={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>            </div>
 
             <DialogFooter>
               <Button type="button" onClick={() => void updateInitialPassword()} disabled={changingPassword}>
