@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardList, LayoutDashboard, ScanLine, Settings, ShieldCheck, UserRound, UsersRound } from "lucide-react"
+import { CalendarDays, ClipboardList, LayoutDashboard, ScanLine, Settings, ShieldCheck, UserRound, UserRoundCheck, UsersRound } from "lucide-react"
 import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
 import type { LucideIcon } from "lucide-react"
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
@@ -17,6 +17,7 @@ const navigationGroups: NavigationGroup[] = [
   ] },
   { title: "Administration", items: [
     { title: "Administration", path: "/administration", icon: ShieldCheck },
+    { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck },
     { title: "System Settings", path: "/settings", icon: Settings },
   ] },
   { title: "Account", items: [{ title: "My Account", path: "/account", icon: UserRound }] },
@@ -46,6 +47,7 @@ export function ReconstructionNavigation() {
       ...group,
       items: group.items.filter((item) => {
         if (item.path === "/administration" || item.path === "/settings") return administrationAllowed
+        if (item.path === "/administration/class-representatives") return isSuperuser || role === "super_admin"
         if (item.path === "/scanner") return scannerAllowed && !classRep
         if (classRep && (item.path === "/events")) return false
         if (item.path === "/events" || item.path === "/records" || item.path === "/sections") return operationalAllowed
