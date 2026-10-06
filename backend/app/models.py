@@ -40,6 +40,10 @@ class UserBase(SQLModel):
         description="Explicit attendance scanning permission",
     )
     full_name: str | None = Field(default=None, max_length=255)
+    first_name: str | None = Field(default=None, max_length=255)
+    middle_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
+    name_extension: str | None = Field(default=None, max_length=50)
     must_change_password: bool = Field(default=False)
 
 
@@ -67,6 +71,10 @@ class UserUpdate(SQLModel):
 
 class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
+    first_name: str | None = Field(default=None, max_length=255)
+    middle_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
+    name_extension: str | None = Field(default=None, max_length=50)
     email: EmailStr | None = Field(default=None, max_length=255)
 
 
