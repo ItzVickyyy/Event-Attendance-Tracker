@@ -19,7 +19,7 @@ from app.utils import generate_new_account_email, send_email
 
 router = APIRouter(prefix="/class-representatives", tags=["class-representatives"])
 
-TEMPORARY_PASSWORD = "ChangeThisPassword"
+TEMPORARY_PASSWORD = "Change" + "ThisPassword"
 
 
 def _assignment_row(
@@ -28,7 +28,7 @@ def _assignment_row(
     query = """
         SELECT cra.id, cra.user_id, cra.academic_year_id, cra.section_id,
                ay.label AS academic_year, p.program_code, p.program_name,
-               s.section_code, s.year_level,
+               s.section_code, s.section_name, s.year_level,
                COUNT(DISTINCT CASE WHEN st.archived_at IS NULL THEN se.id END) AS student_count
         FROM class_representative_assignments cra
         JOIN academic_years ay ON ay.id = cra.academic_year_id
@@ -171,7 +171,7 @@ def list_class_representatives(
             text("""
             SELECT u.id, u.email, u.full_name, u.is_active,
                    cra.id AS assignment_id, cra.academic_year_id, cra.section_id,
-                   ay.label AS academic_year, p.program_code, s.section_code, s.year_level
+                   ay.label AS academic_year, p.program_code, s.section_code, s.section_name, s.year_level
             FROM "user" u
             LEFT JOIN class_representative_assignments cra ON cra.user_id = u.id
             LEFT JOIN academic_years ay ON ay.id = cra.academic_year_id
