@@ -130,12 +130,16 @@ function Login() {
           </div>
 
           <div className="space-y-2 text-center text-sm">
-            Don't have an account yet?{" "}
-            <RouterLink to="/signup" className="underline underline-offset-4">
-              Sign up
+            <div>
+              Don't have an account yet?{" "}
+              <RouterLink to="/signup" className="underline underline-offset-4">
+                Sign up
+              </RouterLink>
+            </div>
+            <RouterLink to="/get-my-qr" className="underline underline-offset-4">
+              Get My QR Code
             </RouterLink>
           </div>
-            <RouterLink to="/get-my-qr" className="underline underline-offset-4">Get My QR Code</RouterLink>
         </form>
       </Form>
     </AuthLayout>
