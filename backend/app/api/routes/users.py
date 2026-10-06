@@ -92,6 +92,29 @@ def update_user_me(
                 status_code=409, detail="User with this email already exists"
             )
     user_data = user_in.model_dump(exclude_unset=True)
+    name_fields = {"first_name", "middle_name", "last_name", "name_extension"}
+    if name_fields.intersection(user_data):
+        first_name = (user_in.first_name or current_user.first_name or "").strip()
+        middle_name = (user_in.middle_name or current_user.middle_name or "").strip()
+        last_name = (user_in.last_name or current_user.last_name or "").strip()
+        name_extension = (user_in.name_extension or current_user.name_extension or "").strip()
+
+        if not first_name or not last_name:
+            raise HTTPException(status_code=422, detail="First name and last name are required")
+
+        current_user.first_name = first_name
+        current_user.middle_name = middle_name or None
+        current_user.last_name = last_name
+        current_user.name_extension = name_extension or None
+
+        name_parts = [first_name]
+        if middle_name:
+            name_parts.append(middle_name)
+        name_parts.append(last_name)
+        if name_extension:
+            name_parts.append(name_extension)
+        user_data["full_name"] = " ".join(name_parts)
+
     current_user.sqlmodel_update(user_data)
     session.add(current_user)
     session.commit()
