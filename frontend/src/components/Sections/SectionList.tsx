@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Download, FileSpreadsheet, FileText, FileUp, Pencil, Plus, Printer, Trash2, UsersRound } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { AcademicProgramsService } from "@/client"
 import { useAcademicYear } from "@/context/AcademicYearContext"
@@ -62,6 +62,8 @@ function SectionList() {
   const [sectionCode, setSectionCode] = useState("")
   const [majorId, setMajorId] = useState("")
   const [studentForm, setStudentForm] = useState<Record<string, string>>({})
+  const [studentSearch, setStudentSearch] = useState("")
+  const [studentPage, setStudentPage] = useState(1)
   const { activeAcademicYear } = useAcademicYear()
 
   const programsQuery = useQuery({
@@ -87,6 +89,15 @@ function SectionList() {
     queryFn: () => apiJson<any>(`/academic-registry/sections/${studentsTarget.id}/students`),
     enabled: Boolean(studentsTarget),
   })
+  const rosterStudents = rosterQuery.data?.data ?? []
+  const filteredRosterStudents = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase()
+    if (!query) return rosterStudents
+    return rosterStudents.filter((student: any) => [student.student_number, student.last_name, student.first_name, student.middle_name, student.email, student.contact_number].some((value) => String(value ?? "").toLowerCase().includes(query)))
+  }, [rosterStudents, studentSearch])
+  const studentPageSize = 10
+  const studentPageCount = Math.max(1, Math.ceil(filteredRosterStudents.length / studentPageSize))
+  const visibleRosterStudents = filteredRosterStudents.slice((studentPage - 1) * studentPageSize, studentPage * studentPageSize)
   const printRosterQuery = useQuery({
     queryKey: ["academicRegistryPrintRoster", printTarget?.id],
     queryFn: () => apiJson<any>(`/academic-registry/sections/${printTarget.id}/students`),
@@ -221,7 +232,38 @@ function SectionList() {
 
     <Dialog open={sectionDialog} onOpenChange={setSectionDialog}><DialogContent><DialogHeader><DialogTitle>{editingSection ? "Edit Section" : "Add Section"}</DialogTitle><DialogDescription>Course, major, section code, year level, and academic year are stored separately.</DialogDescription></DialogHeader><div className="space-y-4"><div className="space-y-2"><span className="text-sm font-medium">Course</span><Select value={programId} onValueChange={(value) => { setProgramId(value); setMajorId("") }}><SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger><SelectContent>{programs.map((program: any) => <SelectItem key={program.id} value={program.id}>{program.program_code} · {program.program_name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><span className="text-sm font-medium">Academic Year</span><Select value={academicYearId} onValueChange={setAcademicYearId}><SelectTrigger><SelectValue placeholder="Select academic year" /></SelectTrigger><SelectContent>{years.map((year: any) => <SelectItem key={year.id} value={year.id}>{year.label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><span className="text-sm font-medium">Year Level</span><Select value={yearLevel} onValueChange={(value) => { setYearLevel(value); if (value === "1st Year" || value === "2nd Year") setMajorId("") }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["1st Year", "2nd Year", "3rd Year", "4th Year"].map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}</SelectContent></Select></div>{canChooseMajor && <div className="space-y-2"><span className="text-sm font-medium">Major</span><Select value={majorId} onValueChange={setMajorId}><SelectTrigger><SelectValue placeholder="Select major" /></SelectTrigger><SelectContent>{majorOptions.map((major: any) => <SelectItem key={major.id} value={major.id}>{major.code} · {major.name}</SelectItem>)}</SelectContent></Select></div>}<div className="space-y-2"><span className="text-sm font-medium">Section</span><Input value={sectionCode} onChange={(event) => setSectionCode(event.target.value.toUpperCase())} placeholder="3A" /></div></div><DialogFooter><Button variant="outline" onClick={() => setSectionDialog(false)}>Cancel</Button><Button onClick={() => saveSection.mutate()} disabled={saveSection.isPending}>{saveSection.isPending ? "Saving…" : "Save section"}</Button></DialogFooter></DialogContent></Dialog>
 
-    <Dialog open={Boolean(studentsTarget)} onOpenChange={(open) => !open && setStudentsTarget(null)}><DialogContent className="max-w-7xl"><DialogHeader><DialogTitle>{studentsTarget ? `${studentsTarget.program_code}${studentsTarget.major_code ? ` · ${studentsTarget.major_code}` : ""} ${studentsTarget.section_code}` : "Students"}</DialogTitle><DialogDescription>{studentsTarget?.year_level} · Academic Year {studentsTarget?.academic_year}</DialogDescription></DialogHeader><div className="max-h-[65vh] overflow-auto">{rosterQuery.isLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Loading students…</p> : rosterQuery.data?.data?.length ? <Table><TableHeader><TableRow><TableHead>#</TableHead><TableHead>Student Number</TableHead><TableHead>Last Name</TableHead><TableHead>First Name</TableHead><TableHead>Middle Name</TableHead><TableHead>Extension</TableHead><TableHead>Email</TableHead><TableHead>Contact Number</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader><TableBody>{rosterQuery.data.data.map((student: any, index: number) => <TableRow key={student.id}><TableCell>{index + 1}</TableCell><TableCell>{student.student_number}</TableCell><TableCell>{student.last_name}</TableCell><TableCell>{student.first_name}</TableCell><TableCell>{student.middle_name ?? ""}</TableCell><TableCell>{student.extension ?? ""}</TableCell><TableCell>{student.email ?? ""}</TableCell><TableCell>{student.contact_number ?? ""}</TableCell><TableCell>{student.student_status}</TableCell><TableCell><div className="flex gap-1"><Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}><Pencil /></Button><Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}><Trash2 /></Button></div></TableCell></TableRow>)}</TableBody></Table> : <p className="py-8 text-center text-sm text-muted-foreground">No active students are enrolled in this section.</p>}</div><DialogFooter><Button variant="outline" onClick={() => setStudentsTarget(null)}>Close</Button></DialogFooter></DialogContent></Dialog>
+    <Dialog open={Boolean(studentsTarget)} onOpenChange={(open) => { if (!open) { setStudentsTarget(null); setStudentSearch(""); setStudentPage(1) } }}>
+      <DialogContent className="w-[96vw] max-w-[1400px] max-h-[92vh] overflow-hidden p-0">
+        <DialogHeader className="border-b px-6 py-5 pr-14">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-2">
+              <DialogTitle className="text-2xl">{studentsTarget ? studentsTarget.program_code + (studentsTarget.major_code ? " · " + studentsTarget.major_code : "") + " " + studentsTarget.section_code : "Students"}</DialogTitle>
+              <DialogDescription className="flex flex-wrap gap-x-3 gap-y-1">
+                <span>{studentsTarget?.program_code}</span><span>·</span><span>{studentsTarget?.year_level}</span><span>·</span><span>Academic Year {studentsTarget?.academic_year}</span>
+              </DialogDescription>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-2">
+              <UsersRound className="size-4 text-muted-foreground" />
+              <span className="text-sm font-medium">{rosterQuery.isLoading ? "Loading…" : rosterStudents.length + " " + (rosterStudents.length === 1 ? "student" : "students")}</span>
+            </div>
+          </div>
+        </DialogHeader>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-col gap-3 border-b px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <Input value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); setStudentPage(1) }} placeholder="Search students by number or name…" className="w-full sm:max-w-md" />
+            <Button><Plus />Add Student</Button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto px-6">
+            {rosterQuery.isLoading ? <div className="space-y-3 py-4">{Array.from({ length: 7 }).map((_, index) => <div key={index} className="grid grid-cols-7 gap-3 rounded-md border p-4">{Array.from({ length: 7 }).map((__, cell) => <div key={cell} className="h-4 animate-pulse rounded bg-muted" />)}</div>)}</div>
+            : rosterStudents.length === 0 ? <div className="flex min-h-[360px] flex-col items-center justify-center text-center"><UsersRound className="mb-4 size-10 text-muted-foreground/50" /><h3 className="font-semibold">No students yet</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">This section has no active students for the selected academic year.</p></div>
+            : filteredRosterStudents.length === 0 ? <div className="flex min-h-[360px] flex-col items-center justify-center text-center"><p className="font-semibold">No students found</p><p className="mt-1 text-sm text-muted-foreground">Try a different student number or name.</p></div>
+            : <Table><TableHeader className="sticky top-0 z-10 bg-background"><TableRow><TableHead className="w-12">#</TableHead><TableHead className="min-w-[160px]">Student Number</TableHead><TableHead className="min-w-[280px]">Full Name</TableHead><TableHead className="min-w-[220px]">Email</TableHead><TableHead className="min-w-[150px]">Contact</TableHead><TableHead>Status</TableHead><TableHead className="w-[100px] text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{visibleRosterStudents.map((student: any, index: number) => <TableRow key={student.id}><TableCell className="text-muted-foreground">{(studentPage - 1) * studentPageSize + index + 1}</TableCell><TableCell className="font-semibold tabular-nums">{student.student_number}</TableCell><TableCell><div className="font-medium">{student.last_name}, {student.first_name}{student.middle_name ? " " + student.middle_name : ""}</div>{student.extension ? <div className="text-xs text-muted-foreground">{student.extension}</div> : null}</TableCell><TableCell className="text-sm">{student.email ?? "—"}</TableCell><TableCell className="text-sm">{student.contact_number ?? "—"}</TableCell><TableCell><span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium capitalize">{String(student.student_status).replaceAll("_", " ")}</span></TableCell><TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}><Pencil /></Button><Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}><Trash2 /></Button></div></TableCell></TableRow>)}</TableBody></Table>}
+          </div>
+          {!rosterQuery.isLoading && filteredRosterStudents.length > 0 ? <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground">Showing {(studentPage - 1) * studentPageSize + 1}–{Math.min(studentPage * studentPageSize, filteredRosterStudents.length)} of {filteredRosterStudents.length}</p><div className="flex items-center gap-2"><Button variant="outline" size="sm" disabled={studentPage <= 1} onClick={() => setStudentPage((page) => Math.max(1, page - 1))}>Previous</Button><span className="text-sm text-muted-foreground">Page {studentPage} of {studentPageCount}</span><Button variant="outline" size="sm" disabled={studentPage >= studentPageCount} onClick={() => setStudentPage((page) => Math.min(studentPageCount, page + 1))}>Next</Button></div></div> : null}
+        </div>
+        <DialogFooter className="border-t px-6 py-4"><Button variant="outline" onClick={() => setStudentsTarget(null)}>Close</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <Dialog open={Boolean(studentTarget)} onOpenChange={(open) => !open && setStudentTarget(null)}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>Edit Student</DialogTitle><DialogDescription>Identity details are separate from the student's academic enrollment.</DialogDescription></DialogHeader><div className="grid gap-4 sm:grid-cols-2">{[["student_number", "Student Number"], ["last_name", "Last Name"], ["first_name", "First Name"], ["middle_name", "Middle Name"], ["name_extension", "Extension"], ["email", "Email"], ["contact_number", "Contact Number"]].map(([key, label]) => <div className="space-y-2" key={key}><span className="text-sm font-medium">{label}</span><Input value={studentForm[key] ?? ""} onChange={(event) => setStudentForm((current) => ({ ...current, [key]: event.target.value }))} /></div>)}<div className="space-y-2"><span className="text-sm font-medium">Student Status</span><Select value={studentForm.student_status ?? "regular"} onValueChange={(value) => setStudentForm((current) => ({ ...current, student_status: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="regular">Regular</SelectItem><SelectItem value="irregular">Irregular</SelectItem></SelectContent></Select></div></div><div className="rounded-md border p-3 text-sm text-muted-foreground">NFC: {studentForm.nfc_registered === "true" ? "Registered" : "Not registered"} · QR: {studentForm.qr_registered === "true" ? "Registered" : "Not registered"}</div><DialogFooter><Button variant="outline" onClick={() => setStudentTarget(null)}>Cancel</Button><Button onClick={() => saveStudent.mutate()} disabled={saveStudent.isPending}>{saveStudent.isPending ? "Saving…" : "Save student"}</Button></DialogFooter></DialogContent></Dialog>
 
