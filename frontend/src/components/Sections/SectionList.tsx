@@ -64,6 +64,8 @@ function SectionList() {
   const [studentForm, setStudentForm] = useState<Record<string, string>>({})
   const [studentSearch, setStudentSearch] = useState("")
   const [studentPage, setStudentPage] = useState(1)
+  const [addStudentOpen, setAddStudentOpen] = useState(false)
+  const [newStudentForm, setNewStudentForm] = useState<Record<string, string>>({ student_number: "", first_name: "", middle_name: "", last_name: "", name_extension: "", email: "", contact_number: "", student_status: "regular" })
   const { activeAcademicYear } = useAcademicYear()
 
   const programsQuery = useQuery({
@@ -158,6 +160,26 @@ function SectionList() {
     setStudentForm(Object.fromEntries(Object.entries(details).map(([key, value]) => [key, value == null ? "" : String(value)])))
   }
 
+  const createStudent = useMutation({
+    mutationFn: () => {
+      if (!studentsTarget) throw new Error("Section is required")
+      return apiJson("/academic-registry/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newStudentForm, section_id: studentsTarget.id, academic_year_id: studentsTarget.academic_year_id }),
+      })
+    },
+    onSuccess: () => {
+      toast.success("Student added")
+      setAddStudentOpen(false)
+      setNewStudentForm({ student_number: "", first_name: "", middle_name: "", last_name: "", name_extension: "", email: "", contact_number: "", student_status: "regular" })
+      setStudentPage(1)
+      void queryClient.invalidateQueries({ queryKey: ["academicRegistryRoster"] })
+      void queryClient.invalidateQueries({ queryKey: ["academicRegistrySections"] })
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to add student"),
+  })
+
   const saveStudent = useMutation({
     mutationFn: () => apiJson(`/academic-registry/students/${studentTarget.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(studentForm) }),
     onSuccess: () => {
@@ -251,7 +273,7 @@ function SectionList() {
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex flex-col gap-3 border-b px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <Input value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); setStudentPage(1) }} placeholder="Search students by number or name…" className="w-full sm:max-w-md" />
-            <Button><Plus />Add Student</Button>
+            <Button onClick={() => setAddStudentOpen(true)}><Plus />Add Student</Button>
           </div>
           <div className="min-h-0 flex-1 overflow-auto px-6">
             {rosterQuery.isLoading ? <div className="space-y-3 py-4">{Array.from({ length: 7 }).map((_, index) => <div key={index} className="grid grid-cols-7 gap-3 rounded-md border p-4">{Array.from({ length: 7 }).map((__, cell) => <div key={cell} className="h-4 animate-pulse rounded bg-muted" />)}</div>)}</div>
@@ -262,6 +284,23 @@ function SectionList() {
           {!rosterQuery.isLoading && filteredRosterStudents.length > 0 ? <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground">Showing {(studentPage - 1) * studentPageSize + 1}–{Math.min(studentPage * studentPageSize, filteredRosterStudents.length)} of {filteredRosterStudents.length}</p><div className="flex items-center gap-2"><Button variant="outline" size="sm" disabled={studentPage <= 1} onClick={() => setStudentPage((page) => Math.max(1, page - 1))}>Previous</Button><span className="text-sm text-muted-foreground">Page {studentPage} of {studentPageCount}</span><Button variant="outline" size="sm" disabled={studentPage >= studentPageCount} onClick={() => setStudentPage((page) => Math.min(studentPageCount, page + 1))}>Next</Button></div></div> : null}
         </div>
         <DialogFooter className="border-t px-6 py-4"><Button variant="outline" onClick={() => setStudentsTarget(null)}>Close</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>Add Student</DialogTitle><DialogDescription>Add a student to \${studentsTarget?.program_code} \${studentsTarget?.section_code} for Academic Year \${studentsTarget?.academic_year}.</DialogDescription></DialogHeader>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2"><span className="text-sm font-medium">Student Number</span><Input value={newStudentForm.student_number ?? ""} onChange={(event) => setNewStudentForm((current) => ({ ...current, student_number: event.target.value }))} /></div>
+          <div className="space-y-2"><span className="text-sm font-medium">Last Name</span><Input value={newStudentForm.last_name ?? ""} onChange={(event) => setNewStudentForm((current) => ({ ...current, last_name: event.target.value }))} /></div>
+          <div className="space-y-2"><span className="text-sm font-medium">First Name</span><Input value={newStudentForm.first_name ?? ""} onChange={(event) => setNewStudentForm((current) => ({ ...current, first_name: event.target.value }))} /></div>
+          <div className="space-y-2"><span className="text-sm font-medium">Middle Name</span><Input value={newStudentForm.middle_name ?? ""} onChange={(event) => setNewStudentForm((current) => ({ ...current, middle_name: event.target.value }))} /></div>
+          <div className="space-y-2"><span className="text-sm font-medium">Extension</span><Input value={newStudentForm.name_extension ?? ""} onChange={(event) => setNewStudentForm((current) => ({ ...current, name_extension: event.target.value }))} /></div>
+          <div className="space-y-2"><span className="text-sm font-medium">Email</span><Input value={newStudentForm.email ?? ""} onChange={(event) => setNewStudentForm((current) => ({ ...current, email: event.target.value }))} /></div>
+          <div className="space-y-2"><span className="text-sm font-medium">Contact Number</span><Input value={newStudentForm.contact_number ?? ""} onChange={(event) => setNewStudentForm((current) => ({ ...current, contact_number: event.target.value }))} /></div>
+          <div className="space-y-2"><span className="text-sm font-medium">Academic Status</span><Select value={newStudentForm.student_status} onValueChange={(value) => setNewStudentForm((current) => ({ ...current, student_status: value }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="regular">Regular</SelectItem><SelectItem value="irregular">Irregular</SelectItem></SelectContent></Select></div>
+        </div>
+        <DialogFooter><Button variant="outline" onClick={() => setAddStudentOpen(false)}>Cancel</Button><Button onClick={() => createStudent.mutate()} disabled={createStudent.isPending || !newStudentForm.student_number.trim() || !newStudentForm.first_name.trim() || !newStudentForm.last_name.trim()}>{createStudent.isPending ? "Adding…" : "Add Student"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
 
