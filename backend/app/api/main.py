@@ -52,4 +52,5 @@ api_router.include_router(import_batches.router)
 
 if settings.FASTAPI_ENV in ("development", "test"):
     api_router.include_router(private.router)
+
 api_router.include_router(public_student_qr.router)
