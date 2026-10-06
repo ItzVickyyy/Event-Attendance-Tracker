@@ -47,7 +47,7 @@ export function ReconstructionNavigation() {
       ...group,
       items: group.items.filter((item) => {
         if (item.path === "/administration" || item.path === "/settings") return administrationAllowed
-        if (item.path === "/administration/class-representatives") return isSuperuser || role === "super_admin"
+        if (item.path === "/administration/class-representatives") return isSuperuser || role === "super_admin" || role === "developer"
         if (item.path === "/scanner") return scannerAllowed && !classRep
         if (classRep && (item.path === "/events")) return false
         if (item.path === "/events" || item.path === "/records" || item.path === "/sections") return operationalAllowed
