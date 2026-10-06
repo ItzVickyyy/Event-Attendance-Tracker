@@ -25,6 +25,7 @@ from app.models import (
     get_datetime_utc,
 )
 from app.services.reference_codes import next_student_reference_code
+from app.services.student_credentials import ensure_student_qr_credential
 from app.services.student_import import StudentImportService
 from app.student_academics import StudentEnrollment, StudentStatus
 
@@ -219,6 +220,7 @@ class StudentPromotionService:
             self.session.add(existing_student)
             self.session.flush()
             self._sync_enrollment(existing_student, academic_section, academic_status)
+            ensure_student_qr_credential(self.session, existing_student)
             return existing_student
 
         person = Person(
@@ -242,6 +244,7 @@ class StudentPromotionService:
         self.session.add(student)
         self.session.flush()
         self._sync_enrollment(student, academic_section, academic_status)
+        ensure_student_qr_credential(self.session, student)
         return student
 
     def _sync_enrollment(
