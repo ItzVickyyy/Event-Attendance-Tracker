@@ -101,6 +101,7 @@ class SectionRegistryRow(SQLModel):
     major_code: str | None = None
     major_name: str | None = None
     section_code: str
+    section_name: str
     year_level: str
     academic_year_id: uuid.UUID
     academic_year: str
