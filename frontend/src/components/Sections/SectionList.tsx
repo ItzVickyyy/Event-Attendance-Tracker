@@ -255,35 +255,115 @@ function SectionList() {
     <Dialog open={sectionDialog} onOpenChange={setSectionDialog}><DialogContent><DialogHeader><DialogTitle>{editingSection ? "Edit Section" : "Add Section"}</DialogTitle><DialogDescription>Course, major, section code, year level, and academic year are stored separately.</DialogDescription></DialogHeader><div className="space-y-4"><div className="space-y-2"><span className="text-sm font-medium">Course</span><Select value={programId} onValueChange={(value) => { setProgramId(value); setMajorId("") }}><SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger><SelectContent>{programs.map((program: any) => <SelectItem key={program.id} value={program.id}>{program.program_code} · {program.program_name}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><span className="text-sm font-medium">Academic Year</span><Select value={academicYearId} onValueChange={setAcademicYearId}><SelectTrigger><SelectValue placeholder="Select academic year" /></SelectTrigger><SelectContent>{years.map((year: any) => <SelectItem key={year.id} value={year.id}>{year.label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><span className="text-sm font-medium">Year Level</span><Select value={yearLevel} onValueChange={(value) => { setYearLevel(value); if (value === "1st Year" || value === "2nd Year") setMajorId("") }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{["1st Year", "2nd Year", "3rd Year", "4th Year"].map((year) => <SelectItem key={year} value={year}>{year}</SelectItem>)}</SelectContent></Select></div>{canChooseMajor && <div className="space-y-2"><span className="text-sm font-medium">Major</span><Select value={majorId} onValueChange={setMajorId}><SelectTrigger><SelectValue placeholder="Select major" /></SelectTrigger><SelectContent>{majorOptions.map((major: any) => <SelectItem key={major.id} value={major.id}>{major.code} · {major.name}</SelectItem>)}</SelectContent></Select></div>}<div className="space-y-2"><span className="text-sm font-medium">Section</span><Input value={sectionCode} onChange={(event) => setSectionCode(event.target.value.toUpperCase())} placeholder="3A" /></div></div><DialogFooter><Button variant="outline" onClick={() => setSectionDialog(false)}>Cancel</Button><Button onClick={() => saveSection.mutate()} disabled={saveSection.isPending}>{saveSection.isPending ? "Saving…" : "Save section"}</Button></DialogFooter></DialogContent></Dialog>
 
     <Dialog open={Boolean(studentsTarget)} onOpenChange={(open) => { if (!open) { setStudentsTarget(null); setStudentSearch(""); setStudentPage(1) } }}>
-      <DialogContent className="w-[96vw] max-w-[1400px] max-h-[92vh] overflow-hidden p-0">
-        <DialogHeader className="border-b px-6 py-5 pr-14">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-2">
-              <DialogTitle className="text-2xl">{studentsTarget ? studentsTarget.program_code + (studentsTarget.major_code ? " · " + studentsTarget.major_code : "") + " " + studentsTarget.section_code : "Students"}</DialogTitle>
-              <DialogDescription className="flex flex-wrap gap-x-3 gap-y-1">
-                <span>{studentsTarget?.program_code}</span><span>·</span><span>{studentsTarget?.year_level}</span><span>·</span><span>Academic Year {studentsTarget?.academic_year}</span>
-              </DialogDescription>
+      <DialogContent className="!w-[calc(100vw-48px)] !max-w-[1440px] !h-[calc(100vh-64px)] !max-h-[900px] overflow-hidden p-0 gap-0">
+        <div className="flex h-full min-h-0 flex-col">
+          <DialogHeader className="shrink-0 border-b px-7 py-5 pr-16">
+            <div className="flex items-start justify-between gap-6">
+              <div className="min-w-0">
+                <DialogTitle className="text-2xl font-semibold tracking-tight">{studentsTarget ? studentsTarget.program_code + (studentsTarget.major_code ? " · " + studentsTarget.major_code : "") + " " + studentsTarget.section_code : "Students"}</DialogTitle>
+                <DialogDescription className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <span>{studentsTarget?.program_code}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span>{studentsTarget?.year_level}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span>Academic Year {studentsTarget?.academic_year}</span>
+                </DialogDescription>
+              </div>
+              <div className="shrink-0 rounded-lg border bg-muted/30 px-4 py-2.5 text-center">
+                <div className="text-xl font-semibold tabular-nums">{rosterQuery.isLoading ? "—" : rosterStudents.length}</div>
+                <div className="text-xs text-muted-foreground">{rosterStudents.length === 1 ? "Student" : "Students"}</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-4 py-2">
-              <UsersRound className="size-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{rosterQuery.isLoading ? "Loading…" : rosterStudents.length + " " + (rosterStudents.length === 1 ? "student" : "students")}</span>
+          </DialogHeader>
+
+          <div className="flex shrink-0 items-center gap-3 border-b bg-muted/[0.18] px-7 py-4">
+            <div className="relative min-w-0 flex-1">
+              <Input
+                value={studentSearch}
+                onChange={(event) => { setStudentSearch(event.target.value); setStudentPage(1) }}
+                placeholder="Search by student number or name..."
+                className="h-10 bg-background"
+              />
             </div>
+            <Button className="shrink-0" onClick={() => setAddStudentOpen(true)}><Plus />Add Student</Button>
           </div>
-        </DialogHeader>
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex flex-col gap-3 border-b px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <Input value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); setStudentPage(1) }} placeholder="Search students by number or name…" className="w-full sm:max-w-md" />
-            <Button onClick={() => setAddStudentOpen(true)}><Plus />Add Student</Button>
+
+          <div className="min-h-0 flex-1 overflow-auto px-7">
+            {rosterQuery.isLoading ? (
+              <div className="space-y-2 py-5">
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <div key={index} className="grid grid-cols-[48px_180px_minmax(280px,1.5fr)_180px_150px_120px] items-center gap-4 rounded-md border px-4 py-4">
+                    {Array.from({ length: 6 }).map((__, cell) => <div key={cell} className="h-4 animate-pulse rounded bg-muted" />)}
+                  </div>
+                ))}
+              </div>
+            ) : rosterStudents.length === 0 ? (
+              <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
+                <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted"><UsersRound className="size-7 text-muted-foreground" /></div>
+                <h3 className="text-lg font-semibold">No students yet</h3>
+                <p className="mt-1 max-w-md text-sm text-muted-foreground">This section has no active students for Academic Year {studentsTarget?.academic_year}.</p>
+                <Button className="mt-5" onClick={() => setAddStudentOpen(true)}><Plus />Add Student</Button>
+              </div>
+            ) : filteredRosterStudents.length === 0 ? (
+              <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
+                <h3 className="text-lg font-semibold">No students found</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Try a different student number or name.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
+                  <TableRow className="hover:bg-background">
+                    <TableHead className="w-14">#</TableHead>
+                    <TableHead className="w-[190px]">Student Number</TableHead>
+                    <TableHead>Full Name</TableHead>
+                    <TableHead className="w-[150px]">Status</TableHead>
+                    <TableHead className="w-[120px] text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleRosterStudents.map((student: any, index: number) => (
+                    <TableRow key={student.id} className="h-[58px]">
+                      <TableCell className="text-muted-foreground">{(studentPage - 1) * studentPageSize + index + 1}</TableCell>
+                      <TableCell className="font-semibold tabular-nums">{student.student_number}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{student.last_name}, {student.first_name}{student.middle_name ? " " + student.middle_name : ""}</div>
+                        {student.extension ? <div className="text-xs text-muted-foreground">{student.extension}</div> : null}
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
+                          {String(student.student_status).replaceAll("_", " ")}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}><Pencil /></Button>
+                          <Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}><Trash2 /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
-          <div className="min-h-0 flex-1 overflow-auto px-6">
-            {rosterQuery.isLoading ? <div className="space-y-3 py-4">{Array.from({ length: 7 }).map((_, index) => <div key={index} className="grid grid-cols-7 gap-3 rounded-md border p-4">{Array.from({ length: 7 }).map((__, cell) => <div key={cell} className="h-4 animate-pulse rounded bg-muted" />)}</div>)}</div>
-            : rosterStudents.length === 0 ? <div className="flex min-h-[360px] flex-col items-center justify-center text-center"><UsersRound className="mb-4 size-10 text-muted-foreground/50" /><h3 className="font-semibold">No students yet</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">This section has no active students for the selected academic year.</p></div>
-            : filteredRosterStudents.length === 0 ? <div className="flex min-h-[360px] flex-col items-center justify-center text-center"><p className="font-semibold">No students found</p><p className="mt-1 text-sm text-muted-foreground">Try a different student number or name.</p></div>
-            : <Table><TableHeader className="sticky top-0 z-10 bg-background"><TableRow><TableHead className="w-12">#</TableHead><TableHead className="min-w-[160px]">Student Number</TableHead><TableHead className="min-w-[280px]">Full Name</TableHead><TableHead className="min-w-[220px]">Email</TableHead><TableHead className="min-w-[150px]">Contact</TableHead><TableHead>Status</TableHead><TableHead className="w-[100px] text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{visibleRosterStudents.map((student: any, index: number) => <TableRow key={student.id}><TableCell className="text-muted-foreground">{(studentPage - 1) * studentPageSize + index + 1}</TableCell><TableCell className="font-semibold tabular-nums">{student.student_number}</TableCell><TableCell><div className="font-medium">{student.last_name}, {student.first_name}{student.middle_name ? " " + student.middle_name : ""}</div>{student.extension ? <div className="text-xs text-muted-foreground">{student.extension}</div> : null}</TableCell><TableCell className="text-sm">{student.email ?? "—"}</TableCell><TableCell className="text-sm">{student.contact_number ?? "—"}</TableCell><TableCell><span className="inline-flex rounded-full border px-2.5 py-1 text-xs font-medium capitalize">{String(student.student_status).replaceAll("_", " ")}</span></TableCell><TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}><Pencil /></Button><Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}><Trash2 /></Button></div></TableCell></TableRow>)}</TableBody></Table>}
-          </div>
-          {!rosterQuery.isLoading && filteredRosterStudents.length > 0 ? <div className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground">Showing {(studentPage - 1) * studentPageSize + 1}–{Math.min(studentPage * studentPageSize, filteredRosterStudents.length)} of {filteredRosterStudents.length}</p><div className="flex items-center gap-2"><Button variant="outline" size="sm" disabled={studentPage <= 1} onClick={() => setStudentPage((page) => Math.max(1, page - 1))}>Previous</Button><span className="text-sm text-muted-foreground">Page {studentPage} of {studentPageCount}</span><Button variant="outline" size="sm" disabled={studentPage >= studentPageCount} onClick={() => setStudentPage((page) => Math.min(studentPageCount, page + 1))}>Next</Button></div></div> : null}
+
+          {!rosterQuery.isLoading && filteredRosterStudents.length > 0 ? (
+            <div className="flex shrink-0 items-center justify-between gap-4 border-t px-7 py-3.5">
+              <p className="text-sm text-muted-foreground">
+                Showing <span className="font-medium text-foreground">{(studentPage - 1) * studentPageSize + 1}–{Math.min(studentPage * studentPageSize, filteredRosterStudents.length)}</span> of <span className="font-medium text-foreground">{filteredRosterStudents.length}</span>
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={studentPage <= 1} onClick={() => setStudentPage((page) => Math.max(1, page - 1))}>Previous</Button>
+                <span className="min-w-20 text-center text-sm text-muted-foreground">Page {studentPage} of {studentPageCount}</span>
+                <Button variant="outline" size="sm" disabled={studentPage >= studentPageCount} onClick={() => setStudentPage((page) => Math.min(studentPageCount, page + 1))}>Next</Button>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="shrink-0 border-t px-7 py-3">
+            <Button variant="outline" onClick={() => setStudentsTarget(null)}>Close</Button>
+          </DialogFooter>
         </div>
-        <DialogFooter className="border-t px-6 py-4"><Button variant="outline" onClick={() => setStudentsTarget(null)}>Close</Button></DialogFooter>
       </DialogContent>
     </Dialog>
 
