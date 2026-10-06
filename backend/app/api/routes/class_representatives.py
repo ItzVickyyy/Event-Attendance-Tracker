@@ -239,6 +239,10 @@ def create_class_representative(
             password=TEMPORARY_PASSWORD,
             role=UserRole.class_representative,
             full_name=full_name,
+            first_name=payload.first_name.strip(),
+            middle_name=payload.middle_initial.strip().rstrip(".") or None,
+            last_name=payload.last_name.strip(),
+            name_extension=payload.extension.strip() if payload.extension else None,
             can_scan=False,
         ),
     )
