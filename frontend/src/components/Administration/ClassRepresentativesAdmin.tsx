@@ -10,7 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 const api = "/api/v1"
-const headers = () => ({ Authorization: "Bearer " + localStorage.getItem("access_token"), "Content-Type": "application/json" })
+const headers = (json = false) => ({
+  Authorization: "Bearer " + localStorage.getItem("access_token"),
+  ...(json ? { "Content-Type": "application/json" } : {}),
+})
 
 export function ClassRepresentativesAdmin() {
   const client = useQueryClient()
@@ -18,9 +21,9 @@ export function ClassRepresentativesAdmin() {
   const [form, setForm] = useState({ email: "", first_name: "", middle_initial: "", last_name: "", extension: "", academic_year_id: "", section_id: "" })
   const years = useQuery({ queryKey: ["academic-years-admin"], queryFn: async () => (await fetch(api + "/academic-registry/academic-years", { headers: headers() })).json() })
   const sections = useQuery({ queryKey: ["sections-admin-reps", form.academic_year_id], queryFn: async () => (await fetch(api + "/academic-registry/sections?academic_year_id=" + encodeURIComponent(form.academic_year_id), { headers: headers() })).json(), enabled: Boolean(form.academic_year_id) })
-  const reps = useQuery({ queryKey: ["class-representatives"], queryFn: async () => (await fetch(api + "/class-representatives", { headers: headers() })).json() })
+  const reps = useQuery({ queryKey: ["class-representatives"], queryFn: async () => (await fetch(api + "/class-representatives/", { headers: headers() })).json() })
   const create = async () => {
-    const response = await fetch(api + "/class-representatives", { method: "POST", headers: headers(), body: JSON.stringify(form) })
+    const response = await fetch(api + "/class-representatives/", { method: "POST", headers: headers(true), body: JSON.stringify(form) })
     if (!response.ok) { const body = await response.json().catch(() => null); toast.error(body?.detail ?? "Unable to create Class Representative"); return }
     toast.success("Class Representative account created")
     setOpen(false); setForm({ email: "", first_name: "", middle_initial: "", last_name: "", extension: "", academic_year_id: "", section_id: "" })
@@ -32,7 +35,7 @@ export function ClassRepresentativesAdmin() {
     <Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>Create Class Representative</DialogTitle></DialogHeader><div className="space-y-4">
       {([["first_name","First Name"],["middle_initial","Middle Initial"],["last_name","Last Name"],["extension","Extension"],["email","Email"]] as const).map(([field,label]) => <div className="space-y-2" key={field}><Label htmlFor={field}>{label}{["first_name","last_name","email"].includes(field) ? " *" : ""}</Label><Input id={field} value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} /></div>)}
       <div className="space-y-2"><Label>Academic Year</Label><Select value={form.academic_year_id} onValueChange={(value) => setForm({ ...form, academic_year_id: value, section_id: "" })}><SelectTrigger><SelectValue placeholder="Select academic year" /></SelectTrigger><SelectContent>{(years.data?.data ?? []).map((year: any) => <SelectItem key={year.id} value={year.id}>{year.label}</SelectItem>)}</SelectContent></Select></div>
-      <div className="space-y-2"><Label>Section</Label><Select value={form.section_id} onValueChange={(value) => setForm({ ...form, section_id: value })} disabled={!form.academic_year_id}><SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger><SelectContent>{(sections.data?.data ?? []).map((section: any) => <SelectItem key={section.id} value={section.id}>{section.program_code} {section.section_code} · {section.year_level}</SelectItem>)}</SelectContent></Select></div>
+      <div className="space-y-2"><Label>Section</Label><Select value={form.section_id} onValueChange={(value) => setForm({ ...form, section_id: value })} disabled={!form.academic_year_id}><SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger><SelectContent>{(sections.data?.data ?? []).map((section: any) => <SelectItem key={section.id} value={section.id}>{section.program_code} {section.section_name} · {section.year_level}</SelectItem>)}</SelectContent></Select></div>
       <p className="text-xs text-muted-foreground">The initial password is {"Change" + "ThisPassword"}. The account is required to change it after first login. If email delivery is enabled, the credentials are sent automatically.</p>
     </div><DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={() => void create()}>Create account</Button></DialogFooter></DialogContent></Dialog>
   </div>
