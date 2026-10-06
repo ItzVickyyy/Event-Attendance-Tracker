@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus, Pencil, Archive, Search } from "lucide-react"
+import { Archive, Download, Pencil, Plus, QrCode, Search } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,21 @@ const authHeaders = (): Record<string, string> => {
 
 const emptyForm = { student_number: "", first_name: "", middle_name: "", last_name: "", extension: "", email: "", contact_number: "" }
 
+function qrImageUrl(credential: string) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=16&data=${encodeURIComponent(credential)}`
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
 export function ClassRepresentativeSectionWorkspace() {
   const { activeAcademicYear } = useAcademicYear()
   const client = useQueryClient()
@@ -27,6 +42,7 @@ export function ClassRepresentativeSectionWorkspace() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState(emptyForm)
+  const [qrTarget, setQrTarget] = useState<any>(null)
 
   const assignment = useQuery({
     queryKey: ["class-representative-assignment", activeAcademicYear?.id],
@@ -52,6 +68,33 @@ export function ClassRepresentativeSectionWorkspace() {
     },
     enabled: Boolean(activeAcademicYear),
   })
+
+  const openStudentQr = async (student: any) => {
+    try {
+      const response = await fetch(api + "/academic-registry/students/" + student.id, { headers: authHeaders() })
+      const details = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(details?.detail ?? "Unable to load the student's QR code")
+      if (details?.qr_registered !== true || !details?.qr_credential_value) {
+        toast.error("This student does not have an active QR credential.")
+        return
+      }
+      setQrTarget(details)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to load the student's QR code")
+    }
+  }
+
+  const downloadStudentQr = async () => {
+    if (!qrTarget?.qr_credential_value) return
+    try {
+      const response = await fetch(qrImageUrl(qrTarget.qr_credential_value))
+      if (!response.ok) throw new Error("Unable to generate QR code")
+      const blob = await response.blob()
+      downloadBlob(blob, `${qrTarget.student_number}-QR.png`)
+    } catch {
+      toast.error("Unable to download the QR code. Please try again.")
+    }
+  }
 
   const save = async () => {
     const url = editing ? api + "/academic-registry/students/" + editing.id : api + "/class-representatives/me/students"
@@ -93,8 +136,31 @@ export function ClassRepresentativeSectionWorkspace() {
     </div>
     <Card><CardHeader><CardTitle className="flex items-center justify-between"><span>Students</span><span className="text-sm font-normal text-muted-foreground">{students.data?.count ?? 0} students</span></CardTitle></CardHeader><CardContent className="space-y-4">
       <div className="relative max-w-sm"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder="Search students" value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-      {students.isLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Loading students…</p> : filtered.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No students found.</p> : <Table><TableHeader><TableRow><TableHead>#</TableHead><TableHead>Student Number</TableHead><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filtered.map((student: any, index: number) => <TableRow key={student.id}><TableCell>{index + 1}</TableCell><TableCell>{student.student_number}</TableCell><TableCell>{[student.last_name, student.first_name, student.middle_name].filter(Boolean).join(", ")}</TableCell><TableCell>{student.email ?? ""}</TableCell><TableCell>{student.student_status}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" title="Edit student" onClick={() => { setEditing(student); setForm({ student_number: student.student_number, first_name: student.first_name, middle_name: student.middle_name ?? "", last_name: student.last_name, extension: student.extension ?? "", email: student.email ?? "", contact_number: student.contact_number ?? "" }); setDialogOpen(true) }}><Pencil /></Button><Button variant="ghost" size="icon" title="Archive student" onClick={() => void archive(student)}><Archive /></Button></TableCell></TableRow>)}</TableBody></Table>}
+      {students.isLoading ? <p className="py-8 text-center text-sm text-muted-foreground">Loading students…</p> : filtered.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No students found.</p> : <Table><TableHeader><TableRow><TableHead>#</TableHead><TableHead>Student Number</TableHead><TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{filtered.map((student: any, index: number) => <TableRow key={student.id}><TableCell>{index + 1}</TableCell><TableCell>{student.student_number}</TableCell><TableCell>{[student.last_name, student.first_name, student.middle_name].filter(Boolean).join(", ")}</TableCell><TableCell>{student.email ?? ""}</TableCell><TableCell>{student.student_status}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" title="QR Code" onClick={() => void openStudentQr(student)}><QrCode /></Button><Button variant="ghost" size="icon" title="Edit student" onClick={() => { setEditing(student); setForm({ student_number: student.student_number, first_name: student.first_name, middle_name: student.middle_name ?? "", last_name: student.last_name, extension: student.extension ?? "", email: student.email ?? "", contact_number: student.contact_number ?? "" }); setDialogOpen(true) }}><Pencil /></Button><Button variant="ghost" size="icon" title="Archive student" onClick={() => void archive(student)}><Archive /></Button></TableCell></TableRow>)}</TableBody></Table>}
     </CardContent></Card>
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{editing ? "Edit Student" : "Add Student"}</DialogTitle></DialogHeader><div className="grid gap-4 sm:grid-cols-2">{Object.keys(form).map((field) => <div className="space-y-2" key={field}><Label htmlFor={field}>{field.replaceAll("_", " ")}{["student_number","first_name","last_name"].includes(field) ? " *" : ""}</Label><Input id={field} value={form[field as keyof typeof form]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} /></div>)}</div><DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={() => void save()}>{editing ? "Save changes" : "Add student"}</Button></DialogFooter></DialogContent></Dialog>
+
+    <Dialog open={Boolean(qrTarget)} onOpenChange={(open) => !open && setQrTarget(null)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Student QR Code</DialogTitle>
+          <DialogDescription>Show or save this QR code for event attendance.</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4">
+          <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            {qrTarget?.qr_credential_value ? <img src={qrImageUrl(qrTarget.qr_credential_value)} alt="Student QR Code" className="size-72" /> : null}
+          </div>
+          <div className="w-full rounded-md bg-muted/40 px-3 py-2 text-center text-sm">
+            <div className="font-medium">{qrTarget?.last_name}, {qrTarget?.first_name}</div>
+            <div className="text-muted-foreground">{qrTarget?.student_number}</div>
+            <div className="mt-1 font-mono text-xs text-muted-foreground">{qrTarget?.qr_credential_value}</div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setQrTarget(null)}>Close</Button>
+          <Button onClick={() => void downloadStudentQr()}><Download />Download QR</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 }
