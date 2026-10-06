@@ -26,6 +26,7 @@ import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutAccountIndexRouteImport } from './routes/_layout/account/index'
 import { Route as LayoutAccountProfileRouteImport } from './routes/_layout/account/profile'
 import { Route as LayoutAccountSecurityRouteImport } from './routes/_layout/account/security'
+import { Route as LayoutAdministrationIndexRouteImport } from './routes/_layout/administration/index'
 import { Route as LayoutAdministrationAttendanceRouteImport } from './routes/_layout/administration/attendance'
 import { Route as LayoutAdministrationAuditLogsRouteImport } from './routes/_layout/administration/audit-logs'
 import { Route as LayoutAdministrationClassRepresentativesRouteImport } from './routes/_layout/administration/class-representatives'
@@ -137,6 +138,12 @@ const LayoutAccountSecurityRoute = LayoutAccountSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => LayoutAccountRoute,
 } as any)
+const LayoutAdministrationIndexRoute =
+  LayoutAdministrationIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => LayoutAdministrationRoute,
+  } as any)
 const LayoutAdministrationAttendanceRoute =
   LayoutAdministrationAttendanceRouteImport.update({
     id: '/attendance',
@@ -318,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/settings/organization': typeof LayoutSettingsOrganizationRoute
   '/settings/time-out': typeof LayoutSettingsTimeOutRoute
   '/account/': typeof LayoutAccountIndexRoute
+  '/administration/': typeof LayoutAdministrationIndexRoute
   '/settings/': typeof LayoutSettingsIndexRoute
   '/events/$eventId/registration': typeof LayoutEventsEventIdRegistrationRoute
   '/events/$eventId/roster': typeof LayoutEventsEventIdRosterRoute
@@ -330,7 +338,6 @@ export interface FileRoutesByTo {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/administration': typeof LayoutAdministrationRouteWithChildren
   '/dashboard': typeof LayoutDashboardRoute
   '/events': typeof LayoutEventsRouteWithChildren
   '/records': typeof LayoutRecordsRouteWithChildren
@@ -360,6 +367,7 @@ export interface FileRoutesByTo {
   '/settings/organization': typeof LayoutSettingsOrganizationRoute
   '/settings/time-out': typeof LayoutSettingsTimeOutRoute
   '/account': typeof LayoutAccountIndexRoute
+  '/administration': typeof LayoutAdministrationIndexRoute
   '/settings': typeof LayoutSettingsIndexRoute
   '/events/$eventId/registration': typeof LayoutEventsEventIdRegistrationRoute
   '/events/$eventId/roster': typeof LayoutEventsEventIdRosterRoute
@@ -406,6 +414,7 @@ export interface FileRoutesById {
   '/_layout/settings/organization': typeof LayoutSettingsOrganizationRoute
   '/_layout/settings/time-out': typeof LayoutSettingsTimeOutRoute
   '/_layout/account/': typeof LayoutAccountIndexRoute
+  '/_layout/administration/': typeof LayoutAdministrationIndexRoute
   '/_layout/settings/': typeof LayoutSettingsIndexRoute
   '/_layout/events/$eventId/registration': typeof LayoutEventsEventIdRegistrationRoute
   '/_layout/events/$eventId/roster': typeof LayoutEventsEventIdRosterRoute
@@ -452,6 +461,7 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/settings/time-out'
     | '/account/'
+    | '/administration/'
     | '/settings/'
     | '/events/$eventId/registration'
     | '/events/$eventId/roster'
@@ -464,7 +474,6 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/administration'
     | '/dashboard'
     | '/events'
     | '/records'
@@ -494,6 +503,7 @@ export interface FileRouteTypes {
     | '/settings/organization'
     | '/settings/time-out'
     | '/account'
+    | '/administration'
     | '/settings'
     | '/events/$eventId/registration'
     | '/events/$eventId/roster'
@@ -539,6 +549,7 @@ export interface FileRouteTypes {
     | '/_layout/settings/organization'
     | '/_layout/settings/time-out'
     | '/_layout/account/'
+    | '/_layout/administration/'
     | '/_layout/settings/'
     | '/_layout/events/$eventId/registration'
     | '/_layout/events/$eventId/roster'
@@ -675,6 +686,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/account/security'
       preLoaderRoute: typeof LayoutAccountSecurityRouteImport
       parentRoute: typeof LayoutAccountRoute
+    }
+    '/_layout/administration/': {
+      id: '/_layout/administration/'
+      path: '/'
+      fullPath: '/administration/'
+      preLoaderRoute: typeof LayoutAdministrationIndexRouteImport
+      parentRoute: typeof LayoutAdministrationRoute
     }
     '/_layout/administration/attendance': {
       id: '/_layout/administration/attendance'
@@ -884,6 +902,7 @@ interface LayoutAdministrationRouteChildren {
   LayoutAdministrationRolesRoute: typeof LayoutAdministrationRolesRoute
   LayoutAdministrationScannerPermissionsRoute: typeof LayoutAdministrationScannerPermissionsRoute
   LayoutAdministrationUsersRoute: typeof LayoutAdministrationUsersRoute
+  LayoutAdministrationIndexRoute: typeof LayoutAdministrationIndexRoute
 }
 
 const LayoutAdministrationRouteChildren: LayoutAdministrationRouteChildren = {
@@ -895,6 +914,7 @@ const LayoutAdministrationRouteChildren: LayoutAdministrationRouteChildren = {
   LayoutAdministrationScannerPermissionsRoute:
     LayoutAdministrationScannerPermissionsRoute,
   LayoutAdministrationUsersRoute: LayoutAdministrationUsersRoute,
+  LayoutAdministrationIndexRoute: LayoutAdministrationIndexRoute,
 }
 
 const LayoutAdministrationRouteWithChildren =
