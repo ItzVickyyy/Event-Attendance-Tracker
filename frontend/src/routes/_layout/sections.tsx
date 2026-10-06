@@ -6,11 +6,11 @@ import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/sections")({
   component: Sections,
-  head: () => ({ meta: [{ title: "Sections & Students - Event Attendance Tracker" }] }),
+  head: () => ({ meta: [{ title: "Students - Event Attendance Tracker" }] }),
 })
 
 function Sections() {
   const { user } = useAuth()
   if (user?.role === "class_representative") return <ClassRepresentativeSectionWorkspace />
-  return <div className="space-y-8"><header className="space-y-2"><p className="text-sm font-medium text-muted-foreground">Sections & Students</p><h1 className="text-3xl font-semibold tracking-tight">Sections</h1><p className="max-w-2xl text-muted-foreground">Browse academic sections and search for students across the selected academic year.</p></header><StudentSearch /><SectionList /></div>
+  return <div className="space-y-8"><header className="space-y-2"><p className="text-sm font-medium text-muted-foreground">Students</p><h1 className="text-3xl font-semibold tracking-tight">Students</h1><p className="max-w-2xl text-muted-foreground">Browse academic sections and search for students across the selected academic year.</p></header><StudentSearch /><SectionList /></div>
 }
