@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { QrCode, Search, Download } from "lucide-react"
-import { useState } from "react"
+import { useState, type FormEvent } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,7 +20,7 @@ function GetMyQr() {
   const [result, setResult] = useState<Result | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function lookup(event: React.FormEvent) {
+  async function lookup(event: FormEvent) {
     event.preventDefault()
     if (loading) return
     setLoading(true)
