@@ -65,7 +65,6 @@ export function ClassRepresentativeDashboard() {
             <p className="text-xl font-semibold">
               {section.program_code} {section.section_name}
             </p>
-            <p className="text-sm text-muted-foreground">{section.year_level}</p>
           </CardContent>
         </Card>
         <Card>
