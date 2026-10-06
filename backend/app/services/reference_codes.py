@@ -4,6 +4,17 @@ from sqlmodel import Session
 from sqlalchemy import text
 
 
+def next_user_reference_code(session: Session) -> str:
+    """Allocate the next USR reference code from the database sequence."""
+    return str(
+        session.execute(
+            text(
+                "SELECT 'USR-' || LPAD(nextval('user_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        ).scalar_one()
+    )
+
+
 def next_student_reference_code(session: Session) -> str:
     """Allocate the next STU reference code from the database sequence.
 
