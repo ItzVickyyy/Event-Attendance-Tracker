@@ -45,7 +45,7 @@ def _assignment_row(
         params["academic_year_id"] = academic_year_id
     query += """
         GROUP BY cra.id, cra.user_id, cra.academic_year_id, cra.section_id,
-                 ay.label, ay.start_year, p.program_code, p.program_name, s.section_code, s.year_level
+                 ay.label, ay.start_year, p.program_code, p.program_name, s.section_code, s.section_name, s.year_level
         ORDER BY ay.start_year DESC
         LIMIT 1
     """
