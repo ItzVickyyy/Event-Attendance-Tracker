@@ -16,7 +16,10 @@ const qrUrl = (value: string) =>
 
 function GetMyQr() {
   const [number, setNumber] = useState("")
-  const [name, setName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [middleName, setMiddleName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [nameExtension, setNameExtension] = useState("")
   const [result, setResult] = useState<Result | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -29,7 +32,7 @@ function GetMyQr() {
       const response = await fetch(`${import.meta.env.VITE_API_URL ?? ""}/api/v1/public/student-qr`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_number: number.trim(), full_name: name.trim() }),
+        body: JSON.stringify({ student_number: number.trim(), first_name: firstName.trim(), middle_name: middleName.trim(), last_name: lastName.trim(), name_extension: nameExtension.trim() }),
       })
       const body = await response.json().catch(() => null)
       if (!response.ok) throw new Error(body?.detail ?? "Student record not found.")
@@ -59,11 +62,11 @@ function GetMyQr() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-10">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <QrCode className="mx-auto mb-2 size-10 text-primary" />
           <CardTitle className="text-2xl">Get My QR Code</CardTitle>
-          <CardDescription>Enter your student number and full name to retrieve your registered QR code.</CardDescription>
+          <CardDescription>Enter your student number and name as registered in the attendance system.</CardDescription>
         </CardHeader>
         <CardContent>
           {!result ? (
@@ -72,11 +75,25 @@ function GetMyQr() {
                 <Label htmlFor="student-number">Student Number</Label>
                 <Input id="student-number" value={number} onChange={(e) => setNumber(e.target.value)} required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="full-name">Full Name</Label>
-                <Input id="full-name" value={name} onChange={(e) => setName(e.target.value)} required />
-                <p className="text-xs text-muted-foreground">Use the name registered in the attendance system.</p>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="first-name">First Name</Label>
+                  <Input id="first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required autoComplete="given-name" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="middle-name">Middle Name</Label>
+                  <Input id="middle-name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} autoComplete="additional-name" placeholder="Optional" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last-name">Last Name</Label>
+                  <Input id="last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required autoComplete="family-name" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name-extension">Name Extension</Label>
+                  <Input id="name-extension" value={nameExtension} onChange={(e) => setNameExtension(e.target.value)} placeholder="Optional, e.g. Jr." />
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">Enter your name as registered in the attendance system.</p>
               <Button className="w-full" disabled={loading}>
                 <Search className="size-4" />
                 {loading ? "Checking..." : "Find My QR Code"}

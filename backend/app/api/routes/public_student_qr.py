@@ -24,7 +24,10 @@ _attempts: dict[str, list[float]] = defaultdict(list)
 
 class StudentQrLookupRequest(BaseModel):
     student_number: str
-    full_name: str
+    first_name: str
+    middle_name: str = ""
+    last_name: str
+    name_extension: str = ""
 
 
 def _normalize(value: str) -> str:
@@ -55,11 +58,14 @@ def lookup_student_qr(
         raise HTTPException(status_code=429, detail="Too many attempts. Please try again later.")
 
     student_number = payload.student_number.strip()
-    full_name = _normalize(payload.full_name)
+    first_name = _normalize(payload.first_name)
+    middle_name = _normalize(payload.middle_name)
+    last_name = _normalize(payload.last_name)
+    name_extension = _normalize(payload.name_extension)
 
-    if not student_number or not full_name:
-        raise HTTPException(status_code=422, detail="Student number and full name are required.")
-    if len(student_number) > 50 or len(full_name) > 255:
+    if not student_number or not first_name or not last_name:
+        raise HTTPException(status_code=422, detail="Student number, first name, and last name are required.")
+    if len(student_number) > 50 or any(len(value) > 255 for value in (first_name, middle_name, last_name, name_extension)):
         raise HTTPException(status_code=400, detail="Invalid lookup input.")
 
     row = session.execute(
@@ -103,8 +109,19 @@ def lookup_student_qr(
         row["last_name"],
         row["name_extension"],
     ]
-    stored_name = _normalize(" ".join(str(part) for part in parts if part))
-    if stored_name != full_name:
+    stored = {
+        "first_name": _normalize(str(row["first_name"] or "")),
+        "middle_name": _normalize(str(row["middle_name"] or "")),
+        "last_name": _normalize(str(row["last_name"] or "")),
+        "name_extension": _normalize(str(row["name_extension"] or "")),
+    }
+    supplied = {
+        "first_name": first_name,
+        "middle_name": middle_name,
+        "last_name": last_name,
+        "name_extension": name_extension,
+    }
+    if stored != supplied:
         raise HTTPException(status_code=404, detail="Student record not found.")
 
     return {
