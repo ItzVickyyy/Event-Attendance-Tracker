@@ -14,7 +14,6 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from app.api.deps import SessionDep
-from app.models import AttendeeCredential
 
 router = APIRouter(prefix="/public/student-qr", tags=["public-student-qr"])
 
@@ -50,7 +49,8 @@ def lookup_student_qr(
     request: Request,
 ) -> dict[str, Any]:
     """Verify a student's identity and return their stable QR credential."""
-    client_key = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("x-forwarded-for")
+    client_key = (forwarded.split(",")[0].strip() if forwarded else None) or (request.client.host if request.client else "unknown")
     if not _allow_request(client_key):
         raise HTTPException(status_code=429, detail="Too many attempts. Please try again later.")
 
@@ -71,7 +71,6 @@ def lookup_student_qr(
                 p.middle_name,
                 p.last_name,
                 p.name_extension,
-                p.email,
                 sec.section_name,
                 prog.program_code,
                 c.credential_value
