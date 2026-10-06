@@ -18,7 +18,7 @@ export function SectionDetailsPage({ sectionId }: { sectionId: string }) {
 
   return <div className="space-y-6">
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div><Button variant="ghost" size="sm" asChild><Link to="/sections"><ArrowLeft />Sections</Link></Button><div className="mt-3"><p className="text-sm text-muted-foreground">Section Details</p><h1 className="text-2xl font-semibold tracking-tight">{section.section_name}</h1><p className="mt-1 text-sm text-muted-foreground">{program ? `${program.program_code} · ${program.program_name}` : "Program unavailable"} · Year {section.year_level} · {section.academic_year}</p></div></div>
+      <div><Button variant="ghost" size="sm" asChild><Link to="/sections"><ArrowLeft />Sections</Link></Button><div className="mt-3"><p className="text-sm text-muted-foreground">Section Details</p><h1 className="text-2xl font-semibold tracking-tight">{section.section_name}</h1><p className="mt-1 text-sm text-muted-foreground">{program ? `${program.program_code} · ${program.program_name}` : "Program unavailable"} · {section.academic_year}</p></div></div>
     </header>
 
     <Card><CardHeader><CardTitle className="text-base">Section Information</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Info label="Section" value={section.section_name} /><Info label="Program" value={program ? `${program.program_code} · ${program.program_name}` : "—"} /><Info label="Year level" value={section.year_level} /><Info label="Academic year" value={section.academic_year} /></CardContent></Card>

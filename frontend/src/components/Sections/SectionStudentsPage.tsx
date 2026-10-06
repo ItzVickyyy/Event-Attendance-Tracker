@@ -52,7 +52,7 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
         <div>
           <p className="text-sm text-muted-foreground">Students</p>
           <h1 className="text-2xl font-semibold tracking-tight">{section.section_name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{program ? `${program.program_code} · ${program.program_name}` : "Program unavailable"} · Year {section.year_level} · {section.academic_year}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{program ? `${program.program_code} · ${program.program_name}` : "Program unavailable"} · {section.academic_year}</p>
         </div>
       </header>
 
