@@ -11,7 +11,7 @@ const navigationGroups: NavigationGroup[] = [
   { title: "Workspace", items: [{ title: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] },
   { title: "Operations", items: [
     { title: "Events", path: "/events", icon: CalendarDays },
-    { title: "Sections & Students", path: "/sections", icon: UsersRound },
+    { title: "Students", path: "/sections", icon: UsersRound },
     { title: "Records", path: "/records", icon: ClipboardList },
     { title: "Scanner", path: "/scanner", icon: ScanLine },
   ] },
