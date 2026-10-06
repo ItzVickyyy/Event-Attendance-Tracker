@@ -63,7 +63,7 @@ export function ClassRepresentativeDashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-xl font-semibold">
-              {section.program_code} {section.section_code}
+              {section.program_code} {section.section_name}
             </p>
             <p className="text-sm text-muted-foreground">{section.year_level}</p>
           </CardContent>
