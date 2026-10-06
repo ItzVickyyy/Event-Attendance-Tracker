@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, redirect, useLocation, useNavigate } from "@tanstack/react-router"
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 import { Footer } from "@/components/Common/Footer"
 import { AcademicYearProvider, useAcademicYear } from "@/context/AcademicYearContext"
 import { CalendarDays, Check, KeyRound, ShieldAlert } from "lucide-react"
@@ -120,6 +120,7 @@ function AcademicYearSelector() {
 }
 function Layout() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const mustChangePassword = Boolean((user as any)?.must_change_password)
 
   const [passwordModalOpen, setPasswordModalOpen] = useState(mustChangePassword)
