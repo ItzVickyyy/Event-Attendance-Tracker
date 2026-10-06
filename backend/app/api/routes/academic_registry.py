@@ -15,6 +15,7 @@ from app.api.deps import (
 )
 from app.models import AcademicSection, Person, Student, get_datetime_utc
 from app.services.reference_codes import next_student_reference_code
+from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
     AcademicYear,
     AcademicYearCreate,
@@ -248,7 +249,8 @@ def read_student_details(
         SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name, p.name_extension,
                p.email, p.contact_number, se.id AS enrollment_id, se.student_status, se.section_id, se.academic_year_id,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='nfc' AND c.is_active=true) AS nfc_registered,
-               EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true) AS qr_registered
+               EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true) AS qr_registered,
+               (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS qr_credential_value
         FROM students s JOIN people p ON p.id=s.person_id LEFT JOIN student_enrollments se ON se.student_id=s.id
         WHERE s.id=:id AND s.archived_at IS NULL ORDER BY se.created_at DESC NULLS LAST LIMIT 1
     """),
@@ -323,6 +325,8 @@ def create_student_in_section(
         student_status=student_status,
     )
     session.add(enrollment)
+    session.flush()
+    ensure_student_qr_credential(session, student)
     session.commit()
     return read_student_details(session, _current_user, student.id)
 
