@@ -225,7 +225,7 @@ function Layout() {
                     id="initial-current-password"
                     type={showCurrentPassword ? "text" : "password"}
                     value={currentPassword}
-                    onChange={(event) => setState(event.target.value)}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
                     autoComplete="current-password"
                     placeholder="Enter your temporary password"
                     className="pr-10"
@@ -233,7 +233,7 @@ function Layout() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() => setShow(!showCurrentPassword)}
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     aria-label={showCurrentPassword ? "Hide temporary password" : "Show temporary password"}
                     title={showCurrentPassword ? "Hide password" : "Show password"}
                   >
@@ -248,7 +248,7 @@ function Layout() {
                     id="initial-new-password"
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
-                    onChange={(event) => setState(event.target.value)}
+                    onChange={(event) => setNewPassword(event.target.value)}
                     autoComplete="new-password"
                     placeholder="Create a new password"
                     className="pr-10"
@@ -256,7 +256,7 @@ function Layout() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() => setShow(!showNewPassword)}
+                    onClick={() => setShowNewPassword(!showNewPassword)}
                     aria-label={showNewPassword ? "Hide new password" : "Show new password"}
                     title={showNewPassword ? "Hide password" : "Show password"}
                   >
@@ -271,7 +271,7 @@ function Layout() {
                     id="initial-confirm-password"
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
-                    onChange={(event) => setState(event.target.value)}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
                     autoComplete="new-password"
                     placeholder="Re-enter your new password"
                     className="pr-10"
@@ -279,7 +279,7 @@ function Layout() {
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() => setShow(!showConfirmPassword)}
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     aria-label={showConfirmPassword ? "Hide confirm new password" : "Show confirm new password"}
                     title={showConfirmPassword ? "Hide password" : "Show password"}
                   >
