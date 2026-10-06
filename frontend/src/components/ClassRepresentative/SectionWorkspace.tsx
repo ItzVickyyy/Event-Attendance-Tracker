@@ -88,7 +88,7 @@ export function ClassRepresentativeSectionWorkspace() {
 
   return <div className="space-y-6">
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div><p className="text-sm text-muted-foreground">Your assigned section</p><h1 className="text-3xl font-semibold tracking-tight">{section ? section.program_code + " " + section.section_code : "My Section"}</h1><p className="text-sm text-muted-foreground">{section?.year_level} · Academic Year {section?.academic_year}</p></div>
+      <div><p className="text-sm text-muted-foreground">Students</p><h1 className="text-3xl font-semibold tracking-tight">{section ? section.program_code + " " + (section.section_name ?? section.section_code) : "My Section"}</h1><p className="text-sm text-muted-foreground">{section?.year_level} · Academic Year {section?.academic_year}</p></div>
       <Button onClick={() => { setEditing(null); setForm(emptyForm); setDialogOpen(true) }}><Plus />Add student</Button>
     </div>
     <Card><CardHeader><CardTitle className="flex items-center justify-between"><span>Students</span><span className="text-sm font-normal text-muted-foreground">{students.data?.count ?? 0} students</span></CardTitle></CardHeader><CardContent className="space-y-4">
