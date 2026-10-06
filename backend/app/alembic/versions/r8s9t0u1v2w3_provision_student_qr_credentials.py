@@ -54,7 +54,7 @@ def upgrade() -> None:
             gen_random_uuid(),
             a.id,
             'qr',
-            'QR-' || UPPER(encode(gen_random_bytes(12), 'hex')),
+            'QR-' || UPPER(md5(a.id::text || random()::text || clock_timestamp()::text)),
             true,
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP
