@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Download, FileSpreadsheet, FileText, FileUp, Pencil, Plus, Printer, Trash2, UsersRound } from "lucide-react"
+import { Download, FileSpreadsheet, FileText, FileUp, Pencil, Plus, Printer, QrCode, Trash2, UsersRound } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { AcademicProgramsService } from "@/client"
@@ -55,6 +55,7 @@ function SectionList() {
   const [printTarget, setPrintTarget] = useState<any>(null)
   const [studentTarget, setStudentTarget] = useState<any>(null)
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
+  const [qrTarget, setQrTarget] = useState<any>(null)
   const [importDialog, setImportDialog] = useState(false)
   const [programId, setProgramId] = useState("")
   const [academicYearId, setAcademicYearId] = useState("")
@@ -158,6 +159,20 @@ function SectionList() {
     setStudentTarget(student)
     const details = await apiJson<any>(`/academic-registry/students/${student.id}`)
     setStudentForm(Object.fromEntries(Object.entries(details).map(([key, value]) => [key, value == null ? "" : String(value)])))
+    return details
+  }
+
+  const openStudentQr = async (student: any) => {
+    try {
+      const details = await apiJson<any>(`/academic-registry/students/${student.id}`)
+      if (details.qr_registered !== true || !details.qr_credential_value) {
+        toast.error("This student does not have an active QR credential.")
+        return
+      }
+      setQrTarget(details)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to load the student's QR code")
+    }
   }
 
   const createStudent = useMutation({
@@ -190,6 +205,20 @@ function SectionList() {
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "Unable to update student"),
   })
+
+  const qrImageUrl = (credential: string) => `https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=16&data=${encodeURIComponent(credential)}`
+
+  const downloadStudentQr = async () => {
+    if (!qrTarget?.qr_credential_value) return
+    try {
+      const response = await fetch(qrImageUrl(qrTarget.qr_credential_value))
+      if (!response.ok) throw new Error("Unable to generate QR code")
+      const blob = await response.blob()
+      downloadBlob(blob, `${qrTarget.student_number}-QR.png`)
+    } catch {
+      toast.error("Unable to download the QR code. Please try again.")
+    }
+  }
 
   const archiveStudent = useMutation({
     mutationFn: () => apiJson(`/students/${deleteTarget.id}`, { method: "DELETE" }),
@@ -336,7 +365,7 @@ function SectionList() {
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}><Pencil /></Button>
+                          <Button variant="ghost" size="icon" title="QR Code" onClick={() => void openStudentQr(student)}><QrCode /></Button><Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}><Pencil /></Button>
                           <Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}><Trash2 /></Button>
                         </div>
                       </TableCell>
@@ -392,12 +421,36 @@ function SectionList() {
       <span className="text-muted-foreground">QR: </span>
       {studentForm.qr_registered === "true" ? (
         <span className="font-medium">Registered{studentForm.qr_credential_value ? " · " + studentForm.qr_credential_value : ""}</span>
+        {studentForm.qr_registered === "true" && studentForm.qr_credential_value ? <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => setQrTarget({ ...studentForm, qr_credential_value: studentForm.qr_credential_value })}><QrCode /> View QR Code</Button> : null}
       ) : (
         <span className="text-muted-foreground">Not registered</span>
       )}
     </div>
   </div>
 </div><DialogFooter><Button variant="outline" onClick={() => setStudentTarget(null)}>Cancel</Button><Button onClick={() => saveStudent.mutate()} disabled={saveStudent.isPending}>{saveStudent.isPending ? "Saving…" : "Save student"}</Button></DialogFooter></DialogContent></Dialog>
+
+    <Dialog open={Boolean(qrTarget)} onOpenChange={(open) => !open && setQrTarget(null)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Student QR Code</DialogTitle>
+          <DialogDescription>Show or save this QR code for event attendance.</DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4">
+          <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            {qrTarget?.qr_credential_value ? <img src={qrImageUrl(qrTarget.qr_credential_value)} alt="Student QR Code" className="size-72" /> : null}
+          </div>
+          <div className="w-full rounded-md bg-muted/40 px-3 py-2 text-center text-sm">
+            <div className="font-medium">{qrTarget?.last_name}, {qrTarget?.first_name}</div>
+            <div className="text-muted-foreground">{qrTarget?.student_number}</div>
+            <div className="mt-1 font-mono text-xs text-muted-foreground">{qrTarget?.qr_credential_value}</div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setQrTarget(null)}>Close</Button>
+          <Button onClick={() => void downloadStudentQr()}><Download /> Download QR</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}><DialogContent><DialogHeader><DialogTitle>Archive student?</DialogTitle><DialogDescription>The student identity remains in the database. The current enrollment will no longer appear in active rosters.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button><Button variant="destructive" onClick={() => archiveStudent.mutate()} disabled={archiveStudent.isPending}>{archiveStudent.isPending ? "Archiving…" : "Archive student"}</Button></DialogFooter></DialogContent></Dialog>
 
