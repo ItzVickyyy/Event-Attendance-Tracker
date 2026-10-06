@@ -420,8 +420,23 @@ function SectionList() {
     <div className="rounded-md bg-muted/40 px-3 py-2">
       <span className="text-muted-foreground">QR: </span>
       {studentForm.qr_registered === "true" ? (
-        <span className="font-medium">Registered{studentForm.qr_credential_value ? " · " + studentForm.qr_credential_value : ""}</span>
-        {studentForm.qr_registered === "true" && studentForm.qr_credential_value ? <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => setQrTarget({ ...studentForm, qr_credential_value: studentForm.qr_credential_value })}><QrCode /> View QR Code</Button> : null}
+        <div className="space-y-2">
+          <span className="font-medium">
+            Registered
+            {studentForm.qr_credential_value ? " · " + studentForm.qr_credential_value : ""}
+          </span>
+          {studentForm.qr_credential_value ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setQrTarget({ ...studentForm, qr_credential_value: studentForm.qr_credential_value })}
+            >
+              <QrCode /> View QR Code
+            </Button>
+          ) : null}
+        </div>
       ) : (
         <span className="text-muted-foreground">Not registered</span>
       )}
