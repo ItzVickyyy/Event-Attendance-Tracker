@@ -1,9 +1,9 @@
 import { Outlet, createFileRoute, redirect, useLocation, useNavigate } from "@tanstack/react-router"
 import { Footer } from "@/components/Common/Footer"
 import { AcademicYearProvider, useAcademicYear } from "@/context/AcademicYearContext"
-import { CalendarDays, Check } from "lucide-react"
+import { CalendarDays, Check, KeyRound, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import useAuth from "@/hooks/useAuth"
 import {
@@ -17,6 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { toast } from "sonner"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { isLoggedIn } from "@/hooks/useAuth"
 
@@ -115,15 +120,59 @@ function AcademicYearSelector() {
 }
 function Layout() {
   const { user } = useAuth()
-  const location = useLocation()
-  const navigate = useNavigate()
   const mustChangePassword = Boolean((user as any)?.must_change_password)
 
+  const [passwordModalOpen, setPasswordModalOpen] = useState(mustChangePassword)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [changingPassword, setChangingPassword] = useState(false)
+
   useEffect(() => {
-    if (mustChangePassword && location.pathname !== "/account") {
-      void navigate({ to: "/account", replace: true })
+    if (mustChangePassword) setPasswordModalOpen(true)
+  }, [mustChangePassword])
+
+  const updateInitialPassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please complete all password fields")
+      return
     }
-  }, [mustChangePassword, location.pathname, navigate])
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match")
+      return
+    }
+    if (currentPassword === newPassword) {
+      toast.error("New password must be different from the temporary password")
+      return
+    }
+    setChangingPassword(true)
+    try {
+      const response = await fetch("/api/v1/users/me/password", {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("access_token"),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      })
+      const body = await response.json().catch(() => null)
+      if (!response.ok) {
+        toast.error(body?.detail ?? "Unable to change password")
+        return
+      }
+      setPasswordModalOpen(false)
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+      toast.success("Password updated successfully")
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+    } finally {
+      setChangingPassword(false)
+    }
+  }
 
   return (
     <AcademicYearProvider>
@@ -138,6 +187,75 @@ function Layout() {
         <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           <div className="mx-auto w-full max-w-7xl min-w-0"><Outlet /></div>
         </main>
+        <Dialog open={passwordModalOpen} onOpenChange={(open) => {
+          if (!mustChangePassword) setPasswordModalOpen(open)
+        }}>
+          <DialogContent showCloseButton={!mustChangePassword} onEscapeKeyDown={(event) => {
+            if (mustChangePassword) event.preventDefault()
+          }} onPointerDownOutside={(event) => {
+            if (mustChangePassword) event.preventDefault()
+          }}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <KeyRound className="size-5" />
+                Update Your Password
+              </DialogTitle>
+              <DialogDescription>
+                Your account was created with a temporary password. Please update it before continuing to use your account.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Alert>
+              <ShieldAlert className="size-4" />
+              <AlertTitle>Action required</AlertTitle>
+              <AlertDescription>
+                You are already on your Dashboard. You can review the page behind this notice, but your new password must be saved before you continue using the system.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="initial-current-password">Temporary password</Label>
+                <Input
+                  id="initial-current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Enter your temporary password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="initial-new-password">New password</Label>
+                <Input
+                  id="initial-new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Create a new password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="initial-confirm-password">Confirm new password</Label>
+                <Input
+                  id="initial-confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Re-enter your new password"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" onClick={() => void updateInitialPassword()} disabled={changingPassword}>
+                {changingPassword ? "Updating..." : "Update Password"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Footer />
       </SidebarInset>
       </SidebarProvider>
