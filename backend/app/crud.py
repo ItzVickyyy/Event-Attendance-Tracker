@@ -4,11 +4,16 @@ from sqlmodel import Session, select
 
 from app.core.security import get_password_hash, verify_password
 from app.models import User, UserCreate, UserUpdate
+from app.services.reference_codes import next_user_reference_code
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
     db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_password_hash(user_create.password)}
+        user_create,
+        update={
+            "hashed_password": get_password_hash(user_create.password),
+            "reference_code": next_user_reference_code(session),
+        },
     )
     session.add(db_obj)
     session.commit()
