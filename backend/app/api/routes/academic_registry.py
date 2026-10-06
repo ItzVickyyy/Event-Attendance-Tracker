@@ -39,7 +39,7 @@ def _section_row_query() -> str:
     return """
         SELECT s.id, s.program_id, p.program_code, p.program_name,
                m.code AS major_code, m.name AS major_name, s.section_code,
-               s.year_level, ay.id AS academic_year_id, ay.label AS academic_year,
+               s.section_name, s.year_level, ay.id AS academic_year_id, ay.label AS academic_year,
                COUNT(DISTINCT CASE WHEN st.archived_at IS NULL THEN se.id END) AS enrolled
         FROM academic_sections s
         JOIN academic_programs p ON p.id = s.program_id
@@ -49,7 +49,7 @@ def _section_row_query() -> str:
         LEFT JOIN student_enrollments se ON se.section_id = s.id AND se.academic_year_id = ay.id
         LEFT JOIN students st ON st.id = se.student_id
         GROUP BY s.id, s.program_id, p.program_code, p.program_name,
-                 m.code, m.name, s.section_code, s.year_level, ay.id, ay.label
+                 m.code, m.name, s.section_code, s.section_name, s.year_level, ay.id, ay.label
         ORDER BY p.program_code, s.year_level, m.code NULLS FIRST, s.section_code
     """
 
