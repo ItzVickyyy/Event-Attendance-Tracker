@@ -13,6 +13,7 @@ from fastapi.routing import APIRoute
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
 
 from app.api.main import api_router
 from app.core import security
@@ -165,7 +166,12 @@ async def record_api_mutations(
             request_id=request_id,
         )
         logger.exception("Unhandled API exception request_id=%s", request_id)
-        raise
+        sentry_sdk.capture_exception()
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error", "request_id": request_id},
+            headers={"X-Request-ID": request_id},
+        )
 
     response.headers["X-Request-ID"] = request_id
     await _audit_mutation(
