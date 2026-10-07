@@ -28,6 +28,12 @@ def upgrade() -> None:
         "ALTER COLUMN program_code TYPE VARCHAR(50)"
     )
 
+    if inspector.has_table("academic_sections"):
+        op.execute(
+            "ALTER TABLE academic_sections "
+            "ALTER COLUMN section_code TYPE VARCHAR(50)"
+        )
+
     # Repair every reference-code default. The original migration passed
     # expression strings without sa.text(), which can leave the whole SQL
     # expression stored as a literal default and overflow VARCHAR(20).
@@ -72,6 +78,17 @@ def upgrade() -> None:
             f"program_name={widths.get('program_name')}, "
             f"program_code={widths.get('program_code')}"
         )
+
+    if inspector.has_table("academic_sections"):
+        section_widths = {
+            column["name"]: getattr(column["type"], "length", None)
+            for column in sa.inspect(bind).get_columns("academic_sections")
+        }
+        if section_widths.get("section_code") != 50:
+            raise RuntimeError(
+                "Academic section code width was not repaired: "
+                f"section_code={section_widths.get('section_code')}"
+            )
 
 
 def downgrade() -> None:
