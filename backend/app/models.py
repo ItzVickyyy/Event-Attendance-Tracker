@@ -5,6 +5,8 @@ from typing import Optional
 
 from pydantic import EmailStr
 from sqlalchemy import JSON, Column, DateTime, Enum as SQLAlchemyEnum, Index, UniqueConstraint, event, text
+from sqlalchemy.engine import Connection
+from sqlalchemy.orm import Mapper
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -412,7 +414,9 @@ class AcademicSection(AcademicSectionBase, table=True):
 
 @event.listens_for(AcademicSection, "before_insert")
 def _set_academic_section_code_before_insert(
-    mapper, connection, target: AcademicSection
+    mapper: Mapper[AcademicSection],
+    connection: Connection,
+    target: AcademicSection,
 ) -> None:
     """Keep the required database code populated for all creation paths."""
     if not target.section_code:
