@@ -2,7 +2,7 @@ from collections.abc import Callable, Generator
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -31,7 +31,9 @@ SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-def get_current_user(session: SessionDep, token: TokenDep) -> User:
+def get_current_user(
+    session: SessionDep, token: TokenDep, request: Request
+) -> User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
@@ -54,6 +56,24 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+
+    # A Developer account is a technical identity, not an operational account.
+    # Deny access by default to every business API and allow only system
+    # diagnostics plus the account's own profile/password endpoints.
+    if user.role == UserRole.developer and not user.is_superuser:
+        path = request.url.path.rstrip("/")
+        allowed_account_paths = {
+            f"{settings.API_V1_STR}/users/me",
+            f"{settings.API_V1_STR}/users/me/password",
+        }
+        developer_prefix = f"{settings.API_V1_STR}/developer/"
+        if path not in allowed_account_paths and not request.url.path.startswith(
+            developer_prefix
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Developer accounts do not have access to operational APIs",
+            )
     return user
 
 
