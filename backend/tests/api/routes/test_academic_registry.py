@@ -361,3 +361,127 @@ def test_academic_registry_student_update_duplicate_and_enrollment_validation(
     )
     assert bad_section.status_code == 404
     assert second["id"] != first["id"]
+
+
+def test_academic_registry_section_filters_and_empty_roster(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    year, section = _current_year_and_program(client, headers)
+
+    filtered = client.get(
+        _api(f"/academic-registry/sections?academic_year_id={year['id']}"),
+        headers=headers,
+    )
+    assert filtered.status_code == 200
+    assert filtered.json()["count"] == len(filtered.json()["data"])
+    assert all(row["academic_year_id"] == year["id"] for row in filtered.json()["data"])
+
+    empty_roster = client.get(
+        _api(f"/academic-registry/sections/{uuid4()}/students"), headers=headers
+    )
+    assert empty_roster.status_code == 200
+    assert empty_roster.json()["count"] == 0
+    assert section["id"] in {row["id"] for row in filtered.json()["data"]}
+
+
+def test_academic_registry_rejects_student_section_year_mismatch_and_blank_number(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    year, section = _current_year_and_program(client, headers)
+
+    blank_number = client.post(
+        _api("/academic-registry/students"),
+        headers=headers,
+        json={
+            "student_number": "   ",
+            "first_name": "Blank",
+            "last_name": "Number",
+            "section_id": section["id"],
+            "academic_year_id": year["id"],
+        },
+    )
+    assert blank_number.status_code == 422
+
+    other_year = 2300 + uuid4().int % 500
+    created_year = client.post(
+        _api("/academic-registry/academic-years"),
+        headers=headers,
+        json={
+            "label": f"{other_year}-{other_year + 1}",
+            "start_year": other_year,
+            "end_year": other_year + 1,
+        },
+    )
+    assert created_year.status_code == 200
+
+    mismatch = client.post(
+        _api("/academic-registry/students"),
+        headers=headers,
+        json={
+            "student_number": f"MISMATCH-{random_lower_string()[:8].upper()}",
+            "first_name": "Wrong",
+            "last_name": "Year",
+            "section_id": section["id"],
+            "academic_year_id": created_year.json()["id"],
+        },
+    )
+    assert mismatch.status_code == 404
+
+
+def test_academic_registry_section_creation_and_update_validation(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    year, section = _current_year_and_program(client, headers)
+
+    missing_major = client.post(
+        _api("/academic-registry/sections"),
+        headers=headers,
+        json={
+            "program_id": section["program_id"],
+            "academic_year_id": year["id"],
+            "year_level": "3rd Year",
+            "section_code": f"NO-MAJOR-{random_lower_string()[:5].upper()}",
+        },
+    )
+    assert missing_major.status_code == 400
+
+    unknown_program = client.post(
+        _api("/academic-registry/sections"),
+        headers=headers,
+        json={
+            "program_id": str(uuid4()),
+            "academic_year_id": year["id"],
+            "year_level": "1st Year",
+            "section_code": f"NO-COURSE-{random_lower_string()[:5].upper()}",
+        },
+    )
+    assert unknown_program.status_code == 404
+
+    unknown_year = client.post(
+        _api("/academic-registry/sections"),
+        headers=headers,
+        json={
+            "program_id": section["program_id"],
+            "academic_year_id": str(uuid4()),
+            "year_level": "1st Year",
+            "section_code": f"NO-YEAR-{random_lower_string()[:5].upper()}",
+        },
+    )
+    assert unknown_year.status_code == 404
+
+    unknown_fields = client.patch(
+        _api(f"/academic-registry/sections/{section['id']}"),
+        headers=headers,
+        json={"unexpected_field": "value"},
+    )
+    assert unknown_fields.status_code == 422
+
+    invalid_year = client.patch(
+        _api(f"/academic-registry/sections/{section['id']}"),
+        headers=headers,
+        json={"academic_year_id": str(uuid4())},
+    )
+    assert invalid_year.status_code == 404
