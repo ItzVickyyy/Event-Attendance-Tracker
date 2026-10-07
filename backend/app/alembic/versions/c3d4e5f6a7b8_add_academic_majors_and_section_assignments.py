@@ -60,13 +60,7 @@ def upgrade() -> None:
 
     # Earlier schema revisions constrained program_name to 20 characters.
     # Widen it before seeding the full program names.
-    op.alter_column(
-        "academic_programs",
-        "program_name",
-        existing_type=sa.String(length=20),
-        type_=sa.String(length=255),
-        existing_nullable=False,
-    )
+    op.execute("ALTER TABLE academic_programs ALTER COLUMN program_name TYPE TEXT")
 
     # Ensure the two CCS programs exist before creating the 2026-2027 catalog.
     op.execute(
