@@ -16,6 +16,7 @@ def create_user_with_role(
     role: UserRole,
     can_scan: bool = False,
     is_superuser: bool = False,
+    is_developer: bool = False,
 ) -> tuple[UserCreate, str]:
     email = random_email()
     password = random_lower_string()
@@ -25,6 +26,7 @@ def create_user_with_role(
         role=role,
         can_scan=can_scan,
         is_superuser=is_superuser,
+        is_developer=is_developer,
     )
     crud.create_user(session=db, user_create=user_in)
     return user_in, password
@@ -36,9 +38,14 @@ def get_token_headers_for_role(
     role: UserRole,
     can_scan: bool = False,
     is_superuser: bool = False,
+    is_developer: bool = False,
 ) -> dict[str, str]:
     user_in, password = create_user_with_role(
-        db=db, role=role, can_scan=can_scan, is_superuser=is_superuser
+        db=db,
+        role=role,
+        can_scan=can_scan,
+        is_superuser=is_superuser,
+        is_developer=is_developer,
     )
     return user_authentication_headers(
         client=client, email=user_in.email, password=password
@@ -110,7 +117,7 @@ def test_role_hierarchy_admin_mutations(client: TestClient, db: Session) -> None
         client, db, role=UserRole.super_admin, can_scan=True, is_superuser=True
     )
     dev_headers = get_token_headers_for_role(
-        client, db, role=UserRole.developer, can_scan=True
+        client, db, role=UserRole.student, can_scan=True, is_developer=True
     )
 
     # Attempt to create an academic program with Student -> 403
@@ -137,12 +144,13 @@ def test_role_hierarchy_admin_mutations(client: TestClient, db: Session) -> None
     )
     assert r.status_code == 403
 
-    # Admin -> 200
+    # Admin handles operations, not global academic configuration.
     r = client.post(
-        f"{settings.API_V1_STR}/academic-programs/", headers=admin_headers, json=payload
+        f"{settings.API_V1_STR}/academic-programs/",
+        headers=admin_headers,
+        json=payload,
     )
-    assert r.status_code == 200
-    assert r.json()["program_code"] == payload["program_code"]
+    assert r.status_code == 403
 
     # Super Admin -> 200
     r = client.post(
@@ -153,7 +161,7 @@ def test_role_hierarchy_admin_mutations(client: TestClient, db: Session) -> None
     assert r.status_code == 200
     assert r.json()["program_code"] == payload2["program_code"]
 
-    # Developer -> 200
+    # Developer access is technical only and does not grant business administration.
     payload3 = {
         "program_code": f"BSECE-{random_lower_string()[:4]}",
         "program_name": "BS Electronics Eng",
@@ -161,8 +169,7 @@ def test_role_hierarchy_admin_mutations(client: TestClient, db: Session) -> None
     r = client.post(
         f"{settings.API_V1_STR}/academic-programs/", headers=dev_headers, json=payload3
     )
-    assert r.status_code == 200
-    assert r.json()["program_code"] == payload3["program_code"]
+    assert r.status_code == 403
 
 
 def test_scanner_permission_matrix(client: TestClient, db: Session) -> None:
@@ -382,3 +389,68 @@ def test_attendance_correction_requires_admin(client: TestClient, db: Session) -
         json=corr_payload,
     )
     assert r_admin.status_code == 404
+
+def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> None:
+    admin_headers = get_token_headers_for_role(client, db, role=UserRole.admin)
+    super_admin_headers = get_token_headers_for_role(
+        client, db, role=UserRole.super_admin, is_superuser=True
+    )
+
+    # Admins may create operational accounts such as Class Representatives.
+    create_class_rep = client.post(
+        f"{settings.API_V1_STR}/users/",
+        headers=admin_headers,
+        json={
+            "email": random_email(),
+            "password": random_lower_string(),
+            "role": UserRole.class_representative.value,
+        },
+    )
+    assert create_class_rep.status_code == 200
+    class_rep_id = create_class_rep.json()["id"]
+
+    # Admins cannot create other administrators.
+    create_admin = client.post(
+        f"{settings.API_V1_STR}/users/",
+        headers=admin_headers,
+        json={
+            "email": random_email(),
+            "password": random_lower_string(),
+            "role": UserRole.admin.value,
+        },
+    )
+    assert create_admin.status_code == 403
+
+    # Admins cannot grant scanner permissions through the general Users API.
+    grant_scanner = client.patch(
+        f"{settings.API_V1_STR}/users/{class_rep_id}",
+        headers=admin_headers,
+        json={"can_scan": True},
+    )
+    assert grant_scanner.status_code == 403
+
+    # Super Admins can create administrator accounts.
+    create_admin_by_super_admin = client.post(
+        f"{settings.API_V1_STR}/users/",
+        headers=super_admin_headers,
+        json={
+            "email": random_email(),
+            "password": random_lower_string(),
+            "role": UserRole.admin.value,
+        },
+    )
+    assert create_admin_by_super_admin.status_code == 200
+    admin_id = create_admin_by_super_admin.json()["id"]
+
+    # Admins cannot change or delete another Admin account.
+    update_admin = client.patch(
+        f"{settings.API_V1_STR}/users/{admin_id}",
+        headers=admin_headers,
+        json={"is_active": False},
+    )
+    assert update_admin.status_code == 403
+    delete_admin = client.delete(
+        f"{settings.API_V1_STR}/users/{admin_id}",
+        headers=admin_headers,
+    )
+    assert delete_admin.status_code == 403
