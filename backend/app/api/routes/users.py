@@ -250,11 +250,12 @@ def update_user(
         if (
             "is_superuser" in submitted_fields
             or "is_developer" in submitted_fields
+            or "can_scan" in submitted_fields
             or submitted_fields.get("role") in (UserRole.admin, UserRole.super_admin)
         ):
             raise HTTPException(
                 status_code=403,
-                detail="Only a Super Admin can change administrative or Developer privileges",
+                detail="Only a Super Admin can change administrative, Developer, or scanner privileges",
             )
     if user_in.email:
         existing_user = crud.get_user_by_email(session=session, email=user_in.email)
