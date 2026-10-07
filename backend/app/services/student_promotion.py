@@ -388,6 +388,9 @@ class StudentPromotionService:
             program_id=program_id,
             year_level=year_level,
             section_name=section_name,
+            section_code=(
+                section_name if " " in section_name else f"{year_level}{section_name}"
+            ),
             academic_year=academic_year,
             academic_year_id=year.id,
         )
