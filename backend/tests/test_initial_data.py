@@ -1,9 +1,9 @@
 import logging
+from sqlalchemy.sql.elements import TextClause
 from typing import Any
 
-from sqlalchemy.sql.elements import TextClause
-
 from app import initial_data
+
 
 class RecordingSession:
     def __init__(self, _engine: Any) -> None:
@@ -41,12 +41,21 @@ def test_init_seeds_catalog_and_class_representative_assignment(
     assert initialized_sessions == [session]
     assert session.commits == 1
     assert len(session.statements) == 36
-    assert any("INSERT INTO academic_years" in sql for sql in session.statements)
-    assert any("INSERT INTO academic_programs" in sql for sql in session.statements)
+    assert any(
+        "INSERT INTO academic_years" in sql for sql in session.statements
+    )
+    assert any(
+        "INSERT INTO academic_programs" in sql for sql in session.statements
+    )
     assert any("INSERT INTO academic_majors" in sql for sql in session.statements)
     assert any("INSERT INTO academic_sections" in sql for sql in session.statements)
-    assert any("INSERT INTO academic_section_majors" in sql for sql in session.statements)
-    assert any("INSERT INTO class_representative_assignments" in sql for sql in session.statements)
+    assert any(
+        "INSERT INTO academic_section_majors" in sql for sql in session.statements
+    )
+    assert any(
+        "INSERT INTO class_representative_assignments" in sql
+        for sql in session.statements
+    )
 
 
 def test_main_logs_and_runs_initialization(monkeypatch: Any, caplog: Any) -> None:
