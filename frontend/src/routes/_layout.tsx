@@ -32,11 +32,37 @@ export const Route = createFileRoute("/_layout")({
     if (!isLoggedIn()) throw redirect({ to: "/login" })
 
     const { data: user } = await UsersService.readUserMe()
-    const isIsolatedDeveloper =
-      user.role === "developer"
+    const path = location.pathname
+    const isSuperAdmin = Boolean(user.is_superuser || user.role === "super_admin")
+    const isAdmin = isSuperAdmin || user.role === "admin"
+    const isDeveloper = Boolean(user.is_developer)
+
+    if (path.startsWith("/administration") && !isAdmin) {
+      throw redirect({ to: "/dashboard" })
+    }
+
+    const superAdminOnlyPath =
+      path.startsWith("/administration/class-representatives") ||
+      path.startsWith("/administration/scanner-permissions") ||
+      path.startsWith("/settings")
+
+    if (superAdminOnlyPath && !isSuperAdmin) {
+      throw redirect({ to: "/dashboard" })
+    }
+
+    if (
+      path.startsWith("/administration/audit-logs") &&
+      !isSuperAdmin &&
+      !isDeveloper
+    ) {
+      throw redirect({ to: "/dashboard" })
+    }
+
+    const isIsolatedDeveloper = isDeveloper && !isAdmin
     const allowedDeveloperPath =
-      location.pathname.startsWith("/developer") ||
-      location.pathname.startsWith("/account")
+      path.startsWith("/developer") ||
+      path.startsWith("/account") ||
+      path.startsWith("/administration/audit-logs")
 
     if (isIsolatedDeveloper && !allowedDeveloperPath) {
       throw redirect({ to: "/developer" })
