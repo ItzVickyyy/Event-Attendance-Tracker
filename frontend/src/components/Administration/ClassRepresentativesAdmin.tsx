@@ -23,7 +23,7 @@ import {
 
 const api = "/api/v1"
 const headers = (json = false) => ({
-  Authorization: `***"access_token")}`,
+  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
   ...(json ? { "Content-Type": "application/json" } : {}),
 })
 
