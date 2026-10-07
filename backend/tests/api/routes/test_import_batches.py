@@ -232,3 +232,114 @@ def test_upload_reports_invalid_and_conflict_rows(
     assert body["total_rows"] == 2
     assert body["conflict_rows"] == 2
     assert body["valid_rows"] == 0
+
+
+def test_import_batch_crud_templates_and_promotion_guards(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+) -> None:
+    headers = superuser_token_headers
+    batch = make_import_batch(source_filename="crud-coverage-import.xlsx")
+
+    listing = client.get(
+        f"{settings.API_V1_STR}/import-batches/?search=crud-coverage-import",
+        headers=headers,
+    )
+    assert listing.status_code == 200
+    assert any(row["id"] == str(batch.id) for row in listing.json()["data"])
+
+    detail = client.get(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}", headers=headers
+    )
+    assert detail.status_code == 200
+
+    records = client.get(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/records?validation_status=valid",
+        headers=headers,
+    )
+    assert records.status_code == 200
+    assert records.json()["count"] == 0
+
+    updated = client.patch(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}",
+        headers=headers,
+        json={"notes": "Coverage test", "source_filename": "updated-coverage.csv"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["notes"] == "Coverage test"
+
+    blocked = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/promote", headers=headers
+    )
+    assert blocked.status_code == 400
+
+    csv_template = client.get(
+        f"{settings.API_V1_STR}/import-batches/template/csv", headers=headers
+    )
+    assert csv_template.status_code == 200
+    assert "Student Number" in csv_template.content.decode("utf-8-sig")
+
+    xlsx_template = client.get(
+        f"{settings.API_V1_STR}/import-batches/template/xlsx", headers=headers
+    )
+    assert xlsx_template.status_code == 200
+    assert xlsx_template.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument"
+    )
+
+    missing_id = "00000000-0000-4000-8000-000000000001"
+    assert client.get(
+        f"{settings.API_V1_STR}/import-batches/{missing_id}", headers=headers
+    ).status_code == 404
+    assert client.get(
+        f"{settings.API_V1_STR}/import-batches/{missing_id}/records", headers=headers
+    ).status_code == 404
+    assert client.patch(
+        f"{settings.API_V1_STR}/import-batches/{missing_id}",
+        headers=headers,
+        json={"notes": "Missing"},
+    ).status_code == 404
+    assert client.delete(
+        f"{settings.API_V1_STR}/import-batches/{missing_id}", headers=headers
+    ).status_code == 404
+
+
+def test_import_batch_creation_and_upload_reject_invalid_files(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+) -> None:
+    headers = superuser_token_headers
+    created = client.post(
+        f"{settings.API_V1_STR}/import-batches/",
+        headers=headers,
+        json={"source_filename": "created-through-api.xlsx", "academic_year": "2026-2027"},
+    )
+    assert created.status_code == 200
+    created_id = created.json()["id"]
+    assert client.delete(
+        f"{settings.API_V1_STR}/import-batches/{created_id}", headers=headers
+    ).status_code == 200
+
+    batch = make_import_batch(source_filename="upload-invalid.xlsx")
+    unsupported = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=headers,
+        files={"file": ("students.txt", b"some data", "text/plain")},
+    )
+    assert unsupported.status_code == 400
+
+    empty = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=headers,
+        files={"file": ("empty.csv", b"", "text/csv")},
+    )
+    assert empty.status_code == 400
+
+    missing = client.post(
+        f"{settings.API_V1_STR}/import-batches/00000000-0000-4000-8000-000000000001/upload",
+        headers=headers,
+        files={"file": ("students.csv", b"Student Number,Last Name", "text/csv")},
+    )
+    assert missing.status_code == 404
