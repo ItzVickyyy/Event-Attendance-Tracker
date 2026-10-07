@@ -139,6 +139,28 @@ const test = base.extend<{
             body: JSON.stringify({ is_superuser: true, can_scan: true }),
           })
         })
+await page.route("**/api/v1/attendance-sessions/active/**", async (route) => {
+          const request = route.request()
+          if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers: corsHeaders })
+            return
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            headers: corsHeaders,
+            body: JSON.stringify({
+              id: "session-1",
+              event_id: "evt-1",
+              session_date: "2026-09-15",
+              name: "Main Session",
+              session_type: "TIME_IN",
+              status: "OPEN",
+              display_order: 1,
+              is_active: true,
+            }),
+          })
+        })
         await page.route(STUDENTS_SEARCH_URL, async (route) => {
           const request = route.request()
           if (request.method() === "OPTIONS") {
