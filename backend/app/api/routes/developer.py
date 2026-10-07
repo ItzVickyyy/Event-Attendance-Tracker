@@ -2,6 +2,7 @@ import platform
 import sys
 import time
 from datetime import UTC, datetime
+from uuid import UUID
 from typing import Any
 
 import fastapi
@@ -122,6 +123,7 @@ class AuditLogEntry(BaseModel):
     resource: str
     method: str
     path: str
+    request_id: str | None
     status_code: int
     outcome: str
     duration_ms: float
@@ -146,24 +148,50 @@ def read_audit_logs(
     offset: int = 0,
     action: str | None = None,
     outcome: str | None = None,
+    actor_user_id: UUID | None = None,
+    resource: str | None = None,
+    status_code: int | None = None,
+    start_at: datetime | None = None,
+    end_at: datetime | None = None,
 ) -> AuditLogResponse:
-    """Return a paginated audit trail without request/response payloads."""
+    """Return paginated audit entries with filters and no payload data."""
     limit = max(1, min(limit, 100))
     offset = max(0, offset)
-    query = select(AuditLog)
-    count_query = select(func.count()).select_from(AuditLog)
+    if outcome is not None and outcome not in {"success", "failure"}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Outcome must be 'success' or 'failure'",
+        )
+    if start_at is not None and end_at is not None and start_at > end_at:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="start_at must be earlier than or equal to end_at",
+        )
 
-    if action:
-        query = query.where(AuditLog.action.ilike(f"%{action.strip()}%"))
-        count_query = count_query.where(AuditLog.action.ilike(f"%{action.strip()}%"))
-    if outcome in {"success", "failure"}:
-        query = query.where(AuditLog.outcome == outcome)
-        count_query = count_query.where(AuditLog.outcome == outcome)
+    def apply_filters(query):
+        if action and action.strip():
+            query = query.where(AuditLog.action.ilike(f"%{action.strip()}%"))
+        if outcome:
+            query = query.where(AuditLog.outcome == outcome)
+        if actor_user_id:
+            query = query.where(AuditLog.actor_user_id == actor_user_id)
+        if resource and resource.strip():
+            query = query.where(AuditLog.resource.ilike(f"%{resource.strip()}%"))
+        if status_code is not None:
+            query = query.where(AuditLog.status_code == status_code)
+        if start_at:
+            query = query.where(AuditLog.occurred_at >= start_at)
+        if end_at:
+            query = query.where(AuditLog.occurred_at <= end_at)
+        return query
 
+    query = apply_filters(select(AuditLog))
+    count_query = apply_filters(select(func.count()).select_from(AuditLog))
     rows = session.exec(
         query.order_by(AuditLog.occurred_at.desc()).offset(offset).limit(limit)
     ).all()
     count = session.exec(count_query).one()
+
     return AuditLogResponse(
         data=[
             AuditLogEntry(
@@ -173,6 +201,7 @@ def read_audit_logs(
                 resource=row.resource,
                 method=row.method,
                 path=row.path,
+                request_id=row.request_id,
                 status_code=row.status_code,
                 outcome=row.outcome,
                 duration_ms=row.duration_ms,
