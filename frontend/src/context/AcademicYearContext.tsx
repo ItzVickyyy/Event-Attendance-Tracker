@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query"
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react"
 import useAuth from "@/hooks/useAuth"
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
 export type AcademicYear = {
   id: string
@@ -37,7 +44,9 @@ async function readAcademicYears(): Promise<AcademicYear[]> {
 
 export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const [selectedId, setSelectedId] = useState(() => localStorage.getItem(STORAGE_KEY) ?? "")
+  const [selectedId, setSelectedId] = useState(
+    () => localStorage.getItem(STORAGE_KEY) ?? "",
+  )
   const query = useQuery({
     queryKey: ["academicYears", "global"],
     queryFn: readAcademicYears,
@@ -52,8 +61,10 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   })
 
   const academicYears = query.data ?? []
-  const currentAcademicYear = academicYears.find((year) => year.is_current) ?? null
-  const activeAcademicYear = academicYears.find((year) => year.id === selectedId) ?? currentAcademicYear
+  const currentAcademicYear =
+    academicYears.find((year) => year.is_current) ?? null
+  const activeAcademicYear =
+    academicYears.find((year) => year.id === selectedId) ?? currentAcademicYear
 
   useEffect(() => {
     if (activeAcademicYear && activeAcademicYear.id !== selectedId) {
@@ -62,7 +73,8 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   }, [activeAcademicYear, selectedId])
 
   useEffect(() => {
-    if (activeAcademicYear) localStorage.setItem(STORAGE_KEY, activeAcademicYear.id)
+    if (activeAcademicYear)
+      localStorage.setItem(STORAGE_KEY, activeAcademicYear.id)
   }, [activeAcademicYear])
 
   const value = useMemo(
@@ -76,11 +88,16 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     [academicYears, activeAcademicYear, currentAcademicYear, query.isLoading],
   )
 
-  return <AcademicYearContext.Provider value={value}>{children}</AcademicYearContext.Provider>
+  return (
+    <AcademicYearContext.Provider value={value}>
+      {children}
+    </AcademicYearContext.Provider>
+  )
 }
 
 export function useAcademicYear() {
   const context = useContext(AcademicYearContext)
-  if (!context) throw new Error("useAcademicYear must be used inside AcademicYearProvider")
+  if (!context)
+    throw new Error("useAcademicYear must be used inside AcademicYearProvider")
   return context
 }
