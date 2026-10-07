@@ -217,16 +217,16 @@ def create_class_representative(
         raise HTTPException(
             status_code=400, detail="Section does not belong to the selected academic year"
         )
+    middle_initial = (
+        payload.middle_initial.strip() if payload.middle_initial else ""
+    )
     full_name = " ".join(
         part
         for part in [
             payload.first_name.strip(),
-            f"{payload.middle_initial.strip()}."
-            if payload.middle_initial
-            and not payload.middle_initial.strip().endswith(".")
-            else (
-                payload.middle_initial.strip() if payload.middle_initial else ""
-            ),
+            f"{middle_initial}."
+            if middle_initial and not middle_initial.endswith(".")
+            else middle_initial,
             payload.last_name.strip(),
             payload.extension.strip() if payload.extension else "",
         ]
@@ -240,7 +240,7 @@ def create_class_representative(
             role=UserRole.class_representative,
             full_name=full_name,
             first_name=payload.first_name.strip(),
-            middle_name=payload.middle_initial.strip().rstrip(".") or None,
+            middle_name=middle_initial.rstrip(".") or None,
             last_name=payload.last_name.strip(),
             name_extension=payload.extension.strip() if payload.extension else None,
             can_scan=False,
