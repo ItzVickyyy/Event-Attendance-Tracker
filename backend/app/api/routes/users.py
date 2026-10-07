@@ -242,6 +242,17 @@ def update_user(
         )
     is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
     submitted_fields = user_in.model_dump(exclude_unset=True)
+    if db_user.id == current_user.id and is_super_admin:
+        requested_role = submitted_fields.get("role", db_user.role)
+        requested_superuser = submitted_fields.get("is_superuser", db_user.is_superuser)
+        if (
+            (db_user.role == UserRole.super_admin and requested_role != UserRole.super_admin)
+            or (db_user.is_superuser and requested_superuser is False)
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="You cannot remove your own Super Admin privileges",
+            )
     if not is_super_admin:
         if (
             db_user.role in (UserRole.admin, UserRole.super_admin)
