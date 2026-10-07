@@ -79,7 +79,7 @@ def require_role(
         if current_user.role not in allowed_set:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="The user does not have sufficient permissions for this operation",
+                detail="The user does not have enough privileges",
             )
         return current_user
 
