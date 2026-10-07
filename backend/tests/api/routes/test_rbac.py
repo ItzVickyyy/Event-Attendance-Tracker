@@ -469,6 +469,7 @@ def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> Non
     )
     assert delete_admin.status_code == 403
 
+
 def test_super_admin_cannot_delete_self_by_role_only(
     client: TestClient, db: Session
 ) -> None:
