@@ -47,6 +47,7 @@ def _seed_academic_catalog(session: Session) -> None:
                     '%s=%s',
                     column_name,
                     COALESCE(character_maximum_length::text, data_type)
+                    || ' default=' || COALESCE(column_default, 'none')
                 ),
                 ', ' ORDER BY ordinal_position
             )
