@@ -247,7 +247,9 @@ def update_user(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
-    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+    is_super_admin = (
+        current_user.is_superuser or current_user.role == UserRole.super_admin
+    )
     submitted_fields = user_in.model_dump(exclude_unset=True)
     if db_user.id == current_user.id and is_super_admin:
         requested_role = submitted_fields.get("role", db_user.role)
