@@ -800,10 +800,6 @@ class StudentImportService:
                 errors.append("Missing Last Name.")
             if not section_ref:
                 errors.append("Missing Section.")
-            if not status:
-                errors.append("Academic Status must be Regular or Irregular.")
-            if section_ref and self._resolve_import_section(import_batch, section_ref) is None:
-                errors.append(f"Section '{section_ref}' does not exist in Academic Year '{import_batch.academic_year}'.")
 
             if errors:
                 row_data["validation_status"] = ImportValidationStatus.invalid
