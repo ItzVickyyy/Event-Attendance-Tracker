@@ -66,11 +66,12 @@ def create_user(
     if not is_super_admin and (
         user_in.is_superuser
         or user_in.is_developer
+        or user_in.can_scan
         or user_in.role in (UserRole.admin, UserRole.super_admin)
     ):
         raise HTTPException(
             status_code=403,
-            detail="Only a Super Admin can create Admin, Super Admin, or Developer-privileged accounts",
+            detail="Only a Super Admin can create privileged accounts or grant scanner access",
         )
 
     user = crud.get_user_by_email(session=session, email=user_in.email)
