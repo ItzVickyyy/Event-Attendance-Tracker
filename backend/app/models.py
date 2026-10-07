@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, DateTime, Enum as SQLAlchemyEnum, Index, UniqueConstraint, text
+from sqlalchemy import JSON, Column, DateTime, Enum as SQLAlchemyEnum, Index, UniqueConstraint, event, text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -408,6 +408,20 @@ class AcademicSection(AcademicSectionBase, table=True):
 
     program: AcademicProgram | None = Relationship(back_populates="sections")
     students: list["Student"] = Relationship(back_populates="section")
+
+
+@event.listens_for(AcademicSection, "before_insert")
+def _set_academic_section_code_before_insert(mapper, connection, target: AcademicSection) -> None:
+    """Keep the required database code populated for all creation paths."""
+    if not target.section_code:
+        target.section_code = target.section_name
+
+
+@event.listens_for(AcademicSection, "before_update")
+def _set_academic_section_code_before_update(mapper, connection, target: AcademicSection) -> None:
+    """Backfill section codes for legacy objects updated through the ORM."""
+    if not target.section_code:
+        target.section_code = target.section_name
 
 
 class AcademicSectionPublic(AcademicSectionBase):
