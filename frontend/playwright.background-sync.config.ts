@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test"
 import "dotenv/config"
 
-const swBaseURL = process.env.PLAYWRIGHT_SW_BASE_URL ?? (process.env.CI ? "http://localhost:4173" : "https://localhost:4173")
+const swBaseURL =
+  process.env.PLAYWRIGHT_SW_BASE_URL ??
+  (process.env.CI ? "http://localhost:4173" : "https://localhost:4173")
 
 if (!process.env.VITE_API_URL) {
   // Node-side Playwright helpers (e.g. tests/utils/privateApi.ts) need an
@@ -36,7 +38,8 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_SW_BASE_URL
     ? undefined
     : {
-        command: "bunx vite build --config vite.config.sw-test.ts && bunx vite preview --config vite.config.sw-test.ts --port 4173 --strictPort",
+        command:
+          "bunx vite build --config vite.config.sw-test.ts && bunx vite preview --config vite.config.sw-test.ts --port 4173 --strictPort",
         url: swBaseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
