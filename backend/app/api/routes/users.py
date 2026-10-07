@@ -32,7 +32,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.get("/", response_model=UsersPublic)
 def read_users(
     session: SessionDep,
-    current_user: User = Depends(require_admin),
+    _current_user: User = Depends(require_admin),
     skip: int = 0,
     limit: int = 100,
 ) -> Any:
