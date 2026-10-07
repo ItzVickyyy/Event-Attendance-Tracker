@@ -86,7 +86,7 @@ def require_scanner_permission(current_user: CurrentUser) -> User:
     """
     if current_user.is_superuser:
         return current_user
-    if current_user.role in (UserRole.developer, UserRole.super_admin, UserRole.admin):
+    if current_user.role in (UserRole.super_admin, UserRole.admin):
         return current_user
     if current_user.can_scan:
         return current_user
@@ -97,9 +97,18 @@ def require_scanner_permission(current_user: CurrentUser) -> User:
 
 
 # Convenience role dependencies
-require_developer = require_role([UserRole.developer])
-require_super_admin = require_role([UserRole.developer, UserRole.super_admin])
-require_admin = require_role([UserRole.developer, UserRole.super_admin, UserRole.admin])
+def require_developer(current_user: CurrentUser) -> User:
+    if not (current_user.is_developer or current_user.role == UserRole.developer):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The user does not have Developer access",
+        )
+    return current_user
+
+
+DeveloperUser = Annotated[User, Depends(require_developer)]
+require_super_admin = require_role([UserRole.super_admin])
+require_admin = require_role([UserRole.super_admin, UserRole.admin])
 def class_rep_assignment(
     session: Session,
     current_user: User,
@@ -139,7 +148,6 @@ def require_class_rep_assignment(
 
 require_class_rep_or_higher = require_role(
     [
-        UserRole.developer,
         UserRole.super_admin,
         UserRole.admin,
         UserRole.class_representative,
@@ -148,10 +156,7 @@ require_class_rep_or_higher = require_role(
 
 
 def get_current_active_superuser(current_user: CurrentUser) -> User:
-    if not current_user.is_superuser and current_user.role not in (
-        UserRole.developer,
-        UserRole.super_admin,
-    ):
+    if not current_user.is_superuser and current_user.role != UserRole.super_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
