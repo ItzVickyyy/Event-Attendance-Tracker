@@ -1451,6 +1451,8 @@ export type UserCreate = {
      * Is Superuser
      */
     is_superuser?: boolean;
+    /** Technical system access, independent of the application role */
+    is_developer?: boolean;
     /**
      * Application RBAC role
      */
@@ -1487,6 +1489,8 @@ export type UserPublic = {
      * Is Superuser
      */
     is_superuser?: boolean;
+    /** Technical system access, independent of the application role */
+    is_developer?: boolean;
     /**
      * Application RBAC role
      */
@@ -1550,6 +1554,8 @@ export type UserUpdate = {
      * Is Superuser
      */
     is_superuser?: boolean | null;
+    /** Technical system access, independent of the application role */
+    is_developer?: boolean | null;
     role?: UserRole | null;
     /**
      * Can Scan
