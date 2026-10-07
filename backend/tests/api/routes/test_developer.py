@@ -1,12 +1,14 @@
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.core.config import settings
 from app import crud
+from app.core.config import settings
 from app.models import UserCreate, UserRole
-from tests.utils.user import user_authentication_headers
+from tests.utils.user import (
+    get_token_headers_for_role,
+    user_authentication_headers,
+)
 from tests.utils.utils import random_email, random_lower_string
-from tests.utils.user import get_token_headers_for_role
 
 
 def test_developer_can_read_system_diagnostics(
@@ -66,7 +68,6 @@ def test_developer_cannot_use_scanner_permission_by_role_alone(
     response = client.get(f"{settings.API_V1_STR}/attendance/", headers=headers)
 
     assert response.status_code == 403
-
 
 
 def test_admin_can_also_have_independent_developer_access(
