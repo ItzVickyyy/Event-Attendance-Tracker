@@ -1,7 +1,7 @@
 import io
 import uuid
 import zipfile
-from typing import Any
+from typing import Any, cast
 from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 def _section_rows(session: SessionDep, section_id: uuid.UUID):
     return session.exec(
         select(Student, Person)
-        .join(Person, col(Person.id) == col(Student.person_id))
+        .join(Person, cast(Any, col(Person.id) == col(Student.person_id)))
         .where(Student.section_id == section_id)
         .order_by(col(Student.student_number).asc())
     ).all()
