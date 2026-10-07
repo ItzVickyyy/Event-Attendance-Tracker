@@ -206,35 +206,35 @@ def export_attendances(
     )
 
     if event_id:
-        statement = statement.where(EventRegistration.event_id == event_id)
+        statement = statement.where(col(EventRegistration.event_id) == event_id)
     if academic_year_id:
-        statement = statement.where(Attendance.academic_year_id == academic_year_id)
+        statement = statement.where(col(Attendance.academic_year_id) == academic_year_id)
 
     if attendance_status:
-        statement = statement.where(Attendance.status == attendance_status)
+        statement = statement.where(col(Attendance.status) == attendance_status)
     if attendance_session_id:
         statement = statement.where(
-            Attendance.attendance_session_id == attendance_session_id
+            col(Attendance.attendance_session_id) == attendance_session_id
         )
     if scan_method:
-        statement = statement.where(Attendance.scan_method == scan_method)
+        statement = statement.where(col(Attendance.scan_method) == scan_method)
     if session_date:
-        statement = statement.where(AttendanceSession.session_date == session_date)
+        statement = statement.where(col(AttendanceSession.session_date) == session_date)
     if attendee_type:
-        statement = statement.where(Attendee.attendee_type == attendee_type)
+        statement = statement.where(col(Attendee.attendee_type) == attendee_type)
     if section_id:
         if _current_user.role.value == "class_representative":
             statement = statement.join(
                 StudentEnrollment,
-                StudentEnrollment.student_id == Student.id,
+                col(StudentEnrollment.student_id) == col(Student.id),
             ).where(
-                StudentEnrollment.section_id == section_id,
-                StudentEnrollment.academic_year_id == academic_year_id,
+                col(StudentEnrollment.section_id) == section_id,
+                col(StudentEnrollment.academic_year_id) == academic_year_id,
             )
         else:
-            statement = statement.where(Student.section_id == section_id)
+            statement = statement.where(col(Student.section_id) == section_id)
     if is_late is not None:
-        statement = statement.where(Attendance.is_late == is_late)
+        statement = statement.where(col(Attendance.is_late) == is_late)
 
     statement = statement.order_by(col(Attendance.created_at).desc())
     results = session.execute(statement).all()
