@@ -5,15 +5,25 @@ import {
   ArrowRight,
   ClipboardCheck,
   KeyRound,
-  Shield,
   Users,
   UserRoundCheck,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { AttendanceCorrectionsService, UsersService } from "@/client"
 import useAuth from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-const sections = [
+type AdministrationSection = {
+  to: string
+  title: string
+  description: string
+  detail: string
+  icon: LucideIcon
+  superAdminOnly?: boolean
+  superAdminOrDeveloper?: boolean
+}
+
+const sections: AdministrationSection[] = [
   {
     to: "/administration/users",
     title: "User Accounts",
