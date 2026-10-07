@@ -1,5 +1,6 @@
 import re
 import time
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import UUID
 
@@ -41,7 +42,9 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def record_api_mutations(request: Request, call_next) -> Response:
+async def record_api_mutations(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     """Record authenticated API writes without capturing request or response bodies."""
     started = time.perf_counter()
     response = await call_next(request)
@@ -82,7 +85,7 @@ async def record_api_mutations(request: Request, call_next) -> Response:
     )
     resource = normalized_path.removeprefix(f"{api_prefix}/")[:255]
     action = f"{method} {resource.split('/', 1)[0]}"[:100]
-    target_engine = test_engine if settings.FASTAPI_ENV == "test" else engine
+    target_engine = (test_engine or engine) if settings.FASTAPI_ENV == "test" else engine
     try:
         with Session(target_engine) as session:
             if session.get(User, actor_id) is not None:
