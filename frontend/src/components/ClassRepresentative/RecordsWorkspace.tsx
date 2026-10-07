@@ -11,7 +11,7 @@ export function ClassRepresentativeRecordsWorkspace() {
   const { activeAcademicYear } = useAcademicYear()
   const token = localStorage.getItem("access_token")
   const headers: Record<string, string> = {}
-  if (token) headers.Authorization = `***
+  if (token) headers.Authorization = `Bearer ${token}`
   const query = useQuery({
     queryKey: ["class-representative-records", activeAcademicYear?.id],
     queryFn: async () => {
