@@ -62,14 +62,15 @@ def create_user(
     """
     Create new user.
     """
-    if not current_user.is_superuser and current_user.role != UserRole.super_admin and (
+    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+    if not is_super_admin and (
         user_in.is_superuser
         or user_in.is_developer
-        or user_in.role == UserRole.super_admin
+        or user_in.role in (UserRole.admin, UserRole.super_admin)
     ):
         raise HTTPException(
             status_code=403,
-            detail="Admins cannot create super-admin or Developer accounts",
+            detail="Only a Super Admin can create Admin, Super Admin, or Developer-privileged accounts",
         )
 
     user = crud.get_user_by_email(session=session, email=user_in.email)
@@ -238,21 +239,22 @@ def update_user(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
-    if not current_user.is_superuser and current_user.role != UserRole.super_admin:
-        if db_user.role == UserRole.super_admin:
+    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+    submitted_fields = user_in.model_dump(exclude_unset=True)
+    if not is_super_admin:
+        if db_user.role in (UserRole.admin, UserRole.super_admin):
             raise HTTPException(
                 status_code=403,
-                detail="Only a Super Admin can modify a Super Admin account",
+                detail="Only a Super Admin can modify Admin or Super Admin accounts",
             )
-        submitted_fields = user_in.model_dump(exclude_unset=True)
         if (
             "is_superuser" in submitted_fields
             or "is_developer" in submitted_fields
-            or submitted_fields.get("role") == UserRole.super_admin
+            or submitted_fields.get("role") in (UserRole.admin, UserRole.super_admin)
         ):
             raise HTTPException(
                 status_code=403,
-                detail="Admins cannot change Super Admin or Developer privileges",
+                detail="Only a Super Admin can change administrative or Developer privileges",
             )
     if user_in.email:
         existing_user = crud.get_user_by_email(session=session, email=user_in.email)
@@ -281,10 +283,11 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Admins are not allowed to delete themselves"
         )
-    if not current_user.is_superuser and current_user.role != UserRole.super_admin and user.role == UserRole.super_admin:
+    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+    if not is_super_admin and user.role in (UserRole.admin, UserRole.super_admin):
         raise HTTPException(
             status_code=403,
-            detail="Only a Super Admin can delete a Super Admin account",
+            detail="Only a Super Admin can delete Admin or Super Admin accounts",
         )
     session.delete(user)
     session.commit()
