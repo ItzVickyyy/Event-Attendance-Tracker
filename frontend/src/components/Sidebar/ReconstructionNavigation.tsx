@@ -33,6 +33,8 @@ type NavigationItem = {
   icon: LucideIcon
   adminOnly?: boolean
   developerOnly?: boolean
+  superAdminOnly?: boolean
+  superAdminOrDeveloper?: boolean
 }
 type NavigationGroup = { title: string; items: NavigationItem[] }
 
@@ -59,11 +61,11 @@ const navigationGroups: NavigationGroup[] = [
     items: [
       { title: "Overview", path: "/administration", icon: ShieldCheck },
       { title: "User Accounts", path: "/administration/users", icon: Users },
-      { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck, adminOnly: true },
+      { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck, superAdminOnly: true },
       { title: "Attendance Corrections", path: "/administration/attendance", icon: ClipboardCheck },
-      { title: "Scanner Permissions", path: "/administration/scanner-permissions", icon: KeyRound },
-      { title: "Audit Logs", path: "/administration/audit-logs", icon: Activity },
-      { title: "System Settings", path: "/settings", icon: Settings },
+      { title: "Scanner Permissions", path: "/administration/scanner-permissions", icon: KeyRound, superAdminOnly: true },
+      { title: "Audit Logs", path: "/administration/audit-logs", icon: Activity, superAdminOrDeveloper: true },
+      { title: "System Settings", path: "/settings", icon: Settings, superAdminOnly: true },
     ],
   },
   {
@@ -89,7 +91,8 @@ export function ReconstructionNavigation() {
   const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || user?.can_scan)
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
-  const canManageClassRepresentatives = Boolean(isSuperuser || role === "super_admin")
+  const isSuperAdmin = Boolean(isSuperuser || role === "super_admin")
+  const canManageClassRepresentatives = isSuperAdmin
   const classRep = role === "class_representative" && !isSuperuser
 
   const groups = navigationGroups
@@ -97,12 +100,14 @@ export function ReconstructionNavigation() {
       ...group,
       items: group.items.filter((item) => {
         if (item.developerOnly) return Boolean(user?.is_developer)
+        if (item.superAdminOrDeveloper) return Boolean(isSuperAdmin || user?.is_developer)
+        if (item.superAdminOnly && !isSuperAdmin) return false
         if (item.path.startsWith("/administration")) {
           if (!administrationAllowed) return false
           if (item.adminOnly && !canManageClassRepresentatives) return false
           return true
         }
-        if (item.path === "/settings") return administrationAllowed
+        if (item.path === "/settings") return isSuperAdmin
         if (item.path === "/scanner") return scannerAllowed && !classRep
         if (classRep && item.path === "/events") return false
         if (item.path === "/events" || item.path === "/records" || item.path === "/sections") {
