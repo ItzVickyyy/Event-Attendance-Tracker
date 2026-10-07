@@ -171,3 +171,21 @@ def test_developer_role_cannot_use_superuser_flag_to_access_operations(
 
     assert health.status_code == 200
     assert events.status_code == 403
+
+
+
+def test_admin_can_review_audit_logs(
+    client: TestClient, db: Session
+) -> None:
+    headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.admin,
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/developer/audit-logs",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
