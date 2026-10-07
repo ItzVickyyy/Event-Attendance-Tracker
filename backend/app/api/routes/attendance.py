@@ -5,8 +5,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
-from sqlalchemy import select
-from sqlmodel import col, func
+from sqlalchemy import select as sa_select
+from sqlmodel import col, func, select
 
 from app.api.deps import (
     CurrentUser,
@@ -186,7 +186,7 @@ def export_attendances(
             raise HTTPException(status_code=404, detail="Event not found")
 
     statement = (
-        select(
+        sa_select(
             Attendance,
             EventRegistration,
             Event,
@@ -237,7 +237,7 @@ def export_attendances(
         statement = statement.where(Attendance.is_late == is_late)
 
     statement = statement.order_by(col(Attendance.created_at).desc())
-    results = session.exec(statement).all()
+    results = session.execute(statement).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
