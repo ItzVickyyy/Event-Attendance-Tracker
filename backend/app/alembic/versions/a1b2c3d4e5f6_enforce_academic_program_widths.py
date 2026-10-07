@@ -28,21 +28,36 @@ def upgrade() -> None:
         "ALTER COLUMN program_code TYPE VARCHAR(50)"
     )
 
-    refreshed = sa.inspect(bind)
-    columns = {
-        column["name"]: column
-        for column in refreshed.get_columns("academic_programs")
-    }
-    if "reference_code" in columns:
-        reference_code = columns["reference_code"]
+    # Repair every reference-code default. The original migration passed
+    # expression strings without sa.text(), which can leave the whole SQL
+    # expression stored as a literal default and overflow VARCHAR(20).
+    reference_code_defaults = (
+        ("user", "USR", "user_reference_code_seq"),
+        ("organizations", "ORG", "organization_reference_code_seq"),
+        ("academic_programs", "PRG", "academic_program_reference_code_seq"),
+        ("academic_sections", "SEC", "academic_section_reference_code_seq"),
+        ("students", "STU", "student_reference_code_seq"),
+        ("events", "EVT", "event_reference_code_seq"),
+        ("attendance_sessions", "SES", "attendance_session_reference_code_seq"),
+    )
+    for table, prefix, sequence in reference_code_defaults:
+        refreshed = sa.inspect(bind)
+        if not refreshed.has_table(table):
+            continue
+        table_columns = {
+            column["name"]: column for column in refreshed.get_columns(table)
+        }
+        reference_code = table_columns.get("reference_code")
+        if reference_code is None:
+            continue
         op.alter_column(
-            "academic_programs",
+            table,
             "reference_code",
             existing_type=reference_code["type"],
             existing_nullable=reference_code["nullable"],
             server_default=sa.text(
-                "'PRG-' || "
-                "LPAD(nextval('academic_program_reference_code_seq'::regclass)::text, 6, '0')"
+                f"'{prefix}-' || "
+                f"LPAD(nextval('{sequence}'::regclass)::text, 6, '0')"
             ),
         )
 
