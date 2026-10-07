@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.models import (
     AcademicProgram,
     AcademicProgramCreate,
@@ -53,7 +53,7 @@ def read_academic_programs(
 
 
 @router.post(
-    "/", response_model=AcademicProgramPublic, dependencies=[Depends(require_admin)]
+    "/", response_model=AcademicProgramPublic, dependencies=[Depends(require_super_admin)]
 )
 def create_academic_program(
     *,
@@ -92,7 +92,7 @@ def read_academic_program(
 @router.patch(
     "/{program_id}",
     response_model=AcademicProgramPublic,
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_super_admin)],
 )
 def update_academic_program(
     *,
@@ -130,7 +130,7 @@ def update_academic_program(
     return program
 
 
-@router.delete("/{program_id}", dependencies=[Depends(require_admin)])
+@router.delete("/{program_id}", dependencies=[Depends(require_super_admin)])
 def delete_academic_program(
     session: SessionDep, _current_user: CurrentUser, program_id: uuid.UUID
 ) -> dict[str, str]:
