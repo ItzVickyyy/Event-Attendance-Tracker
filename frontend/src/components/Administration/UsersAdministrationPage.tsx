@@ -80,12 +80,15 @@ function UserRow({ user, onSave, saving, isSuperAdmin, currentUserId }: { user: 
   const canEdit = isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
   const editableRoles: UserRole[] = isSuperAdmin ? roles : ["student", "class_representative"]
   const save = () => {
-    const body: Record<string, unknown> = { role, is_active: active }
+    const body: Parameters<typeof UsersService.updateUser>[0]["body"] = {
+      role,
+      is_active: active,
+    }
     if (isSuperAdmin) {
       body.can_scan = scan
       body.is_superuser = role === "super_admin"
     }
-    onSave(body as Parameters<typeof UsersService.updateUser>[0]["body"])
+    onSave(body)
   }
   return <tr className="border-b"><td className="p-3 font-medium">{user.full_name || "—"}</td><td className="p-3">{user.email}</td><td className="p-3"><Select value={role} onValueChange={(v) => setRole(v as UserRole)} disabled={!canEdit}><SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger><SelectContent>{editableRoles.map(r => <SelectItem key={r} value={r}>{r.replace(/_/g, " ")}</SelectItem>)}</SelectContent></Select></td><td className="p-3"><Button size="sm" variant={active ? "default" : "outline"} onClick={() => setActive(!active)} disabled={!canEdit}>{active ? "Active" : "Inactive"}</Button></td>{isSuperAdmin && <td className="p-3"><Button size="sm" variant={scan ? "default" : "outline"} onClick={() => setScan(!scan)} disabled={!canEdit}>{scan ? "Allowed" : "Denied"}</Button></td>}<td className="p-3"><Button size="sm" onClick={save} disabled={saving || !canEdit}>Save</Button></td></tr>
 }
