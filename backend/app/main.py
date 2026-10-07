@@ -1,21 +1,20 @@
-from pathlib import Path
-
 import re
 import time
+from pathlib import Path
 from uuid import UUID
 
 import jwt
 import sentry_sdk
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.routing import APIRoute
+from sqlmodel import Session
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
+from app.core import security
 from app.core.config import settings
 from app.core.db import engine, test_engine
-from app.core import security
 from app.models import AuditLog, User
-from sqlmodel import Session
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
@@ -42,7 +41,7 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def record_api_mutations(request: Request, call_next):
+async def record_api_mutations(request: Request, call_next) -> Response:
     """Record authenticated API writes without capturing request or response bodies."""
     started = time.perf_counter()
     response = await call_next(request)
