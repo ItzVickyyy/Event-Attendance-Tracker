@@ -17,7 +17,7 @@ from app.models import (
 router = APIRouter(prefix="/people", tags=["people"])
 
 
-@router.get("/", response_model=PeoplePublic)
+@router.get("/", response_model=PeoplePublic, dependencies=[Depends(require_admin)])
 def read_people(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -67,7 +67,7 @@ def create_person(
     return person
 
 
-@router.get("/{person_id}", response_model=PersonPublic)
+@router.get("/{person_id}", response_model=PersonPublic, dependencies=[Depends(require_admin)])
 def read_person(
     session: SessionDep, _current_user: CurrentUser, person_id: uuid.UUID
 ) -> Any:
