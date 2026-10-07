@@ -22,6 +22,7 @@ def _seed_academic_catalog(session: Session) -> None:
             """
         )
     )
+    session.commit()
     session.exec(
         text(
             """
