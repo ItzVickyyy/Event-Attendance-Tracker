@@ -21,7 +21,7 @@ reusable_oauth2 = OAuth2PasswordBearer(
 
 def get_db() -> Generator[Session]:
     # Use test_engine only when running tests (FASTAPI_ENV=test),
-    # otherwise use the production/development engine
+    # otherwise use the production/development engine.
     target_engine = test_engine if settings.FASTAPI_ENV == "test" else engine
     with Session(target_engine) as session:
         yield session
@@ -37,7 +37,13 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except InvalidTokenError, ValidationError:
+    except (InvalidTokenError, ValidationError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not token_data.sub:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -57,14 +63,15 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 def require_role(
     allowed_roles: list[UserRole] | set[UserRole] | tuple[UserRole, ...],
 ) -> Callable[[User], User]:
-    """
-    Returns a FastAPI dependency that checks if the current user has one of the allowed roles.
-    Superusers (or Developer/Super Admin) with appropriate roles pass automatically.
+    """Require an allowed application role.
+
+    The explicit superuser flag remains the platform-wide override. The
+    Developer role itself is intentionally not included in business/admin
+    roles. Developer accounts should be created with is_superuser=False.
     """
     allowed_set = set(allowed_roles)
 
     def role_checker(current_user: CurrentUser) -> User:
-        # Developer or Super Admin role or superuser flag check if permitted
         if current_user.is_superuser:
             return current_user
         if current_user.role not in allowed_set:
@@ -78,15 +85,10 @@ def require_role(
 
 
 def require_scanner_permission(current_user: CurrentUser) -> User:
-    """
-    Returns the user if they possess attendance scanning permission.
-    Allowed:
-    - Superusers / Developer / Super Admin / Admin (operators)
-    - Any user with can_scan=True explicitly assigned (e.g. Dean, Student Council Advisers/Officers, Class Reps)
-    """
+    """Require an operator role or explicit scanner permission."""
     if current_user.is_superuser:
         return current_user
-    if current_user.role in (UserRole.developer, UserRole.super_admin, UserRole.admin):
+    if current_user.role in (UserRole.super_admin, UserRole.admin):
         return current_user
     if current_user.can_scan:
         return current_user
@@ -96,10 +98,12 @@ def require_scanner_permission(current_user: CurrentUser) -> User:
     )
 
 
-# Convenience role dependencies
+# Developer access is a separate technical capability, not business administration.
 require_developer = require_role([UserRole.developer])
-require_super_admin = require_role([UserRole.developer, UserRole.super_admin])
-require_admin = require_role([UserRole.developer, UserRole.super_admin, UserRole.admin])
+require_super_admin = require_role([UserRole.super_admin])
+require_admin = require_role([UserRole.super_admin, UserRole.admin])
+
+
 def class_rep_assignment(
     session: Session,
     current_user: User,
@@ -139,7 +143,6 @@ def require_class_rep_assignment(
 
 require_class_rep_or_higher = require_role(
     [
-        UserRole.developer,
         UserRole.super_admin,
         UserRole.admin,
         UserRole.class_representative,
@@ -148,10 +151,7 @@ require_class_rep_or_higher = require_role(
 
 
 def get_current_active_superuser(current_user: CurrentUser) -> User:
-    if not current_user.is_superuser and current_user.role not in (
-        UserRole.developer,
-        UserRole.super_admin,
-    ):
+    if not current_user.is_superuser and current_user.role != UserRole.super_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="The user doesn't have enough privileges",
