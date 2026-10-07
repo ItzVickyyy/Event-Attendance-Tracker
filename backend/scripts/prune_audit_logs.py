@@ -57,7 +57,7 @@ def main() -> None:
         session.add(
             AuditLog(
                 actor_user_id=None,
-                action="RETENTION_PRUNE audit_logs",
+                action=f"RETENTION_PRUNE audit_logs count={expired_count}",
                 resource="audit_logs",
                 method="RETENTION",
                 path="maintenance/audit-retention",
