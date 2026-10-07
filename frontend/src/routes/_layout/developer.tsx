@@ -52,7 +52,7 @@ export const Route = createFileRoute("/_layout/developer")({
   component: DeveloperDashboard,
   beforeLoad: async () => {
     const { data: user } = await UsersService.readUserMe()
-    if (!user.is_developer && user.role !== "developer") {
+    if (!user.is_developer) {
       throw redirect({ to: "/dashboard" })
     }
   },
