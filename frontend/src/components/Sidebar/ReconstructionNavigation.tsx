@@ -44,14 +44,7 @@ const navigationGroups: NavigationGroup[] = [
   },
   {
     title: "Developer",
-    items: [
-      {
-        title: "System Dashboard",
-        path: "/developer",
-        icon: Gauge,
-        developerOnly: true,
-      },
-    ],
+    items: [{ title: "System Dashboard", path: "/developer", icon: Gauge, developerOnly: true }],
   },
   {
     title: "Operations",
@@ -67,23 +60,10 @@ const navigationGroups: NavigationGroup[] = [
     items: [
       { title: "Overview", path: "/administration", icon: ShieldCheck },
       { title: "User Accounts", path: "/administration/users", icon: Users },
-      {
-        title: "Class Representatives",
-        path: "/administration/class-representatives",
-        icon: UserRoundCheck,
-        adminOnly: true,
-      },
+      { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck, adminOnly: true },
       { title: "Roles & Permissions", path: "/administration/roles", icon: Shield },
-      {
-        title: "Attendance Corrections",
-        path: "/administration/attendance",
-        icon: ClipboardCheck,
-      },
-      {
-        title: "Scanner Permissions",
-        path: "/administration/scanner-permissions",
-        icon: KeyRound,
-      },
+      { title: "Attendance Corrections", path: "/administration/attendance", icon: ClipboardCheck },
+      { title: "Scanner Permissions", path: "/administration/scanner-permissions", icon: KeyRound },
       { title: "Audit Logs", path: "/administration/audit-logs", icon: Activity },
       { title: "System Settings", path: "/settings", icon: Settings },
     ],
@@ -95,12 +75,7 @@ const navigationGroups: NavigationGroup[] = [
 ]
 
 function canSeeOperationalNavigation(role?: string, isSuperuser?: boolean) {
-  return (
-    isSuperuser ||
-    role === "admin" ||
-    role === "super_admin" ||
-    role === "class_representative"
-  )
+  return isSuperuser || role === "admin" || role === "super_admin" || role === "class_representative"
 }
 
 function canSeeAdministration(role?: string, isSuperuser?: boolean) {
@@ -113,26 +88,17 @@ export function ReconstructionNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const role = user?.role
   const isSuperuser = Boolean(user?.is_superuser)
-  const developerOnly = String(role) === "developer"
-  const scannerAllowed = Boolean(
-    isSuperuser ||
-      role === "admin" ||
-      role === "super_admin" ||
-      user?.can_scan,
-  )
+  const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || user?.can_scan)
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
-  const canManageClassRepresentatives = Boolean(
-    isSuperuser || role === "super_admin",
-  )
+  const canManageClassRepresentatives = Boolean(isSuperuser || role === "super_admin")
   const classRep = role === "class_representative" && !isSuperuser
 
   const groups = navigationGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        if (developerOnly) return Boolean(item.developerOnly || item.path === "/account")
-        if (item.developerOnly) return Boolean(user?.is_developer || String(role) === "developer")
+        if (item.developerOnly) return Boolean(user?.is_developer)
         if (item.path.startsWith("/administration")) {
           if (!administrationAllowed) return false
           if (item.adminOnly && !canManageClassRepresentatives) return false
@@ -141,11 +107,7 @@ export function ReconstructionNavigation() {
         if (item.path === "/settings") return administrationAllowed
         if (item.path === "/scanner") return scannerAllowed && !classRep
         if (classRep && item.path === "/events") return false
-        if (
-          item.path === "/events" ||
-          item.path === "/records" ||
-          item.path === "/sections"
-        ) {
+        if (item.path === "/events" || item.path === "/records" || item.path === "/sections") {
           return operationalAllowed
         }
         return true
@@ -166,16 +128,10 @@ export function ReconstructionNavigation() {
                 const isActive =
                   item.path === "/administration"
                     ? pathname === item.path
-                    : pathname === item.path ||
-                      pathname.startsWith(`${item.path}/`)
+                    : pathname === item.path || pathname.startsWith(`${item.path}/`)
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={item.title}
-                      className="min-h-10"
-                    >
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="min-h-10">
                       <RouterLink
                         to={item.path}
                         onClick={() => isMobile && setOpenMobile(false)}
