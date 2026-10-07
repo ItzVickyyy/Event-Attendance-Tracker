@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import useAuth from "@/hooks/useAuth"
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
 export type AcademicYear = {
@@ -35,11 +36,13 @@ async function readAcademicYears(): Promise<AcademicYear[]> {
 }
 
 export function AcademicYearProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
   const [selectedId, setSelectedId] = useState(() => localStorage.getItem(STORAGE_KEY) ?? "")
   const query = useQuery({
     queryKey: ["academicYears", "global"],
     queryFn: readAcademicYears,
     staleTime: 60_000,
+    enabled: Boolean(user) && (user.role !== "developer" || Boolean(user.is_superuser)),
   })
 
   const academicYears = query.data ?? []
