@@ -343,3 +343,55 @@ def test_import_batch_creation_and_upload_reject_invalid_files(
         files={"file": ("students.csv", b"Student Number,Last Name", "text/csv")},
     )
     assert missing.status_code == 404
+
+
+def test_csv_import_validation_and_staging(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+) -> None:
+    headers = superuser_token_headers
+    batch = make_import_batch(source_filename="csv-coverage.csv")
+    valid_csv = (
+        "Student Number,Last Name,First Name,Section,Academic Status\n"
+        "CSV-10001,Sample,Casey,BSIT WMAD 3A,Regular\n"
+        ",Empty,Number,BSIT WMAD 3A,Regular\n"
+    ).encode("utf-8-sig")
+    response = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=headers,
+        files={"file": ("students.csv", valid_csv, "text/csv")},
+    )
+    assert response.status_code == 200
+    assert response.json()["total_rows"] == 2
+    assert response.json()["invalid_rows"] >= 1
+
+    missing_columns = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=headers,
+        files={"file": ("missing-columns.csv", b"Name,Email\nCasey,a@example.com\n", "text/csv")},
+    )
+    assert missing_columns.status_code == 400
+    assert "Missing required columns" in missing_columns.json()["detail"]
+
+    missing_section = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=headers,
+        files={
+            "file": (
+                "missing-section.csv",
+                b"Student Number,Last Name,First Name\nCSV-10002,Sample,Casey\n",
+                "text/csv",
+            )
+        },
+    )
+    assert missing_section.status_code == 400
+    assert "no Section" in missing_section.json()["detail"]
+
+    invalid_encoding = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=headers,
+        files={"file": ("invalid-encoding.csv", b"\xff\xfe\xff", "text/csv")},
+    )
+    assert invalid_encoding.status_code == 400
+    assert "UTF-8" in invalid_encoding.json()["detail"]
