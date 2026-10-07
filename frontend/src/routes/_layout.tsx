@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_layout")({
 
     const { data: user } = await UsersService.readUserMe()
     const isIsolatedDeveloper =
-      user.role === "developer" && !user.is_superuser
+      user.role === "developer"
     const allowedDeveloperPath =
       location.pathname.startsWith("/developer") ||
       location.pathname.startsWith("/account")

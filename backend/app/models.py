@@ -1332,3 +1332,28 @@ class StudentImportRecord(StudentImportRecordBase, table=True):
     )
 
     import_batch: ImportBatch | None = Relationship(back_populates="records")
+
+
+class AuditLog(SQLModel, table=True):
+    """Minimal audit trail for authenticated API mutations.
+
+    Request bodies, credentials, and response payloads are intentionally not stored.
+    """
+
+    __tablename__ = "audit_logs"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    actor_user_id: uuid.UUID | None = Field(
+        default=None, index=True, foreign_key="user.id"
+    )
+    action: str = Field(max_length=100, index=True)
+    resource: str = Field(max_length=255, index=True)
+    method: str = Field(max_length=10)
+    path: str = Field(max_length=500)
+    status_code: int
+    outcome: str = Field(max_length=20, index=True)
+    duration_ms: float
+    occurred_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )

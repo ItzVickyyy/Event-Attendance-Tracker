@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AuditLogsPanel } from "@/components/Developer/AuditLogsPanel"
 
 type SystemHealth = {
   status: string
@@ -241,6 +242,8 @@ function DeveloperDashboard() {
         </div>
       </section>
 
+      <AuditLogsPanel />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Developer access boundary</CardTitle>
@@ -249,7 +252,7 @@ function DeveloperDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          System logs, controlled feature flags, maintenance mode, and deeper diagnostics can be added after their backend audit trail and runtime enforcement are implemented. This dashboard intentionally does not display fabricated logs or offer controls that are not enforced by the backend.
+          Global settings, maintenance mode, and feature flags will be added only when their backend enforcement, audit coverage, and safeguards are implemented. This dashboard does not offer controls that are not enforced by the backend.
         </CardContent>
       </Card>
     </div>

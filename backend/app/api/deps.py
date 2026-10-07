@@ -60,7 +60,7 @@ def get_current_user(
     # A Developer account is a technical identity, not an operational account.
     # Deny access by default to every business API and allow only system
     # diagnostics plus the account's own profile/password endpoints.
-    if user.role == UserRole.developer and not user.is_superuser:
+    if user.role == UserRole.developer:
         path = request.url.path.rstrip("/")
         allowed_account_paths = {
             f"{settings.API_V1_STR}/users/me",

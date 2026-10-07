@@ -5,22 +5,39 @@ from datetime import UTC, datetime
 from typing import Any
 
 import fastapi
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import func, select, text
 
-from app.api.deps import SessionDep, require_developer
+from app.api.deps import CurrentUser, SessionDep, require_developer
 from app.core.config import settings
 from app.models import (
     AcademicSection,
+    AuditLog,
     Attendance,
     AttendanceSession,
     Event,
     Student,
     User,
+    UserRole,
 )
 
 router = APIRouter(prefix="/developer", tags=["developer"])
+
+
+def require_audit_log_access(current_user: CurrentUser) -> User:
+    """Allow Developers and operational administrators to review audit history."""
+    if (
+        current_user.is_developer
+        or current_user.is_superuser
+        or current_user.role in (UserRole.super_admin, UserRole.admin)
+    ):
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Audit log access is required",
+    )
+
 
 
 class DeveloperHealthResponse(BaseModel):
@@ -94,4 +111,76 @@ def read_system_diagnostics(session: SessionDep) -> Any:
         total_attendance_records=count_rows(Attendance),
         total_attendance_sessions=count_rows(AttendanceSession),
         server_time_utc=datetime.now(UTC),
+    )
+
+
+
+class AuditLogEntry(BaseModel):
+    id: str
+    actor_user_id: str | None
+    action: str
+    resource: str
+    method: str
+    path: str
+    status_code: int
+    outcome: str
+    duration_ms: float
+    occurred_at: datetime
+
+
+class AuditLogResponse(BaseModel):
+    data: list[AuditLogEntry]
+    count: int
+    limit: int
+    offset: int
+
+
+@router.get(
+    "/audit-logs",
+    response_model=AuditLogResponse,
+    dependencies=[Depends(require_audit_log_access)],
+)
+def read_audit_logs(
+    session: SessionDep,
+    limit: int = 50,
+    offset: int = 0,
+    action: str | None = None,
+    outcome: str | None = None,
+) -> AuditLogResponse:
+    """Return a paginated audit trail without request/response payloads."""
+    limit = max(1, min(limit, 100))
+    offset = max(0, offset)
+    query = select(AuditLog)
+    count_query = select(func.count()).select_from(AuditLog)
+
+    if action:
+        query = query.where(AuditLog.action.ilike(f"%{action.strip()}%"))
+        count_query = count_query.where(AuditLog.action.ilike(f"%{action.strip()}%"))
+    if outcome in {"success", "failure"}:
+        query = query.where(AuditLog.outcome == outcome)
+        count_query = count_query.where(AuditLog.outcome == outcome)
+
+    rows = session.exec(
+        query.order_by(AuditLog.occurred_at.desc()).offset(offset).limit(limit)
+    ).all()
+    count = session.exec(count_query).one()
+    return AuditLogResponse(
+        data=[
+            AuditLogEntry(
+                id=str(row.id),
+                actor_user_id=str(row.actor_user_id) if row.actor_user_id else None,
+                action=row.action,
+                resource=row.resource,
+                method=row.method,
+                path=row.path,
+                status_code=row.status_code,
+                outcome=row.outcome,
+                duration_ms=row.duration_ms,
+                occurred_at=row.occurred_at,
+            )
+            for row in rows
+        ],
+        count=count,
+        limit=limit,
+        offset=offset,
     )
