@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.models import (
     Organization,
     OrganizationCreate,
@@ -45,7 +45,7 @@ def read_organizations(
 
 
 @router.post(
-    "/", response_model=OrganizationPublic, dependencies=[Depends(require_admin)]
+    "/", response_model=OrganizationPublic, dependencies=[Depends(require_super_admin)]
 )
 def create_organization(
     *,
@@ -82,7 +82,7 @@ def read_organization(
 @router.patch(
     "/{organization_id}",
     response_model=OrganizationPublic,
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_super_admin)],
 )
 def update_organization(
     *,
@@ -117,7 +117,7 @@ def update_organization(
     return organization
 
 
-@router.delete("/{organization_id}", dependencies=[Depends(require_admin)])
+@router.delete("/{organization_id}", dependencies=[Depends(require_super_admin)])
 def delete_organization(
     session: SessionDep, _current_user: CurrentUser, organization_id: uuid.UUID
 ) -> dict[str, str]:
