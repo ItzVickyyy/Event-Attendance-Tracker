@@ -16,10 +16,10 @@ from app.models import (
     Message,
     UpdatePassword,
     User,
-    UserRole,
     UserCreate,
     UserPublic,
     UserRegister,
+    UserRole,
     UsersPublic,
     UserUpdate,
     UserUpdateMe,
@@ -62,7 +62,9 @@ def create_user(
     """
     Create new user.
     """
-    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+    is_super_admin = (
+        current_user.is_superuser or current_user.role == UserRole.super_admin
+    )
     if not is_super_admin and (
         user_in.is_superuser
         or user_in.is_developer
@@ -114,10 +116,14 @@ def update_user_me(
         first_name = (user_in.first_name or current_user.first_name or "").strip()
         middle_name = (user_in.middle_name or current_user.middle_name or "").strip()
         last_name = (user_in.last_name or current_user.last_name or "").strip()
-        name_extension = (user_in.name_extension or current_user.name_extension or "").strip()
+        name_extension = (
+            user_in.name_extension or current_user.name_extension or ""
+        ).strip()
 
         if not first_name or not last_name:
-            raise HTTPException(status_code=422, detail="First name and last name are required")
+            raise HTTPException(
+                status_code=422, detail="First name and last name are required"
+            )
 
         current_user.first_name = first_name
         current_user.middle_name = middle_name or None
@@ -246,9 +252,9 @@ def update_user(
         requested_role = submitted_fields.get("role", db_user.role)
         requested_superuser = submitted_fields.get("is_superuser", db_user.is_superuser)
         if (
-            (db_user.role == UserRole.super_admin and requested_role != UserRole.super_admin)
-            or (db_user.is_superuser and requested_superuser is False)
-        ):
+            db_user.role == UserRole.super_admin
+            and requested_role != UserRole.super_admin
+        ) or (db_user.is_superuser and requested_superuser is False):
             raise HTTPException(
                 status_code=403,
                 detail="You cannot remove your own Super Admin privileges",
