@@ -517,8 +517,8 @@ def read_attendance(
             )
         allowed = session.execute(
             select(Student.id)
-            .join(Attendee, col(Attendee.person_id) == col(Student.person_id))
-            .join(EventRegistration, col(EventRegistration.attendee_id) == col(Attendee.id))
+            .join(Attendee, cast(Any, col(Attendee.person_id) == col(Student.person_id)))
+            .join(EventRegistration, cast(Any, col(EventRegistration.attendee_id) == col(Attendee.id)))
             .where(
                 EventRegistration.id == record.registration_id,
                 Student.section_id == assignment["section_id"],
