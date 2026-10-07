@@ -81,12 +81,12 @@ export function ReconstructionNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const role = user?.role
   const isSuperuser = Boolean(user?.is_superuser)
-  const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || role === "developer" || user?.can_scan)
+  const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || user?.can_scan)
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
   const developerAllowed = Boolean(user?.is_developer || role === "developer")
-  const pureDeveloper = developerAllowed && !isSuperuser && role !== "admin" && role !== "super_admin"
-  const canManageClassRepresentatives = Boolean(isSuperuser || role === "super_admin" || role === "developer")
+  const pureDeveloper = developerAllowed && !isSuperuser && !["admin", "super_admin", "class_representative"].includes(role ?? "")
+  const canManageClassRepresentatives = Boolean(isSuperuser || role === "super_admin")
   const classRep = role === "class_representative" && !isSuperuser
 
   const groups = navigationGroups
