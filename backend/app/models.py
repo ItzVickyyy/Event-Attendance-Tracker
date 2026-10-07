@@ -1350,6 +1350,7 @@ class AuditLog(SQLModel, table=True):
     resource: str = Field(max_length=255, index=True)
     method: str = Field(max_length=10)
     path: str = Field(max_length=500)
+    request_id: str | None = Field(default=None, max_length=64, index=True)
     status_code: int
     outcome: str = Field(max_length=20, index=True)
     duration_ms: float
