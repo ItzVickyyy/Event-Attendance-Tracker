@@ -10,6 +10,7 @@ import {
   UserRoundCheck,
 } from "lucide-react"
 import { AttendanceCorrectionsService, UsersService } from "@/client"
+import useAuth from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const sections = [
@@ -26,13 +27,7 @@ const sections = [
     description: "Assign representatives to the correct section and academic year.",
     detail: "Section assignments",
     icon: UserRoundCheck,
-  },
-  {
-    to: "/administration/roles",
-    title: "Roles & Permissions",
-    description: "Review application roles and the permissions associated with them.",
-    detail: "Access control",
-    icon: Shield,
+    superAdminOnly: true,
   },
   {
     to: "/administration/attendance",
@@ -47,6 +42,7 @@ const sections = [
     description: "Review who is allowed to scan attendance.",
     detail: "Scanner access",
     icon: KeyRound,
+    superAdminOnly: true,
   },
   {
     to: "/administration/audit-logs",
@@ -54,6 +50,7 @@ const sections = [
     description: "Review available system activity and audit records.",
     detail: "Activity history",
     icon: Activity,
+    superAdminOrDeveloper: true,
   },
 ]
 
@@ -93,6 +90,13 @@ function MetricCard({
 }
 
 export function AdministrationWorkspace() {
+  const { user } = useAuth()
+  const isSuperAdmin = Boolean(user?.is_superuser || user?.role === "super_admin")
+  const sectionsToShow = sections.filter((section) => {
+    if (section.superAdminOnly && !isSuperAdmin) return false
+    if (section.superAdminOrDeveloper && !isSuperAdmin && !user?.is_developer) return false
+    return true
+  })
   const users = useQuery({
     queryKey: ["admin-users-summary"],
     queryFn: () => UsersService.readUsers({ query: { skip: 0, limit: 1 } }),
@@ -144,7 +148,7 @@ export function AdministrationWorkspace() {
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {sections.map(({ to, title, description, detail, icon: Icon }) => (
+          {sectionsToShow.map(({ to, title, description, detail, icon: Icon }) => (
             <Link key={to} to={to} className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
               <Card className="h-full transition-colors group-hover:border-primary/40 group-hover:bg-muted/30">
                 <CardHeader className="space-y-4">
