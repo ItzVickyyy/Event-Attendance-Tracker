@@ -69,8 +69,7 @@ def require_role(
     """Require an allowed application role.
 
     The explicit superuser flag remains the platform-wide override. The
-    Developer role itself is intentionally not included in business/admin
-    roles. Developer accounts should be created with is_superuser=False.
+    Technical Developer access is checked independently by require_developer.
     """
     allowed_set = set(allowed_roles)
 
