@@ -10,7 +10,9 @@ def _api(path: str) -> str:
     return f"{settings.API_V1_STR}{path}"
 
 
-def _person(client: TestClient, headers: dict[str, str], first_name: str = "Test") -> dict:
+def _person(
+    client: TestClient, headers: dict[str, str], first_name: str = "Test"
+) -> dict:
     response = client.post(
         _api("/people/"),
         headers=headers,
@@ -24,7 +26,9 @@ def _person(client: TestClient, headers: dict[str, str], first_name: str = "Test
     return response.json()
 
 
-def _attendee(client: TestClient, headers: dict[str, str], attendee_type: str = "guest") -> dict:
+def _attendee(
+    client: TestClient, headers: dict[str, str], attendee_type: str = "guest"
+) -> dict:
     person = _person(client, headers)
     response = client.post(
         _api("/attendees/"),
@@ -92,7 +96,10 @@ def test_attendee_list_filters_crud_and_missing_records(
 
     deleted = client.delete(_api(f"/attendees/{attendee['id']}"), headers=headers)
     assert deleted.status_code == 200
-    assert client.delete(_api(f"/attendees/{attendee['id']}"), headers=headers).status_code == 404
+    assert (
+        client.delete(_api(f"/attendees/{attendee['id']}"), headers=headers).status_code
+        == 404
+    )
 
 
 def test_attendee_creation_and_person_reassignment_reject_invalid_or_duplicate(
@@ -148,21 +155,29 @@ def test_attendee_relationship_lifecycle_and_validation(
         "relationship_type": "guardian",
     }
 
-    created = client.post(_api("/attendee-relationships/"), headers=headers, json=payload)
+    created = client.post(
+        _api("/attendee-relationships/"), headers=headers, json=payload
+    )
     assert created.status_code == 200
     relationship_id = created.json()["id"]
 
     listing = client.get(
-        _api(f"/attendee-relationships/?attendee_id={attendee['id']}&related_student_id={student['id']}"),
+        _api(
+            f"/attendee-relationships/?attendee_id={attendee['id']}&related_student_id={student['id']}"
+        ),
         headers=headers,
     )
     assert listing.status_code == 200
     assert listing.json()["count"] == 1
 
-    duplicate = client.post(_api("/attendee-relationships/"), headers=headers, json=payload)
+    duplicate = client.post(
+        _api("/attendee-relationships/"), headers=headers, json=payload
+    )
     assert duplicate.status_code == 400
 
-    detail = client.get(_api(f"/attendee-relationships/{relationship_id}"), headers=headers)
+    detail = client.get(
+        _api(f"/attendee-relationships/{relationship_id}"), headers=headers
+    )
     assert detail.status_code == 200
 
     other_attendee = _attendee(client, headers)
@@ -170,23 +185,47 @@ def test_attendee_relationship_lifecycle_and_validation(
     updated = client.patch(
         _api(f"/attendee-relationships/{relationship_id}"),
         headers=headers,
-        json={"attendee_id": other_attendee["id"], "related_student_id": other_student["id"]},
+        json={
+            "attendee_id": other_attendee["id"],
+            "related_student_id": other_student["id"],
+        },
     )
     assert updated.status_code == 200
 
-    assert client.get(_api(f"/attendee-relationships/{uuid4()}"), headers=headers).status_code == 404
-    assert client.patch(
-        _api(f"/attendee-relationships/{relationship_id}"),
-        headers=headers,
-        json={"attendee_id": str(uuid4())},
-    ).status_code == 404
-    assert client.patch(
-        _api(f"/attendee-relationships/{relationship_id}"),
-        headers=headers,
-        json={"related_student_id": str(uuid4())},
-    ).status_code == 404
-    assert client.delete(_api(f"/attendee-relationships/{relationship_id}"), headers=headers).status_code == 200
-    assert client.delete(_api(f"/attendee-relationships/{relationship_id}"), headers=headers).status_code == 404
+    assert (
+        client.get(
+            _api(f"/attendee-relationships/{uuid4()}"), headers=headers
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            _api(f"/attendee-relationships/{relationship_id}"),
+            headers=headers,
+            json={"attendee_id": str(uuid4())},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            _api(f"/attendee-relationships/{relationship_id}"),
+            headers=headers,
+            json={"related_student_id": str(uuid4())},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            _api(f"/attendee-relationships/{relationship_id}"), headers=headers
+        ).status_code
+        == 200
+    )
+    assert (
+        client.delete(
+            _api(f"/attendee-relationships/{relationship_id}"), headers=headers
+        ).status_code
+        == 404
+    )
 
 
 def test_attendee_relationship_create_requires_existing_attendee_and_student(
@@ -194,26 +233,32 @@ def test_attendee_relationship_create_requires_existing_attendee_and_student(
 ) -> None:
     headers = superuser_token_headers
     student = _student(client, headers)
-    assert client.post(
-        _api("/attendee-relationships/"),
-        headers=headers,
-        json={
-            "attendee_id": str(uuid4()),
-            "related_student_id": student["id"],
-            "relationship_type": "guardian",
-        },
-    ).status_code == 404
+    assert (
+        client.post(
+            _api("/attendee-relationships/"),
+            headers=headers,
+            json={
+                "attendee_id": str(uuid4()),
+                "related_student_id": student["id"],
+                "relationship_type": "guardian",
+            },
+        ).status_code
+        == 404
+    )
 
     attendee = _attendee(client, headers)
-    assert client.post(
-        _api("/attendee-relationships/"),
-        headers=headers,
-        json={
-            "attendee_id": attendee["id"],
-            "related_student_id": str(uuid4()),
-            "relationship_type": "guardian",
-        },
-    ).status_code == 404
+    assert (
+        client.post(
+            _api("/attendee-relationships/"),
+            headers=headers,
+            json={
+                "attendee_id": attendee["id"],
+                "related_student_id": str(uuid4()),
+                "relationship_type": "guardian",
+            },
+        ).status_code
+        == 404
+    )
 
 
 def test_attendee_credential_management_and_public_lookup(
@@ -232,11 +277,15 @@ def test_attendee_credential_management_and_public_lookup(
     assert created.status_code == 200
     credential_id = created.json()["id"]
 
-    duplicate = client.post(_api("/attendee-credentials/"), headers=headers, json=payload)
+    duplicate = client.post(
+        _api("/attendee-credentials/"), headers=headers, json=payload
+    )
     assert duplicate.status_code == 400
 
     listing = client.get(
-        _api(f"/attendee-credentials/?attendee_id={attendee['id']}&credential_type=nfc&is_active=true"),
+        _api(
+            f"/attendee-credentials/?attendee_id={attendee['id']}&credential_type=nfc&is_active=true"
+        ),
         headers=headers,
     )
     assert listing.status_code == 200
@@ -253,15 +302,45 @@ def test_attendee_credential_management_and_public_lookup(
         json={"credential_value": changed_value, "is_active": False},
     )
     assert updated.status_code == 200
-    assert client.get(_api(f"/attendee-credentials/public/{changed_value}"), headers=headers).status_code == 404
+    assert (
+        client.get(
+            _api(f"/attendee-credentials/public/{changed_value}"), headers=headers
+        ).status_code
+        == 404
+    )
 
-    assert client.get(_api(f"/attendee-credentials/{credential_id}"), headers=headers).status_code == 200
-    assert client.get(_api(f"/attendee-credentials/{uuid4()}"), headers=headers).status_code == 404
-    assert client.patch(
-        _api(f"/attendee-credentials/{uuid4()}"), headers=headers, json={"is_active": True}
-    ).status_code == 404
-    assert client.delete(_api(f"/attendee-credentials/{credential_id}"), headers=headers).status_code == 200
-    assert client.delete(_api(f"/attendee-credentials/{credential_id}"), headers=headers).status_code == 404
+    assert (
+        client.get(
+            _api(f"/attendee-credentials/{credential_id}"), headers=headers
+        ).status_code
+        == 200
+    )
+    assert (
+        client.get(
+            _api(f"/attendee-credentials/{uuid4()}"), headers=headers
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            _api(f"/attendee-credentials/{uuid4()}"),
+            headers=headers,
+            json={"is_active": True},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            _api(f"/attendee-credentials/{credential_id}"), headers=headers
+        ).status_code
+        == 200
+    )
+    assert (
+        client.delete(
+            _api(f"/attendee-credentials/{credential_id}"), headers=headers
+        ).status_code
+        == 404
+    )
 
 
 def test_credential_creation_and_update_reject_missing_or_duplicate_values(
@@ -274,7 +353,11 @@ def test_credential_creation_and_update_reject_missing_or_duplicate_values(
     one = client.post(
         _api("/attendee-credentials/"),
         headers=headers,
-        json={"attendee_id": first["id"], "credential_type": "nfc", "credential_value": value},
+        json={
+            "attendee_id": first["id"],
+            "credential_type": "nfc",
+            "credential_value": value,
+        },
     )
     assert one.status_code == 200
 
@@ -303,18 +386,24 @@ def test_credential_creation_and_update_reject_missing_or_duplicate_values(
     )
     assert conflict.status_code == 400
 
-    assert client.post(
-        _api("/attendee-credentials/"),
-        headers=headers,
-        json={
-            "attendee_id": str(uuid4()),
-            "credential_type": "nfc",
-            "credential_value": f"MISSING-{random_lower_string()[:10].upper()}",
-        },
-    ).status_code == 404
+    assert (
+        client.post(
+            _api("/attendee-credentials/"),
+            headers=headers,
+            json={
+                "attendee_id": str(uuid4()),
+                "credential_type": "nfc",
+                "credential_value": f"MISSING-{random_lower_string()[:10].upper()}",
+            },
+        ).status_code
+        == 404
+    )
 
-    assert client.patch(
-        _api(f"/attendee-credentials/{other.json()['id']}"),
-        headers=headers,
-        json={"attendee_id": str(uuid4())},
-    ).status_code == 404
+    assert (
+        client.patch(
+            _api(f"/attendee-credentials/{other.json()['id']}"),
+            headers=headers,
+            json={"attendee_id": str(uuid4())},
+        ).status_code
+        == 404
+    )

@@ -269,9 +269,12 @@ def test_attendance_session_lifecycle_filters_and_status_transitions(
     assert deleted.status_code == 200
 
     missing_id = random_lower_string()[:8]
-    assert client.get(
-        f"{settings.API_V1_STR}/attendance-sessions/{missing_id}", headers=headers
-    ).status_code == 422
+    assert (
+        client.get(
+            f"{settings.API_V1_STR}/attendance-sessions/{missing_id}", headers=headers
+        ).status_code
+        == 422
+    )
 
 
 def test_attendance_session_rejects_invalid_event_and_active_status(

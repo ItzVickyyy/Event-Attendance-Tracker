@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { UsersService, type UserPublic } from "@/client"
+import { type UserPublic, UsersService } from "@/client"
 import { Footer } from "@/components/Common/Footer"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"

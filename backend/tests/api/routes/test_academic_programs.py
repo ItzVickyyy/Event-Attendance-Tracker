@@ -12,7 +12,10 @@ def _api(path: str) -> str:
 
 def _program_payload() -> dict[str, str]:
     suffix = random_lower_string()[:10].upper()
-    return {"program_code": f"TMP-{suffix}", "program_name": f"Temporary Program {suffix}"}
+    return {
+        "program_code": f"TMP-{suffix}",
+        "program_name": f"Temporary Program {suffix}",
+    }
 
 
 def test_academic_program_crud_search_and_missing_records(
@@ -44,11 +47,26 @@ def test_academic_program_crud_search_and_missing_records(
     assert changed.json()["program_name"] == "Updated Temporary Program"
 
     missing_id = str(uuid4())
-    assert client.get(_api(f"/academic-programs/{missing_id}"), headers=headers).status_code == 404
-    assert client.patch(
-        _api(f"/academic-programs/{missing_id}"), headers=headers, json={"program_name": "Missing"}
-    ).status_code == 404
-    assert client.delete(_api(f"/academic-programs/{missing_id}"), headers=headers).status_code == 404
+    assert (
+        client.get(
+            _api(f"/academic-programs/{missing_id}"), headers=headers
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            _api(f"/academic-programs/{missing_id}"),
+            headers=headers,
+            json={"program_name": "Missing"},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            _api(f"/academic-programs/{missing_id}"), headers=headers
+        ).status_code
+        == 404
+    )
 
     deleted = client.delete(_api(f"/academic-programs/{program_id}"), headers=headers)
     assert deleted.status_code == 200
@@ -60,14 +78,20 @@ def test_academic_program_rejects_duplicate_codes_on_create_and_update(
 ) -> None:
     headers = superuser_token_headers
     first_payload = _program_payload()
-    first = client.post(_api("/academic-programs/"), headers=headers, json=first_payload)
+    first = client.post(
+        _api("/academic-programs/"), headers=headers, json=first_payload
+    )
     assert first.status_code == 200
 
-    duplicate = client.post(_api("/academic-programs/"), headers=headers, json=first_payload)
+    duplicate = client.post(
+        _api("/academic-programs/"), headers=headers, json=first_payload
+    )
     assert duplicate.status_code == 400
 
     second_payload = _program_payload()
-    second = client.post(_api("/academic-programs/"), headers=headers, json=second_payload)
+    second = client.post(
+        _api("/academic-programs/"), headers=headers, json=second_payload
+    )
     assert second.status_code == 200
 
     conflict = client.patch(
