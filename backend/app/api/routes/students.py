@@ -24,8 +24,16 @@ router = APIRouter(prefix="/students", tags=["students"])
 
 
 def _ensure_class_rep_student_access(session: SessionDep, current_user: CurrentUser, student_id: uuid.UUID) -> None:
-    if current_user.role.value != "class_representative":
+    if current_user.is_superuser or current_user.role in (
+        UserRole.super_admin,
+        UserRole.admin,
+    ):
         return
+    if current_user.role != UserRole.class_representative:
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
     assignment = class_rep_assignment(session, current_user)
     if not assignment:
         raise HTTPException(status_code=403, detail="No Class Representative assignment found")
@@ -58,6 +66,15 @@ def read_students(
     limit: int = 100,
     search: str | None = None,
 ) -> Any:
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
     count_statement = (
         select(func.count())
         .select_from(Student)
