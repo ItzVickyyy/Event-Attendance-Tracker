@@ -37,7 +37,11 @@ export const Route = createFileRoute("/_layout")({
     const isAdmin = isSuperAdmin || user.role === "admin"
     const isDeveloper = Boolean(user.is_developer)
 
-    if (path.startsWith("/administration") && !isAdmin) {
+    if (
+      path.startsWith("/administration") &&
+      !isAdmin &&
+      !(path.startsWith("/administration/audit-logs") && isDeveloper)
+    ) {
       throw redirect({ to: "/dashboard" })
     }
 
