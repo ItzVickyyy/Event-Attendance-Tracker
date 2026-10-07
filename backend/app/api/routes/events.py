@@ -23,7 +23,7 @@ from app.student_academics import AcademicYear
 router = APIRouter(prefix="/events", tags=["events"])
 
 
-@router.get("/", response_model=EventsPublic)
+@router.get("/", response_model=EventsPublic, dependencies=[Depends(require_admin)])
 def read_events(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -113,7 +113,7 @@ def create_event(
     return event
 
 
-@router.get("/{event_id}", response_model=EventPublic)
+@router.get("/{event_id}", response_model=EventPublic, dependencies=[Depends(require_admin)])
 def read_event(
     session: SessionDep, _current_user: CurrentUser, event_id: uuid.UUID
 ) -> Any:
