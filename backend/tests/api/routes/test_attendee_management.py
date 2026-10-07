@@ -407,3 +407,53 @@ def test_credential_creation_and_update_reject_missing_or_duplicate_values(
         ).status_code
         == 404
     )
+
+
+def test_public_credential_lookup_includes_student_and_section(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    sections = client.get(
+        _api("/academic-sections/?academic_year=2026-2027"), headers=headers
+    )
+    assert sections.status_code == 200
+    section = sections.json()["data"][0]
+
+    person = _person(client, headers, "Credential Student")
+    student_response = client.post(
+        _api("/students/"),
+        headers=headers,
+        json={
+            "person_id": person["id"],
+            "student_number": f"LOOKUP-{random_lower_string()[:10].upper()}",
+            "section_id": section["id"],
+        },
+    )
+    assert student_response.status_code == 200
+    student = student_response.json()
+
+    attendee_response = client.post(
+        _api("/attendees/"),
+        headers=headers,
+        json={"person_id": person["id"], "attendee_type": "student"},
+    )
+    assert attendee_response.status_code == 200
+    credential_value = f"QR-{random_lower_string()[:12].upper()}"
+    credential_response = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": attendee_response.json()["id"],
+            "credential_type": "qr",
+            "credential_value": credential_value,
+            "is_active": True,
+        },
+    )
+    assert credential_response.status_code == 200
+
+    lookup = client.get(
+        _api(f"/attendee-credentials/public/{credential_value}"), headers=headers
+    )
+    assert lookup.status_code == 200
+    assert lookup.json()["student_number"] == student["student_number"]
+    assert lookup.json()["section_name"] == section["section_name"]
