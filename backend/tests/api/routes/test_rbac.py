@@ -390,6 +390,7 @@ def test_attendance_correction_requires_admin(client: TestClient, db: Session) -
     )
     assert r_admin.status_code == 404
 
+
 def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> None:
     admin_headers = get_token_headers_for_role(client, db, role=UserRole.admin)
     super_admin_headers = get_token_headers_for_role(
