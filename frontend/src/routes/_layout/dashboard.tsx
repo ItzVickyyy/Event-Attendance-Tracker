@@ -8,7 +8,12 @@ import useAuth from "@/hooks/useAuth"
 export const Route = createFileRoute("/_layout/dashboard")({
   beforeLoad: async () => {
     const { data: user } = await UsersService.readUserMe()
-    if (user.role === "developer" && !user.is_superuser) {
+    if (
+      user.is_developer &&
+      !user.is_superuser &&
+      user.role !== "admin" &&
+      user.role !== "super_admin"
+    ) {
       throw redirect({ to: "/developer" })
     }
   },
