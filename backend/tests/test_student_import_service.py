@@ -6,12 +6,12 @@ from openpyxl import Workbook
 from sqlmodel import select
 
 from app.models import AcademicProgram, AcademicSection, ImportBatch
-from app.student_academics import AcademicYear
 from app.services.student_import import (
     StudentImportService,
     parse_student_import,
     validate_student_import,
 )
+from app.student_academics import AcademicYear
 
 
 def test_import_section_resolver_normalizes_exact_and_legacy_references(
@@ -126,7 +126,5 @@ def test_import_service_file_dispatch_and_compatibility_wrappers(db_session) -> 
     )
     db_session.add(validation_batch)
     db_session.flush()
-    summary = validate_student_import(
-        db_session, validation_batch, _workbook_bytes()
-    )
+    summary = validate_student_import(db_session, validation_batch, _workbook_bytes())
     assert summary["total_rows"] == 1

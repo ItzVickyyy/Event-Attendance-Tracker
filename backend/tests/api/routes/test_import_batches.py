@@ -388,7 +388,13 @@ def test_csv_import_validation_and_staging(
     missing_columns = client.post(
         f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
         headers=headers,
-        files={"file": ("missing-columns.csv", b"Name,Email\nCasey,a@example.com\n", "text/csv")},
+        files={
+            "file": (
+                "missing-columns.csv",
+                b"Name,Email\nCasey,a@example.com\n",
+                "text/csv",
+            )
+        },
     )
     assert missing_columns.status_code == 400
     assert "Missing required columns" in missing_columns.json()["detail"]
