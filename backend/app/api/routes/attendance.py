@@ -45,7 +45,7 @@ from app.student_academics import StudentEnrollment
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
-@router.get("/", response_model=AttendancesPublic)
+@router.get("/", response_model=AttendancesPublic, dependencies=[Depends(require_admin)])
 def read_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
