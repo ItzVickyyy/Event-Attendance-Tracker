@@ -60,8 +60,11 @@ async function fetchAuditLogs(
   )
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    const detail = body?.detail
-    throw new Error(typeof detail === "string" ? detail : "Unable to load audit logs")
+    const detail = typeof body?.detail === "string"
+      ? body.detail
+      : "Unable to load audit logs"
+    const requestId = body?.request_id ?? response.headers.get("X-Request-ID")
+    throw new Error(requestId ? `${detail} (Request ID: ${requestId})` : detail)
   }
   return (await response.json()) as AuditResponse
 }
