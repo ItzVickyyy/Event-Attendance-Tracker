@@ -19,23 +19,26 @@ def upgrade() -> None:
     if not inspector.has_table("academic_programs"):
         return
 
-    columns = {
-        column["name"]: column
-        for column in inspector.get_columns("academic_programs")
-    }
-    for name, length in (("program_name", 255), ("program_code", 50)):
-        column = columns.get(name)
-        if column is None:
-            continue
-        if getattr(column["type"], "length", None) != length:
-            op.alter_column(
-                "academic_programs",
-                name,
-                existing_type=column["type"],
-                type_=sa.String(length=length),
-                existing_nullable=column["nullable"],
-            )
+    # Use explicit PostgreSQL DDL instead of relying on reflected type lengths.
+    # The preceding reconciliation migration can be recorded as applied while
+    # a deployed database still retains the legacy VARCHAR(20) columns.
+    op.execute(
+        "ALTER TABLE academic_programs "
+        "ALTER COLUMN program_name TYPE VARCHAR(255), "
+        "ALTER COLUMN program_code TYPE VARCHAR(50)"
+    )
 
+    refreshed = sa.inspect(bind)
+    widths = {
+        column["name"]: getattr(column["type"], "length", None)
+        for column in refreshed.get_columns("academic_programs")
+    }
+    if widths.get("program_name") != 255 or widths.get("program_code") != 50:
+        raise RuntimeError(
+            "Academic program column widths were not repaired: "
+            f"program_name={widths.get('program_name')}, "
+            f"program_code={widths.get('program_code')}"
+        )
 
 def downgrade() -> None:
     # Keeping the wider columns avoids truncating valid catalog values.
