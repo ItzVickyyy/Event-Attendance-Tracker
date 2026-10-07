@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { UsersRound, BookOpen, CalendarDays } from "lucide-react"
+import { BookOpen, CalendarDays, UsersRound } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAcademicYear } from "@/context/AcademicYearContext"
 
@@ -10,7 +10,7 @@ export function ClassRepresentativeDashboard() {
     queryKey: ["class-representative-assignment", activeAcademicYear?.id],
     queryFn: async () => {
       const headers: Record<string, string> = {}
-      if (token) headers.Authorization = "Bearer " + token
+      if (token) headers.Authorization = `***
       const response = await fetch(
         "/api/v1/class-representatives/me?academic_year_id=" +
           encodeURIComponent(activeAcademicYear!.id),
@@ -58,7 +58,8 @@ export function ClassRepresentativeDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <BookOpen />Section
+              <BookOpen />
+              Section
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -70,7 +71,8 @@ export function ClassRepresentativeDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <UsersRound />Students
+              <UsersRound />
+              Students
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -83,7 +85,8 @@ export function ClassRepresentativeDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
-              <CalendarDays />Academic Year
+              <CalendarDays />
+              Academic Year
             </CardTitle>
           </CardHeader>
           <CardContent>
