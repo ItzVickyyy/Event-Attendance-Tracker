@@ -141,7 +141,7 @@ export function AuditLogsPanel() {
                     {query.data.data.map((entry) => (
                       <tr key={entry.id} className="align-top">
                         <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
-                          {new Date(entry.occurred_at).toLocaleString()}
+                          {new Date(entry.occurred_at).toLocaleString("en-GB", { timeZone: "UTC" })}
                         </td>
                         <td className="px-3 py-3 font-medium">{entry.action}</td>
                         <td className="max-w-sm break-all px-3 py-3">
