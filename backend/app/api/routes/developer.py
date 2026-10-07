@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlmodel import func, select, text
 
-from app.api.deps import CurrentUser, SessionDep, require_developer
+from app.api.deps import SessionDep, require_developer
 from app.core.config import settings
 from app.models import (
     AcademicSection,
@@ -76,12 +76,9 @@ def read_system_health(session: SessionDep) -> Any:
 @router.get(
     "/diagnostics",
     response_model=DeveloperDiagnosticsResponse,
-    dependencies=[require_developer],
+    dependencies=[Depends(require_developer)],
 )
-def read_system_diagnostics(
-    session: SessionDep,
-    _current_user: CurrentUser,
-) -> Any:
+def read_system_diagnostics(session: SessionDep) -> Any:
     """Return aggregate counts only. No user or student records are exposed."""
     engine_name = session.bind.dialect.name if session.bind else "unknown"
 
