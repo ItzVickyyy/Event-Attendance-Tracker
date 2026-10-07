@@ -281,6 +281,12 @@ def test_academic_year_validation_and_set_current_lifecycle(
         ).status_code
         == 404
     )
+    restored = client.post(
+        _api(f"/academic-registry/academic-years/{current_year['id']}/set-current"),
+        headers=headers,
+    )
+    assert restored.status_code == 200
+    assert restored.json()["is_current"] is True
     assert current_year["id"] != next_id
 
 
