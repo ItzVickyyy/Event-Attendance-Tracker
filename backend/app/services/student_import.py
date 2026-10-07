@@ -5,7 +5,7 @@ import io
 import re
 from typing import Any, TypedDict
 
-from openpyxl import load_workbook  # type: ignore[import-untyped]
+from openpyxl import load_workbook  # type: ignore[import-untyped]  # type: ignore[import-untyped]
 from sqlmodel import Session, col, select
 
 from app.models import (
