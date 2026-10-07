@@ -142,3 +142,32 @@ def test_non_developer_cannot_read_audit_logs(
     )
 
     assert response.status_code == 403
+
+
+
+def test_developer_role_cannot_use_superuser_flag_to_access_operations(
+    client: TestClient, db: Session
+) -> None:
+    email = random_email()
+    password = random_lower_string()
+    crud.create_user(
+        session=db,
+        user_create=UserCreate(
+            email=email,
+            password=password,
+            role=UserRole.developer,
+            is_developer=True,
+            is_superuser=True,
+        ),
+    )
+    headers = user_authentication_headers(
+        client=client,
+        email=email,
+        password=password,
+    )
+
+    health = client.get(f"{settings.API_V1_STR}/developer/health", headers=headers)
+    events = client.get(f"{settings.API_V1_STR}/events/", headers=headers)
+
+    assert health.status_code == 200
+    assert events.status_code == 403
