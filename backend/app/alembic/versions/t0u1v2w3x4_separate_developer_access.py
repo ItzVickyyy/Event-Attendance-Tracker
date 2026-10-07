@@ -27,10 +27,11 @@ def upgrade() -> None:
     # prior superuser flag would otherwise continue granting admin permissions.
     op.execute(
         sa.text(
-            'UPDATE "user" SET is_developer = TRUE, is_superuser = FALSE '
+            'UPDATE "user" SET is_developer = TRUE, is_superuser = FALSE, can_scan = FALSE '
             "WHERE role = 'developer'"
         )
     )
+    op.alter_column("user", "is_developer", server_default=None)
 
 
 def downgrade() -> None:
