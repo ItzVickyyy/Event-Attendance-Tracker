@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
-from sqlmodel import col, select
+from sqlmodel import select
 
 from app.academic_catalog import AcademicMajor
 from app.api.deps import (
@@ -28,8 +28,8 @@ from app.student_academics import (
     StudentEnrollmentPublic,
     StudentEnrollmentUpdate,
     StudentRosterPublic,
-    StudentStatus,
     StudentRosterRow,
+    StudentStatus,
 )
 
 router = APIRouter(prefix="/academic-registry", tags=["academic-registry"])
@@ -54,11 +54,13 @@ def _section_row_query() -> str:
     """
 
 
-@router.get("/academic-years", response_model=AcademicYearsPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/academic-years",
+    response_model=AcademicYearsPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_academic_years(session: SessionDep, _current_user: CurrentUser) -> Any:
-    years = session.exec(
-        select(AcademicYear).order_by(text('start_year DESC'))
-    ).all()
+    years = session.exec(select(AcademicYear).order_by(text("start_year DESC"))).all()
     return AcademicYearsPublic(
         data=[AcademicYearPublic.model_validate(year) for year in years],
         count=len(years),
@@ -159,13 +161,17 @@ def read_sections(
             "GROUP BY s.id,",
             "WHERE s.id = :section_id AND ay.id = :academic_year_id\n        GROUP BY s.id,",
         )
-        rows = session.execute(
-            text(query),
-            {
-                "section_id": assignment["section_id"],
-                "academic_year_id": academic_year_id,
-            },
-        ).mappings().all()
+        rows = (
+            session.execute(
+                text(query),
+                {
+                    "section_id": assignment["section_id"],
+                    "academic_year_id": academic_year_id,
+                },
+            )
+            .mappings()
+            .all()
+        )
         return SectionRegistryPublic(
             data=[SectionRegistryRow(**dict(row)) for row in rows], count=len(rows)
         )
@@ -249,7 +255,9 @@ def read_student_details(
     if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
-            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
         allowed = session.execute(
             text("""
                 SELECT 1
@@ -307,16 +315,26 @@ def create_student_in_section(
             status_code=403,
             detail="Administrator or assigned Class Representative access is required",
         )
-    required = {"student_number", "first_name", "last_name", "section_id", "academic_year_id"}
+    required = {
+        "student_number",
+        "first_name",
+        "last_name",
+        "section_id",
+        "academic_year_id",
+    }
     if not required.issubset(payload):
-        raise HTTPException(status_code=422, detail=f"Required fields: {', '.join(sorted(required))}")
+        raise HTTPException(
+            status_code=422, detail=f"Required fields: {', '.join(sorted(required))}"
+        )
 
     section_id = uuid.UUID(str(payload["section_id"]))
     academic_year_id = uuid.UUID(str(payload["academic_year_id"]))
     section = session.get(AcademicSection, section_id)
     year = session.get(AcademicYear, academic_year_id)
     if not section or not year or section.academic_year_id != academic_year_id:
-        raise HTTPException(status_code=404, detail="Section or academic year not found")
+        raise HTTPException(
+            status_code=404, detail="Section or academic year not found"
+        )
     if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment or assignment["section_id"] != section_id:
@@ -328,8 +346,13 @@ def create_student_in_section(
     student_number = str(payload["student_number"]).strip()
     if not student_number:
         raise HTTPException(status_code=422, detail="Student number is required")
-    if session.execute(text("SELECT 1 FROM students WHERE student_number=:student_number"), {"student_number": student_number}).first():
-        raise HTTPException(status_code=409, detail="A student with this student number already exists")
+    if session.execute(
+        text("SELECT 1 FROM students WHERE student_number=:student_number"),
+        {"student_number": student_number},
+    ).first():
+        raise HTTPException(
+            status_code=409, detail="A student with this student number already exists"
+        )
 
     status_value = str(payload.get("student_status", "regular"))
     try:
@@ -352,7 +375,9 @@ def create_student_in_section(
         person_id=person.id,
         student_number=student_number,
         section_id=section_id,
-        academic_status="irregular" if student_status == StudentStatus.irregular else "regular",
+        academic_status="irregular"
+        if student_status == StudentStatus.irregular
+        else "regular",
         reference_code=next_student_reference_code(session),
     )
     session.add(student)
@@ -391,7 +416,9 @@ def update_student_details(
     if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
-            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
         allowed = session.execute(
             text("""
                 SELECT 1 FROM student_enrollments
@@ -407,9 +434,16 @@ def update_student_details(
             },
         ).first()
         if not allowed:
-            raise HTTPException(status_code=403, detail="Student is outside your assigned section")
-        if payload.get("section_id") and str(payload["section_id"]) != str(assignment["section_id"]):
-            raise HTTPException(status_code=403, detail="Class Representatives cannot move students between sections")
+            raise HTTPException(
+                status_code=403, detail="Student is outside your assigned section"
+            )
+        if payload.get("section_id") and str(payload["section_id"]) != str(
+            assignment["section_id"]
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="Class Representatives cannot move students between sections",
+            )
 
     row = (
         session.execute(
