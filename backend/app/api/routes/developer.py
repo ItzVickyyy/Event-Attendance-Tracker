@@ -5,12 +5,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 import fastapi
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlmodel import func, select, text
 
-from app.api.deps import CurrentUser, require_developer
-from app.api.deps import SessionDep
+from app.api.deps import CurrentUser, SessionDep, require_developer
+from app.core.config import settings
 from app.models import (
     AcademicSection,
     Attendance,
@@ -48,7 +48,7 @@ class DeveloperDiagnosticsResponse(BaseModel):
 @router.get(
     "/health",
     response_model=DeveloperHealthResponse,
-    dependencies=[require_developer],
+    dependencies=[Depends(require_developer)],
 )
 def read_system_health(session: SessionDep) -> Any:
     """Return read-only runtime and database health for Developers."""
@@ -66,17 +66,11 @@ def read_system_health(session: SessionDep) -> Any:
         database_status=database_status,
         database_latency_ms=latency_ms,
         server_time_utc=datetime.now(UTC),
-        environment=settings_environment(),
+        environment=settings.FASTAPI_ENV or "production",
         python_version=sys.version.split()[0],
         fastapi_version=fastapi.__version__,
         platform_system=platform.system(),
     )
-
-
-def settings_environment() -> str:
-    from app.core.config import settings
-
-    return settings.FASTAPI_ENV or "production"
 
 
 @router.get(
