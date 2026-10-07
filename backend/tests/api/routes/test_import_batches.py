@@ -289,20 +289,33 @@ def test_import_batch_crud_templates_and_promotion_guards(
     )
 
     missing_id = "00000000-0000-4000-8000-000000000001"
-    assert client.get(
-        f"{settings.API_V1_STR}/import-batches/{missing_id}", headers=headers
-    ).status_code == 404
-    assert client.get(
-        f"{settings.API_V1_STR}/import-batches/{missing_id}/records", headers=headers
-    ).status_code == 404
-    assert client.patch(
-        f"{settings.API_V1_STR}/import-batches/{missing_id}",
-        headers=headers,
-        json={"notes": "Missing"},
-    ).status_code == 404
-    assert client.delete(
-        f"{settings.API_V1_STR}/import-batches/{missing_id}", headers=headers
-    ).status_code == 404
+    assert (
+        client.get(
+            f"{settings.API_V1_STR}/import-batches/{missing_id}", headers=headers
+        ).status_code
+        == 404
+    )
+    assert (
+        client.get(
+            f"{settings.API_V1_STR}/import-batches/{missing_id}/records",
+            headers=headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            f"{settings.API_V1_STR}/import-batches/{missing_id}",
+            headers=headers,
+            json={"notes": "Missing"},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"{settings.API_V1_STR}/import-batches/{missing_id}", headers=headers
+        ).status_code
+        == 404
+    )
 
 
 def test_import_batch_creation_and_upload_reject_invalid_files(
@@ -314,13 +327,19 @@ def test_import_batch_creation_and_upload_reject_invalid_files(
     created = client.post(
         f"{settings.API_V1_STR}/import-batches/",
         headers=headers,
-        json={"source_filename": "created-through-api.xlsx", "academic_year": "2026-2027"},
+        json={
+            "source_filename": "created-through-api.xlsx",
+            "academic_year": "2026-2027",
+        },
     )
     assert created.status_code == 200
     created_id = created.json()["id"]
-    assert client.delete(
-        f"{settings.API_V1_STR}/import-batches/{created_id}", headers=headers
-    ).status_code == 200
+    assert (
+        client.delete(
+            f"{settings.API_V1_STR}/import-batches/{created_id}", headers=headers
+        ).status_code
+        == 200
+    )
 
     batch = make_import_batch(source_filename="upload-invalid.xlsx")
     unsupported = client.post(
