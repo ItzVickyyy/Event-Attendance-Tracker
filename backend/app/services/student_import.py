@@ -335,6 +335,9 @@ class StudentImportService:
 
         for field_name, col_key in col_lookup.items():
             header_col_idx = header_to_col_idx.get(col_key)
+            if field_name == "raw_status" and header_col_idx is None:
+                # Real masterlists commonly label this column simply "Status".
+                header_col_idx = header_to_col_idx.get("status")
             if header_col_idx is not None and header_col_idx < len(row):
                 data[field_name] = self._safe_cell_value(row[header_col_idx])
 
