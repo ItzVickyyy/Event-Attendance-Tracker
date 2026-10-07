@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AuditLogsPanel } from "@/components/Developer/AuditLogsPanel"
 
 type SystemHealth = {
   status: string
