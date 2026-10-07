@@ -21,7 +21,7 @@ from app.models import (
 router = APIRouter(prefix="/event-registrations", tags=["event-registrations"])
 
 
-@router.get("/", response_model=EventRegistrationsPublic)
+@router.get("/", response_model=EventRegistrationsPublic, dependencies=[Depends(require_admin)])
 def read_event_registrations(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -107,7 +107,7 @@ def create_event_registration(
     return registration
 
 
-@router.get("/{registration_id}", response_model=EventRegistrationPublic)
+@router.get("/{registration_id}", response_model=EventRegistrationPublic, dependencies=[Depends(require_admin)])
 def read_event_registration(
     session: SessionDep, _current_user: CurrentUser, registration_id: uuid.UUID
 ) -> Any:
