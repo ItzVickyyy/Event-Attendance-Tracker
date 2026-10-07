@@ -13,6 +13,7 @@ from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from starlette.routing import Match
 
 from app.api.main import api_router
 from app.core import security
@@ -115,10 +116,25 @@ async def _audit_mutation(
 
     # Use FastAPI's matched route template, not the raw URL. This avoids
     # retaining student IDs, opaque QR tokens, or other path identifiers.
-    route = request.scope.get("route")
-    route_template = getattr(route, "path", None)
-    if not isinstance(route_template, str) or not route_template.startswith(api_prefix):
-        route_template = f"{api_prefix}/unmatched"
+    route_template = None
+    for candidate in request.app.routes:
+        try:
+            match, _child_scope = candidate.matches(request.scope)
+        except (AttributeError, KeyError, TypeError):
+            continue
+        if match is Match.FULL:
+            candidate_path = getattr(candidate, "path", None)
+            if isinstance(candidate_path, str) and candidate_path.startswith(api_prefix):
+                route_template = candidate_path
+                break
+    if route_template is None:
+        route = request.scope.get("route")
+        candidate_path = getattr(route, "path", None)
+        route_template = (
+            candidate_path
+            if isinstance(candidate_path, str) and candidate_path.startswith(api_prefix)
+            else f"{api_prefix}/unmatched"
+        )
 
     resource = route_template.removeprefix(f"{api_prefix}/").strip("/") or "root"
     resource = resource[:255]
