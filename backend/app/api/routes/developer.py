@@ -153,6 +153,7 @@ def read_audit_logs(
     outcome: str | None = None,
     actor_user_id: UUID | None = None,
     resource: str | None = None,
+    request_id: str | None = None,
     status_code: int | None = None,
     start_at: datetime | None = None,
     end_at: datetime | None = None,
@@ -180,6 +181,8 @@ def read_audit_logs(
             query = query.where(AuditLog.actor_user_id == actor_user_id)
         if resource and resource.strip():
             query = query.where(AuditLog.resource.ilike(f"%{resource.strip()}%"))
+        if request_id and request_id.strip():
+            query = query.where(AuditLog.request_id == request_id.strip())
         if status_code is not None:
             query = query.where(AuditLog.status_code == status_code)
         if start_at:
