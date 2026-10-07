@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlmodel import Session, select
 
+from app.student_academics import AcademicYear
 from app.models import (
     AcademicProgram,
     AcademicSection,
@@ -289,6 +290,20 @@ def test_conflict_rows_are_not_promoted(db_session: Session):
 
 
 def test_existing_student_number_reused_across_batches(db_session: Session):
+    academic_year = db_session.exec(
+        select(AcademicYear).where(AcademicYear.label == "2025-2026")
+    ).first()
+    if academic_year is None:
+        db_session.add(
+            AcademicYear(
+                label="2025-2026",
+                start_year=2025,
+                end_year=2026,
+                is_current=False,
+            )
+        )
+        db_session.commit()
+
     program = AcademicProgram(program_code="PROH", program_name="Test Program H")
     db_session.add(program)
     db_session.commit()
