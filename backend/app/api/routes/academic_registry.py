@@ -13,7 +13,7 @@ from app.api.deps import (
     require_admin,
     require_super_admin,
 )
-from app.models import AcademicSection, Person, Student, get_datetime_utc
+from app.models import AcademicSection, Person, Student, UserRole, get_datetime_utc
 from app.services.reference_codes import next_student_reference_code
 from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
@@ -139,7 +139,16 @@ def read_sections(
     _current_user: CurrentUser,
     academic_year_id: uuid.UUID | None = None,
 ) -> Any:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
             raise HTTPException(
@@ -186,7 +195,16 @@ def read_section_students(
     section_id: uuid.UUID,
     include_archived: bool = False,
 ) -> Any:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment or assignment["section_id"] != section_id:
             raise HTTPException(
@@ -219,7 +237,16 @@ def read_section_students(
 def read_student_details(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> dict[str, Any]:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
             raise HTTPException(status_code=403, detail="No Class Representative assignment found")
@@ -339,7 +366,16 @@ def update_student_details(
     student_id: uuid.UUID,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
             raise HTTPException(status_code=403, detail="No Class Representative assignment found")
