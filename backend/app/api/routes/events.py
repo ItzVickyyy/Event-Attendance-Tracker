@@ -75,7 +75,7 @@ def create_event(
     academic_year_id = event_in.academic_year_id
     if academic_year_id is None:
         current_year = session.exec(
-            select(AcademicYear).where(AcademicYear.is_current.is_(True))
+            select(AcademicYear).where(col(AcademicYear.is_current).is_(True))
         ).first()
         if not current_year:
             raise HTTPException(
