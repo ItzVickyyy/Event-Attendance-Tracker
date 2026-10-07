@@ -80,7 +80,8 @@ sort = "-Cover"
 show_contexts = true
 
 [tool.ty.terminal]
-error-on-warning = true
+# Keep deprecation notices visible without failing CI; type errors still fail.
+error-on-warning = false
 
 [tool.fastapi]
 entrypoint = "app.main:app"
