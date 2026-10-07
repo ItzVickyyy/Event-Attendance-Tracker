@@ -205,8 +205,9 @@ def test_failed_mutation_is_audited_with_request_correlation_id(
     request_id = "developer-audit-test-01"
     headers["X-Request-ID"] = request_id
 
-    response = client.post(
-        f"{settings.API_V1_STR}/events/",
+    event_id = "123e4567-e89b-12d3-a456-426614174000"
+    response = client.patch(
+        f"{settings.API_V1_STR}/events/{event_id}",
         headers=headers,
         json={},
     )
@@ -219,7 +220,8 @@ def test_failed_mutation_is_audited_with_request_correlation_id(
     assert entry is not None
     assert entry.status_code == response.status_code
     assert entry.outcome == "failure"
-    assert entry.path.endswith("/events/")
+    assert entry.path.endswith("/events/{event_id}")
+    assert event_id not in entry.path
     assert entry.request_id == request_id
 
 
