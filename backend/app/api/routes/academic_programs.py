@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_super_admin
+from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
 from app.models import (
     AcademicProgram,
     AcademicProgramCreate,
@@ -17,7 +17,7 @@ from app.models import (
 router = APIRouter(prefix="/academic-programs", tags=["academic-programs"])
 
 
-@router.get("/", response_model=AcademicProgramsPublic)
+@router.get("/", response_model=AcademicProgramsPublic, dependencies=[Depends(require_admin)])
 def read_academic_programs(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -81,7 +81,7 @@ def create_academic_program(
     return program
 
 
-@router.get("/{program_id}", response_model=AcademicProgramPublic)
+@router.get("/{program_id}", response_model=AcademicProgramPublic, dependencies=[Depends(require_admin)])
 def read_academic_program(
     session: SessionDep, _current_user: CurrentUser, program_id: uuid.UUID
 ) -> Any:
