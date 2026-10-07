@@ -242,7 +242,11 @@ def update_user(
     is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
     submitted_fields = user_in.model_dump(exclude_unset=True)
     if not is_super_admin:
-        if db_user.role in (UserRole.admin, UserRole.super_admin):
+        if (
+            db_user.role in (UserRole.admin, UserRole.super_admin)
+            or db_user.is_superuser
+            or db_user.is_developer
+        ):
             raise HTTPException(
                 status_code=403,
                 detail="Only a Super Admin can modify Admin or Super Admin accounts",
@@ -285,7 +289,11 @@ def delete_user(
             status_code=403, detail="Admins are not allowed to delete themselves"
         )
     is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
-    if not is_super_admin and user.role in (UserRole.admin, UserRole.super_admin):
+    if not is_super_admin and (
+        user.role in (UserRole.admin, UserRole.super_admin)
+        or user.is_superuser
+        or user.is_developer
+    ):
         raise HTTPException(
             status_code=403,
             detail="Only a Super Admin can delete Admin or Super Admin accounts",
