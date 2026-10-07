@@ -18,6 +18,7 @@ type AuditEntry = {
   resource: string
   method: string
   path: string
+  request_id: string | null
   status_code: number
   outcome: "success" | "failure"
   duration_ms: number
@@ -31,11 +32,25 @@ type AuditResponse = {
   offset: number
 }
 
-async function fetchAuditLogs(action: string, outcome: string, offset: number) {
+async function fetchAuditLogs(
+  action: string,
+  outcome: string,
+  offset: number,
+  actor: string,
+  resource: string,
+  statusCode: string,
+  startAt: string,
+  endAt: string,
+) {
   const token = localStorage.getItem("access_token")
   const params = new URLSearchParams({ limit: "25", offset: String(offset) })
   if (action.trim()) params.set("action", action.trim())
   if (outcome !== "all") params.set("outcome", outcome)
+  if (actor.trim()) params.set("actor_user_id", actor.trim())
+  if (resource.trim()) params.set("resource", resource.trim())
+  if (statusCode.trim()) params.set("status_code", statusCode.trim())
+  if (startAt) params.set("start_at", new Date(startAt).toISOString())
+  if (endAt) params.set("end_at", new Date(endAt).toISOString())
   const baseUrl = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "")
   const response = await fetch(
     `${baseUrl}/api/v1/developer/audit-logs?${params.toString()}`,
@@ -43,7 +58,8 @@ async function fetchAuditLogs(action: string, outcome: string, offset: number) {
   )
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    throw new Error(body?.detail ?? "Unable to load audit logs")
+    const detail = body?.detail
+    throw new Error(typeof detail === "string" ? detail : "Unable to load audit logs")
   }
   return (await response.json()) as AuditResponse
 }
@@ -51,16 +67,37 @@ async function fetchAuditLogs(action: string, outcome: string, offset: number) {
 export function AuditLogsPanel() {
   const [actionInput, setActionInput] = useState("")
   const [actionFilter, setActionFilter] = useState("")
+  const [resourceInput, setResourceInput] = useState("")
+  const [resourceFilter, setResourceFilter] = useState("")
+  const [actorInput, setActorInput] = useState("")
+  const [actorFilter, setActorFilter] = useState("")
+  const [statusInput, setStatusInput] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [startInput, setStartInput] = useState("")
+  const [startFilter, setStartFilter] = useState("")
+  const [endInput, setEndInput] = useState("")
+  const [endFilter, setEndFilter] = useState("")
   const [outcome, setOutcome] = useState("all")
   const [offset, setOffset] = useState(0)
   const query = useQuery({
-    queryKey: ["developer", "audit-logs", actionFilter, outcome, offset],
-    queryFn: () => fetchAuditLogs(actionFilter, outcome, offset),
+    queryKey: [
+      "developer", "audit-logs", actionFilter, outcome, actorFilter,
+      resourceFilter, statusFilter, startFilter, endFilter, offset,
+    ],
+    queryFn: () => fetchAuditLogs(
+      actionFilter, outcome, offset, actorFilter, resourceFilter,
+      statusFilter, startFilter, endFilter,
+    ),
   })
 
   const applyFilters = () => {
     setOffset(0)
     setActionFilter(actionInput)
+    setResourceFilter(resourceInput)
+    setActorFilter(actorInput)
+    setStatusFilter(statusInput)
+    setStartFilter(startInput)
+    setEndFilter(endInput)
   }
 
   return (
@@ -79,8 +116,8 @@ export function AuditLogsPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <label className="flex-1 space-y-1 text-sm">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <label className="space-y-1 text-sm">
               <span className="text-muted-foreground">Action</span>
               <input
                 className="h-10 w-full rounded-md border bg-background px-3 text-sm"
@@ -88,6 +125,54 @@ export function AuditLogsPanel() {
                 onChange={(event) => setActionInput(event.target.value)}
                 onKeyDown={(event) => event.key === "Enter" && applyFilters()}
                 placeholder="Filter by action"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">Resource</span>
+              <input
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={resourceInput}
+                onChange={(event) => setResourceInput(event.target.value)}
+                placeholder="e.g. events"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">Actor user ID</span>
+              <input
+                className="h-10 w-full rounded-md border bg-background px-3 font-mono text-xs"
+                value={actorInput}
+                onChange={(event) => setActorInput(event.target.value)}
+                placeholder="UUID"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">HTTP status</span>
+              <input
+                type="number"
+                min="100"
+                max="599"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={statusInput}
+                onChange={(event) => setStatusInput(event.target.value)}
+                placeholder="e.g. 403"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">From (local time)</span>
+              <input
+                type="datetime-local"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={startInput}
+                onChange={(event) => setStartInput(event.target.value)}
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">To (local time)</span>
+              <input
+                type="datetime-local"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={endInput}
+                onChange={(event) => setEndInput(event.target.value)}
               />
             </label>
             <label className="space-y-1 text-sm">
@@ -126,7 +211,7 @@ export function AuditLogsPanel() {
           ) : query.data?.data.length ? (
             <>
               <div className="overflow-x-auto rounded-md border">
-                <table className="w-full min-w-[850px] text-left text-sm">
+                <table className="w-full min-w-[1050px] text-left text-sm">
                   <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                     <tr>
                       <th className="px-3 py-3 font-medium">Time (UTC)</th>
@@ -134,6 +219,7 @@ export function AuditLogsPanel() {
                       <th className="px-3 py-3 font-medium">Resource</th>
                       <th className="px-3 py-3 font-medium">Actor ID</th>
                       <th className="px-3 py-3 font-medium">Result</th>
+                      <th className="px-3 py-3 font-medium">Request ID</th>
                       <th className="px-3 py-3 text-right font-medium">Duration</th>
                     </tr>
                   </thead>
@@ -157,6 +243,9 @@ export function AuditLogsPanel() {
                           <Badge variant={entry.outcome === "success" ? "secondary" : "destructive"}>
                             {entry.outcome}
                           </Badge>
+                        </td>
+                        <td className="max-w-[180px] break-all px-3 py-3 font-mono text-xs">
+                          {entry.request_id ?? "—"}
                         </td>
                         <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">
                           {entry.duration_ms.toFixed(2)} ms
