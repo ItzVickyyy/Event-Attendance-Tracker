@@ -212,3 +212,137 @@ def test_academic_registry_rejects_invalid_student_and_section_payloads(
         _api(f"/academic-registry/students/{uuid4()}"), headers=headers
     )
     assert unknown_student.status_code == 404
+
+
+def test_academic_year_validation_and_set_current_lifecycle(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    start_year = 2200 + uuid4().int % 500
+    invalid_end = client.post(
+        _api("/academic-registry/academic-years"),
+        headers=headers,
+        json={
+            "label": f"{start_year}-{start_year + 2}",
+            "start_year": start_year,
+            "end_year": start_year + 2,
+        },
+    )
+    assert invalid_end.status_code == 422
+
+    invalid_label = client.post(
+        _api("/academic-registry/academic-years"),
+        headers=headers,
+        json={
+            "label": f"{start_year + 1}-{start_year + 2}",
+            "start_year": start_year,
+            "end_year": start_year + 1,
+        },
+    )
+    assert invalid_label.status_code == 422
+
+    current_year, _ = _current_year_and_program(client, headers)
+    created = client.post(
+        _api("/academic-registry/academic-years"),
+        headers=headers,
+        json={
+            "label": f"{start_year}-{start_year + 1}",
+            "start_year": start_year,
+            "end_year": start_year + 1,
+        },
+    )
+    assert created.status_code == 200
+    next_id = created.json()["id"]
+
+    duplicate = client.post(
+        _api("/academic-registry/academic-years"),
+        headers=headers,
+        json={
+            "label": f"{start_year}-{start_year + 1}",
+            "start_year": start_year,
+            "end_year": start_year + 1,
+        },
+    )
+    assert duplicate.status_code == 409
+
+    set_current = client.post(
+        _api(f"/academic-registry/academic-years/{next_id}/set-current"),
+        headers=headers,
+    )
+    assert set_current.status_code == 200
+    assert set_current.json()["is_current"] is True
+    years = client.get(_api("/academic-registry/academic-years"), headers=headers)
+    assert years.status_code == 200
+    assert sum(1 for year in years.json()["data"] if year["is_current"]) == 1
+    assert client.post(
+        _api(f"/academic-registry/academic-years/{uuid4()}/set-current"),
+        headers=headers,
+    ).status_code == 404
+    assert current_year["id"] != next_id
+
+
+def test_academic_registry_student_update_duplicate_and_enrollment_validation(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    year, section = _current_year_and_program(client, headers)
+    first_number = f"UPD-{random_lower_string()[:10].upper()}"
+    second_number = f"UPD-{random_lower_string()[:10].upper()}"
+
+    def create_student(number: str, first_name: str) -> dict:
+        response = client.post(
+            _api("/academic-registry/students"),
+            headers=headers,
+            json={
+                "student_number": number,
+                "first_name": first_name,
+                "last_name": "Validation",
+                "section_id": section["id"],
+                "academic_year_id": year["id"],
+            },
+        )
+        assert response.status_code == 200
+        return response.json()
+
+    first = create_student(first_number, "First")
+    second = create_student(second_number, "Second")
+
+    duplicate_number = client.patch(
+        _api(f"/academic-registry/students/{first['id']}"),
+        headers=headers,
+        json={"student_number": second_number},
+    )
+    assert duplicate_number.status_code == 409
+
+    updated = client.patch(
+        _api(f"/academic-registry/students/{first['id']}"),
+        headers=headers,
+        json={
+            "middle_name": "M",
+            "email": random_email(),
+            "contact_number": "09170000000",
+            "student_status": "irregular",
+            "enrollment_id": first["enrollment_id"],
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["middle_name"] == "M"
+
+    assert client.patch(
+        _api(f"/academic-registry/students/{uuid4()}"),
+        headers=headers,
+        json={"first_name": "Missing"},
+    ).status_code == 404
+    assert client.patch(
+        _api(f"/academic-registry/enrollments/{uuid4()}"),
+        headers=headers,
+        json={"student_status": "regular"},
+    ).status_code == 404
+
+    bad_section = client.patch(
+        _api(f"/academic-registry/enrollments/{first['enrollment_id']}"),
+        headers=headers,
+        json={"section_id": str(uuid4())},
+    )
+    assert bad_section.status_code == 404
+    assert second["id"] != first["id"]
