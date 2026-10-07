@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint, text
+from sqlalchemy import JSON, Column, DateTime, Enum as SQLAlchemyEnum, Index, UniqueConstraint, text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -788,11 +788,33 @@ class AttendanceSessionBase(SQLModel):
     )
     session_date: str = Field(max_length=20)
     name: str = Field(max_length=255)
-    session_type: AttendanceSessionType = Field(default=AttendanceSessionType.time_in)
+    session_type: AttendanceSessionType = Field(
+        default=AttendanceSessionType.time_in,
+        sa_column=Column(
+            SQLAlchemyEnum(
+                AttendanceSessionType,
+                name="attendancesessiontype",
+                values_callable=lambda enum_cls: [member.value for member in enum_cls],
+            ),
+            nullable=False,
+            server_default=text("'TIME_IN'"),
+        ),
+    )
     start_time: str | None = Field(default=None, max_length=10)
     end_time: str | None = Field(default=None, max_length=10)
     late_cutoff: str | None = Field(default=None, max_length=10)
-    status: AttendanceSessionStatus = Field(default=AttendanceSessionStatus.scheduled)
+    status: AttendanceSessionStatus = Field(
+        default=AttendanceSessionStatus.scheduled,
+        sa_column=Column(
+            SQLAlchemyEnum(
+                AttendanceSessionStatus,
+                name="attendancesessionstatus",
+                values_callable=lambda enum_cls: [member.value for member in enum_cls],
+            ),
+            nullable=False,
+            server_default=text("'SCHEDULED'"),
+        ),
+    )
     display_order: int = Field(default=0)
     is_active: bool = Field(default=False)
 
