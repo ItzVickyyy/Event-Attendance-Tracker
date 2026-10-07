@@ -96,25 +96,6 @@ export class LoginService {
     }
 }
 
-export class PublicStudentQrService {
-    /**
-     * Lookup Student Qr
-     *
-     * Verify a student's identity and return their stable QR credential.
-     */
-    public static studentQrLookupStudentQr<ThrowOnError extends boolean = true>(options: Options<publicStudentQrLookupStudentQrData, ThrowOnError>) {
-        return (options.client ?? client).post<publicStudentQrLookupStudentQrResponses, publicStudentQrLookupStudentQrErrors, ThrowOnError>({
-            responseType: 'json',
-            url: '/api/v1/public/student-qr',
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            }
-        });
-    }
-}
-
 export class DeveloperService {
     /**
      * Read System Health
@@ -1803,6 +1784,25 @@ export class ImportBatchesService {
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/import-batches/{batch_id}/promote',
             ...options
+        });
+    }
+}
+
+export class PublicStudentQrService {
+    /**
+     * Lookup Student Qr
+     *
+     * Verify a student's identity and return their stable QR credential.
+     */
+    public static studentQrLookupStudentQr<ThrowOnError extends boolean = true>(options: Options<publicStudentQrLookupStudentQrData, ThrowOnError>) {
+        return (options.client ?? client).post<publicStudentQrLookupStudentQrResponses, publicStudentQrLookupStudentQrErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/v1/public/student-qr',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
 }
