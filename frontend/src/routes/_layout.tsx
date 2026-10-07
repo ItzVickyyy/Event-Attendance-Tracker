@@ -1,4 +1,5 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import { UsersService } from "@/client"
 import { Footer } from "@/components/Common/Footer"
 import { AcademicYearProvider, useAcademicYear } from "@/context/AcademicYearContext"
 import { CalendarDays, Check, Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react"
@@ -27,8 +28,19 @@ import { isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     if (!isLoggedIn()) throw redirect({ to: "/login" })
+
+    const { data: user } = await UsersService.readUserMe()
+    const isIsolatedDeveloper =
+      user.role === "developer" && !user.is_superuser
+    const allowedDeveloperPath =
+      location.pathname.startsWith("/developer") ||
+      location.pathname.startsWith("/account")
+
+    if (isIsolatedDeveloper && !allowedDeveloperPath) {
+      throw redirect({ to: "/developer" })
+    }
   },
 })
 
