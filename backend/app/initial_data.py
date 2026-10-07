@@ -39,11 +39,44 @@ def _seed_academic_catalog(session: Session) -> None:
             """
         )
     ).one()
+    column_state = connection.execute(
+        text(
+            """
+            SELECT string_agg(
+                format(
+                    '%s=%s',
+                    column_name,
+                    COALESCE(character_maximum_length::text, data_type)
+                ),
+                ', ' ORDER BY ordinal_position
+            )
+            FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = 'academic_programs'
+            """
+        )
+    ).scalar_one()
+    trigger_state = connection.execute(
+        text(
+            """
+            SELECT COALESCE(
+                string_agg(pg_get_triggerdef(trigger.oid), E'\\n'),
+                'none'
+            )
+            FROM pg_trigger AS trigger
+            WHERE trigger.tgrelid = to_regclass('academic_programs')
+              AND NOT trigger.tgisinternal
+            """
+        )
+    ).scalar_one()
     logger.info(
-        "Academic catalog schema after repair: database=%s schema=%s program_name_type=%s",
+        "Academic catalog schema after repair: database=%s schema=%s "
+        "program_name_type=%s columns=%s triggers=%s",
         schema_state[0],
         schema_state[1],
         schema_state[2],
+        column_state,
+        trigger_state,
     )
     connection.execute(
         text(
