@@ -3,8 +3,8 @@ import platform
 import sys
 import time
 from datetime import UTC, datetime
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
 import fastapi
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -172,7 +172,7 @@ def read_audit_logs(
             detail="start_at must be earlier than or equal to end_at",
         )
 
-    def apply_filters(query):
+    def apply_filters(query: Any) -> Any:
         if action and action.strip():
             query = query.where(AuditLog.action.ilike(f"%{action.strip()}%"))
         if outcome:
