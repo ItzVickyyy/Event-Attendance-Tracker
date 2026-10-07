@@ -24,6 +24,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Do not truncate existing names automatically during a downgrade.
-    # A reverse migration would risk data loss if longer names were saved.
-    pass
+    op.alter_column(
+        "academic_programs",
+        "program_name",
+        existing_type=sa.String(length=255),
+        type_=sa.String(length=20),
+        existing_nullable=False,
+    )
