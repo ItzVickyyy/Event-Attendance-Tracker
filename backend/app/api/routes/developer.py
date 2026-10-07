@@ -9,7 +9,7 @@ from uuid import UUID
 import fastapi
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlmodel import func, select, text
+from sqlmodel import col, func, select, text
 
 from app.api.deps import CurrentUser, SessionDep, require_developer
 from app.core.config import settings
@@ -75,7 +75,7 @@ def read_system_health(session: SessionDep) -> Any:
     started = time.perf_counter()
     database_status = "connected"
     try:
-        session.exec(text("SELECT 1"))
+        session.execute(text("SELECT 1"))
     except Exception:
         session.rollback()
         database_status = "error"
@@ -174,13 +174,13 @@ def read_audit_logs(
 
     def apply_filters(query: Any) -> Any:
         if action and action.strip():
-            query = query.where(AuditLog.action.ilike(f"%{action.strip()}%"))
+            query = query.where(col(AuditLog.action).ilike(f"%{action.strip()}%"))
         if outcome:
             query = query.where(AuditLog.outcome == outcome)
         if actor_user_id:
             query = query.where(AuditLog.actor_user_id == actor_user_id)
         if resource and resource.strip():
-            query = query.where(AuditLog.resource.ilike(f"%{resource.strip()}%"))
+            query = query.where(col(AuditLog.resource).ilike(f"%{resource.strip()}%"))
         if request_id and request_id.strip():
             query = query.where(AuditLog.request_id == request_id.strip())
         if status_code is not None:
@@ -194,7 +194,7 @@ def read_audit_logs(
     query = apply_filters(select(AuditLog))
     count_query = apply_filters(select(func.count()).select_from(AuditLog))
     rows = session.exec(
-        query.order_by(AuditLog.occurred_at.desc()).offset(offset).limit(limit)
+        query.order_by(col(AuditLog.occurred_at).desc()).offset(offset).limit(limit)
     ).all()
     count = session.exec(count_query).one()
 
