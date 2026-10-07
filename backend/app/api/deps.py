@@ -2,7 +2,7 @@ from collections.abc import Callable, Generator
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -32,7 +32,7 @@ TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
 def get_current_user(
-    session: SessionDep, token: TokenDep, request: Request
+    session: SessionDep, token: TokenDep
 ) -> User:
     try:
         payload = jwt.decode(
@@ -57,23 +57,6 @@ def get_current_user(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
-    # A Developer account is a technical identity, not an operational account.
-    # Deny access by default to every business API and allow only system
-    # diagnostics plus the account's own profile/password endpoints.
-    if user.role == UserRole.developer:
-        path = request.url.path.rstrip("/")
-        allowed_account_paths = {
-            f"{settings.API_V1_STR}/users/me",
-            f"{settings.API_V1_STR}/users/me/password",
-        }
-        developer_prefix = f"{settings.API_V1_STR}/developer/"
-        if path not in allowed_account_paths and not request.url.path.startswith(
-            developer_prefix
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Developer accounts do not have access to operational APIs",
-            )
     return user
 
 
@@ -86,8 +69,7 @@ def require_role(
     """Require an allowed application role.
 
     The explicit superuser flag remains the platform-wide override. The
-    Developer role itself is intentionally not included in business/admin
-    roles. Developer accounts should be created with is_superuser=False.
+    Technical Developer access is checked independently by require_developer.
     """
     allowed_set = set(allowed_roles)
 
@@ -119,8 +101,8 @@ def require_scanner_permission(current_user: CurrentUser) -> User:
 
 
 def require_developer(current_user: CurrentUser) -> User:
-    """Require the separate Developer capability or legacy Developer role."""
-    if current_user.is_developer or current_user.role == UserRole.developer:
+    """Require the independent technical Developer capability."""
+    if current_user.is_developer:
         return current_user
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,

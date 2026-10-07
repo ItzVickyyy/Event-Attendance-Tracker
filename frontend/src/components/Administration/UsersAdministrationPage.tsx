@@ -68,7 +68,7 @@ export function UsersAdministrationPage() {
 
 function UserRow({ user, onSave, saving }: { user: UserPublic; onSave: (body: Parameters<typeof UsersService.updateUser>[0]["body"]) => void; saving: boolean }) {
   // Legacy technical-only accounts should be migrated to a normal application role.
-  const [role, setRole] = useState<UserRole>(user.role === "developer" ? "student" : (user.role ?? "student"))
+  const [role, setRole] = useState<UserRole>(user.role ?? "student")
   const [active, setActive] = useState(Boolean(user.is_active))
   const [scan, setScan] = useState(Boolean(user.can_scan))
   return <tr className="border-b"><td className="p-3 font-medium">{user.full_name || "—"}</td><td className="p-3">{user.email}</td><td className="p-3"><Select value={role} onValueChange={(v) => setRole(v as UserRole)}><SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger><SelectContent>{roles.map(r => <SelectItem key={r} value={r}>{r.replace(/_/g, " ")}</SelectItem>)}</SelectContent></Select></td><td className="p-3"><Button size="sm" variant={active ? "default" : "outline"} onClick={() => setActive(!active)}>{active ? "Active" : "Inactive"}</Button></td><td className="p-3"><Button size="sm" variant={scan ? "default" : "outline"} onClick={() => setScan(!scan)}>{scan ? "Allowed" : "Denied"}</Button></td><td className="p-3"><Button size="sm" onClick={() => onSave({ role, is_active: active, can_scan: scan, is_superuser: Boolean(user.is_superuser || role === "super_admin") })} disabled={saving}>Save</Button></td></tr>

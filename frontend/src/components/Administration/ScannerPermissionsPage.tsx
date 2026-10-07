@@ -10,7 +10,7 @@ export function ScannerPermissionsPage() {
     mutationFn: ({ id, can_scan }: { id: string; can_scan: boolean }) => UsersService.updateUser({ path: { user_id: id }, body: { can_scan } }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["scanner-permissions"] }),
   })
-  const users = (q.data?.data.data ?? []).filter((user: UserPublic) => user.role !== "developer")
+  const users = q.data?.data.data ?? []
 
   return <div className="space-y-6">
     <div><h1 className="text-2xl font-semibold">Scanner Permissions</h1><p className="mt-1 text-sm text-muted-foreground">Scanner access is an operational capability independent of application role.</p></div>

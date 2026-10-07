@@ -24,6 +24,7 @@ def create_user_with_role(
     role: UserRole = UserRole.student,
     can_scan: bool = False,
     is_superuser: bool = False,
+    is_developer: bool = False,
 ) -> tuple[UserCreate, str]:
     email = random_email()
     password = random_lower_string()
@@ -33,6 +34,7 @@ def create_user_with_role(
         role=role,
         can_scan=can_scan,
         is_superuser=is_superuser,
+        is_developer=is_developer,
     )
     crud.create_user(session=db, user_create=user_in)
     return user_in, password
@@ -44,9 +46,14 @@ def get_token_headers_for_role(
     role: UserRole = UserRole.student,
     can_scan: bool = False,
     is_superuser: bool = False,
+    is_developer: bool = False,
 ) -> dict[str, str]:
     user_in, password = create_user_with_role(
-        db, role=role, can_scan=can_scan, is_superuser=is_superuser
+        db,
+        role=role,
+        can_scan=can_scan,
+        is_superuser=is_superuser,
+        is_developer=is_developer,
     )
     return user_authentication_headers(
         client=client, email=user_in.email, password=password

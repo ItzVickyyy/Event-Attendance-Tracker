@@ -18,7 +18,6 @@ def get_datetime_utc() -> datetime:
 
 
 class UserRole(StrEnum):
-    developer = "developer"
     super_admin = "super_admin"
     admin = "admin"
     class_representative = "class_representative"
