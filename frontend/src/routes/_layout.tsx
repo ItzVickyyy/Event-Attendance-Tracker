@@ -229,7 +229,7 @@ function Layout() {
           <SidebarTrigger className="-ml-1 min-h-10 min-w-10" aria-label="Toggle navigation" />
           <div className="hidden truncate text-sm text-muted-foreground sm:block">Event Attendance Tracker</div>
           {user?.role !== "class_representative" &&
-          (!user?.is_developer || user.is_superuser || user.role === "admin" || user.role === "super_admin") &&
+          (!user?.is_developer || user?.is_superuser || user?.role === "admin" || user?.role === "super_admin") &&
           <AcademicYearSelector />}
         </header>
         <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
