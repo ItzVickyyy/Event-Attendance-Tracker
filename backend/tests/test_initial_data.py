@@ -1,10 +1,8 @@
-from collections.abc import Iterator
 from typing import Any
 
 from sqlalchemy.sql.elements import TextClause
 
 from app import initial_data
-
 
 class RecordingSession:
     def __init__(self, _engine: Any) -> None:
