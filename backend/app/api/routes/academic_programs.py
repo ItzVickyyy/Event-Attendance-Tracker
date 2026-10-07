@@ -17,7 +17,9 @@ from app.models import (
 router = APIRouter(prefix="/academic-programs", tags=["academic-programs"])
 
 
-@router.get("/", response_model=AcademicProgramsPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/", response_model=AcademicProgramsPublic, dependencies=[Depends(require_admin)]
+)
 def read_academic_programs(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -81,7 +83,11 @@ def create_academic_program(
     return program
 
 
-@router.get("/{program_id}", response_model=AcademicProgramPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{program_id}",
+    response_model=AcademicProgramPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_academic_program(
     session: SessionDep, _current_user: CurrentUser, program_id: uuid.UUID
 ) -> Any:
