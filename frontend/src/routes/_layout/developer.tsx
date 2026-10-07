@@ -31,6 +31,7 @@ type SystemHealth = {
   database_latency_ms: number
   server_time_utc: string
   environment: string
+  application_version: string
   python_version: string
   fastapi_version: string
   platform_system: string
@@ -176,7 +177,7 @@ function DeveloperDashboard() {
 
       <section aria-label="System health" className="space-y-3">
         <h2 className="text-lg font-semibold">System health</h2>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">API status</CardTitle>
@@ -212,6 +213,13 @@ function DeveloperDashboard() {
             title="FastAPI"
             value={health ? `v${health.fastapi_version}` : "Unavailable"}
             description={health ? `Python ${health.python_version}` : "Runtime version"}
+            icon={Server}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Application version"
+            value={health?.application_version ?? "Unknown"}
+            description="Deployment build"
             icon={Server}
             loading={isLoading}
           />
