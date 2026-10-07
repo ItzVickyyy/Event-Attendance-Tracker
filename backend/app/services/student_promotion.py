@@ -25,6 +25,7 @@ from app.models import (
     get_datetime_utc,
 )
 from app.services.reference_codes import next_student_reference_code
+from app.student_academics import AcademicYear
 from app.services.student_credentials import ensure_student_qr_credential
 from app.services.student_import import StudentImportService
 from app.student_academics import StudentEnrollment, StudentStatus
@@ -183,13 +184,31 @@ class StudentPromotionService:
                 "ImportBatch has no academic_year set; cannot resolve the AcademicSection."
             )
 
+        section_reference = row.raw_section or row.source_sheet
+        parts = " ".join(section_reference.strip().split()).upper().split(maxsplit=1)
+        if len(parts) != 2:
+            raise _PromotionBlocked(
+                f"Section reference {section_reference!r} must include a program and section."
+            )
+        program_code, _section_name = parts
+        academic_program = self.session.exec(
+            select(AcademicProgram).where(
+                col(AcademicProgram.program_code) == program_code
+            )
+        ).first()
+        if academic_program is None:
+            raise _PromotionBlocked(
+                f"AcademicProgram {program_code!r} does not exist. "
+                "Create the academic program before promoting students."
+            )
+
         academic_section = self._resolve_section(
-            row.raw_section or row.source_sheet,
+            section_reference,
             import_batch.academic_year,
         )
         if academic_section is None:
             raise _PromotionBlocked(
-                f"Academic section {row.raw_section or row.source_sheet!r} "
+                f"Academic section {section_reference!r} "
                 f"does not exist for academic year {import_batch.academic_year!r}."
             )
 
@@ -332,11 +351,21 @@ class StudentPromotionService:
         if existing is not None:
             return existing
 
+        year = self.session.exec(
+            select(AcademicYear).where(AcademicYear.label == academic_year)
+        ).first()
+        if year is None:
+            raise _PromotionBlocked(
+                f"Academic year {academic_year!r} does not exist. "
+                "Create the academic year before promoting students."
+            )
+
         section = AcademicSection(
             program_id=program_id,
             year_level=year_level,
             section_name=section_name,
             academic_year=academic_year,
+            academic_year_id=year.id,
         )
         self.session.add(section)
         self.session.flush()
