@@ -1,4 +1,4 @@
-"""Enforce academic program column widths after all schema repairs.
+"""Repair academic program widths and reference code defaults.
 
 Revision ID: a1b2c3d4e5f6
 Revises: z6a7b8c9d0e1
