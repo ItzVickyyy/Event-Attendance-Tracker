@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
+import { Route as GetMyQrRouteImport } from './routes/get-my-qr'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -56,6 +57,11 @@ import { Route as LayoutSectionsSectionIdStudentsStudentIdRouteImport } from './
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GetMyQrRoute = GetMyQrRouteImport.update({
+  id: '/get-my-qr',
+  path: '/get-my-qr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -290,6 +296,7 @@ const LayoutSectionsSectionIdStudentsStudentIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/get-my-qr': typeof GetMyQrRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -334,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/sections/$sectionId/students/$studentId': typeof LayoutSectionsSectionIdStudentsStudentIdRoute
 }
 export interface FileRoutesByTo {
+  '/get-my-qr': typeof GetMyQrRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -378,6 +386,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/get-my-qr': typeof GetMyQrRoute
   '/login': typeof LoginRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -426,6 +435,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/get-my-qr'
     | '/login'
     | '/recover-password'
     | '/reset-password'
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
     | '/sections/$sectionId/students/$studentId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/get-my-qr'
     | '/login'
     | '/recover-password'
     | '/reset-password'
@@ -513,6 +524,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_layout'
+    | '/get-my-qr'
     | '/login'
     | '/recover-password'
     | '/reset-password'
@@ -560,6 +572,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
+  GetMyQrRoute: typeof GetMyQrRoute
   LoginRoute: typeof LoginRoute
   RecoverPasswordRoute: typeof RecoverPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -573,6 +586,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof LayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/get-my-qr': {
+      id: '/get-my-qr'
+      path: '/get-my-qr'
+      fullPath: '/get-my-qr'
+      preLoaderRoute: typeof GetMyQrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1074,6 +1094,7 @@ const LayoutRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
+  GetMyQrRoute: GetMyQrRoute,
   LoginRoute: LoginRoute,
   RecoverPasswordRoute: RecoverPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
