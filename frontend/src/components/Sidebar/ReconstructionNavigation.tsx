@@ -10,7 +10,6 @@ import {
   Settings,
   Shield,
   ShieldCheck,
-  Terminal,
   UserRound,
   UserRoundCheck,
   Users,
