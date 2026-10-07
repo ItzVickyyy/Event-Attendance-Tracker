@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlmodel import Session
 
 from app.core.db import engine, init_db
@@ -10,6 +10,42 @@ logger = logging.getLogger(__name__)
 
 
 def _seed_academic_catalog(session: Session) -> None:
+    connection = session.connection()
+    # Repair legacy schema drift before seeding catalog values. This is
+    # idempotent and only alters columns whose physical widths are incorrect.
+    inspector = inspect(connection)
+    if inspector.has_table("academic_programs"):
+        program_columns = {
+            column["name"]: column
+            for column in inspector.get_columns("academic_programs")
+        }
+        if getattr(program_columns.get("program_name", {}).get("type"), "length", None) != 255:
+            connection.execute(
+                text(
+                    "ALTER TABLE academic_programs "
+                    "ALTER COLUMN program_name TYPE VARCHAR(255)"
+                )
+            )
+        if getattr(program_columns.get("program_code", {}).get("type"), "length", None) != 50:
+            connection.execute(
+                text(
+                    "ALTER TABLE academic_programs "
+                    "ALTER COLUMN program_code TYPE VARCHAR(50)"
+                )
+            )
+    if inspector.has_table("academic_sections"):
+        section_columns = {
+            column["name"]: column
+            for column in inspector.get_columns("academic_sections")
+        }
+        if getattr(section_columns.get("section_code", {}).get("type"), "length", None) != 50:
+            connection.execute(
+                text(
+                    "ALTER TABLE academic_sections "
+                    "ALTER COLUMN section_code TYPE VARCHAR(50)"
+                )
+            )
+    session.commit()
     connection = session.connection()
     connection.execute(
         text(
