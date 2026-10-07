@@ -119,23 +119,32 @@ async def _audit_mutation(
     route_template = None
     request_path = request.url.path
     request_method = request.method.upper()
+    actual_segments = request_path.strip("/").split("/")
     for candidate in request.app.routes:
         candidate_path = getattr(candidate, "path", None)
-        if not isinstance(candidate_path, str) or not candidate_path.startswith(api_prefix):
+        if not isinstance(candidate_path, str):
+            continue
+        if candidate_path.startswith(api_prefix):
+            template_path = candidate_path
+        elif candidate_path.startswith("/") and request_path.startswith(
+            f"{api_prefix}{candidate_path}"
+        ):
+            template_path = f"{api_prefix}{candidate_path}"
+        else:
             continue
         methods = getattr(candidate, "methods", None)
         if methods and request_method not in methods:
             continue
-        path_regex = getattr(candidate, "path_regex", None)
-        if path_regex is not None and path_regex.fullmatch(request_path):
-            route_template = candidate_path
-            break
-        try:
-            match, _child_scope = candidate.matches(request.scope)
-        except (AttributeError, KeyError, TypeError):
+        template_segments = template_path.strip("/").split("/")
+        if len(template_segments) != len(actual_segments):
             continue
-        if match is Match.FULL:
-            route_template = candidate_path
+        matches = all(
+            template == actual
+            or (template.startswith("{") and template.endswith("}"))
+            for template, actual in zip(template_segments, actual_segments, strict=True)
+        )
+        if matches:
+            route_template = template_path
             break
     if route_template is None:
         route = request.scope.get("route")
