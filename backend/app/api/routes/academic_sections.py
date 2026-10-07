@@ -6,7 +6,7 @@ from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from openpyxl import Workbook
+from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 def _section_rows(session: SessionDep, section_id: uuid.UUID):
     return session.exec(
         select(Student, Person)
-        .join(Person, Person.id == Student.person_id)
+        .join(Person, col(Person.id) == col(Student.person_id))
         .where(Student.section_id == section_id)
         .order_by(col(Student.student_number).asc())
     ).all()
@@ -61,7 +61,7 @@ def _build_docx(
     ]
     table_rows.extend(
         [
-            index,
+            str(index),
             student.student_number,
             person.last_name,
             person.first_name,
