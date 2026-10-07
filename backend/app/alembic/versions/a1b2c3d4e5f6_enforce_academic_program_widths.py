@@ -29,6 +29,24 @@ def upgrade() -> None:
     )
 
     refreshed = sa.inspect(bind)
+    columns = {
+        column["name"]: column
+        for column in refreshed.get_columns("academic_programs")
+    }
+    if "reference_code" in columns:
+        reference_code = columns["reference_code"]
+        op.alter_column(
+            "academic_programs",
+            "reference_code",
+            existing_type=reference_code["type"],
+            existing_nullable=reference_code["nullable"],
+            server_default=sa.text(
+                "'PRG-' || "
+                "LPAD(nextval('academic_program_reference_code_seq'::regclass)::text, 6, '0')"
+            ),
+        )
+
+    refreshed = sa.inspect(bind)
     widths = {
         column["name"]: getattr(column["type"], "length", None)
         for column in refreshed.get_columns("academic_programs")
