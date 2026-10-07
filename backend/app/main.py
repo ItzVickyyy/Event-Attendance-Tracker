@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 from collections.abc import Awaitable, Callable
@@ -16,6 +17,8 @@ from app.core import security
 from app.core.config import settings
 from app.core.db import engine, test_engine
 from app.models import AuditLog, User
+
+logger = logging.getLogger(__name__)
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
@@ -40,6 +43,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.middleware("http")
 async def record_api_mutations(
@@ -104,8 +108,8 @@ async def record_api_mutations(
                 session.commit()
     except Exception:
         # Audit storage must not turn an otherwise successful API response into
-        # an application outage. Database failures remain visible in monitoring.
-        pass
+        # an application outage, but failures should remain observable.
+        logger.exception("Failed to persist API audit log")
 
     return response
 
