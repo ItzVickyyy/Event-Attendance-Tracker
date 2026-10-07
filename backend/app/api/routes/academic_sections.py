@@ -10,6 +10,7 @@ from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.student_academics import AcademicYear
 from app.models import (
     AcademicProgram,
     AcademicSection,
@@ -168,7 +169,27 @@ def create_academic_section(
             status_code=400,
             detail="A section with this program, year level, name, and academic year already exists.",
         )
-    section = AcademicSection.model_validate(section_in)
+    academic_year = session.exec(
+        select(AcademicYear).where(AcademicYear.label == section_in.academic_year)
+    ).first()
+    if academic_year is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Academic year '{section_in.academic_year}' was not found",
+        )
+    if (
+        section_in.academic_year_id is not None
+        and section_in.academic_year_id != academic_year.id
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Academic year ID does not match the selected academic year",
+        )
+
+    section = AcademicSection.model_validate(
+        section_in,
+        update={"academic_year_id": academic_year.id},
+    )
     session.add(section)
     session.commit()
     session.refresh(section)
