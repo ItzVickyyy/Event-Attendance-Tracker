@@ -73,21 +73,21 @@ def _seed_academic_catalog(session: Session) -> None:
         text(
             """
             SELECT COALESCE(
-                string_agg(pg_get_constraintdef(constraint.oid), '; '),
+                string_agg(pg_get_constraintdef(con.oid), '; '),
                 'none'
             )
-            FROM pg_constraint AS constraint
-            WHERE constraint.conrelid = to_regclass('academic_programs')
+            FROM pg_constraint AS con
+            WHERE con.conrelid = to_regclass('academic_programs')
             """
         )
     ).scalar_one()
     rule_state = connection.execute(
         text(
             """
-            SELECT COALESCE(string_agg(pg_get_ruledef(rule.oid), '; '), 'none')
-            FROM pg_rewrite AS rule
-            WHERE rule.ev_class = to_regclass('academic_programs')
-              AND rule.rulename <> '_RETURN'
+            SELECT COALESCE(string_agg(pg_get_ruledef(rw.oid), '; '), 'none')
+            FROM pg_rewrite AS rw
+            WHERE rw.ev_class = to_regclass('academic_programs')
+              AND rw.rulename <> '_RETURN'
             """
         )
     ).scalar_one()
