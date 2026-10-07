@@ -19,7 +19,7 @@ from app.models import (
 router = APIRouter(prefix="/attendees", tags=["attendees"])
 
 
-@router.get("/", response_model=AttendeesPublic)
+@router.get("/", response_model=AttendeesPublic, dependencies=[Depends(require_admin)])
 def read_attendees(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -89,7 +89,7 @@ def create_attendee(
     return attendee
 
 
-@router.get("/{attendee_id}", response_model=AttendeePublic)
+@router.get("/{attendee_id}", response_model=AttendeePublic, dependencies=[Depends(require_admin)])
 def read_attendee(
     session: SessionDep, _current_user: CurrentUser, attendee_id: uuid.UUID
 ) -> Any:
