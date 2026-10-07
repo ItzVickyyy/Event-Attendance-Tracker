@@ -5,11 +5,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 import fastapi
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlmodel import func, select, text
 
-from app.api.deps import SessionDep, require_developer
+from app.api.deps import CurrentUser, SessionDep, require_developer
 from app.core.config import settings
 from app.models import (
     AcademicSection,
@@ -19,9 +19,25 @@ from app.models import (
     Event,
     Student,
     User,
+    UserRole,
 )
 
 router = APIRouter(prefix="/developer", tags=["developer"])
+
+
+def require_audit_log_access(current_user: CurrentUser) -> User:
+    """Allow Developers and operational administrators to review audit history."""
+    if (
+        current_user.is_developer
+        or current_user.is_superuser
+        or current_user.role in (UserRole.super_admin, UserRole.admin)
+    ):
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Audit log access is required",
+    )
+
 
 
 class DeveloperHealthResponse(BaseModel):
@@ -122,7 +138,7 @@ class AuditLogResponse(BaseModel):
 @router.get(
     "/audit-logs",
     response_model=AuditLogResponse,
-    dependencies=[Depends(require_developer)],
+    dependencies=[Depends(require_audit_log_access)],
 )
 def read_audit_logs(
     session: SessionDep,
