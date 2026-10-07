@@ -23,6 +23,26 @@ def _seed_academic_catalog(session: Session) -> None:
         )
     )
     session.commit()
+    schema_state = session.exec(
+        text(
+            """
+            SELECT
+                current_database(),
+                current_schema(),
+                format_type(attribute.atttypid, attribute.atttypmod)
+            FROM pg_attribute AS attribute
+            WHERE attribute.attrelid = to_regclass('academic_programs')
+              AND attribute.attname = 'program_name'
+              AND NOT attribute.attisdropped
+            """
+        )
+    ).one()
+    logger.info(
+        "Academic catalog schema after repair: database=%s schema=%s program_name_type=%s",
+        schema_state[0],
+        schema_state[1],
+        schema_state[2],
+    )
     session.exec(
         text(
             """
