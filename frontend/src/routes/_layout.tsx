@@ -1,5 +1,5 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
-import { UsersService } from "@/client"
+import { UsersService, type UserPublic } from "@/client"
 import { Footer } from "@/components/Common/Footer"
 import { AcademicYearProvider, useAcademicYear } from "@/context/AcademicYearContext"
 import { CalendarDays, Check, Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react"
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_layout")({
   beforeLoad: async ({ location }) => {
     if (!isLoggedIn()) throw redirect({ to: "/login" })
 
-    let user
+    let user: UserPublic
     try {
       const response = await UsersService.readUserMe()
       user = response.data
