@@ -70,7 +70,11 @@ async function getDeveloperData<T>(path: string): Promise<T> {
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    throw new Error(body?.detail ?? "Unable to load developer diagnostics")
+    const detail = typeof body?.detail === "string"
+      ? body.detail
+      : "Unable to load developer diagnostics"
+    const requestId = body?.request_id ?? response.headers.get("X-Request-ID")
+    throw new Error(requestId ? `${detail} (Request ID: ${requestId})` : detail)
   }
 
   return (await response.json()) as T
