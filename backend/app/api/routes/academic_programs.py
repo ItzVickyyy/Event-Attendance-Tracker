@@ -53,7 +53,9 @@ def read_academic_programs(
 
 
 @router.post(
-    "/", response_model=AcademicProgramPublic, dependencies=[Depends(require_super_admin)]
+    "/",
+    response_model=AcademicProgramPublic,
+    dependencies=[Depends(require_super_admin)],
 )
 def create_academic_program(
     *,
