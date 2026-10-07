@@ -15,9 +15,9 @@ from app.api.deps import CurrentUser, SessionDep, require_developer
 from app.core.config import settings
 from app.models import (
     AcademicSection,
-    AuditLog,
     Attendance,
     AttendanceSession,
+    AuditLog,
     Event,
     Student,
     User,
@@ -39,7 +39,6 @@ def require_audit_log_access(current_user: CurrentUser) -> User:
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Super Admin or Developer access is required for audit logs",
     )
-
 
 
 class DeveloperHealthResponse(BaseModel):
@@ -116,7 +115,6 @@ def read_system_diagnostics(session: SessionDep) -> Any:
         total_attendance_sessions=count_rows(AttendanceSession),
         server_time_utc=datetime.now(UTC),
     )
-
 
 
 class AuditLogEntry(BaseModel):
