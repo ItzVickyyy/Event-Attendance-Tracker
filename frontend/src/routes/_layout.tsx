@@ -31,7 +31,18 @@ export const Route = createFileRoute("/_layout")({
   beforeLoad: async ({ location }) => {
     if (!isLoggedIn()) throw redirect({ to: "/login" })
 
-    const { data: user } = await UsersService.readUserMe()
+    let user
+    try {
+      const response = await UsersService.readUserMe()
+      user = response.data
+    } catch (error) {
+      const status = (error as { response?: { status?: number } }).response?.status
+      if (status === 401) {
+        localStorage.removeItem("access_token")
+        throw redirect({ to: "/login" })
+      }
+      throw error
+    }
     const path = location.pathname
     const isSuperAdmin = Boolean(user.is_superuser || user.role === "super_admin")
     const isAdmin = isSuperAdmin || user.role === "admin"
