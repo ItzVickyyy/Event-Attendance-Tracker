@@ -58,10 +58,6 @@ def upgrade() -> None:
         "ix_academic_section_majors_major_id", "academic_section_majors", ["major_id"]
     )
 
-    # Earlier schema revisions constrained program_name to 20 characters.
-    # Widen it before seeding the full program names.
-    op.execute("ALTER TABLE academic_programs ALTER COLUMN program_name TYPE TEXT")
-
     # Ensure the two CCS programs exist before creating the 2026-2027 catalog.
     op.execute(
         sa.text(
@@ -95,7 +91,7 @@ def upgrade() -> None:
                 """
                 INSERT INTO academic_majors
                     (id, program_id, code, name, display_in_section_name, created_at, updated_at)
-                SELECT gen_random_uuid(), p.id, CAST(:code AS academicmajorcode), :name, :display, now(), now()
+                SELECT gen_random_uuid(), p.id, :code, :name, :display, now(), now()
                 FROM academic_programs p
                 WHERE p.program_code = :program
                   AND NOT EXISTS (
