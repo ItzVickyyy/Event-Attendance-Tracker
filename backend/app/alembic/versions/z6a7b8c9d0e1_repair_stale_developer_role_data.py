@@ -30,21 +30,22 @@ def upgrade() -> None:
     if "is_developer" in columns:
         bind.execute(
             sa.text(
-                'UPDATE "user" SET is_developer = TRUE WHERE role = \'developer\''
-            )
+                'UPDATE "user" SET is_developer = TRUE WHERE role = :legacy_role'
+            ),
+            {"legacy_role": "developer"},
         )
 
     if "is_superuser" in columns:
         bind.execute(
             sa.text(
-                'UPDATE "user" SET is_superuser = FALSE WHERE role = \'developer\''
-            )
+                'UPDATE "user" SET is_superuser = FALSE WHERE role = :legacy_role'
+            ),
+            {"legacy_role": "developer"},
         )
 
     bind.execute(
-        sa.text(
-            'UPDATE "user" SET role = \'student\' WHERE role = \'developer\''
-        )
+        sa.text('UPDATE "user" SET role = :new_role WHERE role = :legacy_role'),
+        {"new_role": "student", "legacy_role": "developer"},
     )
 
 
