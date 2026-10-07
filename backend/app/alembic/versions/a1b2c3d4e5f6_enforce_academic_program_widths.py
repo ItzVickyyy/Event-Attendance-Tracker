@@ -73,6 +73,7 @@ def upgrade() -> None:
             f"program_code={widths.get('program_code')}"
         )
 
+
 def downgrade() -> None:
     # Keeping the wider columns avoids truncating valid catalog values.
     pass
