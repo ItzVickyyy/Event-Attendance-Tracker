@@ -177,10 +177,10 @@ def create_student(
 def read_student(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> Any:
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    _ensure_class_rep_student_access(session, _current_user, student_id)
     archived = session.execute(
         text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
     ).scalar_one_or_none()
@@ -197,6 +197,7 @@ def update_student(
     student_id: uuid.UUID,
     student_in: StudentUpdate,
 ) -> Any:
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -205,8 +206,6 @@ def update_student(
     ).scalar_one_or_none()
     if archived is not None:
         raise HTTPException(status_code=404, detail="Student is archived")
-
-    _ensure_class_rep_student_access(session, _current_user, student_id)
 
     update_dict = student_in.model_dump(exclude_unset=True)
 
@@ -269,10 +268,10 @@ def update_student(
 def delete_student(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> dict[str, str]:
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    _ensure_class_rep_student_access(session, _current_user, student_id)
     session.execute(
         text(
             "UPDATE students SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND archived_at IS NULL"
