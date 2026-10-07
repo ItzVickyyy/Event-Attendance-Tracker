@@ -242,6 +242,8 @@ function DeveloperDashboard() {
         </div>
       </section>
 
+      <AuditLogsPanel />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Developer access boundary</CardTitle>
