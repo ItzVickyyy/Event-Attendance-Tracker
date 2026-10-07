@@ -58,6 +58,16 @@ def upgrade() -> None:
         "ix_academic_section_majors_major_id", "academic_section_majors", ["major_id"]
     )
 
+    # Earlier schema revisions constrained program_name to 20 characters.
+    # Widen it before seeding the full program names.
+    op.alter_column(
+        "academic_programs",
+        "program_name",
+        existing_type=sa.String(length=20),
+        type_=sa.String(length=255),
+        existing_nullable=False,
+    )
+
     # Ensure the two CCS programs exist before creating the 2026-2027 catalog.
     op.execute(
         sa.text(
