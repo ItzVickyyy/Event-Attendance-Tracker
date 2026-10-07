@@ -10,6 +10,7 @@ your organization's audit-retention period has been approved.
 """
 
 import argparse
+import logging
 from datetime import UTC, datetime, timedelta
 
 from sqlmodel import Session, delete, func, select
@@ -17,8 +18,11 @@ from sqlmodel import Session, delete, func, select
 from app.core.db import engine
 from app.models import AuditLog
 
+logger = logging.getLogger(__name__)
+
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(description="Prune expired audit log entries.")
     parser.add_argument(
         "--days",
@@ -42,11 +46,11 @@ def main() -> None:
             .select_from(AuditLog)
             .where(AuditLog.occurred_at < cutoff)
         ).one()
-        print(f"Retention cutoff: {cutoff.isoformat()}")
-        print(f"Expired audit entries: {expired_count}")
+        logger.info("Retention cutoff: %s", cutoff.isoformat())
+        logger.info("Expired audit entries: %s", expired_count)
 
         if not args.execute:
-            print("Dry run only. Re-run with --execute to delete these entries.")
+            logger.info("Dry run only. Re-run with --execute to delete these entries.")
             return
 
         session.exec(delete(AuditLog).where(AuditLog.occurred_at < cutoff))
@@ -64,8 +68,8 @@ def main() -> None:
             )
         )
         session.commit()
-        print(f"Deleted {expired_count} expired audit entries.")
-        print("Recorded the retention operation in the remaining audit history.")
+        logger.info("Deleted %s expired audit entries.", expired_count)
+        logger.info("Recorded the retention operation in the remaining audit history.")
 
 
 if __name__ == "__main__":
