@@ -299,6 +299,16 @@ def update_academic_section(
         program = session.get(AcademicProgram, update_dict["program_id"])
         if not program:
             raise HTTPException(status_code=404, detail="Academic program not found")
+    if "academic_year" in update_dict:
+        year = session.exec(
+            select(AcademicYear).where(AcademicYear.label == update_dict["academic_year"])
+        ).first()
+        if year is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Academic year '{update_dict['academic_year']}' was not found",
+            )
+        update_dict["academic_year_id"] = year.id
     section.sqlmodel_update(update_dict)
     section.updated_at = get_datetime_utc()
     session.add(section)
