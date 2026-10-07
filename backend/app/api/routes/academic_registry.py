@@ -291,16 +291,22 @@ def read_student_details(
     return dict(row)
 
 
-@router.post(
-    "/students",
-    dependencies=[Depends(require_admin)],
-)
+@router.post("/students")
 def create_student_in_section(
     *,
     session: SessionDep,
     _current_user: CurrentUser,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
     required = {"student_number", "first_name", "last_name", "section_id", "academic_year_id"}
     if not required.issubset(payload):
         raise HTTPException(status_code=422, detail=f"Required fields: {', '.join(sorted(required))}")
@@ -311,6 +317,13 @@ def create_student_in_section(
     year = session.get(AcademicYear, academic_year_id)
     if not section or not year or section.academic_year_id != academic_year_id:
         raise HTTPException(status_code=404, detail="Section or academic year not found")
+    if _current_user.role == UserRole.class_representative:
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
+        if not assignment or assignment["section_id"] != section_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Section is outside your assigned section",
+            )
 
     student_number = str(payload["student_number"]).strip()
     if not student_number:
