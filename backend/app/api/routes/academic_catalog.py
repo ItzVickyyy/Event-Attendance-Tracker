@@ -99,7 +99,9 @@ def set_section_major(
     )
 
 
-@router.delete("/sections/{section_id}/major", dependencies=[Depends(require_super_admin)])
+@router.delete(
+    "/sections/{section_id}/major", dependencies=[Depends(require_super_admin)]
+)
 def clear_section_major(
     session: SessionDep, _current_user: CurrentUser, section_id: uuid.UUID
 ) -> dict[str, str]:
