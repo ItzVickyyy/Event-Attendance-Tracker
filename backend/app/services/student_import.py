@@ -793,8 +793,6 @@ class StudentImportService:
             first_name = (row_data.get("raw_first_name") or "").strip()
             last_name = (row_data.get("raw_last_name") or "").strip()
             section_ref = (row_data.get("raw_section") or row_data.get("source_sheet") or "").strip()
-            status = self._normalize_status(row_data.get("raw_status"))
-
             if not student_number:
                 errors.append("Missing Student Number.")
             if not first_name:
