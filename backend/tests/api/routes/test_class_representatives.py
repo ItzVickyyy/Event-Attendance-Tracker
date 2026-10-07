@@ -156,3 +156,51 @@ def test_class_representative_creation_rejects_unknown_academic_records(
         },
     )
     assert response.status_code == 404
+
+
+def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    representative, year, section_id = _create_representative(client, headers)
+    start_year = 2400 + uuid4().int % 400
+    other_year = client.post(
+        _api("/academic-registry/academic-years"),
+        headers=headers,
+        json={
+            "label": f"{start_year}-{start_year + 1}",
+            "start_year": start_year,
+            "end_year": start_year + 1,
+        },
+    )
+    assert other_year.status_code == 200
+
+    mismatch = client.post(
+        _api("/class-representatives/"),
+        headers=headers,
+        json={
+            "email": random_email(),
+            "first_name": "Wrong",
+            "last_name": "Year",
+            "academic_year_id": other_year.json()["id"],
+            "section_id": section_id,
+        },
+    )
+    assert mismatch.status_code == 400
+
+    rep_headers = _representative_headers(client, representative["email"])
+    wrong_year = client.get(
+        _api(
+            f"/class-representatives/me?academic_year_id={other_year.json()['id']}"
+        ),
+        headers=rep_headers,
+    )
+    assert wrong_year.status_code == 404
+
+    missing_fields = client.post(
+        _api("/class-representatives/me/students"),
+        headers=rep_headers,
+        json={"first_name": "Missing"},
+    )
+    assert missing_fields.status_code == 422
+    assert year["id"] != other_year.json()["id"]
