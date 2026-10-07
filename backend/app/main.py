@@ -13,7 +13,6 @@ from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
-from starlette.routing import Match
 
 from app.api.main import api_router
 from app.core import security
