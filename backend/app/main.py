@@ -167,11 +167,13 @@ async def record_api_mutations(
         )
         logger.exception("Unhandled API exception request_id=%s", request_id)
         sentry_sdk.capture_exception()
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "Internal server error", "request_id": request_id},
-            headers={"X-Request-ID": request_id},
-        )
+        if request.url.path.startswith(f"{settings.API_V1_STR}/"):
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Internal server error", "request_id": request_id},
+                headers={"X-Request-ID": request_id},
+            )
+        raise
 
     response.headers["X-Request-ID"] = request_id
     await _audit_mutation(
