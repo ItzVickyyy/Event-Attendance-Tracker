@@ -940,7 +940,7 @@ class StudentImportService:
         self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
     ) -> list[StudentImportRecord]:
         """Create StudentImportRecord staging records from parsed rows"""
-        records = []
+        records: list[StudentImportRecord] = []
 
         for row_data in parsed_rows:
             record = StudentImportRecord(
