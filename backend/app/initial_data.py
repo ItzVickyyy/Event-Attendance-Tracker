@@ -69,14 +69,38 @@ def _seed_academic_catalog(session: Session) -> None:
             """
         )
     ).scalar_one()
+    constraint_state = connection.execute(
+        text(
+            """
+            SELECT COALESCE(
+                string_agg(pg_get_constraintdef(constraint.oid), '; '),
+                'none'
+            )
+            FROM pg_constraint AS constraint
+            WHERE constraint.conrelid = to_regclass('academic_programs')
+            """
+        )
+    ).scalar_one()
+    rule_state = connection.execute(
+        text(
+            """
+            SELECT COALESCE(string_agg(pg_get_ruledef(rule.oid), '; '), 'none')
+            FROM pg_rewrite AS rule
+            WHERE rule.ev_class = to_regclass('academic_programs')
+              AND rule.rulename <> '_RETURN'
+            """
+        )
+    ).scalar_one()
     logger.info(
         "Academic catalog schema after repair: database=%s schema=%s "
-        "program_name_type=%s columns=%s triggers=%s",
+        "program_name_type=%s columns=%s triggers=%s constraints=%s rules=%s",
         schema_state[0],
         schema_state[1],
         schema_state[2],
         column_state,
         trigger_state,
+        constraint_state,
+        rule_state,
     )
     connection.execute(
         text(
