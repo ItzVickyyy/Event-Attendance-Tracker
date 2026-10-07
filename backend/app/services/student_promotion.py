@@ -254,11 +254,16 @@ class StudentPromotionService:
         academic_status: str | None,
     ) -> None:
         """Create or update the year-scoped enrollment used by the roster."""
+        academic_year_id = academic_section.academic_year_id
+        if academic_year_id is None:
+            raise ValueError(
+                "Cannot synchronize student enrollment for a section without an academic year."
+            )
+
         enrollment = self.session.exec(
             select(StudentEnrollment).where(
                 col(StudentEnrollment.student_id) == student.id,
-                col(StudentEnrollment.academic_year_id)
-                == academic_section.academic_year_id,
+                col(StudentEnrollment.academic_year_id) == academic_year_id,
             )
         ).first()
 
@@ -271,7 +276,7 @@ class StudentPromotionService:
         if enrollment is None:
             enrollment = StudentEnrollment(
                 student_id=student.id,
-                academic_year_id=academic_section.academic_year_id,
+                academic_year_id=academic_year_id,
                 section_id=academic_section.id,
                 student_status=status,
             )
