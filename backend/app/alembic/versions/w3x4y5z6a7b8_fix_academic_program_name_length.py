@@ -14,20 +14,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.alter_column(
-        "academic_programs",
-        "program_name",
-        existing_type=sa.String(length=20),
-        type_=sa.String(length=255),
-        existing_nullable=False,
+    op.execute(
+        "ALTER TABLE academic_programs "
+        "ALTER COLUMN program_name TYPE VARCHAR(255), "
+        "ALTER COLUMN program_code TYPE VARCHAR(50)"
     )
 
-
 def downgrade() -> None:
-    op.alter_column(
-        "academic_programs",
-        "program_name",
-        existing_type=sa.String(length=255),
-        type_=sa.String(length=20),
-        existing_nullable=False,
+    op.execute(
+        "ALTER TABLE academic_programs "
+        "ALTER COLUMN program_name TYPE VARCHAR(20), "
+        "ALTER COLUMN program_code TYPE VARCHAR(20)"
     )
