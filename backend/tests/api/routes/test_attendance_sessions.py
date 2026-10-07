@@ -179,3 +179,156 @@ def test_session_late_cutoff_is_calculated_server_side(
     )
     assert scan.status_code == 200
     assert scan.json()["attendance"]["is_late"] is True
+
+
+def test_attendance_session_lifecycle_filters_and_status_transitions(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Session CRUD {random_lower_string()[:6]}",
+            "event_date": "2026-10-04",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    sessions_response = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
+        headers=headers,
+    )
+    assert sessions_response.status_code == 200
+    first = sessions_response.json()["data"][0]
+    assert first["is_active"] is True
+
+    active = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/active/{event_id}",
+        headers=headers,
+    )
+    assert active.status_code == 200
+    assert active.json()["id"] == first["id"]
+
+    second_response = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": event_id,
+            "session_date": "2026-10-04",
+            "name": "Session CRUD Inactive",
+            "session_type": "TIME_IN",
+            "status": "SCHEDULED",
+            "display_order": 2,
+            "is_active": False,
+        },
+    )
+    assert second_response.status_code == 200
+    second_id = second_response.json()["id"]
+
+    scheduled = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}&status=SCHEDULED",
+        headers=headers,
+    )
+    assert scheduled.status_code == 200
+    assert any(row["id"] == second_id for row in scheduled.json()["data"])
+
+    activated = client.patch(
+        f"{settings.API_V1_STR}/attendance-sessions/{second_id}",
+        headers=headers,
+        json={"status": "OPEN"},
+    )
+    assert activated.status_code == 200
+    assert activated.json()["is_active"] is True
+
+    first_after = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/{first['id']}", headers=headers
+    )
+    assert first_after.status_code == 200
+    assert first_after.json()["is_active"] is False
+    assert first_after.json()["status"] == "CLOSED"
+
+    blocked_delete = client.delete(
+        f"{settings.API_V1_STR}/attendance-sessions/{second_id}", headers=headers
+    )
+    assert blocked_delete.status_code == 400
+
+    closed = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/{second_id}/close", headers=headers
+    )
+    assert closed.status_code == 200
+    assert closed.json()["is_active"] is False
+    assert closed.json()["status"] == "CLOSED"
+
+    deleted = client.delete(
+        f"{settings.API_V1_STR}/attendance-sessions/{second_id}", headers=headers
+    )
+    assert deleted.status_code == 200
+
+    missing_id = random_lower_string()[:8]
+    assert client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/{missing_id}", headers=headers
+    ).status_code == 422
+
+
+def test_attendance_session_rejects_invalid_event_and_active_status(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    missing_event = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/active/{random_lower_string()[:8]}",
+        headers=headers,
+    )
+    assert missing_event.status_code == 422
+
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Session Invalid {random_lower_string()[:6]}",
+            "event_date": "2026-10-04",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    invalid_active = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": event_id,
+            "session_date": "2026-10-04",
+            "name": "Invalid Active Session",
+            "session_type": "TIME_IN",
+            "status": "SCHEDULED",
+            "display_order": 3,
+            "is_active": True,
+        },
+    )
+    assert invalid_active.status_code == 400
+
+    closed_event = client.patch(
+        f"{settings.API_V1_STR}/events/{event_id}",
+        headers=headers,
+        json={"status": "closed"},
+    )
+    assert closed_event.status_code == 200
+    rejected = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": event_id,
+            "session_date": "2026-10-04",
+            "name": "Closed Event Session",
+            "session_type": "TIME_IN",
+            "status": "SCHEDULED",
+            "display_order": 4,
+            "is_active": False,
+        },
+    )
+    assert rejected.status_code == 400
