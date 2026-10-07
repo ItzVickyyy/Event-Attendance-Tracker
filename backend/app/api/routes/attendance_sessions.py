@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import update
 from sqlmodel import col, func, select
 
 from app.api.deps import (
@@ -164,17 +165,19 @@ def update_attendance_session(
 
     will_be_active = update_dict.get("is_active", record.is_active)
     if will_be_active:
-        active_sessions = session.exec(
-            select(AttendanceSession).where(
+        session.execute(
+            update(AttendanceSession)
+            .where(
                 col(AttendanceSession.event_id) == record.event_id,
                 col(AttendanceSession.is_active).is_(True),
                 col(AttendanceSession.id) != record.id,
             )
-        ).all()
-        for active in active_sessions:
-            active.is_active = False
-            active.status = AttendanceSessionStatus.closed
-            active.updated_at = get_datetime_utc()
+            .values(
+                is_active=False,
+                status=AttendanceSessionStatus.closed,
+                updated_at=get_datetime_utc(),
+            )
+        )
 
     record.sqlmodel_update(update_dict)
     record.updated_at = get_datetime_utc()
