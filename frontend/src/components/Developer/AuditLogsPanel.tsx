@@ -39,6 +39,7 @@ async function fetchAuditLogs(
   actor: string,
   resource: string,
   statusCode: string,
+  requestId: string,
   startAt: string,
   endAt: string,
 ) {
@@ -49,6 +50,7 @@ async function fetchAuditLogs(
   if (actor.trim()) params.set("actor_user_id", actor.trim())
   if (resource.trim()) params.set("resource", resource.trim())
   if (statusCode.trim()) params.set("status_code", statusCode.trim())
+  if (requestId.trim()) params.set("request_id", requestId.trim())
   if (startAt) params.set("start_at", new Date(startAt).toISOString())
   if (endAt) params.set("end_at", new Date(endAt).toISOString())
   const baseUrl = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "")
@@ -73,6 +75,8 @@ export function AuditLogsPanel() {
   const [actorFilter, setActorFilter] = useState("")
   const [statusInput, setStatusInput] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
+  const [requestIdInput, setRequestIdInput] = useState("")
+  const [requestIdFilter, setRequestIdFilter] = useState("")
   const [startInput, setStartInput] = useState("")
   const [startFilter, setStartFilter] = useState("")
   const [endInput, setEndInput] = useState("")
@@ -82,11 +86,11 @@ export function AuditLogsPanel() {
   const query = useQuery({
     queryKey: [
       "developer", "audit-logs", actionFilter, outcome, actorFilter,
-      resourceFilter, statusFilter, startFilter, endFilter, offset,
+      resourceFilter, statusFilter, requestIdFilter, startFilter, endFilter, offset,
     ],
     queryFn: () => fetchAuditLogs(
       actionFilter, outcome, offset, actorFilter, resourceFilter,
-      statusFilter, startFilter, endFilter,
+      statusFilter, requestIdFilter, startFilter, endFilter,
     ),
   })
 
@@ -96,6 +100,7 @@ export function AuditLogsPanel() {
     setResourceFilter(resourceInput)
     setActorFilter(actorInput)
     setStatusFilter(statusInput)
+    setRequestIdFilter(requestIdInput)
     setStartFilter(startInput)
     setEndFilter(endInput)
   }
@@ -155,6 +160,15 @@ export function AuditLogsPanel() {
                 value={statusInput}
                 onChange={(event) => setStatusInput(event.target.value)}
                 placeholder="e.g. 403"
+              />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">Request ID</span>
+              <input
+                className="h-10 w-full rounded-md border bg-background px-3 font-mono text-xs"
+                value={requestIdInput}
+                onChange={(event) => setRequestIdInput(event.target.value)}
+                placeholder="Trace an API request"
               />
             </label>
             <label className="space-y-1 text-sm">
