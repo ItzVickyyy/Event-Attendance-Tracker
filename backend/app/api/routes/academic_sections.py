@@ -105,7 +105,7 @@ def _build_docx(
     return buffer
 
 
-@router.get("/", response_model=AcademicSectionsPublic)
+@router.get("/", response_model=AcademicSectionsPublic, dependencies=[Depends(require_admin)])
 def read_academic_sections(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -196,7 +196,7 @@ def create_academic_section(
     return section
 
 
-@router.get("/{section_id}", response_model=AcademicSectionPublic)
+@router.get("/{section_id}", response_model=AcademicSectionPublic, dependencies=[Depends(require_admin)])
 def read_academic_section(
     session: SessionDep, _current_user: CurrentUser, section_id: uuid.UUID
 ) -> Any:
