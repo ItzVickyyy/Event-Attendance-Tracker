@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import type { LucideIcon } from "lucide-react"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import {
   Activity,
@@ -83,7 +84,7 @@ function MetricCard({
   title: string
   value: string | number
   description: string
-  icon: typeof Activity
+  icon: LucideIcon
   loading: boolean
 }) {
   return (
