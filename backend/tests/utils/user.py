@@ -49,7 +49,11 @@ def get_token_headers_for_role(
     is_developer: bool = False,
 ) -> dict[str, str]:
     user_in, password = create_user_with_role(
-        db, role=role, can_scan=can_scan, is_superuser=is_superuser, is_developer=is_developer
+        db,
+        role=role,
+        can_scan=can_scan,
+        is_superuser=is_superuser,
+        is_developer=is_developer,
     )
     return user_authentication_headers(
         client=client, email=user_in.email, password=password
