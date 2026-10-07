@@ -13,6 +13,7 @@ from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from starlette.routing import Match
 
 from app.api.main import api_router
 from app.core import security
@@ -113,36 +114,24 @@ async def _audit_mutation(
     except (jwt.InvalidTokenError, ValueError, TypeError):
         return
 
-    # Use FastAPI's matched route template, not the raw URL. This avoids
-    # retaining student IDs, opaque QR tokens, or other path identifiers.
+    # Ask Starlette to match the incoming scope against the registered routes.
+    # This preserves the route template without persisting IDs from the raw URL.
     route_template = None
-    request_path = request.url.path
-    request_method = request.method.upper()
-    actual_segments = request_path.strip("/").split("/")
     for candidate in request.app.routes:
+        matcher = getattr(candidate, "matches", None)
         candidate_path = getattr(candidate, "path", None)
-        if not isinstance(candidate_path, str):
+        if not callable(matcher) or not isinstance(candidate_path, str):
             continue
-        if candidate_path.startswith(api_prefix):
-            template_path = candidate_path
-        elif candidate_path.startswith("/"):
-            template_path = f"{api_prefix}{candidate_path}"
-        else:
-            continue
+        match, _child_scope = matcher(request.scope)
         methods = getattr(candidate, "methods", None)
-        if methods and request_method not in methods:
-            continue
-        template_segments = template_path.strip("/").split("/")
-        if len(template_segments) != len(actual_segments):
-            continue
-        matches = all(
-            template == actual
-            or (template.startswith("{") and template.endswith("}"))
-            for template, actual in zip(template_segments, actual_segments, strict=True)
-        )
-        if matches:
-            route_template = template_path
+        if match is Match.FULL and (not methods or request_method in methods):
+            route_template = (
+                candidate_path
+                if candidate_path.startswith(api_prefix)
+                else f"{api_prefix}{candidate_path}"
+            )
             break
+
     if route_template is None:
         route = request.scope.get("route")
         candidate_path = getattr(route, "path", None)
