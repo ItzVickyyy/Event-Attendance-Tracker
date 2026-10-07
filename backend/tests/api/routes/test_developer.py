@@ -17,7 +17,8 @@ def test_developer_can_read_system_diagnostics(
     headers = get_token_headers_for_role(
         client=client,
         db=db,
-        role=UserRole.developer,
+        role=UserRole.student,
+        is_developer=True,
     )
 
     health = client.get(f"{settings.API_V1_STR}/developer/health", headers=headers)
@@ -39,7 +40,8 @@ def test_developer_is_restricted_from_operational_and_admin_apis(
     headers = get_token_headers_for_role(
         client=client,
         db=db,
-        role=UserRole.developer,
+        role=UserRole.student,
+        is_developer=True,
     )
 
     profile = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
@@ -62,7 +64,8 @@ def test_developer_cannot_use_scanner_permission_by_role_alone(
     headers = get_token_headers_for_role(
         client=client,
         db=db,
-        role=UserRole.developer,
+        role=UserRole.student,
+        is_developer=True,
     )
 
     response = client.get(f"{settings.API_V1_STR}/attendance/", headers=headers)
@@ -105,7 +108,8 @@ def test_developer_can_read_filtered_audit_logs(
     headers = get_token_headers_for_role(
         client=client,
         db=db,
-        role=UserRole.developer,
+        role=UserRole.student,
+        is_developer=True,
     )
     db.add(
         AuditLog(
@@ -147,7 +151,7 @@ def test_non_developer_cannot_read_audit_logs(
 
 
 
-def test_developer_role_cannot_use_superuser_flag_to_access_operations(
+def test_developer_capability_does_not_grant_operational_admin_access(
     client: TestClient, db: Session
 ) -> None:
     email = random_email()
@@ -157,9 +161,9 @@ def test_developer_role_cannot_use_superuser_flag_to_access_operations(
         user_create=UserCreate(
             email=email,
             password=password,
-            role=UserRole.developer,
+            role=UserRole.student,
             is_developer=True,
-            is_superuser=True,
+            is_superuser=False,
         ),
     )
     headers = user_authentication_headers(
@@ -173,7 +177,6 @@ def test_developer_role_cannot_use_superuser_flag_to_access_operations(
 
     assert health.status_code == 200
     assert events.status_code == 403
-
 
 
 def test_admin_can_review_audit_logs(
@@ -200,7 +203,8 @@ def test_failed_mutation_is_audited_with_request_correlation_id(
     headers = get_token_headers_for_role(
         client=client,
         db=db,
-        role=UserRole.developer,
+        role=UserRole.student,
+        is_developer=True,
     )
     request_id = "developer-audit-test-01"
     headers["X-Request-ID"] = request_id
@@ -231,7 +235,8 @@ def test_audit_log_filters_reject_invalid_ranges(
     headers = get_token_headers_for_role(
         client=client,
         db=db,
-        role=UserRole.developer,
+        role=UserRole.student,
+        is_developer=True,
     )
 
     invalid_outcome = client.get(
