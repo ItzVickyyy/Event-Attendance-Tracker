@@ -1,26 +1,66 @@
-import { CalendarDays, ClipboardList, LayoutDashboard, ScanLine, Settings, ShieldCheck, UserRound, UserRoundCheck, UsersRound } from "lucide-react"
+import {
+  Activity,
+  CalendarDays,
+  ClipboardCheck,
+  ClipboardList,
+  KeyRound,
+  LayoutDashboard,
+  ScanLine,
+  Settings,
+  Shield,
+  ShieldCheck,
+  UserRound,
+  UserRoundCheck,
+  Users,
+  UsersRound,
+} from "lucide-react"
 import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
 import type { LucideIcon } from "lucide-react"
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar"
 import useAuth from "@/hooks/useAuth"
 
-type NavigationItem = { title: string; path: string; icon: LucideIcon }
+type NavigationItem = { title: string; path: string; icon: LucideIcon; adminOnly?: boolean }
 type NavigationGroup = { title: string; items: NavigationItem[] }
 
 const navigationGroups: NavigationGroup[] = [
-  { title: "Workspace", items: [{ title: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] },
-  { title: "Operations", items: [
-    { title: "Events", path: "/events", icon: CalendarDays },
-    { title: "Students", path: "/sections", icon: UsersRound },
-    { title: "Records", path: "/records", icon: ClipboardList },
-    { title: "Scanner", path: "/scanner", icon: ScanLine },
-  ] },
-  { title: "Administration", items: [
-    { title: "Administration", path: "/administration", icon: ShieldCheck },
-    { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck },
-    { title: "System Settings", path: "/settings", icon: Settings },
-  ] },
-  { title: "Account", items: [{ title: "My Account", path: "/account", icon: UserRound }] },
+  {
+    title: "Workspace",
+    items: [{ title: "Dashboard", path: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    title: "Operations",
+    items: [
+      { title: "Events", path: "/events", icon: CalendarDays },
+      { title: "Students", path: "/sections", icon: UsersRound },
+      { title: "Records", path: "/records", icon: ClipboardList },
+      { title: "Scanner", path: "/scanner", icon: ScanLine },
+    ],
+  },
+  {
+    title: "Administration",
+    items: [
+      { title: "Overview", path: "/administration", icon: ShieldCheck },
+      { title: "User Accounts", path: "/administration/users", icon: Users },
+      { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck, adminOnly: true },
+      { title: "Roles & Permissions", path: "/administration/roles", icon: Shield },
+      { title: "Attendance Corrections", path: "/administration/attendance", icon: ClipboardCheck },
+      { title: "Scanner Permissions", path: "/administration/scanner-permissions", icon: KeyRound },
+      { title: "Audit Logs", path: "/administration/audit-logs", icon: Activity },
+      { title: "System Settings", path: "/settings", icon: Settings },
+    ],
+  },
+  {
+    title: "Account",
+    items: [{ title: "My Account", path: "/account", icon: UserRound }],
+  },
 ]
 
 function canSeeOperationalNavigation(role?: string, isSuperuser?: boolean) {
@@ -40,16 +80,21 @@ export function ReconstructionNavigation() {
   const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || role === "developer" || user?.can_scan)
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
+  const canManageClassRepresentatives = Boolean(isSuperuser || role === "super_admin" || role === "developer")
   const classRep = role === "class_representative" && !isSuperuser
 
   const groups = navigationGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        if (item.path === "/administration" || item.path === "/settings") return administrationAllowed
-        if (item.path === "/administration/class-representatives") return isSuperuser || role === "super_admin" || role === "developer"
+        if (item.path.startsWith("/administration")) {
+          if (!administrationAllowed) return false
+          if (item.adminOnly && !canManageClassRepresentatives) return false
+          return true
+        }
+        if (item.path === "/settings") return administrationAllowed
         if (item.path === "/scanner") return scannerAllowed && !classRep
-        if (classRep && (item.path === "/events")) return false
+        if (classRep && item.path === "/events") return false
         if (item.path === "/events" || item.path === "/records" || item.path === "/sections") return operationalAllowed
         return true
       }),
@@ -60,17 +105,29 @@ export function ReconstructionNavigation() {
     <nav aria-label="Primary navigation" className="space-y-1">
       {groups.map((group) => (
         <SidebarGroup key={group.title}>
-          <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.title}</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {group.title}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {group.items.map((item) => {
-                const isActive = item.path === "/administration"
-                  ? pathname === item.path
-                  : pathname === item.path || pathname.startsWith(`${item.path}/`)
+                const isActive =
+                  item.path === "/administration"
+                    ? pathname === item.path
+                    : pathname === item.path || pathname.startsWith(`${item.path}/`)
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="min-h-10">
-                      <RouterLink to={item.path} onClick={() => isMobile && setOpenMobile(false)} aria-current={isActive ? "page" : undefined}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.title}
+                      className="min-h-10"
+                    >
+                      <RouterLink
+                        to={item.path}
+                        onClick={() => isMobile && setOpenMobile(false)}
+                        aria-current={isActive ? "page" : undefined}
+                      >
                         <item.icon aria-hidden="true" />
                         <span>{item.title}</span>
                       </RouterLink>
