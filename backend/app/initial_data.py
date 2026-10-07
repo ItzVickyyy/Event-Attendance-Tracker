@@ -10,6 +10,18 @@ logger = logging.getLogger(__name__)
 
 
 def _seed_academic_catalog(session: Session) -> None:
+    # Reconcile legacy database drift on the same connection that performs
+    # catalog seeding. This is a safety net for installations whose recorded
+    # Alembic history is ahead of the physical academic-program schema.
+    session.exec(
+        text(
+            """
+            ALTER TABLE academic_programs
+                ALTER COLUMN program_name TYPE VARCHAR(255),
+                ALTER COLUMN program_code TYPE VARCHAR(50)
+            """
+        )
+    )
     session.exec(
         text(
             """
