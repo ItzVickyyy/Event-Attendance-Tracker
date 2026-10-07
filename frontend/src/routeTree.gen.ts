@@ -19,6 +19,7 @@ import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAccountRouteImport } from './routes/_layout/account'
 import { Route as LayoutAdministrationRouteImport } from './routes/_layout/administration'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout/dashboard'
+import { Route as LayoutDeveloperRouteImport } from './routes/_layout/developer'
 import { Route as LayoutEventsRouteImport } from './routes/_layout/events'
 import { Route as LayoutRecordsRouteImport } from './routes/_layout/records'
 import { Route as LayoutScannerRouteImport } from './routes/_layout/scanner'
@@ -102,6 +103,11 @@ const LayoutAdministrationRoute = LayoutAdministrationRouteImport.update({
 const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutDeveloperRoute = LayoutDeveloperRouteImport.update({
+  id: '/developer',
+  path: '/developer',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutEventsRoute = LayoutEventsRouteImport.update({
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof LayoutAccountRouteWithChildren
   '/administration': typeof LayoutAdministrationRouteWithChildren
   '/dashboard': typeof LayoutDashboardRoute
+  '/developer': typeof LayoutDeveloperRoute
   '/events': typeof LayoutEventsRouteWithChildren
   '/records': typeof LayoutRecordsRouteWithChildren
   '/scanner': typeof LayoutScannerRouteWithChildren
@@ -347,6 +354,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/developer': typeof LayoutDeveloperRoute
   '/events': typeof LayoutEventsRouteWithChildren
   '/records': typeof LayoutRecordsRouteWithChildren
   '/scanner': typeof LayoutScannerRouteWithChildren
@@ -394,6 +402,7 @@ export interface FileRoutesById {
   '/_layout/account': typeof LayoutAccountRouteWithChildren
   '/_layout/administration': typeof LayoutAdministrationRouteWithChildren
   '/_layout/dashboard': typeof LayoutDashboardRoute
+  '/_layout/developer': typeof LayoutDeveloperRoute
   '/_layout/events': typeof LayoutEventsRouteWithChildren
   '/_layout/records': typeof LayoutRecordsRouteWithChildren
   '/_layout/scanner': typeof LayoutScannerRouteWithChildren
@@ -443,6 +452,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/administration'
     | '/dashboard'
+    | '/developer'
     | '/events'
     | '/records'
     | '/scanner'
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard'
+    | '/developer'
     | '/events'
     | '/records'
     | '/scanner'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/_layout/account'
     | '/_layout/administration'
     | '/_layout/dashboard'
+    | '/_layout/developer'
     | '/_layout/events'
     | '/_layout/records'
     | '/_layout/scanner'
@@ -1069,6 +1081,7 @@ interface LayoutRouteChildren {
   LayoutAccountRoute: typeof LayoutAccountRouteWithChildren
   LayoutAdministrationRoute: typeof LayoutAdministrationRouteWithChildren
   LayoutDashboardRoute: typeof LayoutDashboardRoute
+  LayoutDeveloperRoute: typeof LayoutDeveloperRoute
   LayoutEventsRoute: typeof LayoutEventsRouteWithChildren
   LayoutRecordsRoute: typeof LayoutRecordsRouteWithChildren
   LayoutScannerRoute: typeof LayoutScannerRouteWithChildren
@@ -1081,6 +1094,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAccountRoute: LayoutAccountRouteWithChildren,
   LayoutAdministrationRoute: LayoutAdministrationRouteWithChildren,
   LayoutDashboardRoute: LayoutDashboardRoute,
+  LayoutDeveloperRoute: LayoutDeveloperRoute,
   LayoutEventsRoute: LayoutEventsRouteWithChildren,
   LayoutRecordsRoute: LayoutRecordsRouteWithChildren,
   LayoutScannerRoute: LayoutScannerRouteWithChildren,
