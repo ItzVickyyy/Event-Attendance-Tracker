@@ -51,11 +51,25 @@ def test_developer_is_restricted_from_operational_and_admin_apis(
         headers=headers,
     )
     users = client.get(f"{settings.API_V1_STR}/users/", headers=headers)
+    students = client.get(f"{settings.API_V1_STR}/students/", headers=headers)
+    people = client.get(f"{settings.API_V1_STR}/people/", headers=headers)
+    organizations = client.get(
+        f"{settings.API_V1_STR}/organizations/",
+        headers=headers,
+    )
+    sessions = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+    )
 
     assert profile.status_code == 200
     assert events.status_code == 403
     assert academic_years.status_code == 403
     assert users.status_code == 403
+    assert students.status_code == 403
+    assert people.status_code == 403
+    assert organizations.status_code == 403
+    assert sessions.status_code == 403
 
 
 def test_developer_cannot_use_scanner_permission_by_role_alone(
