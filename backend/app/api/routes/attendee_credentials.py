@@ -131,6 +131,11 @@ def public_lookup_credential(session: SessionDep, credential_value: str) -> Any:
     student = session.exec(
         select(Student).where(col(Student.person_id) == person.id)
     ).first()
+    section = (
+        session.get(AcademicSection, student.section_id)
+        if student and student.section_id
+        else None
+    )
     return PublicCredentialLookup(
         attendee_id=attendee.id,
         attendee_type=attendee.attendee_type,
@@ -145,13 +150,7 @@ def public_lookup_credential(session: SessionDep, credential_value: str) -> Any:
             if p
         ),
         student_number=student.student_number if student else None,
-        section_name=(
-            session.get(AcademicSection, student.section_id).section_name
-            if student
-            and student.section_id
-            and session.get(AcademicSection, student.section_id)
-            else None
-        ),
+        section_name=section.section_name if section else None,
     )
 
 
