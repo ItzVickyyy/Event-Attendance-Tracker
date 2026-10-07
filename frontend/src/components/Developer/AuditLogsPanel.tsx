@@ -1,5 +1,5 @@
-import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,9 +60,10 @@ async function fetchAuditLogs(
   )
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    const detail = typeof body?.detail === "string"
-      ? body.detail
-      : "Unable to load audit logs"
+    const detail =
+      typeof body?.detail === "string"
+        ? body.detail
+        : "Unable to load audit logs"
     const requestId = body?.request_id ?? response.headers.get("X-Request-ID")
     throw new Error(requestId ? `${detail} (Request ID: ${requestId})` : detail)
   }
@@ -88,13 +89,30 @@ export function AuditLogsPanel() {
   const [offset, setOffset] = useState(0)
   const query = useQuery({
     queryKey: [
-      "developer", "audit-logs", actionFilter, outcome, actorFilter,
-      resourceFilter, statusFilter, requestIdFilter, startFilter, endFilter, offset,
+      "developer",
+      "audit-logs",
+      actionFilter,
+      outcome,
+      actorFilter,
+      resourceFilter,
+      statusFilter,
+      requestIdFilter,
+      startFilter,
+      endFilter,
+      offset,
     ],
-    queryFn: () => fetchAuditLogs(
-      actionFilter, outcome, offset, actorFilter, resourceFilter,
-      statusFilter, requestIdFilter, startFilter, endFilter,
-    ),
+    queryFn: () =>
+      fetchAuditLogs(
+        actionFilter,
+        outcome,
+        offset,
+        actorFilter,
+        resourceFilter,
+        statusFilter,
+        requestIdFilter,
+        startFilter,
+        endFilter,
+      ),
   })
 
   const applyFilters = () => {
@@ -113,14 +131,17 @@ export function AuditLogsPanel() {
       <div>
         <h2 className="text-lg font-semibold">Audit logs</h2>
         <p className="text-sm text-muted-foreground">
-          Authenticated API changes, response outcomes, and request timing. Payloads and credentials are never stored.
+          Authenticated API changes, response outcomes, and request timing.
+          Payloads and credentials are never stored.
         </p>
       </div>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Recent activity</CardTitle>
           <CardDescription>
-            {query.data ? `${query.data.count} matching entries` : "Review recorded API changes"}
+            {query.data
+              ? `${query.data.count} matching entries`
+              : "Review recorded API changes"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -215,13 +236,22 @@ export function AuditLogsPanel() {
           </div>
 
           {query.isLoading ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Loading audit logs…</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Loading audit logs…
+            </p>
           ) : query.isError ? (
             <div className="space-y-2 rounded-md border border-destructive/40 p-4">
               <p className="text-sm text-destructive">
-                {query.error instanceof Error ? query.error.message : "Unable to load audit logs"}
+                {query.error instanceof Error
+                  ? query.error.message
+                  : "Unable to load audit logs"}
               </p>
-              <Button type="button" size="sm" variant="outline" onClick={() => void query.refetch()}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void query.refetch()}
+              >
                 Try again
               </Button>
             </div>
@@ -237,16 +267,22 @@ export function AuditLogsPanel() {
                       <th className="px-3 py-3 font-medium">Actor ID</th>
                       <th className="px-3 py-3 font-medium">Result</th>
                       <th className="px-3 py-3 font-medium">Request ID</th>
-                      <th className="px-3 py-3 text-right font-medium">Duration</th>
+                      <th className="px-3 py-3 text-right font-medium">
+                        Duration
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {query.data.data.map((entry) => (
                       <tr key={entry.id} className="align-top">
                         <td className="whitespace-nowrap px-3 py-3 text-muted-foreground">
-                          {new Date(entry.occurred_at).toLocaleString("en-GB", { timeZone: "UTC" })}
+                          {new Date(entry.occurred_at).toLocaleString("en-GB", {
+                            timeZone: "UTC",
+                          })}
                         </td>
-                        <td className="px-3 py-3 font-medium">{entry.action}</td>
+                        <td className="px-3 py-3 font-medium">
+                          {entry.action}
+                        </td>
                         <td className="max-w-sm break-all px-3 py-3">
                           <div>{entry.resource}</div>
                           <div className="text-xs text-muted-foreground">
@@ -257,7 +293,13 @@ export function AuditLogsPanel() {
                           {entry.actor_user_id ?? "Unknown"}
                         </td>
                         <td className="px-3 py-3">
-                          <Badge variant={entry.outcome === "success" ? "secondary" : "destructive"}>
+                          <Badge
+                            variant={
+                              entry.outcome === "success"
+                                ? "secondary"
+                                : "destructive"
+                            }
+                          >
                             {entry.outcome}
                           </Badge>
                         </td>
@@ -274,7 +316,9 @@ export function AuditLogsPanel() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  Showing {offset + 1}–{Math.min(offset + query.data.data.length, query.data.count)} of {query.data.count}
+                  Showing {offset + 1}–
+                  {Math.min(offset + query.data.data.length, query.data.count)}{" "}
+                  of {query.data.count}
                 </p>
                 <div className="flex gap-2">
                   <Button
