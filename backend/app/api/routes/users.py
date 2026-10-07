@@ -180,9 +180,10 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Delete own user.
     """
-    if current_user.is_superuser:
+    if current_user.is_superuser or current_user.role == UserRole.super_admin:
         raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves"
+            status_code=403,
+            detail="Super Admins are not allowed to delete themselves",
         )
     session.delete(current_user)
     session.commit()
