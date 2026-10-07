@@ -59,7 +59,7 @@ def require_role(
 ) -> Callable[[User], User]:
     """
     Returns a FastAPI dependency that checks if the current user has one of the allowed roles.
-    Superusers (or Developer/Super Admin) with appropriate roles pass automatically.
+    Superusers bypass the role list. Developer access alone grants no application role.
     """
     allowed_set = set(allowed_roles)
 
@@ -81,7 +81,7 @@ def require_scanner_permission(current_user: CurrentUser) -> User:
     """
     Returns the user if they possess attendance scanning permission.
     Allowed:
-    - Superusers / Developer / Super Admin / Admin (operators)
+    - Superusers / Super Admin / Admin (operators)
     - Any user with can_scan=True explicitly assigned (e.g. Dean, Student Council Advisers/Officers, Class Reps)
     """
     if current_user.is_superuser:
