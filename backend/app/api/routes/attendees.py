@@ -89,7 +89,11 @@ def create_attendee(
     return attendee
 
 
-@router.get("/{attendee_id}", response_model=AttendeePublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{attendee_id}",
+    response_model=AttendeePublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_attendee(
     session: SessionDep, _current_user: CurrentUser, attendee_id: uuid.UUID
 ) -> Any:

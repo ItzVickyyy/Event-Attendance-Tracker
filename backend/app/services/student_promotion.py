@@ -26,10 +26,9 @@ from app.models import (
     get_datetime_utc,
 )
 from app.services.reference_codes import next_student_reference_code
-from app.student_academics import AcademicYear
 from app.services.student_credentials import ensure_student_qr_credential
 from app.services.student_import import StudentImportService
-from app.student_academics import StudentEnrollment, StudentStatus
+from app.student_academics import AcademicYear, StudentEnrollment, StudentStatus
 
 
 @dataclass
@@ -311,9 +310,7 @@ class StudentPromotionService:
         ).first()
 
         status = (
-            StudentStatus(academic_status)
-            if academic_status
-            else StudentStatus.regular
+            StudentStatus(academic_status) if academic_status else StudentStatus.regular
         )
 
         if enrollment is None:

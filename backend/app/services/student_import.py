@@ -61,14 +61,18 @@ class StudentImportService:
 
         parsed_rows: list[dict[str, Any]] = []
         for row_number, raw_row in enumerate(reader, start=2):
-            if all(value is None or str(value).strip() == "" for value in raw_row.values()):
+            if all(
+                value is None or str(value).strip() == "" for value in raw_row.values()
+            ):
                 continue
             normalized = {
                 str(k).strip().lower(): self._safe_cell_value(v)
                 for k, v in raw_row.items()
                 if k is not None
             }
-            section = normalized.get("section") or self._default_section_name(import_batch)
+            section = normalized.get("section") or self._default_section_name(
+                import_batch
+            )
             if not section:
                 raise ValueError(
                     f"Row {row_number} has no Section. Add a Section column or select a section before uploading."
@@ -691,7 +695,9 @@ class StudentImportService:
             "discrepancies": discrepancies,
         }
 
-    def _resolve_import_section(self, import_batch: ImportBatch, section_reference: str) -> AcademicSection | None:
+    def _resolve_import_section(
+        self, import_batch: ImportBatch, section_reference: str
+    ) -> AcademicSection | None:
         """Resolve a human-readable section reference against the academic registry.
 
         Canonical import references are formatted as:
@@ -768,20 +774,24 @@ class StudentImportService:
                 | (col(AcademicSection.section_code) == section_code),
             ]
 
-        return self.session.exec(
-            select(AcademicSection).where(
-                col(AcademicSection.academic_year) == import_batch.academic_year,
-                col(AcademicSection.program_id) == program.id,
-                conditions[0] if len(conditions) == 1 else conditions[0],
-            )
-        ).first() if len(conditions) == 1 else self.session.exec(
-            select(AcademicSection).where(
-                col(AcademicSection.academic_year) == import_batch.academic_year,
-                col(AcademicSection.program_id) == program.id,
-                conditions[0],
-                conditions[1],
-            )
-        ).first()
+        return (
+            self.session.exec(
+                select(AcademicSection).where(
+                    col(AcademicSection.academic_year) == import_batch.academic_year,
+                    col(AcademicSection.program_id) == program.id,
+                    conditions[0] if len(conditions) == 1 else conditions[0],
+                )
+            ).first()
+            if len(conditions) == 1
+            else self.session.exec(
+                select(AcademicSection).where(
+                    col(AcademicSection.academic_year) == import_batch.academic_year,
+                    col(AcademicSection.program_id) == program.id,
+                    conditions[0],
+                    conditions[1],
+                )
+            ).first()
+        )
 
     def _validate_and_detect_conflicts(
         self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
@@ -792,7 +802,9 @@ class StudentImportService:
             student_number = (row_data.get("raw_student_number") or "").strip()
             first_name = (row_data.get("raw_first_name") or "").strip()
             last_name = (row_data.get("raw_last_name") or "").strip()
-            section_ref = (row_data.get("raw_section") or row_data.get("source_sheet") or "").strip()
+            section_ref = (
+                row_data.get("raw_section") or row_data.get("source_sheet") or ""
+            ).strip()
             if not student_number:
                 errors.append("Missing Student Number.")
             if not first_name:

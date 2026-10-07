@@ -10,7 +10,6 @@ from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
-from app.student_academics import AcademicYear
 from app.models import (
     AcademicProgram,
     AcademicSection,
@@ -22,6 +21,7 @@ from app.models import (
     Student,
     get_datetime_utc,
 )
+from app.student_academics import AcademicYear
 
 router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 
@@ -105,7 +105,9 @@ def _build_docx(
     return buffer
 
 
-@router.get("/", response_model=AcademicSectionsPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/", response_model=AcademicSectionsPublic, dependencies=[Depends(require_admin)]
+)
 def read_academic_sections(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -199,7 +201,11 @@ def create_academic_section(
     return section
 
 
-@router.get("/{section_id}", response_model=AcademicSectionPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{section_id}",
+    response_model=AcademicSectionPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_academic_section(
     session: SessionDep, _current_user: CurrentUser, section_id: uuid.UUID
 ) -> Any:
@@ -304,7 +310,9 @@ def update_academic_section(
             raise HTTPException(status_code=404, detail="Academic program not found")
     if "academic_year" in update_dict:
         year = session.exec(
-            select(AcademicYear).where(AcademicYear.label == update_dict["academic_year"])
+            select(AcademicYear).where(
+                AcademicYear.label == update_dict["academic_year"]
+            )
         ).first()
         if year is None:
             raise HTTPException(
@@ -313,7 +321,9 @@ def update_academic_section(
             )
         update_dict["academic_year_id"] = year.id
     if "section_name" in update_dict:
-        update_dict["section_code"] = update_dict.get("section_code") or update_dict["section_name"]
+        update_dict["section_code"] = (
+            update_dict.get("section_code") or update_dict["section_name"]
+        )
     section.sqlmodel_update(update_dict)
     section.updated_at = get_datetime_utc()
     session.add(section)

@@ -1,7 +1,7 @@
 """Helpers for generating human-readable reference codes."""
 
-from sqlmodel import Session
 from sqlalchemy import text
+from sqlmodel import Session
 
 
 def next_user_reference_code(session: Session) -> str:

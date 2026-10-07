@@ -14,18 +14,22 @@ REFERENCE_CODE_DEFAULTS = (
 
 def test_reference_code_defaults_are_sql_expressions(db: Session) -> None:
     for table, prefix, sequence in REFERENCE_CODE_DEFAULTS:
-        default = db.connection().execute(
-            text(
-                """
+        default = (
+            db.connection()
+            .execute(
+                text(
+                    """
                 SELECT column_default
                 FROM information_schema.columns
                 WHERE table_schema = current_schema()
                   AND table_name = :table_name
                   AND column_name = 'reference_code'
                 """
-            ),
-            {"table_name": table},
-        ).scalar_one_or_none()
+                ),
+                {"table_name": table},
+            )
+            .scalar_one_or_none()
+        )
 
         assert default is not None, f"{table}.reference_code has no default"
         assert sequence in default

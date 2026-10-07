@@ -67,7 +67,9 @@ def create_person(
     return person
 
 
-@router.get("/{person_id}", response_model=PersonPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{person_id}", response_model=PersonPublic, dependencies=[Depends(require_admin)]
+)
 def read_person(
     session: SessionDep, _current_user: CurrentUser, person_id: uuid.UUID
 ) -> Any:

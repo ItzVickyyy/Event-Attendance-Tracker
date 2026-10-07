@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 import pytest
 from sqlmodel import Session, select
 
-from app.student_academics import AcademicYear
 from app.models import (
     AcademicProgram,
     AcademicSection,
@@ -19,6 +18,7 @@ from app.models import (
 )
 from app.services.student_import import StudentImportService
 from app.services.student_promotion import StudentPromotionService
+from app.student_academics import AcademicYear
 
 # ---------------------------------------------------------------------------
 # Section-sheet parsing (item L.1) - no database required.

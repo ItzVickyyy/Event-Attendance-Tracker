@@ -225,6 +225,7 @@ def read_user_by_id(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
 @router.patch("/{user_id}", response_model=UserPublic)
 def update_user(
     *,
@@ -308,7 +309,9 @@ def delete_user(
             else "Admins are not allowed to delete themselves"
         )
         raise HTTPException(status_code=403, detail=detail)
-    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+    is_super_admin = (
+        current_user.is_superuser or current_user.role == UserRole.super_admin
+    )
     if not is_super_admin and (
         user.role in (UserRole.admin, UserRole.super_admin)
         or user.is_superuser

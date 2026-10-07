@@ -1,11 +1,11 @@
+import csv
+import io
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
-from sqlmodel import col, func, select
 from openpyxl import Workbook  # type: ignore[import-untyped]
-import csv
-import io
+from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
 from app.models import (
@@ -27,7 +27,9 @@ from app.services.student_promotion import StudentPromotionService
 router = APIRouter(prefix="/import-batches", tags=["import-batches"])
 
 
-@router.get("/", response_model=ImportBatchesPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/", response_model=ImportBatchesPublic, dependencies=[Depends(require_admin)]
+)
 def read_import_batches(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -130,7 +132,11 @@ def create_import_batch(
     return import_batch
 
 
-@router.get("/{batch_id}", response_model=ImportBatchPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{batch_id}",
+    response_model=ImportBatchPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_import_batch(
     session: SessionDep, _current_user: CurrentUser, batch_id: uuid.UUID
 ) -> Any:
@@ -140,7 +146,11 @@ def read_import_batch(
     return import_batch
 
 
-@router.get("/{batch_id}/records", response_model=StudentImportRecordsPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{batch_id}/records",
+    response_model=StudentImportRecordsPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_import_batch_records(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -253,7 +263,9 @@ async def upload_import_batch_workbook(
 
     service = StudentImportService(session)
     try:
-        parsed_rows = service.parse_student_import_file(import_batch, contents, filename)
+        parsed_rows = service.parse_student_import_file(
+            import_batch, contents, filename
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -316,7 +328,9 @@ def promote_import_batch(
         raise HTTPException(status_code=404, detail="Import batch not found")
 
     if import_batch.status != ImportBatchStatus.validated:
-        raise HTTPException(status_code=400, detail="This import batch is not ready for promotion.")
+        raise HTTPException(
+            status_code=400, detail="This import batch is not ready for promotion."
+        )
 
     summary = import_batch.validation_summary or {}
     if summary.get("invalid_rows", 0) > 0 or summary.get("conflict_rows", 0) > 0:
