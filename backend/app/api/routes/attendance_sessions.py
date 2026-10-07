@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.api.deps import CurrentUser, SessionDep, require_admin, require_scanner_permission
 from app.models import (
     AttendanceSession,
     AttendanceSessionCreate,
@@ -27,7 +27,7 @@ def _validate_event(session, event_id: uuid.UUID) -> Event:
     return event
 
 
-@router.get("/", response_model=AttendanceSessionsPublic)
+@router.get("/", response_model=AttendanceSessionsPublic, dependencies=[Depends(require_scanner_permission)])
 def read_attendance_sessions(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -60,7 +60,7 @@ def read_attendance_sessions(
     )
 
 
-@router.get("/active/{event_id}", response_model=AttendanceSessionPublic)
+@router.get("/active/{event_id}", response_model=AttendanceSessionPublic, dependencies=[Depends(require_scanner_permission)])
 def read_active_attendance_session(
     session: SessionDep, _current_user: CurrentUser, event_id: uuid.UUID
 ) -> Any:
@@ -111,7 +111,7 @@ def create_attendance_session(
     return record
 
 
-@router.get("/{session_id}", response_model=AttendanceSessionPublic)
+@router.get("/{session_id}", response_model=AttendanceSessionPublic, dependencies=[Depends(require_scanner_permission)])
 def read_attendance_session(
     session: SessionDep, _current_user: CurrentUser, session_id: uuid.UUID
 ) -> Any:
