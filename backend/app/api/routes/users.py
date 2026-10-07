@@ -8,7 +8,7 @@ from app import crud
 from app.api.deps import (
     CurrentUser,
     SessionDep,
-    get_current_active_superuser,
+    require_admin,
 )
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
@@ -16,6 +16,7 @@ from app.models import (
     Message,
     UpdatePassword,
     User,
+    UserRole,
     UserCreate,
     UserPublic,
     UserRegister,
@@ -28,12 +29,13 @@ from app.utils import generate_new_account_email, send_email
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get(
-    "/",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=UsersPublic,
-)
-def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+@router.get("/", response_model=UsersPublic)
+def read_users(
+    session: SessionDep,
+    current_user: User = Depends(require_admin),
+    skip: int = 0,
+    limit: int = 100,
+) -> Any:
     """
     Retrieve users.
     """
@@ -50,13 +52,26 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     return UsersPublic(data=users_public, count=count)
 
 
-@router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model=UserPublic
-)
-def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
+@router.post("/", response_model=UserPublic)
+def create_user(
+    *,
+    session: SessionDep,
+    user_in: UserCreate,
+    current_user: User = Depends(require_admin),
+) -> Any:
     """
     Create new user.
     """
+    if current_user.role != UserRole.super_admin and (
+        user_in.is_superuser
+        or user_in.is_developer
+        or user_in.role == UserRole.super_admin
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Admins cannot create super-admin or Developer accounts",
+        )
+
     user = crud.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
@@ -190,28 +205,28 @@ def read_user_by_id(
     Get a specific user by id.
     """
     user = session.get(User, user_id)
-    if user == current_user:
-        return user
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=403,
-            detail="The user doesn't have enough privileges",
-        )
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    if user == current_user:
+        return user
+    if current_user.is_superuser or current_user.role in (
+        UserRole.super_admin,
+        UserRole.admin,
+    ):
+        return user
+    raise HTTPException(
+        status_code=403,
+        detail="The user doesn't have enough privileges",
+    )
 
 
-@router.patch(
-    "/{user_id}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=UserPublic,
-)
+@router.patch("/{user_id}", response_model=UserPublic)
 def update_user(
     *,
     session: SessionDep,
     user_id: uuid.UUID,
     user_in: UserUpdate,
+    current_user: User = Depends(require_admin),
 ) -> Any:
     """
     Update a user.
@@ -223,6 +238,22 @@ def update_user(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
+    if current_user.role != UserRole.super_admin:
+        if db_user.role == UserRole.super_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Only a Super Admin can modify a Super Admin account",
+            )
+        submitted_fields = user_in.model_dump(exclude_unset=True)
+        if (
+            "is_superuser" in submitted_fields
+            or "is_developer" in submitted_fields
+            or submitted_fields.get("role") == UserRole.super_admin
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="Admins cannot change Super Admin or Developer privileges",
+            )
     if user_in.email:
         existing_user = crud.get_user_by_email(session=session, email=user_in.email)
         if existing_user and existing_user.id != user_id:
@@ -234,9 +265,11 @@ def update_user(
     return db_user
 
 
-@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete("/{user_id}")
 def delete_user(
-    session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
+    session: SessionDep,
+    user_id: uuid.UUID,
+    current_user: User = Depends(require_admin),
 ) -> Message:
     """
     Delete a user.
@@ -246,7 +279,12 @@ def delete_user(
         raise HTTPException(status_code=404, detail="User not found")
     if user == current_user:
         raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves"
+            status_code=403, detail="Admins are not allowed to delete themselves"
+        )
+    if current_user.role != UserRole.super_admin and user.role == UserRole.super_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Only a Super Admin can delete a Super Admin account",
         )
     session.delete(user)
     session.commit()
