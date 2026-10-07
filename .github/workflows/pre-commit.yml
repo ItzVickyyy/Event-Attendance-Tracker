@@ -10,6 +10,15 @@ env:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    # Import-time settings for static checks and OpenAPI generation only.
+    # These QA values are never used for deployment.
+    env:
+      FASTAPI_ENV: development
+      PROJECT_NAME: Event Attendance Tracker CI
+      SECRET_KEY: qa-only-static-check-secret-key-not-for-production
+      DATABASE_URL: postgresql://postgres:qa-postgres-password@localhost:5433/app
+      FIRST_SUPERUSER: SuperAdmin@sample.com
+      FIRST_SUPERUSER_PASSWORD: qa-only-superuser-password
     permissions:
       contents: read
       id-token: write
