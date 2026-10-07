@@ -414,8 +414,8 @@ class AcademicSection(AcademicSectionBase, table=True):
 
 @event.listens_for(AcademicSection, "before_insert")
 def _set_academic_section_code_before_insert(
-    mapper: Mapper[AcademicSection],
-    connection: Connection,
+    _mapper: Mapper[AcademicSection],
+    _connection: Connection,
     target: AcademicSection,
 ) -> None:
     """Keep the required database code populated for all creation paths."""
@@ -425,8 +425,8 @@ def _set_academic_section_code_before_insert(
 
 @event.listens_for(AcademicSection, "before_update")
 def _set_academic_section_code_before_update(
-    mapper: Mapper[AcademicSection],
-    connection: Connection,
+    _mapper: Mapper[AcademicSection],
+    _connection: Connection,
     target: AcademicSection,
 ) -> None:
     """Backfill section codes for legacy objects updated through the ORM."""
