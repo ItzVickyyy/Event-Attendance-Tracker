@@ -1540,7 +1540,7 @@ export type UserRegister = {
 /**
  * UserRole
  */
-export type UserRole = 'developer' | 'super_admin' | 'admin' | 'class_representative' | 'student';
+export type UserRole = 'super_admin' | 'admin' | 'class_representative' | 'student';
 
 /**
  * UserUpdate
