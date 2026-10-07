@@ -3,5 +3,7 @@ import { AdministrationWorkspace } from "@/components/Administration/Administrat
 
 export const Route = createFileRoute("/_layout/administration/")({
   component: AdministrationWorkspace,
-  head: () => ({ meta: [{ title: "Administration - Event Attendance Tracker" }] }),
+  head: () => ({
+    meta: [{ title: "Administration - Event Attendance Tracker" }],
+  }),
 })
