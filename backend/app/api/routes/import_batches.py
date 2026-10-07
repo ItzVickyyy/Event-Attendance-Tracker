@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlmodel import col, func, select
-from openpyxl import Workbook
+from openpyxl import Workbook  # type: ignore[import-untyped]
 import csv
 import io
 
