@@ -5,7 +5,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
-from sqlmodel import col, func, select
+from sqlalchemy import select
+from sqlmodel import col, func
 
 from app.api.deps import (
     CurrentUser,
@@ -94,8 +95,8 @@ def read_attendances(
     if section_id:
         registration_filter = (
             registration_filter.join(Attendee)
-            .join(Student, Student.person_id == Attendee.person_id)
-            .join(StudentEnrollment, StudentEnrollment.student_id == Student.id)
+            .join(Student, col(Student.person_id) == col(Attendee.person_id))
+            .join(StudentEnrollment, col(StudentEnrollment.student_id) == col(Student.id))
             .where(col(StudentEnrollment.section_id) == section_id)
         )
         if academic_year_id:
@@ -194,14 +195,14 @@ def export_attendances(
             Student,
             AttendanceSession,
         )
-        .join(EventRegistration, Attendance.registration_id == EventRegistration.id)
-        .join(Event, EventRegistration.event_id == Event.id)
-        .join(Attendee, EventRegistration.attendee_id == Attendee.id)
-        .join(Person, Attendee.person_id == Person.id)
+        .join(EventRegistration, col(Attendance.registration_id) == col(EventRegistration.id))
+        .join(Event, col(EventRegistration.event_id) == col(Event.id))
+        .join(Attendee, col(EventRegistration.attendee_id) == col(Attendee.id))
+        .join(Person, col(Attendee.person_id) == col(Person.id))
         .join(
-            AttendanceSession, Attendance.attendance_session_id == AttendanceSession.id
+            AttendanceSession, col(Attendance.attendance_session_id) == col(AttendanceSession.id)
         )
-        .outerjoin(Student, Student.person_id == Person.id)
+        .outerjoin(Student, col(Student.person_id) == col(Person.id))
     )
 
     if event_id:
@@ -516,8 +517,8 @@ def read_attendance(
             )
         allowed = session.execute(
             select(Student.id)
-            .join(Attendee, Attendee.person_id == Student.person_id)
-            .join(EventRegistration, EventRegistration.attendee_id == Attendee.id)
+            .join(Attendee, col(Attendee.person_id) == col(Student.person_id))
+            .join(EventRegistration, col(EventRegistration.attendee_id) == col(Attendee.id))
             .where(
                 EventRegistration.id == record.registration_id,
                 Student.section_id == assignment["section_id"],
