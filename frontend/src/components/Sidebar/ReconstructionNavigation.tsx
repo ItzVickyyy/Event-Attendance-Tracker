@@ -36,6 +36,10 @@ const navigationGroups: NavigationGroup[] = [
     items: [{ title: "Dashboard", path: "/dashboard", icon: LayoutDashboard }],
   },
   {
+    title: "Developer",
+    items: [{ title: "System Dashboard", path: "/developer", icon: Activity }],
+  },
+  {
     title: "Operations",
     items: [
       { title: "Events", path: "/events", icon: CalendarDays },
@@ -68,7 +72,7 @@ function canSeeOperationalNavigation(role?: string, isSuperuser?: boolean) {
 }
 
 function canSeeAdministration(role?: string, isSuperuser?: boolean) {
-  return isSuperuser || role === "admin" || role === "super_admin" || role === "developer"
+  return isSuperuser || role === "admin" || role === "super_admin"
 }
 
 export function ReconstructionNavigation() {
@@ -80,6 +84,8 @@ export function ReconstructionNavigation() {
   const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || role === "developer" || user?.can_scan)
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
+  const developerAllowed = Boolean(user?.is_developer || role === "developer")
+  const pureDeveloper = developerAllowed && !isSuperuser && role !== "admin" && role !== "super_admin"
   const canManageClassRepresentatives = Boolean(isSuperuser || role === "super_admin" || role === "developer")
   const classRep = role === "class_representative" && !isSuperuser
 
@@ -87,6 +93,8 @@ export function ReconstructionNavigation() {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
+        if (item.path === "/developer") return developerAllowed
+        if (pureDeveloper && item.path === "/dashboard") return false
         if (item.path.startsWith("/administration")) {
           if (!administrationAllowed) return false
           if (item.adminOnly && !canManageClassRepresentatives) return false
