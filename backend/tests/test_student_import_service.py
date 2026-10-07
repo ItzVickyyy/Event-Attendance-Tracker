@@ -48,6 +48,7 @@ def test_import_section_resolver_normalizes_exact_and_legacy_references(
         section_name="Legacy Section",
         section_code="9Z",
         academic_year="2026-2027",
+        academic_year_id=exact.academic_year_id,
     )
     db_session.add(legacy)
     db_session.flush()
