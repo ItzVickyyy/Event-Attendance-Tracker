@@ -27,7 +27,7 @@ from app.services.student_promotion import StudentPromotionService
 router = APIRouter(prefix="/import-batches", tags=["import-batches"])
 
 
-@router.get("/", response_model=ImportBatchesPublic)
+@router.get("/", response_model=ImportBatchesPublic, dependencies=[Depends(require_admin)])
 def read_import_batches(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -130,7 +130,7 @@ def create_import_batch(
     return import_batch
 
 
-@router.get("/{batch_id}", response_model=ImportBatchPublic)
+@router.get("/{batch_id}", response_model=ImportBatchPublic, dependencies=[Depends(require_admin)])
 def read_import_batch(
     session: SessionDep, _current_user: CurrentUser, batch_id: uuid.UUID
 ) -> Any:
@@ -140,7 +140,7 @@ def read_import_batch(
     return import_batch
 
 
-@router.get("/{batch_id}/records", response_model=StudentImportRecordsPublic)
+@router.get("/{batch_id}/records", response_model=StudentImportRecordsPublic, dependencies=[Depends(require_admin)])
 def read_import_batch_records(
     session: SessionDep,
     _current_user: CurrentUser,
