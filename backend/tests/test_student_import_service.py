@@ -5,7 +5,8 @@ import pytest
 from openpyxl import Workbook
 from sqlmodel import select
 
-from app.models import AcademicProgram, AcademicSection, AcademicYear, ImportBatch
+from app.models import AcademicProgram, AcademicSection, ImportBatch
+from app.student_academics import AcademicYear
 from app.services.student_import import (
     StudentImportService,
     parse_student_import,
