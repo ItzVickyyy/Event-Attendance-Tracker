@@ -311,7 +311,6 @@ export interface FileRoutesByFullPath {
   '/administration': typeof LayoutAdministrationRouteWithChildren
   '/dashboard': typeof LayoutDashboardRoute
   '/developer': typeof LayoutDeveloperRoute
-  '/developer': typeof LayoutDeveloperRoute
   '/events': typeof LayoutEventsRouteWithChildren
   '/records': typeof LayoutRecordsRouteWithChildren
   '/scanner': typeof LayoutScannerRouteWithChildren
@@ -355,6 +354,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/developer': typeof LayoutDeveloperRoute
   '/events': typeof LayoutEventsRouteWithChildren
   '/records': typeof LayoutRecordsRouteWithChildren
   '/scanner': typeof LayoutScannerRouteWithChildren
@@ -543,6 +543,7 @@ export interface FileRouteTypes {
     | '/_layout/account'
     | '/_layout/administration'
     | '/_layout/dashboard'
+    | '/_layout/developer'
     | '/_layout/events'
     | '/_layout/records'
     | '/_layout/scanner'
