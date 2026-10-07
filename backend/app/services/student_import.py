@@ -5,7 +5,7 @@ import io
 import re
 from typing import Any, TypedDict
 
-from openpyxl import load_workbook
+from openpyxl import load_workbook  # type: ignore[import-untyped]
 from sqlmodel import Session, col, select
 
 from app.models import (
@@ -105,13 +105,13 @@ class StudentImportService:
         source_no: Any,
         values: dict[str, Any],
     ) -> dict[str, Any]:
+        source_no_value = self._safe_cell_value(source_no)
         return {
             "source_sheet": source_sheet,
             "source_row": source_row,
             "source_no": (
-                int(self._safe_cell_value(source_no))
-                if self._safe_cell_value(source_no)
-                and self._safe_cell_value(source_no).isdigit()
+                int(source_no_value)
+                if source_no_value and source_no_value.isdigit()
                 else None
             ),
             "raw_student_number": values.get("student number"),
@@ -334,9 +334,9 @@ class StudentImportService:
         }
 
         for field_name, col_key in col_lookup.items():
-            col_idx = header_to_col_idx.get(col_key)
-            if col_idx is not None and col_idx < len(row):
-                data[field_name] = self._safe_cell_value(row[col_idx])
+            header_col_idx = header_to_col_idx.get(col_key)
+            if header_col_idx is not None and header_col_idx < len(row):
+                data[field_name] = self._safe_cell_value(row[header_col_idx])
 
         return data
 
@@ -973,7 +973,7 @@ class StudentImportService:
         self, parsed_rows: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Get validation summary from parsed rows"""
-        summary = {
+        summary: dict[str, Any] = {
             "total_rows": len(parsed_rows),
             "valid_rows": 0,
             "invalid_rows": 0,
