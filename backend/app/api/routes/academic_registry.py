@@ -54,7 +54,7 @@ def _section_row_query() -> str:
     """
 
 
-@router.get("/academic-years", response_model=AcademicYearsPublic)
+@router.get("/academic-years", response_model=AcademicYearsPublic, dependencies=[Depends(require_admin)])
 def read_academic_years(session: SessionDep, _current_user: CurrentUser) -> Any:
     years = session.exec(
         select(AcademicYear).order_by(col(AcademicYear.start_year).desc())
