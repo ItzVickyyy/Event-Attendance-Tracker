@@ -1,3 +1,4 @@
+import os
 import platform
 import sys
 import time
@@ -47,6 +48,7 @@ class DeveloperHealthResponse(BaseModel):
     database_latency_ms: float
     server_time_utc: datetime
     environment: str
+    application_version: str
     python_version: str
     fastapi_version: str
     platform_system: str
@@ -85,6 +87,7 @@ def read_system_health(session: SessionDep) -> Any:
         database_latency_ms=latency_ms,
         server_time_utc=datetime.now(UTC),
         environment=settings.FASTAPI_ENV or "production",
+        application_version=os.getenv("APP_VERSION", "unknown"),
         python_version=sys.version.split()[0],
         fastapi_version=fastapi.__version__,
         platform_system=platform.system(),
