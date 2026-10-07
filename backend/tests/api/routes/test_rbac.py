@@ -409,6 +409,19 @@ def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> Non
     assert create_class_rep.status_code == 200
     class_rep_id = create_class_rep.json()["id"]
 
+    # Admins cannot grant scanner capability while creating an account.
+    create_scanner = client.post(
+        f"{settings.API_V1_STR}/users/",
+        headers=admin_headers,
+        json={
+            "email": random_email(),
+            "password": random_lower_string(),
+            "role": UserRole.student.value,
+            "can_scan": True,
+        },
+    )
+    assert create_scanner.status_code == 403
+
     # Admins cannot create other administrators.
     create_admin = client.post(
         f"{settings.API_V1_STR}/users/",
