@@ -1,0 +1,158 @@
+from uuid import uuid4
+
+from fastapi.testclient import TestClient
+
+from app.api.routes.class_representatives import TEMPORARY_PASSWORD
+from app.core.config import settings
+from tests.utils.utils import random_email, random_lower_string
+
+
+def _api(path: str) -> str:
+    return f"{settings.API_V1_STR}{path}"
+
+
+def _create_representative(
+    client: TestClient, headers: dict[str, str]
+) -> tuple[dict, dict, str]:
+    years = client.get(_api("/academic-registry/academic-years"), headers=headers)
+    assert years.status_code == 200
+    year = next(year for year in years.json()["data"] if year["label"] == "2026-2027")
+
+    sections = client.get(_api("/academic-registry/sections"), headers=headers)
+    assert sections.status_code == 200
+    section = next(
+        section
+        for section in sections.json()["data"]
+        if section["program_code"] == "BSIT"
+        and section["section_name"] == "WMAD 3A"
+        and section["academic_year_id"] == year["id"]
+    )
+    email = random_email()
+    response = client.post(
+        _api("/class-representatives/"),
+        headers=headers,
+        json={
+            "email": email,
+            "first_name": "Taylor",
+            "middle_initial": "M",
+            "last_name": "Student",
+            "extension": "Jr.",
+            "academic_year_id": year["id"],
+            "section_id": section["id"],
+        },
+    )
+    assert response.status_code == 200
+    return response.json(), year, section["id"]
+
+
+def _representative_headers(client: TestClient, email: str) -> dict[str, str]:
+    response = client.post(
+        _api("/login/access-token"),
+        data={"username": email, "password": TEMPORARY_PASSWORD},
+    )
+    assert response.status_code == 200
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_super_admin_can_manage_class_representative_assignment_and_students(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, year, section_id = _create_representative(
+        client, superuser_token_headers
+    )
+    assert representative["role"] == "class_representative"
+    assert representative["must_change_password"] is True
+    assert representative["full_name"] == "Taylor M. Student Jr."
+
+    listing = client.get(
+        _api("/class-representatives/"), headers=superuser_token_headers
+    )
+    assert listing.status_code == 200
+    assert any(row["id"] == representative["id"] for row in listing.json()["data"])
+
+    headers = _representative_headers(client, representative["email"])
+    assignment = client.get(_api("/class-representatives/me"), headers=headers)
+    assert assignment.status_code == 200
+    assert assignment.json()["academic_year_id"] == year["id"]
+    assert assignment.json()["section_id"] == section_id
+    assert assignment.json()["student_count"] == 0
+
+    students = client.get(_api("/class-representatives/me/students"), headers=headers)
+    assert students.status_code == 200
+    assert students.json()["count"] == 0
+
+    payload = {
+        "student_number": f"CR-{random_lower_string()[:10].upper()}",
+        "first_name": "Jamie",
+        "middle_name": "Q",
+        "last_name": "Learner",
+        "extension": "III",
+        "email": random_email(),
+        "contact_number": "09171234567",
+    }
+    created = client.post(
+        _api("/class-representatives/me/students"), headers=headers, json=payload
+    )
+    assert created.status_code == 200
+    assert created.json()["message"] == "Student added successfully"
+
+    students = client.get(_api("/class-representatives/me/students"), headers=headers)
+    assert students.status_code == 200
+    assert students.json()["count"] == 1
+    assert students.json()["data"][0]["student_number"] == payload["student_number"]
+
+    duplicate = client.post(
+        _api("/class-representatives/me/students"), headers=headers, json=payload
+    )
+    assert duplicate.status_code == 409
+
+
+def test_class_representative_routes_reject_wrong_roles_and_missing_assignment(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    assignment = client.get(
+        _api("/class-representatives/me"), headers=superuser_token_headers
+    )
+    assert assignment.status_code == 403
+
+    students = client.get(
+        _api("/class-representatives/me/students"), headers=superuser_token_headers
+    )
+    assert students.status_code == 404
+
+
+def test_class_representative_creation_rejects_duplicate_email(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, year, section_id = _create_representative(
+        client, superuser_token_headers
+    )
+    duplicate = client.post(
+        _api("/class-representatives/"),
+        headers=superuser_token_headers,
+        json={
+            "email": representative["email"],
+            "first_name": "Other",
+            "last_name": "Person",
+            "academic_year_id": year["id"],
+            "section_id": section_id,
+        },
+    )
+    assert duplicate.status_code == 409
+
+
+def test_class_representative_creation_rejects_unknown_academic_records(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        _api("/class-representatives/"),
+        headers=superuser_token_headers,
+        json={
+            "email": random_email(),
+            "first_name": "Taylor",
+            "last_name": "Student",
+            "academic_year_id": str(uuid4()),
+            "section_id": str(uuid4()),
+        },
+    )
+    assert response.status_code == 404
