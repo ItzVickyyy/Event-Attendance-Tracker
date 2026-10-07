@@ -62,7 +62,7 @@ def create_user(
     """
     Create new user.
     """
-    if current_user.role != UserRole.super_admin and (
+    if not current_user.is_superuser and current_user.role != UserRole.super_admin and (
         user_in.is_superuser
         or user_in.is_developer
         or user_in.role == UserRole.super_admin
@@ -238,7 +238,7 @@ def update_user(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
-    if current_user.role != UserRole.super_admin:
+    if not current_user.is_superuser and current_user.role != UserRole.super_admin:
         if db_user.role == UserRole.super_admin:
             raise HTTPException(
                 status_code=403,
@@ -281,7 +281,7 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Admins are not allowed to delete themselves"
         )
-    if current_user.role != UserRole.super_admin and user.role == UserRole.super_admin:
+    if not current_user.is_superuser and current_user.role != UserRole.super_admin and user.role == UserRole.super_admin:
         raise HTTPException(
             status_code=403,
             detail="Only a Super Admin can delete a Super Admin account",
