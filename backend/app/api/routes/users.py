@@ -218,7 +218,7 @@ def read_user_by_id(
     if user_id != current_user.id and not may_read_other_users:
         raise HTTPException(
             status_code=403,
-            detail="The user does not have enough privileges",
+            detail="The user doesn't have enough privileges",
         )
     user = session.get(User, user_id)
     if user is None:
