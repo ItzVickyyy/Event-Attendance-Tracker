@@ -125,9 +125,7 @@ async def _audit_mutation(
             continue
         if candidate_path.startswith(api_prefix):
             template_path = candidate_path
-        elif candidate_path.startswith("/") and request_path.startswith(
-            f"{api_prefix}{candidate_path}"
-        ):
+        elif candidate_path.startswith("/"):
             template_path = f"{api_prefix}{candidate_path}"
         else:
             continue
