@@ -15,9 +15,9 @@ from app.api.deps import CurrentUser, SessionDep, require_developer
 from app.core.config import settings
 from app.models import (
     AcademicSection,
-    AuditLog,
     Attendance,
     AttendanceSession,
+    AuditLog,
     Event,
     Student,
     User,
@@ -28,18 +28,17 @@ router = APIRouter(prefix="/developer", tags=["developer"])
 
 
 def require_audit_log_access(current_user: CurrentUser) -> User:
-    """Allow Developers and operational administrators to review audit history."""
+    """Restrict audit history to Super Admins and the separate technical Developer capability."""
     if (
-        current_user.is_developer
-        or current_user.is_superuser
-        or current_user.role in (UserRole.super_admin, UserRole.admin)
+        current_user.is_superuser
+        or current_user.role == UserRole.super_admin
+        or current_user.is_developer
     ):
         return current_user
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Audit log access is required",
+        detail="Super Admin or Developer access is required for audit logs",
     )
-
 
 
 class DeveloperHealthResponse(BaseModel):
@@ -116,7 +115,6 @@ def read_system_diagnostics(session: SessionDep) -> Any:
         total_attendance_sessions=count_rows(AttendanceSession),
         server_time_utc=datetime.now(UTC),
     )
-
 
 
 class AuditLogEntry(BaseModel):

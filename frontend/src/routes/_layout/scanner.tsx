@@ -125,7 +125,6 @@ export const Route = createFileRoute("/_layout/scanner")({
       (!user.is_superuser &&
         user.role !== "admin" &&
         user.role !== "super_admin" &&
-        user.role !== "developer" &&
         !user.can_scan)
     ) {
       throw redirect({ to: "/" })
