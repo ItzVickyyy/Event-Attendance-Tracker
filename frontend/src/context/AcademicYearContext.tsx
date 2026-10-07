@@ -42,7 +42,13 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     queryKey: ["academicYears", "global"],
     queryFn: readAcademicYears,
     staleTime: 60_000,
-    enabled: Boolean(user && (user.role !== "developer" || Boolean(user.is_superuser))),
+    enabled: Boolean(
+      user &&
+        (!user.is_developer ||
+          user.is_superuser ||
+          user.role === "admin" ||
+          user.role === "super_admin"),
+    ),
   })
 
   const academicYears = query.data ?? []
