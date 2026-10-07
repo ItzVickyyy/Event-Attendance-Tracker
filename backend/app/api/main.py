@@ -14,6 +14,7 @@ from app.api.routes import (
     class_representatives,
     event_registrations,
     events,
+    developer,
     import_batches,
     login,
     organizations,
@@ -29,6 +30,7 @@ from app.core.config import settings
 
 api_router = APIRouter()
 api_router.include_router(login.router)
+api_router.include_router(developer.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
 api_router.include_router(organizations.router)

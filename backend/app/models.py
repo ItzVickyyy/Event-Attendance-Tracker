@@ -30,6 +30,10 @@ class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
+    is_developer: bool = Field(
+        default=False,
+        description="Technical developer dashboard access, independent of application role",
+    )
     role: UserRole = Field(
         default=UserRole.student,
         max_length=50,
@@ -63,6 +67,7 @@ class UserUpdate(SQLModel):
     email: EmailStr | None = Field(default=None, max_length=255)
     is_active: bool | None = None
     is_superuser: bool | None = None
+    is_developer: bool | None = None
     role: UserRole | None = None
     can_scan: bool | None = None
     full_name: str | None = Field(default=None, max_length=255)

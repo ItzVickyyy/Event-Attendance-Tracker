@@ -1,4 +1,5 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import { UsersService } from "@/client"
 import { Footer } from "@/components/Common/Footer"
 import { AcademicYearProvider, useAcademicYear } from "@/context/AcademicYearContext"
 import { CalendarDays, Check, Eye, EyeOff, KeyRound, ShieldAlert } from "lucide-react"
@@ -27,8 +28,19 @@ import { isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     if (!isLoggedIn()) throw redirect({ to: "/login" })
+
+    const { data: user } = await UsersService.readUserMe()
+    const isIsolatedDeveloper =
+      user.role === "developer" && !user.is_superuser
+    const allowedDeveloperPath =
+      location.pathname.startsWith("/developer") ||
+      location.pathname.startsWith("/account")
+
+    if (isIsolatedDeveloper && !allowedDeveloperPath) {
+      throw redirect({ to: "/developer" })
+    }
   },
 })
 
@@ -186,7 +198,7 @@ function Layout() {
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
           <SidebarTrigger className="-ml-1 min-h-10 min-w-10" aria-label="Toggle navigation" />
           <div className="hidden truncate text-sm text-muted-foreground sm:block">Event Attendance Tracker</div>
-          {user?.role !== "class_representative" && <AcademicYearSelector />}
+          {user?.role !== "class_representative" && !(user?.role === "developer" && !user.is_superuser) && <AcademicYearSelector />}
         </header>
         <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           <div className="mx-auto w-full max-w-7xl min-w-0"><Outlet /></div>

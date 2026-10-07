@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
+  Gauge,
   KeyRound,
   LayoutDashboard,
   ScanLine,
@@ -27,13 +28,30 @@ import {
 } from "@/components/ui/sidebar"
 import useAuth from "@/hooks/useAuth"
 
-type NavigationItem = { title: string; path: string; icon: LucideIcon; adminOnly?: boolean }
+type NavigationItem = {
+  title: string
+  path: string
+  icon: LucideIcon
+  adminOnly?: boolean
+  developerOnly?: boolean
+}
 type NavigationGroup = { title: string; items: NavigationItem[] }
 
 const navigationGroups: NavigationGroup[] = [
   {
     title: "Workspace",
     items: [{ title: "Dashboard", path: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    title: "Developer",
+    items: [
+      {
+        title: "System Dashboard",
+        path: "/developer",
+        icon: Gauge,
+        developerOnly: true,
+      },
+    ],
   },
   {
     title: "Operations",
@@ -49,10 +67,23 @@ const navigationGroups: NavigationGroup[] = [
     items: [
       { title: "Overview", path: "/administration", icon: ShieldCheck },
       { title: "User Accounts", path: "/administration/users", icon: Users },
-      { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck, adminOnly: true },
+      {
+        title: "Class Representatives",
+        path: "/administration/class-representatives",
+        icon: UserRoundCheck,
+        adminOnly: true,
+      },
       { title: "Roles & Permissions", path: "/administration/roles", icon: Shield },
-      { title: "Attendance Corrections", path: "/administration/attendance", icon: ClipboardCheck },
-      { title: "Scanner Permissions", path: "/administration/scanner-permissions", icon: KeyRound },
+      {
+        title: "Attendance Corrections",
+        path: "/administration/attendance",
+        icon: ClipboardCheck,
+      },
+      {
+        title: "Scanner Permissions",
+        path: "/administration/scanner-permissions",
+        icon: KeyRound,
+      },
       { title: "Audit Logs", path: "/administration/audit-logs", icon: Activity },
       { title: "System Settings", path: "/settings", icon: Settings },
     ],
@@ -64,11 +95,16 @@ const navigationGroups: NavigationGroup[] = [
 ]
 
 function canSeeOperationalNavigation(role?: string, isSuperuser?: boolean) {
-  return isSuperuser || role === "admin" || role === "super_admin" || role === "class_representative"
+  return (
+    isSuperuser ||
+    role === "admin" ||
+    role === "super_admin" ||
+    role === "class_representative"
+  )
 }
 
 function canSeeAdministration(role?: string, isSuperuser?: boolean) {
-  return isSuperuser || role === "admin" || role === "super_admin" || role === "developer"
+  return isSuperuser || role === "admin" || role === "super_admin"
 }
 
 export function ReconstructionNavigation() {
@@ -77,16 +113,26 @@ export function ReconstructionNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const role = user?.role
   const isSuperuser = Boolean(user?.is_superuser)
-  const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || role === "developer" || user?.can_scan)
+  const developerOnly = role === "developer" && !isSuperuser
+  const scannerAllowed = Boolean(
+    isSuperuser ||
+      role === "admin" ||
+      role === "super_admin" ||
+      user?.can_scan,
+  )
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
-  const canManageClassRepresentatives = Boolean(isSuperuser || role === "super_admin" || role === "developer")
+  const canManageClassRepresentatives = Boolean(
+    isSuperuser || role === "super_admin",
+  )
   const classRep = role === "class_representative" && !isSuperuser
 
   const groups = navigationGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
+        if (item.developerOnly) return Boolean(user?.is_developer || role === "developer")
+        if (developerOnly && item.path === "/dashboard") return false
         if (item.path.startsWith("/administration")) {
           if (!administrationAllowed) return false
           if (item.adminOnly && !canManageClassRepresentatives) return false
@@ -95,7 +141,13 @@ export function ReconstructionNavigation() {
         if (item.path === "/settings") return administrationAllowed
         if (item.path === "/scanner") return scannerAllowed && !classRep
         if (classRep && item.path === "/events") return false
-        if (item.path === "/events" || item.path === "/records" || item.path === "/sections") return operationalAllowed
+        if (
+          item.path === "/events" ||
+          item.path === "/records" ||
+          item.path === "/sections"
+        ) {
+          return operationalAllowed
+        }
         return true
       }),
     }))
@@ -114,7 +166,8 @@ export function ReconstructionNavigation() {
                 const isActive =
                   item.path === "/administration"
                     ? pathname === item.path
-                    : pathname === item.path || pathname.startsWith(`${item.path}/`)
+                    : pathname === item.path ||
+                      pathname.startsWith(`${item.path}/`)
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton

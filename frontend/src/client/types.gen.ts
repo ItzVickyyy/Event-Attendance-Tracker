@@ -1452,6 +1452,10 @@ export type UserCreate = {
      */
     is_superuser?: boolean;
     /**
+     * Developer dashboard access, independent of application role.
+     */
+    is_developer?: boolean;
+    /**
      * Application RBAC role
      */
     role?: UserRole;
@@ -1487,6 +1491,10 @@ export type UserPublic = {
      * Is Superuser
      */
     is_superuser?: boolean;
+    /**
+     * Developer dashboard access, independent of application role.
+     */
+    is_developer?: boolean;
     /**
      * Application RBAC role
      */
@@ -1550,6 +1558,10 @@ export type UserUpdate = {
      * Is Superuser
      */
     is_superuser?: boolean | null;
+    /**
+     * Developer dashboard access, independent of application role.
+     */
+    is_developer?: boolean | null;
     role?: UserRole | null;
     /**
      * Can Scan
