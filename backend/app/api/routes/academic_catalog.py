@@ -12,7 +12,7 @@ from app.academic_catalog import (
     AcademicSectionMajorCreate,
     AcademicSectionMajorPublic,
 )
-from app.api.deps import CurrentUser, SessionDep, require_super_admin, require_super_admin
+from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.models import AcademicSection
 
 router = APIRouter(prefix="/academic-catalog", tags=["academic-catalog"])
