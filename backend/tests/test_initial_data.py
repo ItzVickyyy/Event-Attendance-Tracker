@@ -1,6 +1,7 @@
 import logging
-from sqlalchemy.sql.elements import TextClause
 from typing import Any
+
+from sqlalchemy.sql.elements import TextClause
 
 from app import initial_data
 
