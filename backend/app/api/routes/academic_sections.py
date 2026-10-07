@@ -188,7 +188,10 @@ def create_academic_section(
 
     section = AcademicSection.model_validate(
         section_in,
-        update={"academic_year_id": academic_year.id},
+        update={
+            "academic_year_id": academic_year.id,
+            "section_code": section_in.section_code or section_in.section_name,
+        },
     )
     session.add(section)
     session.commit()
@@ -309,6 +312,8 @@ def update_academic_section(
                 detail=f"Academic year '{update_dict['academic_year']}' was not found",
             )
         update_dict["academic_year_id"] = year.id
+    if "section_name" in update_dict:
+        update_dict["section_code"] = update_dict.get("section_code") or update_dict["section_name"]
     section.sqlmodel_update(update_dict)
     section.updated_at = get_datetime_utc()
     session.add(section)
