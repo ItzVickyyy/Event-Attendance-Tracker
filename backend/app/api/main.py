@@ -12,6 +12,7 @@ from app.api.routes import (
     attendee_relationships,
     attendees,
     class_representatives,
+    developer,
     event_registrations,
     events,
     import_batches,
@@ -48,6 +49,7 @@ api_router.include_router(attendance.router)
 api_router.include_router(attendance_sessions.router)
 api_router.include_router(attendance_corrections.router)
 api_router.include_router(class_representatives.router)
+api_router.include_router(developer.router)
 api_router.include_router(import_batches.router)
 
 if settings.FASTAPI_ENV in ("development", "test"):
