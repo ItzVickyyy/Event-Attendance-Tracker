@@ -12,7 +12,7 @@ from app.academic_catalog import (
     AcademicSectionMajorCreate,
     AcademicSectionMajorPublic,
 )
-from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
+from app.api.deps import CurrentUser, SessionDep, require_super_admin, require_super_admin
 from app.models import AcademicSection
 
 router = APIRouter(prefix="/academic-catalog", tags=["academic-catalog"])
@@ -61,7 +61,7 @@ def read_section_major(
 @router.put(
     "/sections/{section_id}/major",
     response_model=AcademicSectionMajorPublic,
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_super_admin)],
 )
 def set_section_major(
     *,
@@ -99,7 +99,7 @@ def set_section_major(
     )
 
 
-@router.delete("/sections/{section_id}/major", dependencies=[Depends(require_admin)])
+@router.delete("/sections/{section_id}/major", dependencies=[Depends(require_super_admin)])
 def clear_section_major(
     session: SessionDep, _current_user: CurrentUser, section_id: uuid.UUID
 ) -> dict[str, str]:
