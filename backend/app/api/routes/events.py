@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
