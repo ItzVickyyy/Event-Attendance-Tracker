@@ -118,8 +118,18 @@ def require_scanner_permission(current_user: CurrentUser) -> User:
     )
 
 
-# Developer access is a separate technical capability, not business administration.
-require_developer = require_role([UserRole.developer])
+def require_developer(current_user: CurrentUser) -> User:
+    """Require the separate Developer capability or legacy Developer role."""
+    if current_user.is_developer or current_user.role == UserRole.developer:
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Developer access is required",
+    )
+
+
+# Developer access is separate from business administration.
+
 require_super_admin = require_role([UserRole.super_admin])
 require_admin = require_role([UserRole.super_admin, UserRole.admin])
 
