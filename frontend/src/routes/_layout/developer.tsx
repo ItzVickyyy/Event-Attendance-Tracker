@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import type { LucideIcon } from "lucide-react"
 import { createFileRoute, redirect } from "@tanstack/react-router"
+import type { LucideIcon } from "lucide-react"
 import {
   Activity,
   CalendarDays,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 
 import { UsersService } from "@/client"
+import { AuditLogsPanel } from "@/components/Developer/AuditLogsPanel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +24,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AuditLogsPanel } from "@/components/Developer/AuditLogsPanel"
 
 type SystemHealth = {
   status: string
@@ -70,9 +70,10 @@ async function getDeveloperData<T>(path: string): Promise<T> {
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    const detail = typeof body?.detail === "string"
-      ? body.detail
-      : "Unable to load developer diagnostics"
+    const detail =
+      typeof body?.detail === "string"
+        ? body.detail
+        : "Unable to load developer diagnostics"
     const requestId = body?.request_id ?? response.headers.get("X-Request-ID")
     throw new Error(requestId ? `${detail} (Request ID: ${requestId})` : detail)
   }
@@ -145,8 +146,9 @@ function DeveloperDashboard() {
             Developer System Dashboard
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Read-only runtime health and system diagnostics. Business operations,
-            user administration, and attendance management remain separate permissions.
+            Read-only runtime health and system diagnostics. Business
+            operations, user administration, and attendance management remain
+            separate permissions.
           </p>
         </div>
         <Button
@@ -168,7 +170,9 @@ function DeveloperDashboard() {
           <CardHeader>
             <CardTitle className="text-base">Diagnostics unavailable</CardTitle>
             <CardDescription>
-              {error instanceof Error ? error.message : "A system request failed."}
+              {error instanceof Error
+                ? error.message
+                : "A system request failed."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -185,7 +189,10 @@ function DeveloperDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">API status</CardTitle>
-              <Activity className="size-4 text-muted-foreground" aria-hidden="true" />
+              <Activity
+                className="size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -216,7 +223,9 @@ function DeveloperDashboard() {
           <MetricCard
             title="FastAPI"
             value={health ? `v${health.fastapi_version}` : "Unavailable"}
-            description={health ? `Python ${health.python_version}` : "Runtime version"}
+            description={
+              health ? `Python ${health.python_version}` : "Runtime version"
+            }
             icon={Server}
             loading={isLoading}
           />
@@ -241,16 +250,53 @@ function DeveloperDashboard() {
         <div>
           <h2 className="text-lg font-semibold">System diagnostics</h2>
           <p className="text-sm text-muted-foreground">
-            Aggregate counts only. This page does not expose individual user, student, or attendance records.
+            Aggregate counts only. This page does not expose individual user,
+            student, or attendance records.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <MetricCard title="User accounts" value={diagnostics?.total_users ?? 0} description="All registered accounts" icon={Users} loading={isLoading} />
-          <MetricCard title="Events" value={diagnostics?.total_events ?? 0} description="Events stored in the system" icon={CalendarDays} loading={isLoading} />
-          <MetricCard title="Students" value={diagnostics?.total_students ?? 0} description="Student records" icon={GraduationCap} loading={isLoading} />
-          <MetricCard title="Sections" value={diagnostics?.total_sections ?? 0} description="Academic sections" icon={Users} loading={isLoading} />
-          <MetricCard title="Attendance records" value={diagnostics?.total_attendance_records ?? 0} description="Stored attendance entries" icon={CheckCircle2} loading={isLoading} />
-          <MetricCard title="Attendance sessions" value={diagnostics?.total_attendance_sessions ?? 0} description="Configured event sessions" icon={CalendarDays} loading={isLoading} />
+          <MetricCard
+            title="User accounts"
+            value={diagnostics?.total_users ?? 0}
+            description="All registered accounts"
+            icon={Users}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Events"
+            value={diagnostics?.total_events ?? 0}
+            description="Events stored in the system"
+            icon={CalendarDays}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Students"
+            value={diagnostics?.total_students ?? 0}
+            description="Student records"
+            icon={GraduationCap}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Sections"
+            value={diagnostics?.total_sections ?? 0}
+            description="Academic sections"
+            icon={Users}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Attendance records"
+            value={diagnostics?.total_attendance_records ?? 0}
+            description="Stored attendance entries"
+            icon={CheckCircle2}
+            loading={isLoading}
+          />
+          <MetricCard
+            title="Attendance sessions"
+            value={diagnostics?.total_attendance_sessions ?? 0}
+            description="Configured event sessions"
+            icon={CalendarDays}
+            loading={isLoading}
+          />
         </div>
       </section>
 
@@ -260,11 +306,15 @@ function DeveloperDashboard() {
         <CardHeader>
           <CardTitle className="text-base">Developer access boundary</CardTitle>
           <CardDescription>
-            This workspace is for technical oversight, not day-to-day attendance administration.
+            This workspace is for technical oversight, not day-to-day attendance
+            administration.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Global settings, maintenance mode, and feature flags will be added only when their backend enforcement, audit coverage, and safeguards are implemented. This dashboard does not offer controls that are not enforced by the backend.
+          Global settings, maintenance mode, and feature flags will be added
+          only when their backend enforcement, audit coverage, and safeguards
+          are implemented. This dashboard does not offer controls that are not
+          enforced by the backend.
         </CardContent>
       </Card>
     </div>
