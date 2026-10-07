@@ -157,7 +157,7 @@ def read_attendances(
     )
 
 
-@router.get("/export")
+@router.get("/export", dependencies=[Depends(require_admin)])
 def export_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -499,7 +499,7 @@ def scan_attendance_manual(
     )
 
 
-@router.get("/{record_id}", response_model=AttendancePublic)
+@router.get("/{record_id}", response_model=AttendancePublic, dependencies=[Depends(require_admin)])
 def read_attendance(
     session: SessionDep, _current_user: CurrentUser, record_id: uuid.UUID
 ) -> Any:
