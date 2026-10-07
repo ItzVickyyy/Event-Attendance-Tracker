@@ -42,12 +42,8 @@ def test_init_seeds_catalog_and_class_representative_assignment(
     assert initialized_sessions == [session]
     assert session.commits == 1
     assert len(session.statements) == 36
-    assert any(
-        "INSERT INTO academic_years" in sql for sql in session.statements
-    )
-    assert any(
-        "INSERT INTO academic_programs" in sql for sql in session.statements
-    )
+    assert any("INSERT INTO academic_years" in sql for sql in session.statements)
+    assert any("INSERT INTO academic_programs" in sql for sql in session.statements)
     assert any("INSERT INTO academic_majors" in sql for sql in session.statements)
     assert any("INSERT INTO academic_sections" in sql for sql in session.statements)
     assert any(
