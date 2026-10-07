@@ -113,7 +113,7 @@ export function ReconstructionNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const role = user?.role
   const isSuperuser = Boolean(user?.is_superuser)
-  const developerOnly = role === "developer"
+  const developerOnly = String(role) === "developer"
   const scannerAllowed = Boolean(
     isSuperuser ||
       role === "admin" ||
@@ -132,7 +132,7 @@ export function ReconstructionNavigation() {
       ...group,
       items: group.items.filter((item) => {
         if (developerOnly) return Boolean(item.developerOnly || item.path === "/account")
-        if (item.developerOnly) return Boolean(user?.is_developer || role === "developer")
+        if (item.developerOnly) return Boolean(user?.is_developer || String(role) === "developer")
         if (item.path.startsWith("/administration")) {
           if (!administrationAllowed) return false
           if (item.adminOnly && !canManageClassRepresentatives) return false

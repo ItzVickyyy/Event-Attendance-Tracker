@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app import crud
 from app.core.config import settings
@@ -113,6 +113,7 @@ def test_developer_can_read_filtered_audit_logs(
             resource="events",
             method="POST",
             path="/api/v1/events/",
+            request_id="audit-entry-test-01",
             status_code=201,
             outcome="success",
             duration_ms=12.5,
@@ -121,7 +122,7 @@ def test_developer_can_read_filtered_audit_logs(
     db.commit()
 
     response = client.get(
-        f"{settings.API_V1_STR}/developer/audit-logs?action=events&outcome=success",
+        f"{settings.API_V1_STR}/developer/audit-logs?action=events&outcome=success&resource=events&status_code=201",
         headers=headers,
     )
 
@@ -131,6 +132,7 @@ def test_developer_can_read_filtered_audit_logs(
     assert payload["data"][0]["action"] == "POST events"
     assert payload["data"][0]["outcome"] == "success"
     assert payload["data"][0]["duration_ms"] == 12.5
+    assert payload["data"][0]["request_id"] == "audit-entry-test-01"
 
 
 def test_non_developer_cannot_read_audit_logs(
@@ -189,3 +191,58 @@ def test_admin_can_review_audit_logs(
     )
 
     assert response.status_code == 200
+
+
+
+def test_failed_mutation_is_audited_with_request_correlation_id(
+    client: TestClient, db: Session
+) -> None:
+    headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.developer,
+    )
+    request_id = "developer-audit-test-01"
+    headers["X-Request-ID"] = request_id
+
+    event_id = "123e4567-e89b-12d3-a456-426614174000"
+    response = client.patch(
+        f"{settings.API_V1_STR}/events/{event_id}",
+        headers=headers,
+        json={},
+    )
+
+    assert response.status_code >= 400
+    assert response.headers["x-request-id"] == request_id
+    entry = db.exec(
+        select(AuditLog).where(AuditLog.request_id == request_id)
+    ).first()
+    assert entry is not None
+    assert entry.status_code == response.status_code
+    assert entry.outcome == "failure"
+    assert entry.path.endswith("/events/{event_id}")
+    assert event_id not in entry.path
+    assert entry.request_id == request_id
+
+
+def test_audit_log_filters_reject_invalid_ranges(
+    client: TestClient, db: Session
+) -> None:
+    headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.developer,
+    )
+
+    invalid_outcome = client.get(
+        f"{settings.API_V1_STR}/developer/audit-logs?outcome=unknown",
+        headers=headers,
+    )
+    invalid_range = client.get(
+        f"{settings.API_V1_STR}/developer/audit-logs"
+        "?start_at=2026-10-08T00:00:00Z&end_at=2026-10-07T00:00:00Z",
+        headers=headers,
+    )
+
+    assert invalid_outcome.status_code == 422
+    assert invalid_range.status_code == 422
