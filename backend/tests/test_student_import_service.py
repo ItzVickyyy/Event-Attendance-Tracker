@@ -1,10 +1,16 @@
+from io import BytesIO
 from uuid import uuid4
 
 import pytest
+from openpyxl import Workbook
 from sqlmodel import select
 
 from app.models import AcademicProgram, AcademicSection, AcademicYear, ImportBatch
-from app.services.student_import import StudentImportService
+from app.services.student_import import (
+    StudentImportService,
+    parse_student_import,
+    validate_student_import,
+)
 
 
 def test_import_section_resolver_normalizes_exact_and_legacy_references(
@@ -84,3 +90,42 @@ def test_default_import_section_name_and_missing_section_errors(db_session) -> N
     batch.default_section_id = uuid4()
     with pytest.raises(ValueError, match="default section no longer exists"):
         service._default_section_name(batch)
+
+
+def _workbook_bytes() -> bytes:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "BSIT WMAD 3A"
+    sheet.append(["No.", "Student Number", "Last Name", "First Name", "Status"])
+    sheet.append([1, "SERVICE-10001", "Student", "Casey", "Regular"])
+    output = BytesIO()
+    workbook.save(output)
+    return output.getvalue()
+
+
+def test_import_service_file_dispatch_and_compatibility_wrappers(db_session) -> None:
+    batch = ImportBatch(
+        source_filename="service-wrapper.xlsx",
+        academic_year="2026-2027",
+    )
+    db_session.add(batch)
+    db_session.flush()
+
+    service = StudentImportService(db_session)
+    with pytest.raises(ValueError, match="Unsupported file type"):
+        service.parse_student_import_file(batch, b"anything", "students.txt")
+
+    parsed = parse_student_import(db_session, batch, _workbook_bytes())
+    assert len(parsed) == 1
+    assert parsed[0]["raw_student_number"] == "SERVICE-10001"
+
+    validation_batch = ImportBatch(
+        source_filename="service-validation-wrapper.xlsx",
+        academic_year="2026-2027",
+    )
+    db_session.add(validation_batch)
+    db_session.flush()
+    summary = validate_student_import(
+        db_session, validation_batch, _workbook_bytes()
+    )
+    assert summary["total_rows"] == 1
