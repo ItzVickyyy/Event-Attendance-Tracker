@@ -27,7 +27,7 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=RostersPublic)
+@router.get("/", response_model=RostersPublic, dependencies=[Depends(require_scanner_permission)])
 def read_event_roster(
     *,
     session: SessionDep,
