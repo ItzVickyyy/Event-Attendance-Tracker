@@ -17,6 +17,7 @@ from app.models import (
     StudentPublic,
     StudentsPublic,
     StudentUpdate,
+    UserRole,
     get_datetime_utc,
 )
 
