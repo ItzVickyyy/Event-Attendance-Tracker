@@ -1,7 +1,7 @@
 import csv
 import io
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
@@ -95,8 +95,8 @@ def read_attendances(
     if section_id:
         registration_filter = (
             registration_filter.join(Attendee)
-            .join(Student, col(Student.person_id) == col(Attendee.person_id))
-            .join(StudentEnrollment, col(StudentEnrollment.student_id) == col(Student.id))
+            .join(Student, cast(Any, col(Student.person_id) == col(Attendee.person_id)))
+            .join(StudentEnrollment, cast(Any, col(StudentEnrollment.student_id) == col(Student.id)))
             .where(col(StudentEnrollment.section_id) == section_id)
         )
         if academic_year_id:
@@ -186,7 +186,7 @@ def export_attendances(
             raise HTTPException(status_code=404, detail="Event not found")
 
     statement = (
-        sa_select(
+        cast(Any, sa_select)(
             Attendance,
             EventRegistration,
             Event,
@@ -195,8 +195,8 @@ def export_attendances(
             Student,
             AttendanceSession,
         )
-        .join(EventRegistration, col(Attendance.registration_id) == col(EventRegistration.id))
-        .join(Event, col(EventRegistration.event_id) == col(Event.id))
+        .join(EventRegistration, cast(Any, col(Attendance.registration_id) == col(EventRegistration.id)))
+        .join(Event, cast(Any, col(EventRegistration.event_id) == col(Event.id)))
         .join(Attendee, col(EventRegistration.attendee_id) == col(Attendee.id))
         .join(Person, col(Attendee.person_id) == col(Person.id))
         .join(
