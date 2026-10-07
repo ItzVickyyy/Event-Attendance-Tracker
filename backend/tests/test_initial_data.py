@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from sqlalchemy.sql.elements import TextClause
@@ -49,6 +50,7 @@ def test_init_seeds_catalog_and_class_representative_assignment(
 
 
 def test_main_logs_and_runs_initialization(monkeypatch: Any, caplog: Any) -> None:
+    caplog.set_level(logging.INFO)
     initialized: list[bool] = []
     monkeypatch.setattr(initial_data, "init", lambda: initialized.append(True))
 
