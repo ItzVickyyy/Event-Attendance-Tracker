@@ -131,7 +131,7 @@ export function ReconstructionNavigation() {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        if (item.developerOnly) return role === "developer"
+        if (item.developerOnly) return Boolean(user?.is_developer || role === "developer")
         if (developerOnly && item.path === "/dashboard") return false
         if (item.path.startsWith("/administration")) {
           if (!administrationAllowed) return false
