@@ -1,20 +1,172 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Activity, ClipboardCheck, KeyRound, Shield, Users, UserRoundCheck } from "lucide-react"
+import {
+  Activity,
+  ArrowRight,
+  ClipboardCheck,
+  KeyRound,
+  Shield,
+  Users,
+  UserRoundCheck,
+} from "lucide-react"
 import { AttendanceCorrectionsService, UsersService } from "@/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-const items = [
-  { to: "/administration/users", title: "User Accounts", description: "View and manage application user accounts.", icon: Users },
-  { to: "/administration/class-representatives", title: "Class Representatives", description: "Create and manage section representative accounts and assignments.", icon: UserRoundCheck },
-  { to: "/administration/roles", title: "Roles & Permissions", description: "Review application roles and their available permission controls.", icon: Shield },
-  { to: "/administration/attendance", title: "Attendance Administration", description: "Review controlled attendance corrections and their reasons.", icon: ClipboardCheck },
-  { to: "/administration/scanner-permissions", title: "Scanner Permissions", description: "Manage explicit attendance scanning capability without creating a scanner role.", icon: KeyRound },
-  { to: "/administration/audit-logs", title: "Audit Logs", description: "Review audit information when the backend exposes it.", icon: Activity },
+const sections = [
+  {
+    to: "/administration/users",
+    title: "User Accounts",
+    description: "Create accounts, update roles, and manage account access.",
+    detail: "Accounts and access",
+    icon: Users,
+  },
+  {
+    to: "/administration/class-representatives",
+    title: "Class Representatives",
+    description: "Assign representatives to the correct section and academic year.",
+    detail: "Section assignments",
+    icon: UserRoundCheck,
+  },
+  {
+    to: "/administration/roles",
+    title: "Roles & Permissions",
+    description: "Review application roles and the permissions associated with them.",
+    detail: "Access control",
+    icon: Shield,
+  },
+  {
+    to: "/administration/attendance",
+    title: "Attendance Corrections",
+    description: "Review attendance corrections and their recorded reasons.",
+    detail: "Attendance oversight",
+    icon: ClipboardCheck,
+  },
+  {
+    to: "/administration/scanner-permissions",
+    title: "Scanner Permissions",
+    description: "Review who is allowed to scan attendance.",
+    detail: "Scanner access",
+    icon: KeyRound,
+  },
+  {
+    to: "/administration/audit-logs",
+    title: "Audit Logs",
+    description: "Review available system activity and audit records.",
+    detail: "Activity history",
+    icon: Activity,
+  },
 ]
 
+function MetricCard({
+  title,
+  value,
+  description,
+  loading,
+  error,
+  icon: Icon,
+}: {
+  title: string
+  value: number | undefined
+  description: string
+  loading: boolean
+  error: boolean
+  icon: typeof Users
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-start justify-between gap-4 p-5">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-tight">
+            {loading ? "—" : error ? "!" : (value ?? 0).toLocaleString()}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {error ? "Could not load this summary." : description}
+          </p>
+        </div>
+        <div className="rounded-xl border bg-muted/40 p-3">
+          <Icon aria-hidden="true" className="size-5 text-muted-foreground" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function AdministrationWorkspace() {
-  const users = useQuery({ queryKey: ["admin-users-summary"], queryFn: () => UsersService.readUsers({ query: { skip: 0, limit: 1000 } }) })
-  const corrections = useQuery({ queryKey: ["admin-corrections-summary"], queryFn: () => AttendanceCorrectionsService.correctionsReadAttendanceCorrections({ query: { skip: 0, limit: 1000 } }) })
-  return <div className="space-y-6"><div><h1 className="text-2xl font-semibold tracking-tight">Administration</h1><p className="mt-1 text-sm text-muted-foreground">Operational administration for users, permissions, attendance, and auditing.</p></div><div className="grid gap-4 sm:grid-cols-2"><Card><CardHeader><CardTitle className="text-sm font-medium">User Accounts</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{users.isLoading ? "—" : users.data?.data.count ?? 0}</p><p className="text-xs text-muted-foreground">accounts visible to the current administrator</p></CardContent></Card><Card><CardHeader><CardTitle className="text-sm font-medium">Attendance Corrections</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{corrections.isLoading ? "—" : corrections.data?.data.count ?? 0}</p><p className="text-xs text-muted-foreground">existing correction records</p></CardContent></Card></div><div className="grid gap-4 md:grid-cols-2">{items.map(({ to, title, description, icon: Icon }) => <Link key={to} to={to} className="group"><Card className="h-full transition-colors group-hover:bg-muted/40"><CardHeader><div className="flex items-center gap-3"><div className="rounded-lg border p-2"><Icon className="h-5 w-5" /></div><CardTitle className="text-base">{title}</CardTitle></div></CardHeader><CardContent><p className="text-sm text-muted-foreground">{description}</p></CardContent></Card></Link>)}</div></div>
+  const users = useQuery({
+    queryKey: ["admin-users-summary"],
+    queryFn: () => UsersService.readUsers({ query: { skip: 0, limit: 1 } }),
+  })
+  const corrections = useQuery({
+    queryKey: ["admin-corrections-summary"],
+    queryFn: () =>
+      AttendanceCorrectionsService.correctionsReadAttendanceCorrections({
+        query: { skip: 0, limit: 1 },
+      }),
+  })
+
+  return (
+    <div className="mx-auto w-full max-w-7xl space-y-8 pb-8">
+      <header className="space-y-2">
+        <p className="text-sm font-medium text-muted-foreground">Workspace / Administration</p>
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Administration</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Manage accounts, access, attendance oversight, and system activity from one place.
+          </p>
+        </div>
+      </header>
+
+      <section aria-label="Administration summary" className="grid gap-4 sm:grid-cols-2">
+        <MetricCard
+          title="User Accounts"
+          value={users.data?.data.count}
+          description="Accounts in the system"
+          loading={users.isLoading}
+          error={users.isError}
+          icon={Users}
+        />
+        <MetricCard
+          title="Attendance Corrections"
+          value={corrections.data?.data.count}
+          description="Recorded correction requests"
+          loading={corrections.isLoading}
+          error={corrections.isError}
+          icon={ClipboardCheck}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Administration tools</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Choose a workspace to manage a specific part of the system.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {sections.map(({ to, title, description, detail, icon: Icon }) => (
+            <Link key={to} to={to} className="group rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <Card className="h-full transition-colors group-hover:border-primary/40 group-hover:bg-muted/30">
+                <CardHeader className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="rounded-xl border bg-background p-3">
+                      <Icon aria-hidden="true" className="size-5" />
+                    </div>
+                    <ArrowRight aria-hidden="true" className="mt-1 size-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{detail}</p>
+                    <CardTitle className="text-base">{title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-sm leading-6">{description}</CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </div>
+  )
 }
