@@ -3,7 +3,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.academic_catalog import AcademicMajor
 from app.api.deps import (
@@ -57,7 +57,7 @@ def _section_row_query() -> str:
 @router.get("/academic-years", response_model=AcademicYearsPublic)
 def read_academic_years(session: SessionDep, _current_user: CurrentUser) -> Any:
     years = session.exec(
-        select(AcademicYear).order_by(AcademicYear.start_year.desc())
+        select(AcademicYear).order_by(col(AcademicYear.start_year).desc())
     ).all()
     return AcademicYearsPublic(
         data=[AcademicYearPublic.model_validate(year) for year in years],
