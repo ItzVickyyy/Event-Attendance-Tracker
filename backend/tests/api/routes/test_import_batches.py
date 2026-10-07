@@ -414,3 +414,49 @@ def test_csv_import_validation_and_staging(
     )
     assert invalid_encoding.status_code == 400
     assert "UTF-8" in invalid_encoding.json()["detail"]
+
+
+def test_import_batch_promotion_rejects_validation_conflicts_and_reconciliation(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+) -> None:
+    headers = superuser_token_headers
+    invalid_batch = make_import_batch(
+        source_filename="promotion-invalid.xlsx",
+        status=ImportBatchStatus.validated,
+        validation_summary={"invalid_rows": 1, "conflict_rows": 0},
+    )
+    invalid = client.post(
+        f"{settings.API_V1_STR}/import-batches/{invalid_batch.id}/promote",
+        headers=headers,
+    )
+    assert invalid.status_code == 400
+    assert "validation result" in invalid.json()["detail"]
+
+    conflict_batch = make_import_batch(
+        source_filename="promotion-conflict.xlsx",
+        status=ImportBatchStatus.validated,
+        validation_summary={"invalid_rows": 0, "conflict_rows": 1},
+    )
+    conflict = client.post(
+        f"{settings.API_V1_STR}/import-batches/{conflict_batch.id}/promote",
+        headers=headers,
+    )
+    assert conflict.status_code == 400
+
+    reconciliation_batch = make_import_batch(
+        source_filename="promotion-summary-mismatch.xlsx",
+        status=ImportBatchStatus.validated,
+        validation_summary={
+            "invalid_rows": 0,
+            "conflict_rows": 0,
+            "summary_reconciliation": {"status": "mismatched"},
+        },
+    )
+    reconciliation = client.post(
+        f"{settings.API_V1_STR}/import-batches/{reconciliation_batch.id}/promote",
+        headers=headers,
+    )
+    assert reconciliation.status_code == 400
+    assert "does not reconcile" in reconciliation.json()["detail"]
