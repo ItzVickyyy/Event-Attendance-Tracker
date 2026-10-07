@@ -74,7 +74,7 @@ def upgrade() -> None:
             table,
             "reference_code",
             nullable=False,
-            server_default=(
+            server_default=sa.text(
                 f"'{prefix}-' || "
                 f"LPAD(nextval('{sequence}'::regclass)::text, 6, '0')"
             ),
