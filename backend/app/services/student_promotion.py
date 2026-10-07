@@ -6,6 +6,7 @@ Student") for CLEAN (validation_status == valid) StudentImportRecord rows,
 per the locked 3C-06 design.
 """
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
@@ -207,9 +208,32 @@ class StudentPromotionService:
             import_batch.academic_year,
         )
         if academic_section is None:
-            raise _PromotionBlocked(
-                f"Academic section {section_reference!r} "
-                f"does not exist for academic year {import_batch.academic_year!r}."
+            section_identity = parts[1]
+            section_tokens = section_identity.split()
+            section_code = section_tokens[-1]
+            match = re.fullmatch(r"(\d+)([A-Z]+)", section_code)
+            if match is None:
+                raise _PromotionBlocked(
+                    f"Academic section {section_reference!r} could not be normalized."
+                )
+            year_number, suffix = match.groups()
+            section_prefix = " ".join(section_tokens[:-1])
+            if section_prefix:
+                section_name = f"{section_prefix} {section_code}"
+                year_level = {
+                    "1": "1st Year",
+                    "2": "2nd Year",
+                    "3": "3rd Year",
+                    "4": "4th Year",
+                }.get(year_number, year_number)
+            else:
+                section_name = suffix
+                year_level = year_number
+            academic_section = self._get_or_create_section(
+                academic_program.id,
+                year_level,
+                section_name,
+                import_batch.academic_year,
             )
 
         academic_status = self._import_service._normalize_status(row.raw_status)
