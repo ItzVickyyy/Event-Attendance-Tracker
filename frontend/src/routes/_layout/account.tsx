@@ -22,7 +22,7 @@ function Account() {
       (
         await fetch("/api/v1/users/me", {
           headers: {
-            Authorization: `***"access_token")}`,
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
         })
       ).json(),
@@ -61,7 +61,7 @@ function Account() {
     const response = await fetch("/api/v1/users/me", {
       method: "PATCH",
       headers: {
-        Authorization: `***"access_token")}`,
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -89,7 +89,7 @@ function Account() {
     const response = await fetch("/api/v1/users/me/password", {
       method: "PATCH",
       headers: {
-        Authorization: `***"access_token")}`,
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

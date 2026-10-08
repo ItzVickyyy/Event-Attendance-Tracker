@@ -39,7 +39,7 @@ export function RecordsWorkspace({
     const token = localStorage.getItem("access_token")
     const response = await fetch(
       `${import.meta.env.VITE_API_URL ?? ""}/api/v1${path}`,
-      { headers: token ? { Authorization: `*** } : {} },
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
     )
     if (!response.ok) throw new Error("Request failed")
     return response.json() as Promise<T>
@@ -81,7 +81,7 @@ export function RecordsWorkspace({
         params.set("academic_year_id", activeAcademicYear.id)
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || ""}/api/v1/attendance/export${params.toString() ? `?${params}` : ""}`,
-        { headers: token ? { Authorization: `*** } : {} },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       )
       if (!response.ok) throw new Error("Failed to export attendance")
       const blob = await response.blob()
