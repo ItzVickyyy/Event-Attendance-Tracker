@@ -53,9 +53,13 @@ def lookup_student_qr(
 ) -> dict[str, Any]:
     """Verify a student's identity and return their stable QR credential."""
     forwarded = request.headers.get("x-forwarded-for")
-    client_key = (forwarded.split(",")[0].strip() if forwarded else None) or (request.client.host if request.client else "unknown")
+    client_key = (forwarded.split(",")[0].strip() if forwarded else None) or (
+        request.client.host if request.client else "unknown"
+    )
     if not _allow_request(client_key):
-        raise HTTPException(status_code=429, detail="Too many attempts. Please try again later.")
+        raise HTTPException(
+            status_code=429, detail="Too many attempts. Please try again later."
+        )
 
     student_number = payload.student_number.strip()
     first_name = _normalize(payload.first_name)
@@ -64,13 +68,21 @@ def lookup_student_qr(
     name_extension = _normalize(payload.name_extension)
 
     if not student_number or not first_name or not last_name:
-        raise HTTPException(status_code=422, detail="Student number, first name, and last name are required.")
-    if len(student_number) > 50 or any(len(value) > 255 for value in (first_name, middle_name, last_name, name_extension)):
+        raise HTTPException(
+            status_code=422,
+            detail="Student number, first name, and last name are required.",
+        )
+    if len(student_number) > 50 or any(
+        len(value) > 255
+        for value in (first_name, middle_name, last_name, name_extension)
+    ):
         raise HTTPException(status_code=400, detail="Invalid lookup input.")
 
-    row = session.connection().execute(
-        text(
-            """
+    row = (
+        session.connection()
+        .execute(
+            text(
+                """
             SELECT
                 s.student_number,
                 p.first_name,
@@ -96,9 +108,12 @@ def lookup_student_qr(
             ORDER BY se.created_at DESC
             LIMIT 1
             """
-        ),
-        {"student_number": student_number},
-    ).mappings().first()
+            ),
+            {"student_number": student_number},
+        )
+        .mappings()
+        .first()
+    )
 
     if not row:
         raise HTTPException(status_code=404, detail="Student record not found.")

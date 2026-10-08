@@ -41,8 +41,10 @@ def _ensure_class_rep_student_access(
         raise HTTPException(
             status_code=403, detail="No Class Representative assignment found"
         )
-    allowed = session.connection().execute(
-        text("""
+    allowed = (
+        session.connection()
+        .execute(
+            text("""
             SELECT 1
             FROM student_enrollments
             WHERE student_id = :student_id
@@ -50,12 +52,14 @@ def _ensure_class_rep_student_access(
               AND academic_year_id = :academic_year_id
             LIMIT 1
         """),
-        {
-            "student_id": student_id,
-            "section_id": assignment["section_id"],
-            "academic_year_id": assignment["academic_year_id"],
-        },
-    ).first()
+            {
+                "student_id": student_id,
+                "section_id": assignment["section_id"],
+                "academic_year_id": assignment["academic_year_id"],
+            },
+        )
+        .first()
+    )
     if not allowed:
         raise HTTPException(
             status_code=403, detail="Student is outside your assigned section"
@@ -186,9 +190,13 @@ def read_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    archived = session.connection().execute(
-        text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
-    ).scalar_one_or_none()
+    archived = (
+        session.connection()
+        .execute(
+            text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
+        )
+        .scalar_one_or_none()
+    )
     if archived is not None:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
@@ -206,9 +214,13 @@ def update_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    archived = session.connection().execute(
-        text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
-    ).scalar_one_or_none()
+    archived = (
+        session.connection()
+        .execute(
+            text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
+        )
+        .scalar_one_or_none()
+    )
     if archived is not None:
         raise HTTPException(status_code=404, detail="Student is archived")
 

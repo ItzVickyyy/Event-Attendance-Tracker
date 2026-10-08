@@ -534,20 +534,25 @@ def read_attendance(
                 status_code=403,
                 detail="Attendance record is outside your assigned section",
             )
-        allowed = session.connection().execute(
-            select(Student.id)
-            .join(
-                Attendee, cast(Any, col(Attendee.person_id) == col(Student.person_id))
+        allowed = (
+            session.connection()
+            .execute(
+                select(Student.id)
+                .join(
+                    Attendee,
+                    cast(Any, col(Attendee.person_id) == col(Student.person_id)),
+                )
+                .join(
+                    EventRegistration,
+                    cast(Any, col(EventRegistration.attendee_id) == col(Attendee.id)),
+                )
+                .where(
+                    EventRegistration.id == record.registration_id,
+                    Student.section_id == assignment["section_id"],
+                )
             )
-            .join(
-                EventRegistration,
-                cast(Any, col(EventRegistration.attendee_id) == col(Attendee.id)),
-            )
-            .where(
-                EventRegistration.id == record.registration_id,
-                Student.section_id == assignment["section_id"],
-            )
-        ).first()
+            .first()
+        )
         if not allowed:
             raise HTTPException(
                 status_code=403,
