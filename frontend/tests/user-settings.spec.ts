@@ -66,7 +66,7 @@ test.describe("Account security", () => {
     await page.getByLabel("New password").last().fill(newPassword)
     await page.getByLabel("Confirm new password").last().fill(newPassword)
     await page.getByRole("button", { name: "Change password" }).click()
-    await expect(page.getByText("Password changed")).toBeVisible()
+    await expect(page.getByText("Password updated successfully")).toBeVisible()
 
     await logOutUser(page)
     await logInUser(page, email, newPassword)
