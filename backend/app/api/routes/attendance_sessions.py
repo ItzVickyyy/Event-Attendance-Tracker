@@ -175,6 +175,9 @@ def update_attendance_session(
             active.is_active = False
             active.status = AttendanceSessionStatus.closed
             active.updated_at = get_datetime_utc()
+        # Flush the old active session before activating this one. The database
+        # enforces one active session per event with a partial unique index.
+        session.flush()
 
     record.sqlmodel_update(update_dict)
     record.updated_at = get_datetime_utc()
