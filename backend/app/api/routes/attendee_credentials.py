@@ -4,15 +4,20 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin, require_scanner_permission
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
+    require_admin,
+    require_scanner_permission,
+)
 from app.models import (
     AcademicSection,
     Attendee,
     AttendeeCredential,
     AttendeeCredentialCreate,
     AttendeeCredentialPublic,
-    AttendeeCredentialsPublic,
     AttendeeCredentialUpdate,
+    AttendeeCredentialsPublic,
     CredentialType,
     Person,
     PublicCredentialLookup,
