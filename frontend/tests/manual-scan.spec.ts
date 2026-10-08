@@ -293,13 +293,13 @@ test.describe("Manual attendance scan", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   async function readQueuedScans(page: Page): Promise<QueuedScanLike[]> {
-  return page.evaluate(async () => {
-    const mod = await import("/src/data/index.ts")
-    return mod.getAllQueuedScans()
-  })
-}
+    return page.evaluate(async () => {
+      const mod = await import("/src/data/index.ts")
+      return mod.getAllQueuedScans()
+    })
+  }
 
-async function seedActiveSession(page: Page): Promise<void> {
+  async function seedActiveSession(page: Page): Promise<void> {
     await page.evaluate(() => {
       localStorage.setItem(
         "attendance-active-session:evt-1",
@@ -509,9 +509,9 @@ async function seedActiveSession(page: Page): Promise<void> {
 
     await page.getByRole("button", { name: "Bob Student" }).click()
 
-    await expect(
-      page.getByText("Attendance queued - Bob Student"),
-    ).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText("Attendance queued - Bob Student")).toBeVisible(
+      { timeout: 10000 },
+    )
     await expect.poll(() => handle.sent()).toHaveLength(1)
     await expect
       .poll(async () => (await readQueuedScans(page))[0]?.sync_status)
