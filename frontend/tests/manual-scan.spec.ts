@@ -532,7 +532,7 @@ async function seedActiveSession(page: Page): Promise<void> {
     const studentNumber = "STU-0003"
     const studentName = "Charlie Student"
 
-    await mockHttp(
+    const handle = await mockHttp(
       page,
       async (body) => {
         expect(body.event_id).toBe("evt-1")
