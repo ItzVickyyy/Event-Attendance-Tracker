@@ -57,8 +57,12 @@ test.describe("Edit user profile", () => {
     await page.getByLabel("Full name").fill("Temporary Changed Name")
     await page.getByLabel("Email").fill(randomEmail())
     await page.getByRole("button", { name: "Cancel" }).click()
-    await expect(page.getByLabel("Email")).toHaveValue(email)
-    await expect(page.getByLabel("Full name")).toHaveValue("Test User")
+    await expect(
+      page.locator("form").getByText(email, { exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.locator("form").getByText("Test User", { exact: true }),
+    ).toBeVisible()
   })
 })
 
