@@ -87,8 +87,13 @@ const UserInformation = () => {
   }
 
   const onCancel = () => {
-    form.reset()
-    toggleEditMode()
+    // Reset to the authenticated user's current values, not the form's
+    // mount-time defaults, which may have been empty before auth loaded.
+    form.reset({
+      full_name: currentUser?.full_name ?? undefined,
+      email: currentUser?.email,
+    })
+    setEditMode(false)
   }
 
   return (
