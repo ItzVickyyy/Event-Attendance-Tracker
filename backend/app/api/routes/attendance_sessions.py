@@ -161,9 +161,9 @@ def update_attendance_session(
         AttendanceSessionStatus.cancelled,
     ):
         update_dict["is_active"] = False
-    record.sqlmodel_update(update_dict)
-    record.updated_at = get_datetime_utc()
-    if record.is_active:
+
+    will_be_active = update_dict.get("is_active", record.is_active)
+    if will_be_active:
         active_sessions = session.exec(
             select(AttendanceSession).where(
                 col(AttendanceSession.event_id) == record.event_id,
@@ -175,6 +175,9 @@ def update_attendance_session(
             active.is_active = False
             active.status = AttendanceSessionStatus.closed
             active.updated_at = get_datetime_utc()
+
+    record.sqlmodel_update(update_dict)
+    record.updated_at = get_datetime_utc()
     session.add(record)
     session.commit()
     session.refresh(record)

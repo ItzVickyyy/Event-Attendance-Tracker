@@ -743,13 +743,20 @@ class StudentImportService:
         if section:
             return section
 
-        # Compatibility fallback for simpler registry representations such as
-        # section_name="1A" / section_code="1A".
-        try:
-            match = re.fullmatch(r"(\d+)([A-Z]+)", section_name)
-        except re.error:
-            match = None
+        # Legacy imports may use section_code instead of section_name.
+        # Match that exact code before interpreting it as a year/section pattern.
+        section = self.session.exec(
+            select(AcademicSection).where(
+                col(AcademicSection.academic_year) == import_batch.academic_year,
+                col(AcademicSection.program_id) == program.id,
+                col(AcademicSection.section_code) == section_name,
+            )
+        ).first()
+        if section:
+            return section
 
+        # Compatibility fallback for simple names such as "1A".
+        match = re.fullmatch(r"(\\d+)([A-Z]+)", section_name)
         if not match:
             return None
 
@@ -762,36 +769,18 @@ class StudentImportService:
             "4": "4th Year",
         }
         year_level = year_level_names.get(year_level_number)
-
-        conditions = [
-            col(AcademicSection.section_name) == section_code,
-            col(AcademicSection.section_code) == section_code,
-        ]
-        if year_level:
-            conditions = [
-                col(AcademicSection.year_level) == year_level,
-                (col(AcademicSection.section_name) == section_code)
-                | (col(AcademicSection.section_code) == section_code),
-            ]
-
-        return (
-            self.session.exec(
-                select(AcademicSection).where(
-                    col(AcademicSection.academic_year) == import_batch.academic_year,
-                    col(AcademicSection.program_id) == program.id,
-                    conditions[0] if len(conditions) == 1 else conditions[0],
-                )
-            ).first()
-            if len(conditions) == 1
-            else self.session.exec(
-                select(AcademicSection).where(
-                    col(AcademicSection.academic_year) == import_batch.academic_year,
-                    col(AcademicSection.program_id) == program.id,
-                    conditions[0],
-                    conditions[1],
-                )
-            ).first()
+        conditions = (
+            (col(AcademicSection.section_name) == section_code)
+            | (col(AcademicSection.section_code) == section_code)
         )
+        statement = select(AcademicSection).where(
+            col(AcademicSection.academic_year) == import_batch.academic_year,
+            col(AcademicSection.program_id) == program.id,
+            conditions,
+        )
+        if year_level:
+            statement = statement.where(col(AcademicSection.year_level) == year_level)
+        return self.session.exec(statement).first()
 
     def _validate_and_detect_conflicts(
         self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]

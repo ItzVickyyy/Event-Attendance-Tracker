@@ -17,6 +17,9 @@ class RecordingSession:
     def __exit__(self, *_args: object) -> None:
         return None
 
+    def connection(self) -> "RecordingSession":
+        return self
+
     def execute(self, statement: TextClause, *_params: Any) -> None:
         self.statements.append(str(statement))
 
