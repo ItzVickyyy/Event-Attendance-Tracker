@@ -364,11 +364,23 @@ def test_missing_attendance_session_resources_return_not_found(
     assert event.status_code == 200
     event_id = event.json()["id"]
 
+    sessions = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
+        headers=headers,
+    )
+    assert sessions.status_code == 200
+    active_session_id = sessions.json()["data"][0]["id"]
+    closed = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/{active_session_id}/close",
+        headers=headers,
+    )
+    assert closed.status_code == 200
+
     no_active_session = client.get(
         f"{settings.API_V1_STR}/attendance-sessions/active/{event_id}",
         headers=headers,
     )
-    assert no_active_session.status_code == 200
+    assert no_active_session.status_code == 404
 
     assert (
         client.get(
