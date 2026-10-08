@@ -24,6 +24,8 @@ To enable emails, add these optional environment variables with values from your
 * `SMTP_USER`
 * `EMAILS_FROM_EMAIL`
 
+Email delivery must be configured before creating Class Representative accounts. The system generates a unique temporary password for each representative and sends it by email. If email delivery is not configured, the API rejects representative account creation instead of creating an account whose initial password cannot be delivered. Configure the SMTP settings and `SMTP_PASSWORD` where required by your provider.
+
 To enable Sentry, configure `SENTRY_DSN`.
 
 ### Secrets
