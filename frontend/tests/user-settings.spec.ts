@@ -62,10 +62,10 @@ test.describe("Account security", () => {
     const newPassword = randomPassword()
 
     await page.goto("/account/security")
-    await page.getByLabel("Current password").fill(password)
-    await page.getByLabel("New password").last().fill(newPassword)
-    await page.getByLabel("Confirm new password").last().fill(newPassword)
-    await page.getByRole("button", { name: "Change password" }).click()
+    await page.getByTestId("current-password-input").fill(password)
+    await page.getByTestId("new-password-input").fill(newPassword)
+    await page.getByTestId("confirm-password-input").fill(newPassword)
+    await page.getByRole("button", { name: "Update Password" }).click()
     await expect(page.getByText("Password updated successfully")).toBeVisible()
 
     await logOutUser(page)
@@ -76,14 +76,13 @@ test.describe("Account security", () => {
     const { password } = await createAndLogInUser(page)
 
     await page.goto("/account/security")
-    await page.getByLabel("Current password").fill(password)
-    await page.getByLabel("New password").last().fill(randomPassword())
+    await page.getByTestId("current-password-input").fill(password)
+    await page.getByTestId("new-password-input").fill(randomPassword())
     await page
-      .getByLabel("Confirm new password")
-      .last()
+      .getByTestId("confirm-password-input")
       .fill("different-password")
-    await page.getByRole("button", { name: "Change password" }).click()
+    await page.getByRole("button", { name: "Update Password" }).click()
 
-    await expect(page.getByText("New passwords do not match")).toBeVisible()
+    await expect(page.getByText("The passwords don't match")).toBeVisible()
   })
 })
