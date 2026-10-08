@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -86,3 +88,117 @@ def test_student_lifecycle(
         headers=superuser_token_headers,
     )
     assert del_res.status_code == 200
+
+
+def test_student_crud_rejects_duplicate_and_missing_references(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+
+    def create_person(first_name: str) -> dict:
+        response = client.post(
+            f"{settings.API_V1_STR}/people/",
+            headers=headers,
+            json={
+                "first_name": first_name,
+                "last_name": "Coverage",
+                "email": random_email(),
+            },
+        )
+        assert response.status_code == 200
+        return response.json()
+
+    first_person = create_person("First")
+    second_person = create_person("Second")
+    first_number = f"DUP-{random_lower_string()[:10].upper()}"
+    second_number = f"DUP-{random_lower_string()[:10].upper()}"
+
+    first = client.post(
+        f"{settings.API_V1_STR}/students/",
+        headers=headers,
+        json={"person_id": first_person["id"], "student_number": first_number},
+    )
+    second = client.post(
+        f"{settings.API_V1_STR}/students/",
+        headers=headers,
+        json={"person_id": second_person["id"], "student_number": second_number},
+    )
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+    assert (
+        client.post(
+            f"{settings.API_V1_STR}/students/",
+            headers=headers,
+            json={"person_id": str(uuid4()), "student_number": "NO-PERSON"},
+        ).status_code
+        == 404
+    )
+
+    assert (
+        client.post(
+            f"{settings.API_V1_STR}/students/",
+            headers=headers,
+            json={
+                "person_id": first_person["id"],
+                "student_number": "DUPLICATE-PERSON",
+            },
+        ).status_code
+        == 400
+    )
+
+    assert (
+        client.post(
+            f"{settings.API_V1_STR}/students/",
+            headers=headers,
+            json={
+                "person_id": create_person("Third")["id"],
+                "student_number": first_number,
+            },
+        ).status_code
+        == 400
+    )
+
+    conflict = client.patch(
+        f"{settings.API_V1_STR}/students/{first.json()['id']}",
+        headers=headers,
+        json={"student_number": second_number},
+    )
+    assert conflict.status_code == 400
+
+    assert (
+        client.patch(
+            f"{settings.API_V1_STR}/students/{first.json()['id']}",
+            headers=headers,
+            json={"section_id": str(uuid4())},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            f"{settings.API_V1_STR}/students/{first.json()['id']}",
+            headers=headers,
+            json={"person_id": str(uuid4())},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            f"{settings.API_V1_STR}/students/{uuid4()}",
+            headers=headers,
+            json={"student_number": "MISSING"},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.get(
+            f"{settings.API_V1_STR}/students/{uuid4()}", headers=headers
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"{settings.API_V1_STR}/students/{uuid4()}", headers=headers
+        ).status_code
+        == 404
+    )
