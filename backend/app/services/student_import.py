@@ -6,7 +6,7 @@ import re
 from typing import Any, TypedDict
 
 from openpyxl import load_workbook  # type: ignore[import-untyped]
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, or_, select
 
 from app.models import (
     AcademicProgram,
@@ -763,35 +763,19 @@ class StudentImportService:
         }
         year_level = year_level_names.get(year_level_number)
 
-        conditions = [
+        section_match = or_(
             col(AcademicSection.section_name) == section_code,
             col(AcademicSection.section_code) == section_code,
-        ]
-        if year_level:
-            conditions = [
-                col(AcademicSection.year_level) == year_level,
-                (col(AcademicSection.section_name) == section_code)
-                | (col(AcademicSection.section_code) == section_code),
-            ]
-
-        return (
-            self.session.exec(
-                select(AcademicSection).where(
-                    col(AcademicSection.academic_year) == import_batch.academic_year,
-                    col(AcademicSection.program_id) == program.id,
-                    conditions[0] if len(conditions) == 1 else conditions[0],
-                )
-            ).first()
-            if len(conditions) == 1
-            else self.session.exec(
-                select(AcademicSection).where(
-                    col(AcademicSection.academic_year) == import_batch.academic_year,
-                    col(AcademicSection.program_id) == program.id,
-                    conditions[0],
-                    conditions[1],
-                )
-            ).first()
         )
+        query = select(AcademicSection).where(
+            col(AcademicSection.academic_year) == import_batch.academic_year,
+            col(AcademicSection.program_id) == program.id,
+            section_match,
+        )
+        if year_level:
+            query = query.where(col(AcademicSection.year_level) == year_level)
+
+        return self.session.exec(query).first()
 
     def _validate_and_detect_conflicts(
         self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
