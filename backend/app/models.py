@@ -4,7 +4,8 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, DateTime, Enum as SQLAlchemyEnum, Index, UniqueConstraint, event, text
+from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint, event, text
+from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapper
 from sqlmodel import Field, Relationship, SQLModel
