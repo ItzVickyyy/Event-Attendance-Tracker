@@ -45,7 +45,7 @@ def run_migrations_online():
             connection=connection, target_metadata=target_metadata, compare_type=True
         )
         guard_populated_legacy_schema(
-            connection, context.get_context().get_current_revision()
+            connection, context.get_context().get_current_heads()
         )
 
         with context.begin_transaction():
