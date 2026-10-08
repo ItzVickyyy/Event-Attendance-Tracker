@@ -1825,4 +1825,3 @@ export class PublicStudentQrService {
         });
     }
 }
-

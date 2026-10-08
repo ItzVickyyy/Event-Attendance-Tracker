@@ -542,9 +542,9 @@ test.describe("Manual attendance scan", () => {
 
     await page.getByRole("button", { name: "Bob Student" }).click()
 
-    await expect(
-      page.getByText("Attendance queued - Bob Student"),
-    ).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText("Attendance queued - Bob Student")).toBeVisible(
+      { timeout: 10000 },
+    )
 
     expect(handle.sent()).toHaveLength(0)
     const [queued] = await readQueuedScans(page)

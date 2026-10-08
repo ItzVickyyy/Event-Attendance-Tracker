@@ -338,6 +338,7 @@ def test_attendance_session_rejects_invalid_event_and_active_status(
     )
     assert rejected.status_code == 400
 
+
 def test_missing_attendance_session_resources_return_not_found(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
@@ -474,7 +475,10 @@ def test_cancelled_session_cannot_be_activated_after_event_closes(
         headers=headers,
     )
     assert activation.status_code == 400
-    assert activation.json()["detail"] == "Event must be open before a session can be activated"
+    assert (
+        activation.json()["detail"]
+        == "Event must be open before a session can be activated"
+    )
 
 def test_creating_active_session_closes_previous_active_session(
     client: TestClient, superuser_token_headers: dict[str, str]
@@ -524,4 +528,3 @@ def test_creating_active_session_closes_previous_active_session(
     assert previous.status_code == 200
     assert previous.json()["is_active"] is False
     assert previous.json()["status"] == "CLOSED"
-
