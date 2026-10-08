@@ -8,7 +8,7 @@ async function createAndLogInUser(page: import("@playwright/test").Page) {
   const password = randomPassword()
   await createUser({ email, password })
   await logInUser(page, email, password)
-  await page.goto("/account")
+  await page.goto("/account/profile")
   await expect(page.getByRole("heading", { name: "My Account" })).toBeVisible()
   return { email, password }
 }
@@ -16,41 +16,37 @@ async function createAndLogInUser(page: import("@playwright/test").Page) {
 test.describe("Account profile", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
-  test("User can update their personal information", async ({ page }) => {
+  test("User can update their profile information", async ({ page }) => {
     await createAndLogInUser(page)
 
-    await page.getByLabel("First Name").fill("Updated")
-    await page.getByLabel("Last Name").fill("Test User")
-    await page.getByRole("button", { name: "Save changes" }).click()
+    await page.getByRole("button", { name: "Edit" }).click()
+    await page.getByLabel("Full name").fill("Updated Test User")
+    await page.getByRole("button", { name: "Save" }).click()
 
-    await expect(page.getByText("Account updated")).toBeVisible()
-    await expect(page.getByLabel("First Name")).toHaveValue("Updated")
-    await expect(page.getByLabel("Last Name")).toHaveValue("Test User")
+    await expect(page.getByText("User updated successfully")).toBeVisible()
+    await expect(page.getByText("Updated Test User")).toBeVisible()
   })
 
-  test("Profile requires first and last names", async ({ page }) => {
+  test("Profile validates email format", async ({ page }) => {
     await createAndLogInUser(page)
 
-    await page.getByLabel("First Name").fill(" ")
-    await page.getByLabel("Last Name").fill("")
-    await page.getByRole("button", { name: "Save changes" }).click()
+    await page.getByRole("button", { name: "Edit" }).click()
+    await page.getByLabel("Email").fill("invalid-email")
+    await page.getByRole("button", { name: "Save" }).click()
 
-    await expect(
-      page.getByText("First name and last name are required"),
-    ).toBeVisible()
+    await expect(page.getByText("Invalid email address")).toBeVisible()
   })
 
   test("Saved profile information persists after reload", async ({ page }) => {
     await createAndLogInUser(page)
 
-    await page.getByLabel("First Name").fill("Persistent")
-    await page.getByLabel("Last Name").fill("Profile")
-    await page.getByRole("button", { name: "Save changes" }).click()
-    await expect(page.getByText("Account updated")).toBeVisible()
+    await page.getByRole("button", { name: "Edit" }).click()
+    await page.getByLabel("Full name").fill("Persistent Profile")
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("User updated successfully")).toBeVisible()
 
     await page.reload()
-    await expect(page.getByLabel("First Name")).toHaveValue("Persistent")
-    await expect(page.getByLabel("Last Name")).toHaveValue("Profile")
+    await expect(page.getByText("Persistent Profile")).toBeVisible()
   })
 })
 
