@@ -280,6 +280,24 @@ async function setToken(
 test.describe("Manual attendance scan", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
+async function seedActiveSession(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "attendance-active-session:evt-1",
+      JSON.stringify({
+        id: "session-1",
+        event_id: "evt-1",
+        session_date: "2026-01-01",
+        name: "Morning Session",
+        session_type: "TIME_IN",
+        status: "OPEN",
+        display_order: 1,
+        is_active: true,
+      }),
+    )
+  })
+}
+
   test("single student search and successful manual scan", async ({
     page,
     mockHttp,
@@ -346,6 +364,7 @@ test.describe("Manual attendance scan", () => {
 
     await gotoApp(page)
     await setToken(page)
+    await seedActiveSession(page)
     await page.goto("/scanner?event_id=evt-1")
 
     await page.fill(
@@ -449,6 +468,7 @@ test.describe("Manual attendance scan", () => {
 
     await gotoApp(page)
     await setToken(page)
+    await seedActiveSession(page)
     await page.goto("/scanner?event_id=evt-1")
 
     await page.fill(
@@ -535,6 +555,7 @@ test.describe("Manual attendance scan", () => {
 
     await gotoApp(page)
     await setToken(page)
+    await seedActiveSession(page)
     await page.goto("/scanner?event_id=evt-1")
 
     await page.fill(
