@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, inspect, pool, text
 
 config = context.config
 
@@ -29,6 +29,33 @@ def run_migrations_offline():
         context.run_migrations()
 
 
+def _guard_populated_legacy_schema(connection):
+    """Refuse the 3NF migration when it would discard legacy records."""
+    migration_context = context.get_context()
+    if migration_context.get_current_revision() != "bdb851e7e407":
+        return
+
+    inspector = inspect(connection)
+    counts = {}
+    for table in ("student", "event", "attendance"):
+        if inspector.has_table(table):
+            count = connection.execute(
+                text(f'SELECT COUNT(*) FROM "{table}"')
+            ).scalar_one()
+            if count:
+                counts[table] = count
+
+    if counts:
+        summary = ", ".join(f"{table}={count}" for table, count in counts.items())
+        raise RuntimeError(
+            "Refusing to apply migration 1197a9a57c90_normalize_schema_3nf because "
+            f"legacy tables contain records ({summary}). The migration drops the "
+            "legacy student/event tables and replaces attendance event/student keys "
+            "without a data backfill. Back up and migrate these records explicitly "
+            "before retrying. No migrations were applied by this preflight check."
+        )
+
+
 def run_migrations_online():
     configuration = config.get_section(config.config_ini_section)
     assert configuration is not None
@@ -43,6 +70,7 @@ def run_migrations_online():
         context.configure(
             connection=connection, target_metadata=target_metadata, compare_type=True
         )
+        _guard_populated_legacy_schema(connection)
 
         with context.begin_transaction():
             context.run_migrations()
