@@ -1,89 +1,58 @@
-import { expect, type Page, test } from "@playwright/test"
+import { expect, test } from "@playwright/test"
 import { createUser } from "./utils/privateApi"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
 
-async function logInAndCompleteRequiredPasswordChange(
-  page: Page,
-  email: string,
-  initialPassword: string,
-) {
-  await logInUser(page, email, initialPassword)
-
-  // Some test-created accounts require a password change, while others do not.
-  // Let the current-user query and layout effect settle before deciding.
-  const passwordDialog = page.getByRole("dialog")
-  const passwordHeading = passwordDialog.getByRole("heading", {
-    name: "Update Your Password",
-  })
-  const requiresPasswordChange = await passwordHeading
-    .waitFor({ state: "visible", timeout: 5_000 })
-    .then(() => true)
-    .catch(() => false)
-
-  if (!requiresPasswordChange) return initialPassword
-
+async function createAndLogInUser(page: import("@playwright/test").Page) {
+  const email = randomEmail()
   const password = randomPassword()
-  await passwordDialog.getByLabel("Temporary password").fill(initialPassword)
-  await passwordDialog.getByLabel("New password").fill(password)
-  await passwordDialog.getByLabel("Confirm new password").fill(password)
-  await passwordDialog.getByRole("button", { name: "Update Password" }).click()
-  await expect(passwordDialog).not.toBeVisible()
-
-  return password
+  await createUser({ email, password })
+  await logInUser(page, email, password)
+  await page.goto("/account")
+  await expect(
+    page.getByRole("heading", { name: "My Account" }),
+  ).toBeVisible()
+  return { email, password }
 }
 
 test.describe("Account profile", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
-  test("User can update their full name", async ({ page }) => {
-    const email = randomEmail()
-    const initialPassword = randomPassword()
-    await createUser({ email, password: initialPassword })
-    await logInAndCompleteRequiredPasswordChange(page, email, initialPassword)
-    await page.goto("/account/profile")
+  test("User can update their personal information", async ({ page }) => {
+    await createAndLogInUser(page)
+
+    await page.getByLabel("First Name").fill("Updated")
+    await page.getByLabel("Last Name").fill("Test User")
+    await page.getByRole("button", { name: "Save changes" }).click()
+
+    await expect(page.getByText("Account updated")).toBeVisible()
+    await expect(page.getByLabel("First Name")).toHaveValue("Updated")
+    await expect(page.getByLabel("Last Name")).toHaveValue("Test User")
+  })
+
+  test("Profile requires first and last names", async ({ page }) => {
+    await createAndLogInUser(page)
+
+    await page.getByLabel("First Name").fill(" ")
+    await page.getByLabel("Last Name").fill("")
+    await page.getByRole("button", { name: "Save changes" }).click()
 
     await expect(
-      page.getByRole("heading", { name: "My Account" }),
-    ).toBeVisible()
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Full name").fill("Updated Test User")
-    await page.getByRole("button", { name: "Save" }).click()
-
-    await expect(page.getByText("User updated successfully")).toBeVisible()
-    await expect(
-      page.locator("form").getByText("Updated Test User", { exact: true }),
+      page.getByText("First name and last name are required"),
     ).toBeVisible()
   })
 
-  test("Invalid email displays validation feedback", async ({ page }) => {
-    const email = randomEmail()
-    const initialPassword = randomPassword()
-    await createUser({ email, password: initialPassword })
-    await logInAndCompleteRequiredPasswordChange(page, email, initialPassword)
-    await page.goto("/account/profile")
+  test("Saved profile information persists after reload", async ({ page }) => {
+    await createAndLogInUser(page)
 
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Email").fill("not-an-email")
-    await page.getByLabel("Full name").click()
-    await expect(page.getByText("Invalid email address")).toBeVisible()
-  })
+    await page.getByLabel("First Name").fill("Persistent")
+    await page.getByLabel("Last Name").fill("Profile")
+    await page.getByRole("button", { name: "Save changes" }).click()
+    await expect(page.getByText("Account updated")).toBeVisible()
 
-  test("Canceling profile edits restores the original values", async ({
-    page,
-  }) => {
-    const email = randomEmail()
-    const initialPassword = randomPassword()
-    const user = await createUser({ email, password: initialPassword })
-    await logInAndCompleteRequiredPasswordChange(page, email, initialPassword)
-    await page.goto("/account/profile")
-
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Full name").fill("Unsaved Name")
-    await page.getByRole("button", { name: "Cancel" }).click()
-    await expect(
-      page.locator("form").getByText(user.full_name as string, { exact: true }),
-    ).toBeVisible()
+    await page.reload()
+    await expect(page.getByLabel("First Name")).toHaveValue("Persistent")
+    await expect(page.getByLabel("Last Name")).toHaveValue("Profile")
   })
 })
 
@@ -91,51 +60,27 @@ test.describe("Account security", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test("User can change their password", async ({ page }) => {
-    const email = randomEmail()
-    const initialPassword = randomPassword()
-    await createUser({ email, password: initialPassword })
-    const password = await logInAndCompleteRequiredPasswordChange(
-      page,
-      email,
-      initialPassword,
-    )
+    const { email, password } = await createAndLogInUser(page)
     const newPassword = randomPassword()
-    await page.goto("/account/security")
 
-    await page.getByTestId("current-password-input").fill(password)
-    await page.getByTestId("new-password-input").fill(newPassword)
-    await page.getByTestId("confirm-password-input").fill(newPassword)
-    await page.getByRole("button", { name: "Update Password" }).click()
-    await expect(page.getByText("Password updated successfully")).toBeVisible()
+    await page.getByLabel("Current password").fill(password)
+    await page.getByLabel("New password").fill(newPassword)
+    await page.getByLabel("Confirm new password").fill(newPassword)
+    await page.getByRole("button", { name: "Change password" }).click()
+    await expect(page.getByText("Password changed")).toBeVisible()
 
     await logOutUser(page)
     await logInUser(page, email, newPassword)
   })
 
-  test("Password validation rejects weak and mismatched passwords", async ({
-    page,
-  }) => {
-    const email = randomEmail()
-    const initialPassword = randomPassword()
-    await createUser({ email, password: initialPassword })
-    const password = await logInAndCompleteRequiredPasswordChange(
-      page,
-      email,
-      initialPassword,
-    )
-    await page.goto("/account/security")
+  test("Password change rejects mismatched passwords", async ({ page }) => {
+    const { password } = await createAndLogInUser(page)
 
-    await page.getByTestId("current-password-input").fill(password)
-    await page.getByTestId("new-password-input").fill("weak")
-    await page.getByTestId("confirm-password-input").fill("weak")
-    await page.getByRole("button", { name: "Update Password" }).click()
-    await expect(
-      page.getByText("Password must be at least 8 characters"),
-    ).toBeVisible()
+    await page.getByLabel("Current password").fill(password)
+    await page.getByLabel("New password").fill(randomPassword())
+    await page.getByLabel("Confirm new password").fill("different-password")
+    await page.getByRole("button", { name: "Change password" }).click()
 
-    await page.getByTestId("new-password-input").fill(randomPassword())
-    await page.getByTestId("confirm-password-input").fill("different-password")
-    await page.getByRole("button", { name: "Update Password" }).click()
-    await expect(page.getByText("The passwords don't match")).toBeVisible()
+    await expect(page.getByText("New passwords do not match")).toBeVisible()
   })
 })
