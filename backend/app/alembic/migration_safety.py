@@ -70,4 +70,3 @@ def guard_populated_normalized_schema_before_downgrade(
             f"discard ({summary}). Export and migrate the data explicitly before "
             "retrying. No downgrade operations were applied by this preflight check."
         )
-
