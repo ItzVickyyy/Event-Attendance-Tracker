@@ -6,6 +6,10 @@ import { logInUser, logOutUser } from "./utils/user"
 test("Account workspace shows profile and security navigation", async ({
   page,
 }) => {
+  const email = randomEmail()
+  const password = randomPassword()
+  await createUser({ email, password })
+  await logInUser(page, email, password)
   await page.goto("/account/profile")
   await expect(page.getByRole("heading", { name: "My Account" })).toBeVisible()
   await expect(page.getByRole("link", { name: "Profile" })).toBeVisible()
@@ -131,6 +135,10 @@ test.describe("Change password", () => {
 test("Appearance control remains available in the sidebar", async ({
   page,
 }) => {
+  const email = randomEmail()
+  const password = randomPassword()
+  await createUser({ email, password })
+  await logInUser(page, email, password)
   await page.goto("/account/profile")
   await expect(page.getByTestId("theme-button")).toBeVisible()
 })
