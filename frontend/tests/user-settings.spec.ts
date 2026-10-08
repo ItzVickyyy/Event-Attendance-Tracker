@@ -24,7 +24,9 @@ test.describe("Account profile", () => {
     await page.getByRole("button", { name: "Save" }).click()
 
     await expect(page.getByText("User updated successfully")).toBeVisible()
-    await expect(page.locator("form").getByText("Updated Test User")).toBeVisible()
+    await expect(
+      page.locator("form").getByText("Updated Test User"),
+    ).toBeVisible()
   })
 
   test("Profile validates email format", async ({ page }) => {
@@ -46,7 +48,9 @@ test.describe("Account profile", () => {
     await expect(page.getByText("User updated successfully")).toBeVisible()
 
     await page.reload()
-    await expect(page.locator("form").getByText("Persistent Profile")).toBeVisible()
+    await expect(
+      page.locator("form").getByText("Persistent Profile"),
+    ).toBeVisible()
   })
 })
 
