@@ -100,7 +100,7 @@ export function OperationalDashboard() {
         : ""
       const response = await fetch(
         `${import.meta.env.VITE_API_URL ?? ""}/api/v1/events/?skip=0&limit=100${query}`,
-        { headers: token ? { Authorization: `*** } : {} },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       )
       if (!response.ok) throw new Error("Unable to load events")
       return response.json()
@@ -113,7 +113,7 @@ export function OperationalDashboard() {
       const token = localStorage.getItem("access_token")
       const response = await fetch(
         `${import.meta.env.VITE_API_URL ?? ""}/api/v1/attendance/?skip=0&limit=1&academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}`,
-        { headers: token ? { Authorization: `*** } : {} },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
       )
       if (!response.ok) throw new Error("Unable to load attendance")
       return response.json()

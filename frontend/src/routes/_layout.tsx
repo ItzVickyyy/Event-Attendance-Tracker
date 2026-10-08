@@ -253,7 +253,7 @@ function Layout() {
       const response = await fetch("/api/v1/users/me/password", {
         method: "PATCH",
         headers: {
-          Authorization: `***"access_token")}`,
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

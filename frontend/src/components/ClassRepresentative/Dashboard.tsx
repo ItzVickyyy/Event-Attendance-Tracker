@@ -10,7 +10,7 @@ export function ClassRepresentativeDashboard() {
     queryKey: ["class-representative-assignment", activeAcademicYear?.id],
     queryFn: async () => {
       const headers: Record<string, string> = {}
-      if (token) headers.Authorization = `***
+      if (token) headers.Authorization = `Bearer ${token}`
       const response = await fetch(
         "/api/v1/class-representatives/me?academic_year_id=" +
           encodeURIComponent(activeAcademicYear!.id),

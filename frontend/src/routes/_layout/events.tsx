@@ -14,7 +14,7 @@ function getEventsQueryOptions(academicYearId: string | undefined) {
       const token = localStorage.getItem("access_token")
       const url = `${import.meta.env.VITE_API_URL ?? ""}/api/v1/events/?skip=0&limit=1000${academicYearId ? `&academic_year_id=${encodeURIComponent(academicYearId)}` : ""}`
       const response = await fetch(url, {
-        headers: token ? { Authorization: `*** } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       if (!response.ok) throw new Error("Unable to load events")
       return response.json()
