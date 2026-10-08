@@ -6,8 +6,6 @@ from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, class_rep_assignment, require_admin
-from app.services.reference_codes import next_student_reference_code
-
 from app.models import (
     AcademicSection,
     Attendee,
@@ -20,6 +18,7 @@ from app.models import (
     UserRole,
     get_datetime_utc,
 )
+from app.services.reference_codes import next_student_reference_code
 
 router = APIRouter(prefix="/students", tags=["students"])
 
