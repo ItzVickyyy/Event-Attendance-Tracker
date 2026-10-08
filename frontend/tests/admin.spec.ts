@@ -5,7 +5,9 @@ import { logInUser } from "./utils/user"
 
 test("User Accounts page is accessible to Super Admin", async ({ page }) => {
   await page.goto("/administration/users")
-  await expect(page.getByRole("heading", { name: "User Accounts" })).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "User Accounts" }),
+  ).toBeVisible()
   await expect(page.getByRole("button", { name: "Add account" })).toBeVisible()
 })
 
@@ -25,7 +27,9 @@ test("Super Admin can create an account", async ({ page }) => {
   await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible()
 })
 
-test("Account creation requires an email and a password of at least eight characters", async ({ page }) => {
+test("Account creation requires an email and a password of at least eight characters", async ({
+  page,
+}) => {
   await page.goto("/administration/users")
   await page.getByRole("button", { name: "Add account" }).click()
 
@@ -38,13 +42,17 @@ test("Account creation requires an email and a password of at least eight charac
   await expect(createButton).toBeEnabled()
 })
 
-test("Cancel account creation closes the dialog without creating an account", async ({ page }) => {
+test("Cancel account creation closes the dialog without creating an account", async ({
+  page,
+}) => {
   await page.goto("/administration/users")
   await page.getByRole("button", { name: "Add account" }).click()
   await page.getByPlaceholder("name@example.com").fill("cancelled@example.com")
   await page.getByRole("button", { name: "Cancel" }).click()
   await expect(page.getByRole("dialog")).not.toBeVisible()
-  await expect(page.getByRole("row").filter({ hasText: "cancelled@example.com" })).toHaveCount(0)
+  await expect(
+    page.getByRole("row").filter({ hasText: "cancelled@example.com" }),
+  ).toHaveCount(0)
 })
 
 test.describe("Administration access control", () => {
@@ -58,6 +66,8 @@ test.describe("Administration access control", () => {
 
     await page.goto("/administration/users")
     await expect(page).not.toHaveURL(/\/administration\/users/)
-    await expect(page.getByRole("heading", { name: "User Accounts" })).not.toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "User Accounts" }),
+    ).not.toBeVisible()
   })
 })
