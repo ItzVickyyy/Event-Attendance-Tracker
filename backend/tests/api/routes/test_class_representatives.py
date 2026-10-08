@@ -51,7 +51,49 @@ def _representative_headers(client: TestClient, email: str) -> dict[str, str]:
         data={"username": email, "password": TEMPORARY_PASSWORD},
     )
     assert response.status_code == 200
-    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+    headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
+    changed = client.patch(
+        _api("/users/me/password"),
+        headers=headers,
+        json={
+            "current_password": TEMPORARY_PASSWORD,
+            "new_password": "ChangedPassword123!",
+        },
+    )
+    assert changed.status_code == 200
+    return headers
+
+
+def test_temporary_password_blocks_api_until_changed(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, _, _ = _create_representative(client, superuser_token_headers)
+    login = client.post(
+        _api("/login/access-token"),
+        data={
+            "username": representative["email"],
+            "password": TEMPORARY_PASSWORD,
+        },
+    )
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    blocked = client.get(_api("/class-representatives/me"), headers=headers)
+    assert blocked.status_code == 403
+    assert blocked.json()["detail"]["code"] == "password_change_required"
+
+    changed = client.patch(
+        _api("/users/me/password"),
+        headers=headers,
+        json={
+            "current_password": TEMPORARY_PASSWORD,
+            "new_password": "ChangedPassword123!",
+        },
+    )
+    assert changed.status_code == 200
+
+    allowed = client.get(_api("/class-representatives/me"), headers=headers)
+    assert allowed.status_code == 200
 
 
 def test_super_admin_can_manage_class_representative_assignment_and_students(
