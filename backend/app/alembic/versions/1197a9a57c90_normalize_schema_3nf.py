@@ -6,13 +6,13 @@ Create Date: 2026-09-12 17:45:39.755939
 
 """
 from alembic import op
+import sqlalchemy as sa
+import sqlmodel.sql.sqltypes
+from sqlalchemy.dialects import postgresql
 
 from app.alembic.migration_safety import (
     guard_populated_normalized_schema_before_downgrade,
 )
-import sqlalchemy as sa
-import sqlmodel.sql.sqltypes
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '1197a9a57c90'
