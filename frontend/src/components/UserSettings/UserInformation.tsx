@@ -173,7 +173,11 @@ const UserInformation = () => {
                 </Button>
               </>
             ) : (
-              <Button type="button" onClick={toggleEditMode}>
+              <Button
+                type="button"
+                onClick={toggleEditMode}
+                disabled={!currentUser}
+              >
                 Edit
               </Button>
             )}
