@@ -41,7 +41,7 @@ def _ensure_class_rep_student_access(
         raise HTTPException(
             status_code=403, detail="No Class Representative assignment found"
         )
-    allowed = session.execute(
+    allowed = session.connection().execute(
         text("""
             SELECT 1
             FROM student_enrollments
@@ -186,7 +186,7 @@ def read_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    archived = session.execute(
+    archived = session.connection().execute(
         text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
     ).scalar_one_or_none()
     if archived is not None:
@@ -206,7 +206,7 @@ def update_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    archived = session.execute(
+    archived = session.connection().execute(
         text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
     ).scalar_one_or_none()
     if archived is not None:
@@ -277,7 +277,7 @@ def delete_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    session.execute(
+    session.connection().execute(
         text(
             "UPDATE students SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND archived_at IS NULL"
         ),

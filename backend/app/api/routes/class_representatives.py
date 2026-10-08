@@ -49,7 +49,7 @@ def _assignment_row(
         ORDER BY ay.start_year DESC
         LIMIT 1
     """
-    row = session.execute(text(query), params).mappings().first()
+    row = session.connection().execute(text(query), params).mappings().first()
     return dict(row) if row else None
 
 
@@ -83,7 +83,7 @@ def read_my_students(
             status_code=404, detail="No Class Representative assignment found"
         )
     rows = (
-        session.execute(
+        session.connection().execute(
             text("""
             SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name,
                    p.name_extension AS extension, p.email, p.contact_number,
@@ -173,7 +173,7 @@ def list_class_representatives(
     session: SessionDep, _current_user: CurrentUser
 ) -> dict[str, Any]:
     rows = (
-        session.execute(
+        session.connection().execute(
             text("""
             SELECT u.id, u.email, u.full_name, u.is_active,
                    cra.id AS assignment_id, cra.academic_year_id, cra.section_id,
@@ -208,7 +208,7 @@ def create_class_representative(
         )
     year = session.get(AcademicYear, payload.academic_year_id)
     section = (
-        session.execute(
+        session.connection().execute(
             text("SELECT id, academic_year_id FROM academic_sections WHERE id=:id"),
             {"id": payload.section_id},
         )

@@ -74,7 +74,7 @@ def read_system_health(session: SessionDep) -> Any:
     started = time.perf_counter()
     database_status = "connected"
     try:
-        session.execute(text("SELECT 1"))
+        session.connection().execute(text("SELECT 1"))
     except Exception:
         session.rollback()
         database_status = "error"

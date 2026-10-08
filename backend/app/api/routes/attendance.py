@@ -252,7 +252,7 @@ def export_attendances(
         statement = statement.where(col(Attendance.is_late) == is_late)
 
     statement = statement.order_by(col(Attendance.created_at).desc())
-    results = session.execute(statement).all()
+    results = session.exec(statement).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -534,7 +534,7 @@ def read_attendance(
                 status_code=403,
                 detail="Attendance record is outside your assigned section",
             )
-        allowed = session.execute(
+        allowed = session.connection().execute(
             select(Student.id)
             .join(
                 Attendee, cast(Any, col(Attendee.person_id) == col(Student.person_id))

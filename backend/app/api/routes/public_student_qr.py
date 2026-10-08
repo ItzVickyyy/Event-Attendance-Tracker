@@ -68,7 +68,7 @@ def lookup_student_qr(
     if len(student_number) > 50 or any(len(value) > 255 for value in (first_name, middle_name, last_name, name_extension)):
         raise HTTPException(status_code=400, detail="Invalid lookup input.")
 
-    row = session.execute(
+    row = session.connection().execute(
         text(
             """
             SELECT

@@ -134,7 +134,7 @@ def class_rep_assignment(
         query += " AND academic_year_id = :academic_year_id"
         params["academic_year_id"] = academic_year_id
     query += " ORDER BY created_at DESC LIMIT 1"
-    return session.execute(text(query), params).mappings().first()
+    return session.connection().execute(text(query), params).mappings().first()
 
 
 def require_class_rep_assignment(
