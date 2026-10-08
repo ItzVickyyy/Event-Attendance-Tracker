@@ -210,7 +210,7 @@ def upgrade():
         'attendance_corrections',
         sa.Column('id', sa.Uuid(), nullable=False),
         sa.Column('attendance_id', sa.Uuid(), nullable=False),
-        sa.Column('corrected_by', sa.Uuid(), nullable=False),
+        sa.Column('corrected_by', sa.Uuid(), nullable=True),
         sa.Column('reason', sqlmodel.sql.sqltypes.AutoString(length=500), nullable=False),
         sa.Column('old_time_in', sa.DateTime(timezone=True), nullable=True),
         sa.Column('new_time_in', sa.DateTime(timezone=True), nullable=True),
