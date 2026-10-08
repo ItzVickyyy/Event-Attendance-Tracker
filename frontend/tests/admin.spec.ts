@@ -4,9 +4,13 @@ import { createUser } from "./utils/privateApi"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser } from "./utils/user"
 
-test("User accounts administration is accessible to a super admin", async ({ page }) => {
+test("User accounts administration is accessible to a super admin", async ({
+  page,
+}) => {
   await page.goto("/administration/users")
-  await expect(page.getByRole("heading", { name: "User Accounts" })).toBeVisible()
+  await expect(
+    page.getByRole("heading", { name: "User Accounts" }),
+  ).toBeVisible()
   await expect(page.getByRole("button", { name: "Add account" })).toBeVisible()
 })
 
@@ -57,7 +61,9 @@ test("Account creation requires a valid-length password", async ({ page }) => {
   await page.getByRole("button", { name: "Add account" }).click()
   await page.getByPlaceholder("name@example.com").fill(randomEmail())
   await page.getByPlaceholder("At least 8 characters").fill("short")
-  await expect(page.getByRole("button", { name: "Create account" })).toBeDisabled()
+  await expect(
+    page.getByRole("button", { name: "Create account" }),
+  ).toBeDisabled()
 })
 
 test("Search filters user accounts", async ({ page }) => {
@@ -87,12 +93,16 @@ test.describe("Administration access control", () => {
     await logInUser(page, email, password)
     await page.goto("/administration/users")
     await expect(page).toHaveURL(/\/dashboard$/)
-    await expect(page.getByRole("heading", { name: "User Accounts" })).not.toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "User Accounts" }),
+    ).not.toBeVisible()
   })
 
   test("Super admin can access user administration", async ({ page }) => {
     await logInUser(page, firstSuperuser, firstSuperuserPassword)
     await page.goto("/administration/users")
-    await expect(page.getByRole("heading", { name: "User Accounts" })).toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "User Accounts" }),
+    ).toBeVisible()
   })
 })
