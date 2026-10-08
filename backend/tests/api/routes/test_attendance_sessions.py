@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -335,3 +337,130 @@ def test_attendance_session_rejects_invalid_event_and_active_status(
         },
     )
     assert rejected.status_code == 400
+
+def test_missing_attendance_session_resources_return_not_found(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    missing_event_id = uuid4()
+    missing_session_id = uuid4()
+
+    active = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/active/{missing_event_id}",
+        headers=headers,
+    )
+    assert active.status_code == 404
+
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Missing Session {random_lower_string()[:6]}",
+            "event_date": "2026-10-04",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    no_active_session = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/active/{event_id}",
+        headers=headers,
+    )
+    assert no_active_session.status_code == 200
+
+    assert (
+        client.get(
+            f"{settings.API_V1_STR}/attendance-sessions/{missing_session_id}",
+            headers=headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.patch(
+            f"{settings.API_V1_STR}/attendance-sessions/{missing_session_id}",
+            headers=headers,
+            json={"name": "Missing"},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            f"{settings.API_V1_STR}/attendance-sessions/{missing_session_id}/activate",
+            headers=headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            f"{settings.API_V1_STR}/attendance-sessions/{missing_session_id}/close",
+            headers=headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"{settings.API_V1_STR}/attendance-sessions/{missing_session_id}",
+            headers=headers,
+        ).status_code
+        == 404
+    )
+
+
+def test_cancelled_session_cannot_be_activated_after_event_closes(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Cancelled Session {random_lower_string()[:6]}",
+            "event_date": "2026-10-04",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    created = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": event_id,
+            "session_date": "2026-10-04",
+            "name": "Cancelled Test Session",
+            "session_type": "TIME_IN",
+            "status": "SCHEDULED",
+            "display_order": 2,
+            "is_active": False,
+        },
+    )
+    assert created.status_code == 200
+    session_id = created.json()["id"]
+
+    cancelled = client.patch(
+        f"{settings.API_V1_STR}/attendance-sessions/{session_id}",
+        headers=headers,
+        json={"status": "CANCELLED"},
+    )
+    assert cancelled.status_code == 200
+    assert cancelled.json()["status"] == "CANCELLED"
+    assert cancelled.json()["is_active"] is False
+
+    closed_event = client.patch(
+        f"{settings.API_V1_STR}/events/{event_id}",
+        headers=headers,
+        json={"status": "closed"},
+    )
+    assert closed_event.status_code == 200
+
+    activation = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/{session_id}/activate",
+        headers=headers,
+    )
+    assert activation.status_code == 400
+    assert activation.json()["detail"] == "Event must be open before a session can be activated"
+
