@@ -74,9 +74,7 @@ test.describe("Account security", () => {
     await page.goto("/account/security")
     await page.getByTestId("current-password-input").fill(password)
     await page.getByTestId("new-password-input").fill(randomPassword())
-    await page
-      .getByTestId("confirm-password-input")
-      .fill("different-password")
+    await page.getByTestId("confirm-password-input").fill("different-password")
     await page.getByRole("button", { name: "Update Password" }).click()
 
     await expect(page.getByText("The passwords don't match")).toBeVisible()
