@@ -190,9 +190,7 @@ def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
 
     rep_headers = _representative_headers(client, representative["email"])
     wrong_year = client.get(
-        _api(
-            f"/class-representatives/me?academic_year_id={other_year.json()['id']}"
-        ),
+        _api(f"/class-representatives/me?academic_year_id={other_year.json()['id']}"),
         headers=rep_headers,
     )
     assert wrong_year.status_code == 404
