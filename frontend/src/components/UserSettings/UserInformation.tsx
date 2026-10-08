@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -43,6 +43,17 @@ const UserInformation = () => {
       email: currentUser?.email,
     },
   })
+
+  // Auth state may load after this component mounts. Keep the form in sync
+  // while viewing the profile, without overwriting edits in progress.
+  useEffect(() => {
+    if (!editMode && currentUser) {
+      form.reset({
+        full_name: currentUser.full_name ?? undefined,
+        email: currentUser.email,
+      })
+    }
+  }, [currentUser, editMode, form])
 
   const toggleEditMode = () => {
     setEditMode(!editMode)
