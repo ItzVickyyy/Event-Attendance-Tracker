@@ -769,9 +769,8 @@ class StudentImportService:
             "4": "4th Year",
         }
         year_level = year_level_names.get(year_level_number)
-        conditions = (
-            (col(AcademicSection.section_name) == section_code)
-            | (col(AcademicSection.section_code) == section_code)
+        conditions = (col(AcademicSection.section_name) == section_code) | (
+            col(AcademicSection.section_code) == section_code
         )
         statement = select(AcademicSection).where(
             col(AcademicSection.academic_year) == import_batch.academic_year,
