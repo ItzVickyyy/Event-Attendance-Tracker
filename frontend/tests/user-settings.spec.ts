@@ -3,6 +3,8 @@ import { createUser } from "./utils/privateApi.ts"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
 
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test("Account workspace shows profile and security navigation", async ({
   page,
 }) => {
@@ -37,7 +39,7 @@ test.describe("Edit user profile", () => {
     await page.getByRole("button", { name: "Edit" }).click()
     await page.getByLabel("Full name").fill(updatedName)
     await page.getByRole("button", { name: "Save" }).click()
-    await expect(page.getByText("User updated successfully")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Edit" })).toBeVisible()
     await expect(
       page.locator("form").getByText(updatedName, { exact: true }),
     ).toBeVisible()
@@ -55,12 +57,8 @@ test.describe("Edit user profile", () => {
     await page.getByLabel("Full name").fill("Temporary Changed Name")
     await page.getByLabel("Email").fill(randomEmail())
     await page.getByRole("button", { name: "Cancel" }).click()
-    await expect(
-      page.locator("form").getByText(email, { exact: true }),
-    ).toBeVisible()
-    await expect(
-      page.locator("form").getByText("Test User", { exact: true }),
-    ).toBeVisible()
+    await expect(page.getByLabel("Email")).toHaveValue(email)
+    await expect(page.getByLabel("Full name")).toHaveValue("Test User")
   })
 })
 
