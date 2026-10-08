@@ -1,5 +1,5 @@
-from sqlalchemy import Connection, create_engine, text
 import pytest
+from sqlalchemy import Connection, create_engine, text
 
 from app.alembic.migration_safety import guard_populated_legacy_schema
 
