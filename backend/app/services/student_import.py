@@ -529,6 +529,7 @@ class StudentImportService:
         unknown_status = 0
 
         for row_data in parsed_rows:
+            status = self._normalize_status(row_data.get("raw_status"))
             if status == "regular":
                 regular += 1
             elif status == "irregular":
