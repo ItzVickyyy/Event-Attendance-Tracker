@@ -117,6 +117,8 @@ def create_attendance_session(
             active.is_active = False
             active.status = AttendanceSessionStatus.closed
             active.updated_at = get_datetime_utc()
+        # Release the partial unique index before inserting the replacement.
+        session.flush()
     record = AttendanceSession.model_validate(session_in)
     session.add(record)
     session.commit()

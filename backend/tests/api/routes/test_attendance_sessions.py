@@ -529,3 +529,53 @@ def test_creating_active_session_closes_previous_active_session(
     assert previous.status_code == 200
     assert previous.json()["is_active"] is False
     assert previous.json()["status"] == "CLOSED"
+
+
+def test_creating_active_session_closes_previous_active_session(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Active replacement {random_lower_string()[:6]}",
+            "event_date": "2026-10-04",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    first_response = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
+        headers=headers,
+    )
+    assert first_response.status_code == 200
+    first = first_response.json()["data"][0]
+    assert first["is_active"] is True
+
+    second_response = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": event_id,
+            "session_date": "2026-10-04",
+            "name": "Replacement Active Session",
+            "session_type": "TIME_IN",
+            "status": "OPEN",
+            "display_order": 2,
+            "is_active": True,
+        },
+    )
+    assert second_response.status_code == 200
+    assert second_response.json()["is_active"] is True
+
+    first_after = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/{first['id']}",
+        headers=headers,
+    )
+    assert first_after.status_code == 200
+    assert first_after.json()["is_active"] is False
+    assert first_after.json()["status"] == "CLOSED"
