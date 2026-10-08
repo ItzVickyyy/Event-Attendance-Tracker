@@ -1,16 +1,41 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 import { createUser } from "./utils/privateApi"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
+
+async function logInAndCompleteRequiredPasswordChange(
+  page: Page,
+  email: string,
+  initialPassword: string,
+) {
+  await logInUser(page, email, initialPassword)
+
+  const passwordDialog = page.getByRole("dialog").filter({
+    has: page.getByRole("heading", { name: "Update Your Password" }),
+  })
+  if (await passwordDialog.isVisible()) {
+    const password = randomPassword()
+    await passwordDialog.getByLabel("Temporary password").fill(initialPassword)
+    await passwordDialog.getByLabel("New password").fill(password)
+    await passwordDialog.getByLabel("Confirm new password").fill(password)
+    await passwordDialog
+      .getByRole("button", { name: "Update Password" })
+      .click()
+    await expect(passwordDialog).not.toBeVisible()
+    return password
+  }
+
+  return initialPassword
+}
 
 test.describe("Account profile", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test("User can update their full name", async ({ page }) => {
     const email = randomEmail()
-    const password = randomPassword()
-    await createUser({ email, password })
-    await logInUser(page, email, password)
+    const initialPassword = randomPassword()
+    await createUser({ email, password: initialPassword })
+    await logInAndCompleteRequiredPasswordChange(page, email, initialPassword)
     await page.goto("/account/profile")
 
     await expect(
@@ -28,9 +53,9 @@ test.describe("Account profile", () => {
 
   test("Invalid email displays validation feedback", async ({ page }) => {
     const email = randomEmail()
-    const password = randomPassword()
-    await createUser({ email, password })
-    await logInUser(page, email, password)
+    const initialPassword = randomPassword()
+    await createUser({ email, password: initialPassword })
+    await logInAndCompleteRequiredPasswordChange(page, email, initialPassword)
     await page.goto("/account/profile")
 
     await page.getByRole("button", { name: "Edit" }).click()
@@ -43,9 +68,13 @@ test.describe("Account profile", () => {
     page,
   }) => {
     const email = randomEmail()
-    const password = randomPassword()
-    const user = await createUser({ email, password })
-    await logInUser(page, email, password)
+    const initialPassword = randomPassword()
+    const user = await createUser({ email, password: initialPassword })
+    await logInAndCompleteRequiredPasswordChange(
+      page,
+      email,
+      initialPassword,
+    )
     await page.goto("/account/profile")
 
     await page.getByRole("button", { name: "Edit" }).click()
@@ -62,10 +91,14 @@ test.describe("Account security", () => {
 
   test("User can change their password", async ({ page }) => {
     const email = randomEmail()
-    const password = randomPassword()
+    const initialPassword = randomPassword()
+    await createUser({ email, password: initialPassword })
+    const password = await logInAndCompleteRequiredPasswordChange(
+      page,
+      email,
+      initialPassword,
+    )
     const newPassword = randomPassword()
-    await createUser({ email, password })
-    await logInUser(page, email, password)
     await page.goto("/account/security")
 
     await page.getByTestId("current-password-input").fill(password)
@@ -82,9 +115,13 @@ test.describe("Account security", () => {
     page,
   }) => {
     const email = randomEmail()
-    const password = randomPassword()
-    await createUser({ email, password })
-    await logInUser(page, email, password)
+    const initialPassword = randomPassword()
+    await createUser({ email, password: initialPassword })
+    const password = await logInAndCompleteRequiredPasswordChange(
+      page,
+      email,
+      initialPassword,
+    )
     await page.goto("/account/security")
 
     await page.getByTestId("current-password-input").fill(password)
@@ -96,7 +133,9 @@ test.describe("Account security", () => {
     ).toBeVisible()
 
     await page.getByTestId("new-password-input").fill(randomPassword())
-    await page.getByTestId("confirm-password-input").fill("different-password")
+    await page
+      .getByTestId("confirm-password-input")
+      .fill("different-password")
     await page.getByRole("button", { name: "Update Password" }).click()
     await expect(page.getByText("The passwords don't match")).toBeVisible()
   })
