@@ -25,7 +25,6 @@ from app.models import (
     AttendanceStatus,
     AttendanceUpdate,
     Attendee,
-    UserRole,
     AttendeeCredential,
     AttendeeType,
     Event,
@@ -37,6 +36,7 @@ from app.models import (
     ScanRequest,
     ScanResponse,
     Student,
+    UserRole,
     get_datetime_utc,
 )
 from app.services.attendance_processing import record_registered_attendance
