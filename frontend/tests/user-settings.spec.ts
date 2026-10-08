@@ -10,22 +10,20 @@ async function logInAndCompleteRequiredPasswordChange(
 ) {
   await logInUser(page, email, initialPassword)
 
-  const passwordDialog = page.getByRole("dialog").filter({
-    has: page.getByRole("heading", { name: "Update Your Password" }),
-  })
-  if (await passwordDialog.isVisible()) {
-    const password = randomPassword()
-    await passwordDialog.getByLabel("Temporary password").fill(initialPassword)
-    await passwordDialog.getByLabel("New password").fill(password)
-    await passwordDialog.getByLabel("Confirm new password").fill(password)
-    await passwordDialog
-      .getByRole("button", { name: "Update Password" })
-      .click()
-    await expect(passwordDialog).not.toBeVisible()
-    return password
-  }
+  // The private test API creates accounts that must change their temporary
+  // password. Wait for the modal instead of checking before the layout effect.
+  const passwordDialog = page.getByRole("dialog")
+  await expect(
+    passwordDialog.getByRole("heading", { name: "Update Your Password" }),
+  ).toBeVisible()
+  const password = randomPassword()
+  await passwordDialog.getByLabel("Temporary password").fill(initialPassword)
+  await passwordDialog.getByLabel("New password").fill(password)
+  await passwordDialog.getByLabel("Confirm new password").fill(password)
+  await passwordDialog.getByRole("button", { name: "Update Password" }).click()
+  await expect(passwordDialog).not.toBeVisible()
 
-  return initialPassword
+  return password
 }
 
 test.describe("Account profile", () => {
