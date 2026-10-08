@@ -1,15 +1,23 @@
 """Preflight guards for migrations that replace legacy database tables."""
 
+from collections.abc import Sequence
+
 from sqlalchemy import Connection, inspect, text
 
 LEGACY_SCHEMA_REVISION = "bdb851e7e407"
 
 
 def guard_populated_legacy_schema(
-    connection: Connection, current_revision: str | None
+    connection: Connection, current_revisions: str | Sequence[str] | None
 ) -> None:
     """Stop before 3NF migration if it would silently discard existing records."""
-    if current_revision != LEGACY_SCHEMA_REVISION:
+    if current_revisions is None:
+        return
+    if isinstance(current_revisions, str):
+        includes_legacy_revision = current_revisions == LEGACY_SCHEMA_REVISION
+    else:
+        includes_legacy_revision = LEGACY_SCHEMA_REVISION in current_revisions
+    if not includes_legacy_revision:
         return
 
     inspector = inspect(connection)
