@@ -304,26 +304,28 @@ async function setToken(
   )
 }
 
-async function readQueuedScans(page: Page): Promise<
-  Array<{
-    event_id: string
-    attendance_session_id?: string
-    attendee_id?: string
-    credential_value: string
-    scan_method: string
-    synced: boolean
-  }>
-> {
+interface ManualQueueRecord {
+  event_id: string
+  attendance_session_id?: string
+  attendee_id?: string
+  credential_value: string
+  scan_method: string
+  synced: boolean
+}
+
+async function readQueuedScans(
+  page: Page,
+): Promise<ManualQueueRecord[]> {
   return page.evaluate(
     () =>
-      new Promise((resolve, reject) => {
+      new Promise<ManualQueueRecord[]>((resolve, reject) => {
         const request = indexedDB.open("attendance-offline", 3)
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("attendanceQueue", "readonly")
           const getAll = tx.objectStore("attendanceQueue").getAll()
           getAll.onsuccess = () => {
-            const records = getAll.result
+            const records = getAll.result as ManualQueueRecord[]
             db.close()
             resolve(records)
           }
