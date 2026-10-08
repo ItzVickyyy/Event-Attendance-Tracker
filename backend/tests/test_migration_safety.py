@@ -1,8 +1,7 @@
-import pytest
 from sqlalchemy import Connection, create_engine, text
+import pytest
 
 from app.alembic.migration_safety import guard_populated_legacy_schema
-
 
 LEGACY_TABLES = ("student", "event", "attendance")
 LEGACY_REVISION = "bdb851e7e407"
@@ -10,9 +9,7 @@ LEGACY_REVISION = "bdb851e7e407"
 
 def create_legacy_tables(connection: Connection) -> None:
     for table in LEGACY_TABLES:
-        connection.execute(
-            text(f'CREATE TABLE "{table}" (id INTEGER PRIMARY KEY)')
-        )
+        connection.execute(text(f'CREATE TABLE "{table}" (id INTEGER PRIMARY KEY)'))
 
 
 def test_legacy_migration_guard_allows_empty_tables() -> None:
