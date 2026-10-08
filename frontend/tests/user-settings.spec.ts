@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 import { createUser } from "./utils/privateApi"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
@@ -70,11 +70,7 @@ test.describe("Account profile", () => {
     const email = randomEmail()
     const initialPassword = randomPassword()
     const user = await createUser({ email, password: initialPassword })
-    await logInAndCompleteRequiredPasswordChange(
-      page,
-      email,
-      initialPassword,
-    )
+    await logInAndCompleteRequiredPasswordChange(page, email, initialPassword)
     await page.goto("/account/profile")
 
     await page.getByRole("button", { name: "Edit" }).click()
@@ -133,9 +129,7 @@ test.describe("Account security", () => {
     ).toBeVisible()
 
     await page.getByTestId("new-password-input").fill(randomPassword())
-    await page
-      .getByTestId("confirm-password-input")
-      .fill("different-password")
+    await page.getByTestId("confirm-password-input").fill("different-password")
     await page.getByRole("button", { name: "Update Password" }).click()
     await expect(page.getByText("The passwords don't match")).toBeVisible()
   })
