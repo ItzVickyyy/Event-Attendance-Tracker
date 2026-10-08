@@ -222,9 +222,7 @@ def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
     assert existing_years.status_code == 200
     # Pick a year beyond every existing row so this remains deterministic even
     # when the test database retains data created by earlier tests.
-    start_year = max(
-        year["end_year"] for year in existing_years.json()["data"]
-    ) + 1
+    start_year = max(year["end_year"] for year in existing_years.json()["data"]) + 1
     other_year = client.post(
         _api("/academic-registry/academic-years"),
         headers=headers,
