@@ -11,9 +11,7 @@ from tests.utils.user import (
 from tests.utils.utils import random_email, random_lower_string
 
 
-def test_developer_can_read_system_diagnostics(
-    client: TestClient, db: Session
-) -> None:
+def test_developer_can_read_system_diagnostics(client: TestClient, db: Session) -> None:
     headers = get_token_headers_for_role(
         client=client,
         db=db,
@@ -115,7 +113,6 @@ def test_admin_can_also_have_independent_developer_access(
     assert events.status_code == 200
 
 
-
 def test_developer_can_read_filtered_audit_logs(
     client: TestClient, db: Session
 ) -> None:
@@ -164,7 +161,6 @@ def test_non_developer_cannot_read_audit_logs(
     assert response.status_code == 403
 
 
-
 def test_developer_capability_does_not_grant_operational_admin_access(
     client: TestClient, db: Session
 ) -> None:
@@ -193,9 +189,7 @@ def test_developer_capability_does_not_grant_operational_admin_access(
     assert events.status_code == 403
 
 
-def test_admin_can_review_audit_logs(
-    client: TestClient, db: Session
-) -> None:
+def test_admin_can_review_audit_logs(client: TestClient, db: Session) -> None:
     headers = get_token_headers_for_role(
         client=client,
         db=db,
@@ -208,7 +202,6 @@ def test_admin_can_review_audit_logs(
     )
 
     assert response.status_code == 200
-
 
 
 def test_failed_mutation_is_audited_with_request_correlation_id(
@@ -232,9 +225,7 @@ def test_failed_mutation_is_audited_with_request_correlation_id(
 
     assert response.status_code >= 400
     assert response.headers["x-request-id"] == request_id
-    entry = db.exec(
-        select(AuditLog).where(AuditLog.request_id == request_id)
-    ).first()
+    entry = db.exec(select(AuditLog).where(AuditLog.request_id == request_id)).first()
     assert entry is not None
     assert entry.status_code == response.status_code
     assert entry.outcome == "failure"

@@ -45,7 +45,9 @@ from app.student_academics import StudentEnrollment
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
-@router.get("/", response_model=AttendancesPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/", response_model=AttendancesPublic, dependencies=[Depends(require_admin)]
+)
 def read_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -65,7 +67,9 @@ def read_attendances(
 ) -> Any:
     # Authorization: Class Representatives can only access their assigned section
     if _current_user.role == UserRole.class_representative:
-        assignment = require_class_rep_assignment(session, _current_user, academic_year_id)
+        assignment = require_class_rep_assignment(
+            session, _current_user, academic_year_id
+        )
         section_id = assignment["section_id"]
         academic_year_id = assignment["academic_year_id"]
     count_statement = select(func.count()).select_from(Attendance)
@@ -96,7 +100,10 @@ def read_attendances(
         registration_filter = (
             registration_filter.join(Attendee)
             .join(Student, cast(Any, col(Student.person_id) == col(Attendee.person_id)))
-            .join(StudentEnrollment, cast(Any, col(StudentEnrollment.student_id) == col(Student.id)))
+            .join(
+                StudentEnrollment,
+                cast(Any, col(StudentEnrollment.student_id) == col(Student.id)),
+            )
             .where(col(StudentEnrollment.section_id) == section_id)
         )
         if academic_year_id:
@@ -175,7 +182,9 @@ def export_attendances(
     if _current_user.role.value == "class_representative":
         assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
-            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
         section_id = assignment["section_id"]
         academic_year_id = assignment["academic_year_id"]
 
@@ -195,12 +204,16 @@ def export_attendances(
             Student,
             AttendanceSession,
         )
-        .join(EventRegistration, cast(Any, col(Attendance.registration_id) == col(EventRegistration.id)))
+        .join(
+            EventRegistration,
+            cast(Any, col(Attendance.registration_id) == col(EventRegistration.id)),
+        )
         .join(Event, cast(Any, col(EventRegistration.event_id) == col(Event.id)))
         .join(Attendee, col(EventRegistration.attendee_id) == col(Attendee.id))
         .join(Person, col(Attendee.person_id) == col(Person.id))
         .join(
-            AttendanceSession, col(Attendance.attendance_session_id) == col(AttendanceSession.id)
+            AttendanceSession,
+            col(Attendance.attendance_session_id) == col(AttendanceSession.id),
         )
         .outerjoin(Student, col(Student.person_id) == col(Person.id))
     )
@@ -208,7 +221,9 @@ def export_attendances(
     if event_id:
         statement = statement.where(col(EventRegistration.event_id) == event_id)
     if academic_year_id:
-        statement = statement.where(col(Attendance.academic_year_id) == academic_year_id)
+        statement = statement.where(
+            col(Attendance.academic_year_id) == academic_year_id
+        )
 
     if attendance_status:
         statement = statement.where(col(Attendance.status) == attendance_status)
@@ -499,7 +514,11 @@ def scan_attendance_manual(
     )
 
 
-@router.get("/{record_id}", response_model=AttendancePublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{record_id}",
+    response_model=AttendancePublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_attendance(
     session: SessionDep, _current_user: CurrentUser, record_id: uuid.UUID
 ) -> Any:
@@ -517,15 +536,23 @@ def read_attendance(
             )
         allowed = session.execute(
             select(Student.id)
-            .join(Attendee, cast(Any, col(Attendee.person_id) == col(Student.person_id)))
-            .join(EventRegistration, cast(Any, col(EventRegistration.attendee_id) == col(Attendee.id)))
+            .join(
+                Attendee, cast(Any, col(Attendee.person_id) == col(Student.person_id))
+            )
+            .join(
+                EventRegistration,
+                cast(Any, col(EventRegistration.attendee_id) == col(Attendee.id)),
+            )
             .where(
                 EventRegistration.id == record.registration_id,
                 Student.section_id == assignment["section_id"],
             )
         ).first()
         if not allowed:
-            raise HTTPException(status_code=403, detail="Attendance record is outside your assigned section")
+            raise HTTPException(
+                status_code=403,
+                detail="Attendance record is outside your assigned section",
+            )
     return record
 
 

@@ -72,7 +72,9 @@ def _make_batch(db_session: Session, academic_year: str = "2026-2027") -> Import
         select(AcademicYear).where(AcademicYear.label == academic_year)
     ).first()
     if year is None:
-        start_year, end_year = (int(value) for value in academic_year.split("-", maxsplit=1))
+        start_year, end_year = (
+            int(value) for value in academic_year.split("-", maxsplit=1)
+        )
         db_session.add(
             AcademicYear(
                 label=academic_year,

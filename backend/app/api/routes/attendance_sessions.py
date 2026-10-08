@@ -32,7 +32,11 @@ def _validate_event(session, event_id: uuid.UUID) -> Event:
     return event
 
 
-@router.get("/", response_model=AttendanceSessionsPublic, dependencies=[Depends(require_scanner_permission)])
+@router.get(
+    "/",
+    response_model=AttendanceSessionsPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def read_attendance_sessions(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -65,7 +69,11 @@ def read_attendance_sessions(
     )
 
 
-@router.get("/active/{event_id}", response_model=AttendanceSessionPublic, dependencies=[Depends(require_scanner_permission)])
+@router.get(
+    "/active/{event_id}",
+    response_model=AttendanceSessionPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def read_active_attendance_session(
     session: SessionDep, _current_user: CurrentUser, event_id: uuid.UUID
 ) -> Any:
@@ -116,7 +124,11 @@ def create_attendance_session(
     return record
 
 
-@router.get("/{session_id}", response_model=AttendanceSessionPublic, dependencies=[Depends(require_scanner_permission)])
+@router.get(
+    "/{session_id}",
+    response_model=AttendanceSessionPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def read_attendance_session(
     session: SessionDep, _current_user: CurrentUser, session_id: uuid.UUID
 ) -> Any:

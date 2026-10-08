@@ -1,6 +1,11 @@
 import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from "@/components/ui/sidebar"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+} from "@/components/ui/sidebar"
 import useAuth from "@/hooks/useAuth"
 import { ReconstructionNavigation } from "./ReconstructionNavigation"
 import { User } from "./User"

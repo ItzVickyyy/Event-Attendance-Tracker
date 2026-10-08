@@ -17,7 +17,9 @@ from app.models import (
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 
-@router.get("/", response_model=OrganizationsPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/", response_model=OrganizationsPublic, dependencies=[Depends(require_admin)]
+)
 def read_organizations(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -69,7 +71,11 @@ def create_organization(
     return organization
 
 
-@router.get("/{organization_id}", response_model=OrganizationPublic, dependencies=[Depends(require_admin)])
+@router.get(
+    "/{organization_id}",
+    response_model=OrganizationPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_organization(
     session: SessionDep, _current_user: CurrentUser, organization_id: uuid.UUID
 ) -> Any:

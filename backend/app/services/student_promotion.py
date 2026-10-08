@@ -310,9 +310,7 @@ class StudentPromotionService:
         ).first()
 
         status = (
-            StudentStatus(academic_status)
-            if academic_status
-            else StudentStatus.regular
+            StudentStatus(academic_status) if academic_status else StudentStatus.regular
         )
 
         if enrollment is None:

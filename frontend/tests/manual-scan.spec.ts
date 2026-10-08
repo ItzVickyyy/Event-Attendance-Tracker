@@ -217,7 +217,9 @@ const test = base.extend<{
               })
               return
             }
-            const scanBody = (request.postData ? JSON.parse(request.postData) : {}) as Record<string, unknown>
+            const scanBody = (
+              request.postData ? JSON.parse(request.postData) : {}
+            ) as Record<string, unknown>
             const authHeader = Object.entries(request.headers).find(
               ([k]) => k.toLowerCase() === "authorization",
             )
@@ -280,23 +282,23 @@ async function setToken(
 test.describe("Manual attendance scan", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
-async function seedActiveSession(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    localStorage.setItem(
-      "attendance-active-session:evt-1",
-      JSON.stringify({
-        id: "session-1",
-        event_id: "evt-1",
-        session_date: "2026-01-01",
-        name: "Morning Session",
-        session_type: "TIME_IN",
-        status: "OPEN",
-        display_order: 1,
-        is_active: true,
-      }),
-    )
-  })
-}
+  async function seedActiveSession(page: Page): Promise<void> {
+    await page.evaluate(() => {
+      localStorage.setItem(
+        "attendance-active-session:evt-1",
+        JSON.stringify({
+          id: "session-1",
+          event_id: "evt-1",
+          session_date: "2026-01-01",
+          name: "Morning Session",
+          session_type: "TIME_IN",
+          status: "OPEN",
+          display_order: 1,
+          is_active: true,
+        }),
+      )
+    })
+  }
 
   test("single student search and successful manual scan", async ({
     page,
@@ -564,7 +566,9 @@ async function seedActiveSession(page: Page): Promise<void> {
     )
     await page.getByRole("button", { name: "Search" }).click()
 
-    await expect(page.getByText("Already recorded", { exact: true })).toBeVisible({
+    await expect(
+      page.getByText("Already recorded", { exact: true }),
+    ).toBeVisible({
       timeout: 10000,
     })
 

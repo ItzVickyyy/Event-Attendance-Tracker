@@ -1,3 +1,5 @@
+import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
+import type { LucideIcon } from "lucide-react"
 import {
   Activity,
   CalendarDays,
@@ -14,8 +16,6 @@ import {
   Users,
   UsersRound,
 } from "lucide-react"
-import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
-import type { LucideIcon } from "lucide-react"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -45,7 +45,14 @@ const navigationGroups: NavigationGroup[] = [
   },
   {
     title: "Developer",
-    items: [{ title: "System Dashboard", path: "/developer", icon: Gauge, developerOnly: true }],
+    items: [
+      {
+        title: "System Dashboard",
+        path: "/developer",
+        icon: Gauge,
+        developerOnly: true,
+      },
+    ],
   },
   {
     title: "Operations",
@@ -61,11 +68,35 @@ const navigationGroups: NavigationGroup[] = [
     items: [
       { title: "Overview", path: "/administration", icon: ShieldCheck },
       { title: "User Accounts", path: "/administration/users", icon: Users },
-      { title: "Class Representatives", path: "/administration/class-representatives", icon: UserRoundCheck, superAdminOnly: true },
-      { title: "Attendance Corrections", path: "/administration/attendance", icon: ClipboardCheck },
-      { title: "Scanner Permissions", path: "/administration/scanner-permissions", icon: KeyRound, superAdminOnly: true },
-      { title: "Audit Logs", path: "/administration/audit-logs", icon: Activity, superAdminOrDeveloper: true },
-      { title: "System Settings", path: "/settings", icon: Settings, superAdminOnly: true },
+      {
+        title: "Class Representatives",
+        path: "/administration/class-representatives",
+        icon: UserRoundCheck,
+        superAdminOnly: true,
+      },
+      {
+        title: "Attendance Corrections",
+        path: "/administration/attendance",
+        icon: ClipboardCheck,
+      },
+      {
+        title: "Scanner Permissions",
+        path: "/administration/scanner-permissions",
+        icon: KeyRound,
+        superAdminOnly: true,
+      },
+      {
+        title: "Audit Logs",
+        path: "/administration/audit-logs",
+        icon: Activity,
+        superAdminOrDeveloper: true,
+      },
+      {
+        title: "System Settings",
+        path: "/settings",
+        icon: Settings,
+        superAdminOnly: true,
+      },
     ],
   },
   {
@@ -75,7 +106,12 @@ const navigationGroups: NavigationGroup[] = [
 ]
 
 function canSeeOperationalNavigation(role?: string, isSuperuser?: boolean) {
-  return isSuperuser || role === "admin" || role === "super_admin" || role === "class_representative"
+  return (
+    isSuperuser ||
+    role === "admin" ||
+    role === "super_admin" ||
+    role === "class_representative"
+  )
 }
 
 function canSeeAdministration(role?: string, isSuperuser?: boolean) {
@@ -85,10 +121,14 @@ function canSeeAdministration(role?: string, isSuperuser?: boolean) {
 export function ReconstructionNavigation() {
   const { user } = useAuth()
   const { isMobile, setOpenMobile } = useSidebar()
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
   const role = user?.role
   const isSuperuser = Boolean(user?.is_superuser)
-  const scannerAllowed = Boolean(isSuperuser || role === "admin" || role === "super_admin" || user?.can_scan)
+  const scannerAllowed = Boolean(
+    isSuperuser || role === "admin" || role === "super_admin" || user?.can_scan,
+  )
   const operationalAllowed = canSeeOperationalNavigation(role, isSuperuser)
   const administrationAllowed = canSeeAdministration(role, isSuperuser)
   const isSuperAdmin = Boolean(isSuperuser || role === "super_admin")
@@ -100,7 +140,8 @@ export function ReconstructionNavigation() {
       ...group,
       items: group.items.filter((item) => {
         if (item.developerOnly) return Boolean(user?.is_developer)
-        if (item.superAdminOrDeveloper) return Boolean(isSuperAdmin || user?.is_developer)
+        if (item.superAdminOrDeveloper)
+          return Boolean(isSuperAdmin || user?.is_developer)
         if (item.superAdminOnly && !isSuperAdmin) return false
         if (item.path.startsWith("/administration")) {
           if (!administrationAllowed) return false
@@ -110,7 +151,11 @@ export function ReconstructionNavigation() {
         if (item.path === "/settings") return isSuperAdmin
         if (item.path === "/scanner") return scannerAllowed && !classRep
         if (classRep && item.path === "/events") return false
-        if (item.path === "/events" || item.path === "/records" || item.path === "/sections") {
+        if (
+          item.path === "/events" ||
+          item.path === "/records" ||
+          item.path === "/sections"
+        ) {
           return operationalAllowed
         }
         return true
@@ -131,10 +176,16 @@ export function ReconstructionNavigation() {
                 const isActive =
                   item.path === "/administration"
                     ? pathname === item.path
-                    : pathname === item.path || pathname.startsWith(`${item.path}/`)
+                    : pathname === item.path ||
+                      pathname.startsWith(`${item.path}/`)
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title} className="min-h-10">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.title}
+                      className="min-h-10"
+                    >
                       <RouterLink
                         to={item.path}
                         onClick={() => isMobile && setOpenMobile(false)}

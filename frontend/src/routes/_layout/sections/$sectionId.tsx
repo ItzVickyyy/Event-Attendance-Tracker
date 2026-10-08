@@ -3,7 +3,9 @@ import { SectionDetailsPage } from "@/components/Sections/SectionDetailsPage"
 
 export const Route = createFileRoute("/_layout/sections/$sectionId")({
   component: SectionDetails,
-  head: () => ({ meta: [{ title: "Section Details - Event Attendance Tracker" }] }),
+  head: () => ({
+    meta: [{ title: "Section Details - Event Attendance Tracker" }],
+  }),
 })
 
 function SectionDetails() {

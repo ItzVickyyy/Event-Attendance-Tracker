@@ -99,7 +99,11 @@ class User(UserBase, table=True):
         unique=True,
         index=True,
         max_length=20,
-        sa_column_kwargs={"server_default": text("'USR-' || LPAD(nextval('user_reference_code_seq'::regclass)::text, 6, '0')")},
+        sa_column_kwargs={
+            "server_default": text(
+                "'USR-' || LPAD(nextval('user_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
@@ -264,7 +268,11 @@ class Organization(OrganizationBase, table=True):
         unique=True,
         index=True,
         max_length=20,
-        sa_column_kwargs={"server_default": text("'ORG-' || LPAD(nextval('organization_reference_code_seq'::regclass)::text, 6, '0')")},
+        sa_column_kwargs={
+            "server_default": text(
+                "'ORG-' || LPAD(nextval('organization_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
@@ -318,7 +326,11 @@ class AcademicProgram(AcademicProgramBase, table=True):
         unique=True,
         index=True,
         max_length=20,
-        sa_column_kwargs={"server_default": text("'PRG-' || LPAD(nextval('academic_program_reference_code_seq'::regclass)::text, 6, '0')")},
+        sa_column_kwargs={
+            "server_default": text(
+                "'PRG-' || LPAD(nextval('academic_program_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
@@ -397,7 +409,11 @@ class AcademicSection(AcademicSectionBase, table=True):
         unique=True,
         index=True,
         max_length=20,
-        sa_column_kwargs={"server_default": text("'SEC-' || LPAD(nextval('academic_section_reference_code_seq'::regclass)::text, 6, '0')")},
+        sa_column_kwargs={
+            "server_default": text(
+                "'SEC-' || LPAD(nextval('academic_section_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
@@ -548,7 +564,11 @@ class Student(StudentBase, table=True):
         unique=True,
         index=True,
         max_length=20,
-        sa_column_kwargs={"server_default": text("'STU-' || LPAD(nextval('student_reference_code_seq'::regclass)::text, 6, '0')")},
+        sa_column_kwargs={
+            "server_default": text(
+                "'STU-' || LPAD(nextval('student_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
@@ -875,7 +895,11 @@ class AttendanceSession(AttendanceSessionBase, table=True):
         unique=True,
         index=True,
         max_length=20,
-        sa_column_kwargs={"server_default": text("'SES-' || LPAD(nextval('attendance_session_reference_code_seq'::regclass)::text, 6, '0')")},
+        sa_column_kwargs={
+            "server_default": text(
+                "'SES-' || LPAD(nextval('attendance_session_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
@@ -913,7 +937,11 @@ class Event(EventBase, table=True):
         unique=True,
         index=True,
         max_length=20,
-        sa_column_kwargs={"server_default": text("'EVT-' || LPAD(nextval('event_reference_code_seq'::regclass)::text, 6, '0')")},
+        sa_column_kwargs={
+            "server_default": text(
+                "'EVT-' || LPAD(nextval('event_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
     )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
@@ -1274,7 +1302,9 @@ class ImportBatchBase(SQLModel):
     )
     status: ImportBatchStatus = Field(default=ImportBatchStatus.pending)
     notes: str | None = Field(default=None, max_length=2000)
-    validation_summary: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    validation_summary: dict | None = Field(
+        default=None, sa_column=Column(JSON, nullable=True)
+    )
 
 
 class ImportBatchCreate(ImportBatchBase):
@@ -1289,7 +1319,9 @@ class ImportBatchUpdate(SQLModel):
     imported_by: uuid.UUID | None = None
     status: ImportBatchStatus | None = None
     notes: str | None = Field(default=None, max_length=2000)
-    validation_summary: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    validation_summary: dict | None = Field(
+        default=None, sa_column=Column(JSON, nullable=True)
+    )
 
 
 class ImportBatchPublic(ImportBatchBase):

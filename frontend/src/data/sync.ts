@@ -242,10 +242,15 @@ async function syncOneQueuedRecord(
       response.data?.attendance?.time_out ??
       response.data?.attendance?.created_at ??
       undefined
-    await markSynced(record.id, { serverTimestamp: serverTimestamp ?? undefined })
+    await markSynced(record.id, {
+      serverTimestamp: serverTimestamp ?? undefined,
+    })
     return "synced"
   } catch (error) {
-    if (!(error instanceof AxiosError) || error.response?.status === undefined) {
+    if (
+      !(error instanceof AxiosError) ||
+      error.response?.status === undefined
+    ) {
       await markFailed(record.id, "network-error", "RETRY")
       return "retry"
     }
@@ -255,7 +260,11 @@ async function syncOneQueuedRecord(
       return "duplicate"
     }
     if (httpStatus === 401) return "unauthorized"
-    await markFailed(record.id, `http-${httpStatus}`, httpStatus >= 500 ? "RETRY" : "REJECTED")
+    await markFailed(
+      record.id,
+      `http-${httpStatus}`,
+      httpStatus >= 500 ? "RETRY" : "REJECTED",
+    )
     return httpStatus >= 500 ? "retry" : "failed"
   }
 }

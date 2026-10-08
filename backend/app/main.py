@@ -61,7 +61,9 @@ def _persist_audit_log(
     duration_ms: float,
 ) -> None:
     """Persist an audit entry in its own short-lived database session."""
-    target_engine = (test_engine or engine) if settings.FASTAPI_ENV == "test" else engine
+    target_engine = (
+        (test_engine or engine) if settings.FASTAPI_ENV == "test" else engine
+    )
     with Session(target_engine) as session:
         if session.get(User, actor_id) is None:
             return
@@ -111,7 +113,7 @@ async def _audit_mutation(
             algorithms=[security.ALGORITHM],
         )
         actor_id = UUID(str(payload.get("sub")))
-    except (jwt.InvalidTokenError, ValueError, TypeError):
+    except jwt.InvalidTokenError, ValueError, TypeError:
         return
 
     # Ask Starlette to match the incoming scope against the registered routes.

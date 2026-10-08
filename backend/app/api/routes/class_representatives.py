@@ -79,7 +79,9 @@ def read_my_students(
 ) -> dict[str, Any]:
     assignment = _assignment_row(session, current_user.id, academic_year_id)
     if not assignment:
-        raise HTTPException(status_code=404, detail="No Class Representative assignment found")
+        raise HTTPException(
+            status_code=404, detail="No Class Representative assignment found"
+        )
     rows = (
         session.execute(
             text("""
@@ -94,11 +96,13 @@ def read_my_students(
               AND s.archived_at IS NULL
             ORDER BY p.last_name, p.first_name, s.student_number
         """),
-        {
-            "section_id": assignment["section_id"],
-            "academic_year_id": assignment["academic_year_id"],
-        },
-    ).mappings().all()
+            {
+                "section_id": assignment["section_id"],
+                "academic_year_id": assignment["academic_year_id"],
+            },
+        )
+        .mappings()
+        .all()
     )
     return {"data": [dict(row) for row in rows], "count": len(rows)}
 
@@ -112,7 +116,9 @@ def create_my_student(
 ) -> dict[str, Any]:
     assignment = _assignment_row(session, current_user.id)
     if not assignment:
-        raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        raise HTTPException(
+            status_code=403, detail="No Class Representative assignment found"
+        )
     required = {"student_number", "first_name", "last_name"}
     if not required.issubset(payload):
         raise HTTPException(
@@ -215,11 +221,10 @@ def create_class_representative(
         )
     if section["academic_year_id"] != year.id:
         raise HTTPException(
-            status_code=400, detail="Section does not belong to the selected academic year"
+            status_code=400,
+            detail="Section does not belong to the selected academic year",
         )
-    middle_initial = (
-        payload.middle_initial.strip() if payload.middle_initial else ""
-    )
+    middle_initial = payload.middle_initial.strip() if payload.middle_initial else ""
     full_name = " ".join(
         part
         for part in [

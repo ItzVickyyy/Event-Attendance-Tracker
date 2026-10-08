@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { academicProgramsCreateAcademicProgramData, academicProgramsCreateAcademicProgramErrors, academicProgramsCreateAcademicProgramResponses, academicProgramsDeleteAcademicProgramData, academicProgramsDeleteAcademicProgramErrors, academicProgramsDeleteAcademicProgramResponses, academicProgramsReadAcademicProgramData, academicProgramsReadAcademicProgramErrors, academicProgramsReadAcademicProgramResponses, academicProgramsReadAcademicProgramsData, academicProgramsReadAcademicProgramsErrors, academicProgramsReadAcademicProgramsResponses, academicProgramsUpdateAcademicProgramData, academicProgramsUpdateAcademicProgramErrors, academicProgramsUpdateAcademicProgramResponses, academicSectionsCreateAcademicSectionData, academicSectionsCreateAcademicSectionErrors, academicSectionsCreateAcademicSectionResponses, academicSectionsDeleteAcademicSectionData, academicSectionsDeleteAcademicSectionErrors, academicSectionsDeleteAcademicSectionResponses, academicSectionsReadAcademicSectionData, academicSectionsReadAcademicSectionErrors, academicSectionsReadAcademicSectionResponses, academicSectionsReadAcademicSectionsData, academicSectionsReadAcademicSectionsErrors, academicSectionsReadAcademicSectionsResponses, academicSectionsUpdateAcademicSectionData, academicSectionsUpdateAcademicSectionErrors, academicSectionsUpdateAcademicSectionResponses, attendanceCorrectionsCreateAttendanceCorrectionData, attendanceCorrectionsCreateAttendanceCorrectionErrors, attendanceCorrectionsCreateAttendanceCorrectionResponses, attendanceCorrectionsReadAttendanceCorrectionData, attendanceCorrectionsReadAttendanceCorrectionErrors, attendanceCorrectionsReadAttendanceCorrectionResponses, attendanceCorrectionsReadAttendanceCorrectionsData, attendanceCorrectionsReadAttendanceCorrectionsErrors, attendanceCorrectionsReadAttendanceCorrectionsResponses, attendanceCreateAttendanceData, attendanceCreateAttendanceErrors, attendanceCreateAttendanceResponses, attendanceDeleteAttendanceData, attendanceDeleteAttendanceErrors, attendanceDeleteAttendanceResponses, attendanceReadAttendanceData, attendanceReadAttendanceErrors, attendanceReadAttendanceResponses, attendanceReadAttendancesData, attendanceReadAttendancesErrors, attendanceReadAttendancesResponses, attendanceScanAttendanceData, attendanceScanAttendanceErrors, attendanceScanAttendanceManualData, attendanceScanAttendanceManualErrors, attendanceScanAttendanceManualResponses, attendanceScanAttendanceResponses, attendanceUpdateAttendanceData, attendanceUpdateAttendanceErrors, attendanceUpdateAttendanceResponses, attendeeCredentialsCreateAttendeeCredentialData, attendeeCredentialsCreateAttendeeCredentialErrors, attendeeCredentialsCreateAttendeeCredentialResponses, attendeeCredentialsDeleteAttendeeCredentialData, attendeeCredentialsDeleteAttendeeCredentialErrors, attendeeCredentialsDeleteAttendeeCredentialResponses, attendeeCredentialsLookupCredentialData, attendeeCredentialsLookupCredentialErrors, attendeeCredentialsLookupCredentialResponses, attendeeCredentialsReadAttendeeCredentialData, attendeeCredentialsReadAttendeeCredentialErrors, attendeeCredentialsReadAttendeeCredentialResponses, attendeeCredentialsReadAttendeeCredentialsData, attendeeCredentialsReadAttendeeCredentialsErrors, attendeeCredentialsReadAttendeeCredentialsResponses, attendeeCredentialsUpdateAttendeeCredentialData, attendeeCredentialsUpdateAttendeeCredentialErrors, attendeeCredentialsUpdateAttendeeCredentialResponses, attendeeRelationshipsCreateAttendeeRelationshipData, attendeeRelationshipsCreateAttendeeRelationshipErrors, attendeeRelationshipsCreateAttendeeRelationshipResponses, attendeeRelationshipsDeleteAttendeeRelationshipData, attendeeRelationshipsDeleteAttendeeRelationshipErrors, attendeeRelationshipsDeleteAttendeeRelationshipResponses, attendeeRelationshipsReadAttendeeRelationshipData, attendeeRelationshipsReadAttendeeRelationshipErrors, attendeeRelationshipsReadAttendeeRelationshipResponses, attendeeRelationshipsReadAttendeeRelationshipsData, attendeeRelationshipsReadAttendeeRelationshipsErrors, attendeeRelationshipsReadAttendeeRelationshipsResponses, attendeeRelationshipsUpdateAttendeeRelationshipData, attendeeRelationshipsUpdateAttendeeRelationshipErrors, attendeeRelationshipsUpdateAttendeeRelationshipResponses, attendeesCreateAttendeeData, attendeesCreateAttendeeErrors, attendeesCreateAttendeeResponses, attendeesDeleteAttendeeData, attendeesDeleteAttendeeErrors, attendeesDeleteAttendeeResponses, attendeesReadAttendeeData, attendeesReadAttendeeErrors, attendeesReadAttendeeResponses, attendeesReadAttendeesData, attendeesReadAttendeesErrors, attendeesReadAttendeesResponses, attendeesUpdateAttendeeData, attendeesUpdateAttendeeErrors, attendeesUpdateAttendeeResponses, eventRegistrationsCreateEventRegistrationData, eventRegistrationsCreateEventRegistrationErrors, eventRegistrationsCreateEventRegistrationResponses, eventRegistrationsDeleteEventRegistrationData, eventRegistrationsDeleteEventRegistrationErrors, eventRegistrationsDeleteEventRegistrationResponses, eventRegistrationsReadEventRegistrationData, eventRegistrationsReadEventRegistrationErrors, eventRegistrationsReadEventRegistrationResponses, eventRegistrationsReadEventRegistrationsData, eventRegistrationsReadEventRegistrationsErrors, eventRegistrationsReadEventRegistrationsResponses, eventRegistrationsUpdateEventRegistrationData, eventRegistrationsUpdateEventRegistrationErrors, eventRegistrationsUpdateEventRegistrationResponses, eventsCreateEventData, eventsCreateEventErrors, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventRosterData, eventsReadEventRosterErrors, eventsReadEventRosterResponses, eventsReadEventsData, eventsReadEventsErrors, eventsReadEventsResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, importBatchesCreateImportBatchData, importBatchesCreateImportBatchErrors, importBatchesCreateImportBatchResponses, importBatchesDeleteImportBatchData, importBatchesDeleteImportBatchErrors, importBatchesDeleteImportBatchResponses, importBatchesPromoteImportBatchData, importBatchesPromoteImportBatchErrors, importBatchesPromoteImportBatchResponses, importBatchesReadImportBatchData, importBatchesReadImportBatchErrors, importBatchesReadImportBatchesData, importBatchesReadImportBatchesErrors, importBatchesReadImportBatchesResponses, importBatchesReadImportBatchResponses, importBatchesUpdateImportBatchData, importBatchesUpdateImportBatchErrors, importBatchesUpdateImportBatchResponses, importBatchesUploadImportBatchWorkbookData, importBatchesUploadImportBatchWorkbookErrors, importBatchesUploadImportBatchWorkbookResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, organizationsCreateOrganizationData, organizationsCreateOrganizationErrors, organizationsCreateOrganizationResponses, organizationsDeleteOrganizationData, organizationsDeleteOrganizationErrors, organizationsDeleteOrganizationResponses, organizationsReadOrganizationData, organizationsReadOrganizationErrors, organizationsReadOrganizationResponses, organizationsReadOrganizationsData, organizationsReadOrganizationsErrors, organizationsReadOrganizationsResponses, organizationsUpdateOrganizationData, organizationsUpdateOrganizationErrors, organizationsUpdateOrganizationResponses, peopleCreatePersonData, peopleCreatePersonErrors, peopleCreatePersonResponses, peopleDeletePersonData, peopleDeletePersonErrors, peopleDeletePersonResponses, peopleReadPeopleData, peopleReadPeopleErrors, peopleReadPeopleResponses, peopleReadPersonData, peopleReadPersonErrors, peopleReadPersonResponses, peopleUpdatePersonData, peopleUpdatePersonErrors, peopleUpdatePersonResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, studentsCreateStudentData, studentsCreateStudentErrors, studentsCreateStudentResponses, studentsDeleteStudentData, studentsDeleteStudentErrors, studentsDeleteStudentResponses, studentsReadStudentData, studentsReadStudentErrors, studentsReadStudentResponses, studentsReadStudentsData, studentsReadStudentsErrors, studentsReadStudentsResponses, studentsUpdateStudentData, studentsUpdateStudentErrors, studentsUpdateStudentResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
+import type { academicCatalogClearSectionMajorData, academicCatalogClearSectionMajorErrors, academicCatalogClearSectionMajorResponses, academicCatalogReadMajorsData, academicCatalogReadMajorsErrors, academicCatalogReadMajorsResponses, academicCatalogReadSectionMajorData, academicCatalogReadSectionMajorErrors, academicCatalogReadSectionMajorResponses, academicCatalogSetSectionMajorData, academicCatalogSetSectionMajorErrors, academicCatalogSetSectionMajorResponses, academicProgramsCreateAcademicProgramData, academicProgramsCreateAcademicProgramErrors, academicProgramsCreateAcademicProgramResponses, academicProgramsDeleteAcademicProgramData, academicProgramsDeleteAcademicProgramErrors, academicProgramsDeleteAcademicProgramResponses, academicProgramsReadAcademicProgramData, academicProgramsReadAcademicProgramErrors, academicProgramsReadAcademicProgramResponses, academicProgramsReadAcademicProgramsData, academicProgramsReadAcademicProgramsErrors, academicProgramsReadAcademicProgramsResponses, academicProgramsUpdateAcademicProgramData, academicProgramsUpdateAcademicProgramErrors, academicProgramsUpdateAcademicProgramResponses, academicRegistryCreateAcademicYearData, academicRegistryCreateAcademicYearErrors, academicRegistryCreateAcademicYearResponses, academicRegistryCreateEnrollmentData, academicRegistryCreateEnrollmentErrors, academicRegistryCreateEnrollmentResponses, academicRegistryCreateSectionData, academicRegistryCreateSectionErrors, academicRegistryCreateSectionResponses, academicRegistryCreateStudentInSectionData, academicRegistryCreateStudentInSectionErrors, academicRegistryCreateStudentInSectionResponses, academicRegistryReadAcademicYearsData, academicRegistryReadAcademicYearsResponses, academicRegistryReadSectionsData, academicRegistryReadSectionsErrors, academicRegistryReadSectionsResponses, academicRegistryReadSectionStudentsData, academicRegistryReadSectionStudentsErrors, academicRegistryReadSectionStudentsResponses, academicRegistryReadStudentDetailsData, academicRegistryReadStudentDetailsErrors, academicRegistryReadStudentDetailsResponses, academicRegistrySetCurrentAcademicYearData, academicRegistrySetCurrentAcademicYearErrors, academicRegistrySetCurrentAcademicYearResponses, academicRegistryUpdateEnrollmentData, academicRegistryUpdateEnrollmentErrors, academicRegistryUpdateEnrollmentResponses, academicRegistryUpdateSectionData, academicRegistryUpdateSectionErrors, academicRegistryUpdateSectionResponses, academicRegistryUpdateStudentDetailsData, academicRegistryUpdateStudentDetailsErrors, academicRegistryUpdateStudentDetailsResponses, academicSectionsCreateAcademicSectionData, academicSectionsCreateAcademicSectionErrors, academicSectionsCreateAcademicSectionResponses, academicSectionsDeleteAcademicSectionData, academicSectionsDeleteAcademicSectionErrors, academicSectionsDeleteAcademicSectionResponses, academicSectionsExportAcademicSectionDocxData, academicSectionsExportAcademicSectionDocxErrors, academicSectionsExportAcademicSectionDocxResponses, academicSectionsExportAcademicSectionXlsxData, academicSectionsExportAcademicSectionXlsxErrors, academicSectionsExportAcademicSectionXlsxResponses, academicSectionsReadAcademicSectionData, academicSectionsReadAcademicSectionErrors, academicSectionsReadAcademicSectionResponses, academicSectionsReadAcademicSectionsData, academicSectionsReadAcademicSectionsErrors, academicSectionsReadAcademicSectionsResponses, academicSectionsUpdateAcademicSectionData, academicSectionsUpdateAcademicSectionErrors, academicSectionsUpdateAcademicSectionResponses, attendanceCorrectionsCreateAttendanceCorrectionData, attendanceCorrectionsCreateAttendanceCorrectionErrors, attendanceCorrectionsCreateAttendanceCorrectionResponses, attendanceCorrectionsReadAttendanceCorrectionData, attendanceCorrectionsReadAttendanceCorrectionErrors, attendanceCorrectionsReadAttendanceCorrectionResponses, attendanceCorrectionsReadAttendanceCorrectionsData, attendanceCorrectionsReadAttendanceCorrectionsErrors, attendanceCorrectionsReadAttendanceCorrectionsResponses, attendanceCreateAttendanceData, attendanceCreateAttendanceErrors, attendanceCreateAttendanceResponses, attendanceDeleteAttendanceData, attendanceDeleteAttendanceErrors, attendanceDeleteAttendanceResponses, attendanceExportAttendancesData, attendanceExportAttendancesErrors, attendanceExportAttendancesResponses, attendanceReadAttendanceData, attendanceReadAttendanceErrors, attendanceReadAttendanceResponses, attendanceReadAttendancesData, attendanceReadAttendancesErrors, attendanceReadAttendancesResponses, attendanceScanAttendanceData, attendanceScanAttendanceErrors, attendanceScanAttendanceManualData, attendanceScanAttendanceManualErrors, attendanceScanAttendanceManualResponses, attendanceScanAttendanceResponses, attendanceSessionsActivateAttendanceSessionData, attendanceSessionsActivateAttendanceSessionErrors, attendanceSessionsActivateAttendanceSessionResponses, attendanceSessionsCloseAttendanceSessionData, attendanceSessionsCloseAttendanceSessionErrors, attendanceSessionsCloseAttendanceSessionResponses, attendanceSessionsCreateAttendanceSessionData, attendanceSessionsCreateAttendanceSessionErrors, attendanceSessionsCreateAttendanceSessionResponses, attendanceSessionsDeleteAttendanceSessionData, attendanceSessionsDeleteAttendanceSessionErrors, attendanceSessionsDeleteAttendanceSessionResponses, attendanceSessionsReadActiveAttendanceSessionData, attendanceSessionsReadActiveAttendanceSessionErrors, attendanceSessionsReadActiveAttendanceSessionResponses, attendanceSessionsReadAttendanceSessionData, attendanceSessionsReadAttendanceSessionErrors, attendanceSessionsReadAttendanceSessionResponses, attendanceSessionsReadAttendanceSessionsData, attendanceSessionsReadAttendanceSessionsErrors, attendanceSessionsReadAttendanceSessionsResponses, attendanceSessionsUpdateAttendanceSessionData, attendanceSessionsUpdateAttendanceSessionErrors, attendanceSessionsUpdateAttendanceSessionResponses, attendanceUpdateAttendanceData, attendanceUpdateAttendanceErrors, attendanceUpdateAttendanceResponses, attendeeCredentialsCreateAttendeeCredentialData, attendeeCredentialsCreateAttendeeCredentialErrors, attendeeCredentialsCreateAttendeeCredentialResponses, attendeeCredentialsDeleteAttendeeCredentialData, attendeeCredentialsDeleteAttendeeCredentialErrors, attendeeCredentialsDeleteAttendeeCredentialResponses, attendeeCredentialsLookupCredentialData, attendeeCredentialsLookupCredentialErrors, attendeeCredentialsLookupCredentialResponses, attendeeCredentialsPublicLookupCredentialData, attendeeCredentialsPublicLookupCredentialErrors, attendeeCredentialsPublicLookupCredentialResponses, attendeeCredentialsReadAttendeeCredentialData, attendeeCredentialsReadAttendeeCredentialErrors, attendeeCredentialsReadAttendeeCredentialResponses, attendeeCredentialsReadAttendeeCredentialsData, attendeeCredentialsReadAttendeeCredentialsErrors, attendeeCredentialsReadAttendeeCredentialsResponses, attendeeCredentialsUpdateAttendeeCredentialData, attendeeCredentialsUpdateAttendeeCredentialErrors, attendeeCredentialsUpdateAttendeeCredentialResponses, attendeeRelationshipsCreateAttendeeRelationshipData, attendeeRelationshipsCreateAttendeeRelationshipErrors, attendeeRelationshipsCreateAttendeeRelationshipResponses, attendeeRelationshipsDeleteAttendeeRelationshipData, attendeeRelationshipsDeleteAttendeeRelationshipErrors, attendeeRelationshipsDeleteAttendeeRelationshipResponses, attendeeRelationshipsReadAttendeeRelationshipData, attendeeRelationshipsReadAttendeeRelationshipErrors, attendeeRelationshipsReadAttendeeRelationshipResponses, attendeeRelationshipsReadAttendeeRelationshipsData, attendeeRelationshipsReadAttendeeRelationshipsErrors, attendeeRelationshipsReadAttendeeRelationshipsResponses, attendeeRelationshipsUpdateAttendeeRelationshipData, attendeeRelationshipsUpdateAttendeeRelationshipErrors, attendeeRelationshipsUpdateAttendeeRelationshipResponses, attendeesCreateAttendeeData, attendeesCreateAttendeeErrors, attendeesCreateAttendeeResponses, attendeesDeleteAttendeeData, attendeesDeleteAttendeeErrors, attendeesDeleteAttendeeResponses, attendeesReadAttendeeData, attendeesReadAttendeeErrors, attendeesReadAttendeeResponses, attendeesReadAttendeesData, attendeesReadAttendeesErrors, attendeesReadAttendeesResponses, attendeesUpdateAttendeeData, attendeesUpdateAttendeeErrors, attendeesUpdateAttendeeResponses, classRepresentativesCreateClassRepresentativeData, classRepresentativesCreateClassRepresentativeErrors, classRepresentativesCreateClassRepresentativeResponses, classRepresentativesCreateMyStudentData, classRepresentativesCreateMyStudentErrors, classRepresentativesCreateMyStudentResponses, classRepresentativesListClassRepresentativesData, classRepresentativesListClassRepresentativesResponses, classRepresentativesReadMyAssignmentData, classRepresentativesReadMyAssignmentErrors, classRepresentativesReadMyAssignmentResponses, classRepresentativesReadMyStudentsData, classRepresentativesReadMyStudentsErrors, classRepresentativesReadMyStudentsResponses, developerReadAuditLogsData, developerReadAuditLogsErrors, developerReadAuditLogsResponses, developerReadSystemDiagnosticsData, developerReadSystemDiagnosticsResponses, developerReadSystemHealthData, developerReadSystemHealthResponses, eventRegistrationsCreateEventRegistrationData, eventRegistrationsCreateEventRegistrationErrors, eventRegistrationsCreateEventRegistrationResponses, eventRegistrationsDeleteEventRegistrationData, eventRegistrationsDeleteEventRegistrationErrors, eventRegistrationsDeleteEventRegistrationResponses, eventRegistrationsReadEventRegistrationData, eventRegistrationsReadEventRegistrationErrors, eventRegistrationsReadEventRegistrationResponses, eventRegistrationsReadEventRegistrationsData, eventRegistrationsReadEventRegistrationsErrors, eventRegistrationsReadEventRegistrationsResponses, eventRegistrationsUpdateEventRegistrationData, eventRegistrationsUpdateEventRegistrationErrors, eventRegistrationsUpdateEventRegistrationResponses, eventsCreateEventData, eventsCreateEventErrors, eventsCreateEventResponses, eventsDeleteEventData, eventsDeleteEventErrors, eventsDeleteEventResponses, eventsReadEventData, eventsReadEventErrors, eventsReadEventResponses, eventsReadEventRosterData, eventsReadEventRosterErrors, eventsReadEventRosterResponses, eventsReadEventsData, eventsReadEventsErrors, eventsReadEventsResponses, eventsUpdateEventData, eventsUpdateEventErrors, eventsUpdateEventResponses, importBatchesCreateImportBatchData, importBatchesCreateImportBatchErrors, importBatchesCreateImportBatchResponses, importBatchesDeleteImportBatchData, importBatchesDeleteImportBatchErrors, importBatchesDeleteImportBatchResponses, importBatchesDownloadCsvTemplateData, importBatchesDownloadCsvTemplateResponses, importBatchesDownloadXlsxTemplateData, importBatchesDownloadXlsxTemplateResponses, importBatchesPromoteImportBatchData, importBatchesPromoteImportBatchErrors, importBatchesPromoteImportBatchResponses, importBatchesReadImportBatchData, importBatchesReadImportBatchErrors, importBatchesReadImportBatchesData, importBatchesReadImportBatchesErrors, importBatchesReadImportBatchesResponses, importBatchesReadImportBatchRecordsData, importBatchesReadImportBatchRecordsErrors, importBatchesReadImportBatchRecordsResponses, importBatchesReadImportBatchResponses, importBatchesUpdateImportBatchData, importBatchesUpdateImportBatchErrors, importBatchesUpdateImportBatchResponses, importBatchesUploadImportBatchWorkbookData, importBatchesUploadImportBatchWorkbookErrors, importBatchesUploadImportBatchWorkbookResponses, loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginRecoverPasswordData, loginRecoverPasswordErrors, loginRecoverPasswordHtmlContentData, loginRecoverPasswordHtmlContentErrors, loginRecoverPasswordHtmlContentResponses, loginRecoverPasswordResponses, loginResetPasswordData, loginResetPasswordErrors, loginResetPasswordResponses, loginTestTokenData, loginTestTokenResponses, organizationsCreateOrganizationData, organizationsCreateOrganizationErrors, organizationsCreateOrganizationResponses, organizationsDeleteOrganizationData, organizationsDeleteOrganizationErrors, organizationsDeleteOrganizationResponses, organizationsReadOrganizationData, organizationsReadOrganizationErrors, organizationsReadOrganizationResponses, organizationsReadOrganizationsData, organizationsReadOrganizationsErrors, organizationsReadOrganizationsResponses, organizationsUpdateOrganizationData, organizationsUpdateOrganizationErrors, organizationsUpdateOrganizationResponses, peopleCreatePersonData, peopleCreatePersonErrors, peopleCreatePersonResponses, peopleDeletePersonData, peopleDeletePersonErrors, peopleDeletePersonResponses, peopleReadPeopleData, peopleReadPeopleErrors, peopleReadPeopleResponses, peopleReadPersonData, peopleReadPersonErrors, peopleReadPersonResponses, peopleUpdatePersonData, peopleUpdatePersonErrors, peopleUpdatePersonResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, publicStudentQrLookupStudentQrData, publicStudentQrLookupStudentQrErrors, publicStudentQrLookupStudentQrResponses, studentsCreateStudentData, studentsCreateStudentErrors, studentsCreateStudentResponses, studentsDeleteStudentData, studentsDeleteStudentErrors, studentsDeleteStudentResponses, studentsReadStudentData, studentsReadStudentErrors, studentsReadStudentResponses, studentsReadStudentsData, studentsReadStudentsErrors, studentsReadStudentsResponses, studentsUpdateStudentData, studentsUpdateStudentErrors, studentsUpdateStudentResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersRegisterUserData, usersRegisterUserErrors, usersRegisterUserResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses, utilsHealthCheckData, utilsHealthCheckResponses, utilsTestEmailData, utilsTestEmailErrors, utilsTestEmailResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -36,7 +36,7 @@ export class LoginService {
             }
         });
     }
-    
+
     /**
      * Test Token
      *
@@ -50,7 +50,7 @@ export class LoginService {
             ...options
         });
     }
-    
+
     /**
      * Recover Password
      *
@@ -63,7 +63,7 @@ export class LoginService {
             ...options
         });
     }
-    
+
     /**
      * Reset Password
      *
@@ -80,7 +80,7 @@ export class LoginService {
             }
         });
     }
-    
+
     /**
      * Recover Password Html Content
      *
@@ -91,6 +91,50 @@ export class LoginService {
             responseType: 'text',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/password-recovery-html-content/{email}',
+            ...options
+        });
+    }
+}
+
+export class DeveloperService {
+    /**
+     * Read System Health
+     *
+     * Return read-only runtime and database health for Developers.
+     */
+    public static readSystemHealth<ThrowOnError extends boolean = true>(options?: Options<developerReadSystemHealthData, ThrowOnError>) {
+        return (options?.client ?? client).get<developerReadSystemHealthResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/developer/health',
+            ...options
+        });
+    }
+
+    /**
+     * Read System Diagnostics
+     *
+     * Return aggregate counts only. No user or student records are exposed.
+     */
+    public static readSystemDiagnostics<ThrowOnError extends boolean = true>(options?: Options<developerReadSystemDiagnosticsData, ThrowOnError>) {
+        return (options?.client ?? client).get<developerReadSystemDiagnosticsResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/developer/diagnostics',
+            ...options
+        });
+    }
+
+    /**
+     * Read Audit Logs
+     *
+     * Return paginated audit entries with filters and no payload data.
+     */
+    public static readAuditLogs<ThrowOnError extends boolean = true>(options?: Options<developerReadAuditLogsData, ThrowOnError>) {
+        return (options?.client ?? client).get<developerReadAuditLogsResponses, developerReadAuditLogsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/developer/audit-logs',
             ...options
         });
     }
@@ -110,7 +154,7 @@ export class UsersService {
             ...options
         });
     }
-    
+
     /**
      * Create User
      *
@@ -128,7 +172,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Delete User Me
      *
@@ -142,7 +186,7 @@ export class UsersService {
             ...options
         });
     }
-    
+
     /**
      * Read User Me
      *
@@ -156,7 +200,7 @@ export class UsersService {
             ...options
         });
     }
-    
+
     /**
      * Update User Me
      *
@@ -174,7 +218,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Update Password Me
      *
@@ -192,7 +236,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Register User
      *
@@ -209,7 +253,7 @@ export class UsersService {
             }
         });
     }
-    
+
     /**
      * Delete User
      *
@@ -223,11 +267,11 @@ export class UsersService {
             ...options
         });
     }
-    
+
     /**
      * Read User By Id
      *
-     * Get a specific user by id.
+     * Get a specific user without leaking user existence to non-admins.
      */
     public static readUserById<ThrowOnError extends boolean = true>(options: Options<usersReadUserByIdData, ThrowOnError>) {
         return (options.client ?? client).get<usersReadUserByIdResponses, usersReadUserByIdErrors, ThrowOnError>({
@@ -237,7 +281,7 @@ export class UsersService {
             ...options
         });
     }
-    
+
     /**
      * Update User
      *
@@ -271,7 +315,7 @@ export class UtilsService {
             ...options
         });
     }
-    
+
     /**
      * Health Check
      */
@@ -296,7 +340,7 @@ export class OrganizationsService {
             ...options
         });
     }
-    
+
     /**
      * Create Organization
      */
@@ -312,7 +356,7 @@ export class OrganizationsService {
             }
         });
     }
-    
+
     /**
      * Delete Organization
      */
@@ -324,7 +368,7 @@ export class OrganizationsService {
             ...options
         });
     }
-    
+
     /**
      * Read Organization
      */
@@ -336,7 +380,7 @@ export class OrganizationsService {
             ...options
         });
     }
-    
+
     /**
      * Update Organization
      */
@@ -366,7 +410,7 @@ export class AcademicProgramsService {
             ...options
         });
     }
-    
+
     /**
      * Create Academic Program
      */
@@ -382,7 +426,7 @@ export class AcademicProgramsService {
             }
         });
     }
-    
+
     /**
      * Delete Academic Program
      */
@@ -394,7 +438,7 @@ export class AcademicProgramsService {
             ...options
         });
     }
-    
+
     /**
      * Read Academic Program
      */
@@ -406,7 +450,7 @@ export class AcademicProgramsService {
             ...options
         });
     }
-    
+
     /**
      * Update Academic Program
      */
@@ -436,7 +480,7 @@ export class AcademicSectionsService {
             ...options
         });
     }
-    
+
     /**
      * Create Academic Section
      */
@@ -452,7 +496,7 @@ export class AcademicSectionsService {
             }
         });
     }
-    
+
     /**
      * Delete Academic Section
      */
@@ -464,7 +508,7 @@ export class AcademicSectionsService {
             ...options
         });
     }
-    
+
     /**
      * Read Academic Section
      */
@@ -476,7 +520,7 @@ export class AcademicSectionsService {
             ...options
         });
     }
-    
+
     /**
      * Update Academic Section
      */
@@ -485,6 +529,258 @@ export class AcademicSectionsService {
             responseType: 'json',
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/academic-sections/{section_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Export Academic Section Xlsx
+     */
+    public static sectionsExportAcademicSectionXlsx<ThrowOnError extends boolean = true>(options: Options<academicSectionsExportAcademicSectionXlsxData, ThrowOnError>) {
+        return (options.client ?? client).get<academicSectionsExportAcademicSectionXlsxResponses, academicSectionsExportAcademicSectionXlsxErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-sections/{section_id}/export/xlsx',
+            ...options
+        });
+    }
+
+    /**
+     * Export Academic Section Docx
+     */
+    public static sectionsExportAcademicSectionDocx<ThrowOnError extends boolean = true>(options: Options<academicSectionsExportAcademicSectionDocxData, ThrowOnError>) {
+        return (options.client ?? client).get<academicSectionsExportAcademicSectionDocxResponses, academicSectionsExportAcademicSectionDocxErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-sections/{section_id}/export/docx',
+            ...options
+        });
+    }
+}
+
+export class AcademicCatalogService {
+    /**
+     * Read Majors
+     */
+    public static catalogReadMajors<ThrowOnError extends boolean = true>(options?: Options<academicCatalogReadMajorsData, ThrowOnError>) {
+        return (options?.client ?? client).get<academicCatalogReadMajorsResponses, academicCatalogReadMajorsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-catalog/majors',
+            ...options
+        });
+    }
+
+    /**
+     * Clear Section Major
+     */
+    public static catalogClearSectionMajor<ThrowOnError extends boolean = true>(options: Options<academicCatalogClearSectionMajorData, ThrowOnError>) {
+        return (options.client ?? client).delete<academicCatalogClearSectionMajorResponses, academicCatalogClearSectionMajorErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-catalog/sections/{section_id}/major',
+            ...options
+        });
+    }
+
+    /**
+     * Read Section Major
+     */
+    public static catalogReadSectionMajor<ThrowOnError extends boolean = true>(options: Options<academicCatalogReadSectionMajorData, ThrowOnError>) {
+        return (options.client ?? client).get<academicCatalogReadSectionMajorResponses, academicCatalogReadSectionMajorErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-catalog/sections/{section_id}/major',
+            ...options
+        });
+    }
+
+    /**
+     * Set Section Major
+     */
+    public static catalogSetSectionMajor<ThrowOnError extends boolean = true>(options: Options<academicCatalogSetSectionMajorData, ThrowOnError>) {
+        return (options.client ?? client).put<academicCatalogSetSectionMajorResponses, academicCatalogSetSectionMajorErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-catalog/sections/{section_id}/major',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class AcademicRegistryService {
+    /**
+     * Read Academic Years
+     */
+    public static registryReadAcademicYears<ThrowOnError extends boolean = true>(options?: Options<academicRegistryReadAcademicYearsData, ThrowOnError>) {
+        return (options?.client ?? client).get<academicRegistryReadAcademicYearsResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/academic-years',
+            ...options
+        });
+    }
+
+    /**
+     * Create Academic Year
+     */
+    public static registryCreateAcademicYear<ThrowOnError extends boolean = true>(options: Options<academicRegistryCreateAcademicYearData, ThrowOnError>) {
+        return (options.client ?? client).post<academicRegistryCreateAcademicYearResponses, academicRegistryCreateAcademicYearErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/academic-years',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Set Current Academic Year
+     */
+    public static registrySetCurrentAcademicYear<ThrowOnError extends boolean = true>(options: Options<academicRegistrySetCurrentAcademicYearData, ThrowOnError>) {
+        return (options.client ?? client).post<academicRegistrySetCurrentAcademicYearResponses, academicRegistrySetCurrentAcademicYearErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/academic-years/{academic_year_id}/set-current',
+            ...options
+        });
+    }
+
+    /**
+     * Read Sections
+     */
+    public static registryReadSections<ThrowOnError extends boolean = true>(options?: Options<academicRegistryReadSectionsData, ThrowOnError>) {
+        return (options?.client ?? client).get<academicRegistryReadSectionsResponses, academicRegistryReadSectionsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/sections',
+            ...options
+        });
+    }
+
+    /**
+     * Create Section
+     */
+    public static registryCreateSection<ThrowOnError extends boolean = true>(options: Options<academicRegistryCreateSectionData, ThrowOnError>) {
+        return (options.client ?? client).post<academicRegistryCreateSectionResponses, academicRegistryCreateSectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/sections',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Read Section Students
+     */
+    public static registryReadSectionStudents<ThrowOnError extends boolean = true>(options: Options<academicRegistryReadSectionStudentsData, ThrowOnError>) {
+        return (options.client ?? client).get<academicRegistryReadSectionStudentsResponses, academicRegistryReadSectionStudentsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/sections/{section_id}/students',
+            ...options
+        });
+    }
+
+    /**
+     * Read Student Details
+     */
+    public static registryReadStudentDetails<ThrowOnError extends boolean = true>(options: Options<academicRegistryReadStudentDetailsData, ThrowOnError>) {
+        return (options.client ?? client).get<academicRegistryReadStudentDetailsResponses, academicRegistryReadStudentDetailsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/students/{student_id}',
+            ...options
+        });
+    }
+
+    /**
+     * Update Student Details
+     */
+    public static registryUpdateStudentDetails<ThrowOnError extends boolean = true>(options: Options<academicRegistryUpdateStudentDetailsData, ThrowOnError>) {
+        return (options.client ?? client).patch<academicRegistryUpdateStudentDetailsResponses, academicRegistryUpdateStudentDetailsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/students/{student_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Create Student In Section
+     */
+    public static registryCreateStudentInSection<ThrowOnError extends boolean = true>(options: Options<academicRegistryCreateStudentInSectionData, ThrowOnError>) {
+        return (options.client ?? client).post<academicRegistryCreateStudentInSectionResponses, academicRegistryCreateStudentInSectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/students',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Create Enrollment
+     */
+    public static registryCreateEnrollment<ThrowOnError extends boolean = true>(options: Options<academicRegistryCreateEnrollmentData, ThrowOnError>) {
+        return (options.client ?? client).post<academicRegistryCreateEnrollmentResponses, academicRegistryCreateEnrollmentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/enrollments',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Update Enrollment
+     */
+    public static registryUpdateEnrollment<ThrowOnError extends boolean = true>(options: Options<academicRegistryUpdateEnrollmentData, ThrowOnError>) {
+        return (options.client ?? client).patch<academicRegistryUpdateEnrollmentResponses, academicRegistryUpdateEnrollmentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/enrollments/{enrollment_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Update Section
+     */
+    public static registryUpdateSection<ThrowOnError extends boolean = true>(options: Options<academicRegistryUpdateSectionData, ThrowOnError>) {
+        return (options.client ?? client).patch<academicRegistryUpdateSectionResponses, academicRegistryUpdateSectionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/academic-registry/sections/{section_id}',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -506,7 +802,7 @@ export class PeopleService {
             ...options
         });
     }
-    
+
     /**
      * Create Person
      */
@@ -522,7 +818,7 @@ export class PeopleService {
             }
         });
     }
-    
+
     /**
      * Delete Person
      */
@@ -534,7 +830,7 @@ export class PeopleService {
             ...options
         });
     }
-    
+
     /**
      * Read Person
      */
@@ -546,7 +842,7 @@ export class PeopleService {
             ...options
         });
     }
-    
+
     /**
      * Update Person
      */
@@ -576,7 +872,7 @@ export class StudentsService {
             ...options
         });
     }
-    
+
     /**
      * Create Student
      */
@@ -592,7 +888,7 @@ export class StudentsService {
             }
         });
     }
-    
+
     /**
      * Delete Student
      */
@@ -604,7 +900,7 @@ export class StudentsService {
             ...options
         });
     }
-    
+
     /**
      * Read Student
      */
@@ -616,7 +912,7 @@ export class StudentsService {
             ...options
         });
     }
-    
+
     /**
      * Update Student
      */
@@ -646,7 +942,7 @@ export class AttendeesService {
             ...options
         });
     }
-    
+
     /**
      * Create Attendee
      */
@@ -662,7 +958,7 @@ export class AttendeesService {
             }
         });
     }
-    
+
     /**
      * Delete Attendee
      */
@@ -674,7 +970,7 @@ export class AttendeesService {
             ...options
         });
     }
-    
+
     /**
      * Read Attendee
      */
@@ -686,7 +982,7 @@ export class AttendeesService {
             ...options
         });
     }
-    
+
     /**
      * Update Attendee
      */
@@ -716,7 +1012,7 @@ export class AttendeeCredentialsService {
             ...options
         });
     }
-    
+
     /**
      * Create Attendee Credential
      */
@@ -732,7 +1028,7 @@ export class AttendeeCredentialsService {
             }
         });
     }
-    
+
     /**
      * Lookup Credential
      */
@@ -744,7 +1040,18 @@ export class AttendeeCredentialsService {
             ...options
         });
     }
-    
+
+    /**
+     * Public Lookup Credential
+     */
+    public static credentialsPublicLookupCredential<ThrowOnError extends boolean = true>(options: Options<attendeeCredentialsPublicLookupCredentialData, ThrowOnError>) {
+        return (options.client ?? client).get<attendeeCredentialsPublicLookupCredentialResponses, attendeeCredentialsPublicLookupCredentialErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/v1/attendee-credentials/public/{credential_value}',
+            ...options
+        });
+    }
+
     /**
      * Delete Attendee Credential
      */
@@ -756,7 +1063,7 @@ export class AttendeeCredentialsService {
             ...options
         });
     }
-    
+
     /**
      * Read Attendee Credential
      */
@@ -768,7 +1075,7 @@ export class AttendeeCredentialsService {
             ...options
         });
     }
-    
+
     /**
      * Update Attendee Credential
      */
@@ -798,7 +1105,7 @@ export class AttendeeRelationshipsService {
             ...options
         });
     }
-    
+
     /**
      * Create Attendee Relationship
      */
@@ -814,7 +1121,7 @@ export class AttendeeRelationshipsService {
             }
         });
     }
-    
+
     /**
      * Delete Attendee Relationship
      */
@@ -826,7 +1133,7 @@ export class AttendeeRelationshipsService {
             ...options
         });
     }
-    
+
     /**
      * Read Attendee Relationship
      */
@@ -838,7 +1145,7 @@ export class AttendeeRelationshipsService {
             ...options
         });
     }
-    
+
     /**
      * Update Attendee Relationship
      */
@@ -868,7 +1175,7 @@ export class EventsService {
             ...options
         });
     }
-    
+
     /**
      * Create Event
      */
@@ -884,7 +1191,7 @@ export class EventsService {
             }
         });
     }
-    
+
     /**
      * Delete Event
      */
@@ -896,7 +1203,7 @@ export class EventsService {
             ...options
         });
     }
-    
+
     /**
      * Read Event
      */
@@ -908,7 +1215,7 @@ export class EventsService {
             ...options
         });
     }
-    
+
     /**
      * Update Event
      */
@@ -924,7 +1231,7 @@ export class EventsService {
             }
         });
     }
-    
+
     /**
      * Read Event Roster
      */
@@ -934,6 +1241,25 @@ export class EventsService {
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/events/{event_id}/roster/',
             ...options
+        });
+    }
+}
+
+export class PublicStudentQrService {
+    /**
+     * Lookup Student Qr
+     *
+     * Verify a student's identity and return their stable QR credential.
+     */
+    public static studentQrLookupStudentQr<ThrowOnError extends boolean = true>(options: Options<publicStudentQrLookupStudentQrData, ThrowOnError>) {
+        return (options.client ?? client).post<publicStudentQrLookupStudentQrResponses, publicStudentQrLookupStudentQrErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/v1/public/student-qr',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
 }
@@ -950,7 +1276,7 @@ export class EventRegistrationsService {
             ...options
         });
     }
-    
+
     /**
      * Create Event Registration
      */
@@ -966,7 +1292,7 @@ export class EventRegistrationsService {
             }
         });
     }
-    
+
     /**
      * Delete Event Registration
      */
@@ -978,7 +1304,7 @@ export class EventRegistrationsService {
             ...options
         });
     }
-    
+
     /**
      * Read Event Registration
      */
@@ -990,7 +1316,7 @@ export class EventRegistrationsService {
             ...options
         });
     }
-    
+
     /**
      * Update Event Registration
      */
@@ -1020,7 +1346,7 @@ export class AttendanceService {
             ...options
         });
     }
-    
+
     /**
      * Create Attendance
      */
@@ -1036,7 +1362,21 @@ export class AttendanceService {
             }
         });
     }
-    
+
+    /**
+     * Export Attendances
+     *
+     * Export attendance records to CSV.
+     */
+    public static exportAttendances<ThrowOnError extends boolean = true>(options?: Options<attendanceExportAttendancesData, ThrowOnError>) {
+        return (options?.client ?? client).get<attendanceExportAttendancesResponses, attendanceExportAttendancesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance/export',
+            ...options
+        });
+    }
+
     /**
      * Scan Attendance
      */
@@ -1052,7 +1392,7 @@ export class AttendanceService {
             }
         });
     }
-    
+
     /**
      * Scan Attendance Manual
      */
@@ -1068,7 +1408,7 @@ export class AttendanceService {
             }
         });
     }
-    
+
     /**
      * Delete Attendance
      */
@@ -1080,7 +1420,7 @@ export class AttendanceService {
             ...options
         });
     }
-    
+
     /**
      * Read Attendance
      */
@@ -1092,7 +1432,7 @@ export class AttendanceService {
             ...options
         });
     }
-    
+
     /**
      * Update Attendance
      */
@@ -1110,6 +1450,112 @@ export class AttendanceService {
     }
 }
 
+export class AttendanceSessionsService {
+    /**
+     * Read Attendance Sessions
+     */
+    public static sessionsReadAttendanceSessions<ThrowOnError extends boolean = true>(options?: Options<attendanceSessionsReadAttendanceSessionsData, ThrowOnError>) {
+        return (options?.client ?? client).get<attendanceSessionsReadAttendanceSessionsResponses, attendanceSessionsReadAttendanceSessionsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/',
+            ...options
+        });
+    }
+
+    /**
+     * Create Attendance Session
+     */
+    public static sessionsCreateAttendanceSession<ThrowOnError extends boolean = true>(options: Options<attendanceSessionsCreateAttendanceSessionData, ThrowOnError>) {
+        return (options.client ?? client).post<attendanceSessionsCreateAttendanceSessionResponses, attendanceSessionsCreateAttendanceSessionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Read Active Attendance Session
+     */
+    public static sessionsReadActiveAttendanceSession<ThrowOnError extends boolean = true>(options: Options<attendanceSessionsReadActiveAttendanceSessionData, ThrowOnError>) {
+        return (options.client ?? client).get<attendanceSessionsReadActiveAttendanceSessionResponses, attendanceSessionsReadActiveAttendanceSessionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/active/{event_id}',
+            ...options
+        });
+    }
+
+    /**
+     * Delete Attendance Session
+     */
+    public static sessionsDeleteAttendanceSession<ThrowOnError extends boolean = true>(options: Options<attendanceSessionsDeleteAttendanceSessionData, ThrowOnError>) {
+        return (options.client ?? client).delete<attendanceSessionsDeleteAttendanceSessionResponses, attendanceSessionsDeleteAttendanceSessionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/{session_id}',
+            ...options
+        });
+    }
+
+    /**
+     * Read Attendance Session
+     */
+    public static sessionsReadAttendanceSession<ThrowOnError extends boolean = true>(options: Options<attendanceSessionsReadAttendanceSessionData, ThrowOnError>) {
+        return (options.client ?? client).get<attendanceSessionsReadAttendanceSessionResponses, attendanceSessionsReadAttendanceSessionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/{session_id}',
+            ...options
+        });
+    }
+
+    /**
+     * Update Attendance Session
+     */
+    public static sessionsUpdateAttendanceSession<ThrowOnError extends boolean = true>(options: Options<attendanceSessionsUpdateAttendanceSessionData, ThrowOnError>) {
+        return (options.client ?? client).patch<attendanceSessionsUpdateAttendanceSessionResponses, attendanceSessionsUpdateAttendanceSessionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/{session_id}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Activate Attendance Session
+     */
+    public static sessionsActivateAttendanceSession<ThrowOnError extends boolean = true>(options: Options<attendanceSessionsActivateAttendanceSessionData, ThrowOnError>) {
+        return (options.client ?? client).post<attendanceSessionsActivateAttendanceSessionResponses, attendanceSessionsActivateAttendanceSessionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/{session_id}/activate',
+            ...options
+        });
+    }
+
+    /**
+     * Close Attendance Session
+     */
+    public static sessionsCloseAttendanceSession<ThrowOnError extends boolean = true>(options: Options<attendanceSessionsCloseAttendanceSessionData, ThrowOnError>) {
+        return (options.client ?? client).post<attendanceSessionsCloseAttendanceSessionResponses, attendanceSessionsCloseAttendanceSessionErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/attendance-sessions/{session_id}/close',
+            ...options
+        });
+    }
+}
+
 export class AttendanceCorrectionsService {
     /**
      * Read Attendance Corrections
@@ -1122,7 +1568,7 @@ export class AttendanceCorrectionsService {
             ...options
         });
     }
-    
+
     /**
      * Create Attendance Correction
      */
@@ -1138,7 +1584,7 @@ export class AttendanceCorrectionsService {
             }
         });
     }
-    
+
     /**
      * Read Attendance Correction
      */
@@ -1148,6 +1594,76 @@ export class AttendanceCorrectionsService {
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/attendance-corrections/{correction_id}',
             ...options
+        });
+    }
+}
+
+export class ClassRepresentativesService {
+    /**
+     * Read My Assignment
+     */
+    public static representativesReadMyAssignment<ThrowOnError extends boolean = true>(options?: Options<classRepresentativesReadMyAssignmentData, ThrowOnError>) {
+        return (options?.client ?? client).get<classRepresentativesReadMyAssignmentResponses, classRepresentativesReadMyAssignmentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/class-representatives/me',
+            ...options
+        });
+    }
+
+    /**
+     * Read My Students
+     */
+    public static representativesReadMyStudents<ThrowOnError extends boolean = true>(options?: Options<classRepresentativesReadMyStudentsData, ThrowOnError>) {
+        return (options?.client ?? client).get<classRepresentativesReadMyStudentsResponses, classRepresentativesReadMyStudentsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/class-representatives/me/students',
+            ...options
+        });
+    }
+
+    /**
+     * Create My Student
+     */
+    public static representativesCreateMyStudent<ThrowOnError extends boolean = true>(options: Options<classRepresentativesCreateMyStudentData, ThrowOnError>) {
+        return (options.client ?? client).post<classRepresentativesCreateMyStudentResponses, classRepresentativesCreateMyStudentErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/class-representatives/me/students',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * List Class Representatives
+     */
+    public static representativesListClassRepresentatives<ThrowOnError extends boolean = true>(options?: Options<classRepresentativesListClassRepresentativesData, ThrowOnError>) {
+        return (options?.client ?? client).get<classRepresentativesListClassRepresentativesResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/class-representatives/',
+            ...options
+        });
+    }
+
+    /**
+     * Create Class Representative
+     */
+    public static representativesCreateClassRepresentative<ThrowOnError extends boolean = true>(options: Options<classRepresentativesCreateClassRepresentativeData, ThrowOnError>) {
+        return (options.client ?? client).post<classRepresentativesCreateClassRepresentativeResponses, classRepresentativesCreateClassRepresentativeErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/class-representatives/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
 }
@@ -1164,7 +1680,7 @@ export class ImportBatchesService {
             ...options
         });
     }
-    
+
     /**
      * Create Import Batch
      */
@@ -1180,7 +1696,35 @@ export class ImportBatchesService {
             }
         });
     }
-    
+
+    /**
+     * Download Xlsx Template
+     *
+     * Download the minimal canonical student import workbook.
+     */
+    public static batchesDownloadXlsxTemplate<ThrowOnError extends boolean = true>(options?: Options<importBatchesDownloadXlsxTemplateData, ThrowOnError>) {
+        return (options?.client ?? client).get<importBatchesDownloadXlsxTemplateResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/import-batches/template/xlsx',
+            ...options
+        });
+    }
+
+    /**
+     * Download Csv Template
+     *
+     * Download the minimal canonical student import CSV.
+     */
+    public static batchesDownloadCsvTemplate<ThrowOnError extends boolean = true>(options?: Options<importBatchesDownloadCsvTemplateData, ThrowOnError>) {
+        return (options?.client ?? client).get<importBatchesDownloadCsvTemplateResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/import-batches/template/csv',
+            ...options
+        });
+    }
+
     /**
      * Delete Import Batch
      */
@@ -1192,7 +1736,7 @@ export class ImportBatchesService {
             ...options
         });
     }
-    
+
     /**
      * Read Import Batch
      */
@@ -1204,7 +1748,7 @@ export class ImportBatchesService {
             ...options
         });
     }
-    
+
     /**
      * Update Import Batch
      */
@@ -1220,7 +1764,19 @@ export class ImportBatchesService {
             }
         });
     }
-    
+
+    /**
+     * Read Import Batch Records
+     */
+    public static batchesReadImportBatchRecords<ThrowOnError extends boolean = true>(options: Options<importBatchesReadImportBatchRecordsData, ThrowOnError>) {
+        return (options.client ?? client).get<importBatchesReadImportBatchRecordsResponses, importBatchesReadImportBatchRecordsErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/import-batches/{batch_id}/records',
+            ...options
+        });
+    }
+
     /**
      * Upload Import Batch Workbook
      */
@@ -1237,7 +1793,7 @@ export class ImportBatchesService {
             }
         });
     }
-    
+
     /**
      * Promote Import Batch
      */

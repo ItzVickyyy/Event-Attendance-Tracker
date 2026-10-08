@@ -23,7 +23,9 @@ from app.services.reference_codes import next_student_reference_code
 router = APIRouter(prefix="/students", tags=["students"])
 
 
-def _ensure_class_rep_student_access(session: SessionDep, current_user: CurrentUser, student_id: uuid.UUID) -> None:
+def _ensure_class_rep_student_access(
+    session: SessionDep, current_user: CurrentUser, student_id: uuid.UUID
+) -> None:
     if current_user.is_superuser or current_user.role in (
         UserRole.super_admin,
         UserRole.admin,
@@ -36,7 +38,9 @@ def _ensure_class_rep_student_access(session: SessionDep, current_user: CurrentU
         )
     assignment = class_rep_assignment(session, current_user)
     if not assignment:
-        raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        raise HTTPException(
+            status_code=403, detail="No Class Representative assignment found"
+        )
     allowed = session.execute(
         text("""
             SELECT 1
@@ -53,7 +57,9 @@ def _ensure_class_rep_student_access(session: SessionDep, current_user: CurrentU
         },
     ).first()
     if not allowed:
-        raise HTTPException(status_code=403, detail="Student is outside your assigned section")
+        raise HTTPException(
+            status_code=403, detail="Student is outside your assigned section"
+        )
 
 
 @router.get("/", response_model=StudentsPublic)
@@ -91,8 +97,8 @@ def read_students(
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
             raise HTTPException(
-            status_code=403, detail="No Class Representative assignment found"
-        )
+                status_code=403, detail="No Class Representative assignment found"
+            )
         section_id = assignment["section_id"]
     if section_id:
         count_statement = count_statement.where(col(Student.section_id) == section_id)
