@@ -9,9 +9,7 @@ async function createAndLogInUser(page: import("@playwright/test").Page) {
   await createUser({ email, password })
   await logInUser(page, email, password)
   await page.goto("/account")
-  await expect(
-    page.getByRole("heading", { name: "My Account" }),
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: "My Account" })).toBeVisible()
   return { email, password }
 }
 
@@ -63,6 +61,7 @@ test.describe("Account security", () => {
     const { email, password } = await createAndLogInUser(page)
     const newPassword = randomPassword()
 
+    await page.goto("/account/security")
     await page.getByLabel("Current password").fill(password)
     await page.getByLabel("New password").fill(newPassword)
     await page.getByLabel("Confirm new password").fill(newPassword)
@@ -76,6 +75,7 @@ test.describe("Account security", () => {
   test("Password change rejects mismatched passwords", async ({ page }) => {
     const { password } = await createAndLogInUser(page)
 
+    await page.goto("/account/security")
     await page.getByLabel("Current password").fill(password)
     await page.getByLabel("New password").fill(randomPassword())
     await page.getByLabel("Confirm new password").fill("different-password")
