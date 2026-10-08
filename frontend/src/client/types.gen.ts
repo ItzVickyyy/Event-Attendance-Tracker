@@ -3362,77 +3362,81 @@ export type academicProgramsReadAcademicProgramsData = {
          * Limit
          */
         limit?: number;
+        /**
+         * Search
+         */
+        search?: string | null;
     };
-    url: '/api/v1/event-registrations/';
+    url: '/api/v1/academic-programs/';
 };
 
-export type eventRegistrationsReadEventRegistrationsErrors = {
+export type academicProgramsReadAcademicProgramsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type eventRegistrationsReadEventRegistrationsError = eventRegistrationsReadEventRegistrationsErrors[keyof eventRegistrationsReadEventRegistrationsErrors];
+export type academicProgramsReadAcademicProgramsError = academicProgramsReadAcademicProgramsErrors[keyof academicProgramsReadAcademicProgramsErrors];
 
-export type eventRegistrationsReadEventRegistrationsResponses = {
+export type academicProgramsReadAcademicProgramsResponses = {
     /**
      * Successful Response
      */
-    200: EventRegistrationsPublic;
+    200: AcademicProgramsPublic;
 };
 
-export type eventRegistrationsReadEventRegistrationsResponse = eventRegistrationsReadEventRegistrationsResponses[keyof eventRegistrationsReadEventRegistrationsResponses];
+export type academicProgramsReadAcademicProgramsResponse = academicProgramsReadAcademicProgramsResponses[keyof academicProgramsReadAcademicProgramsResponses];
 
-export type eventRegistrationsCreateEventRegistrationData = {
-    body: EventRegistrationCreate;
+export type academicProgramsCreateAcademicProgramData = {
+    body: AcademicProgramCreate;
     path?: never;
     query?: never;
-    url: '/api/v1/event-registrations/';
+    url: '/api/v1/academic-programs/';
 };
 
-export type eventRegistrationsCreateEventRegistrationErrors = {
+export type academicProgramsCreateAcademicProgramErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type eventRegistrationsCreateEventRegistrationError = eventRegistrationsCreateEventRegistrationErrors[keyof eventRegistrationsCreateEventRegistrationErrors];
+export type academicProgramsCreateAcademicProgramError = academicProgramsCreateAcademicProgramErrors[keyof academicProgramsCreateAcademicProgramErrors];
 
-export type eventRegistrationsCreateEventRegistrationResponses = {
+export type academicProgramsCreateAcademicProgramResponses = {
     /**
      * Successful Response
      */
-    200: EventRegistrationPublic;
+    200: AcademicProgramPublic;
 };
 
-export type eventRegistrationsCreateEventRegistrationResponse = eventRegistrationsCreateEventRegistrationResponses[keyof eventRegistrationsCreateEventRegistrationResponses];
+export type academicProgramsCreateAcademicProgramResponse = academicProgramsCreateAcademicProgramResponses[keyof academicProgramsCreateAcademicProgramResponses];
 
-export type eventRegistrationsDeleteEventRegistrationData = {
+export type academicProgramsDeleteAcademicProgramData = {
     body?: never;
     path: {
         /**
-         * Registration Id
+         * Program Id
          */
-        registration_id: string;
+        program_id: string;
     };
     query?: never;
-    url: '/api/v1/event-registrations/{registration_id}';
+    url: '/api/v1/academic-programs/{program_id}';
 };
 
-export type eventRegistrationsDeleteEventRegistrationErrors = {
+export type academicProgramsDeleteAcademicProgramErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type eventRegistrationsDeleteEventRegistrationError = eventRegistrationsDeleteEventRegistrationErrors[keyof eventRegistrationsDeleteEventRegistrationErrors];
+export type academicProgramsDeleteAcademicProgramError = academicProgramsDeleteAcademicProgramErrors[keyof academicProgramsDeleteAcademicProgramErrors];
 
-export type eventRegistrationsDeleteEventRegistrationResponses = {
+export type academicProgramsDeleteAcademicProgramResponses = {
     /**
-     * Response Event-Registrations-Delete Event Registration
+     * Response Academic-Programs-Delete Academic Program
      *
      * Successful Response
      */
@@ -3441,84 +3445,84 @@ export type eventRegistrationsDeleteEventRegistrationResponses = {
     };
 };
 
-export type attendeeRelationshipsDeleteAttendeeRelationshipResponse = attendeeRelationshipsDeleteAttendeeRelationshipResponses[keyof attendeeRelationshipsDeleteAttendeeRelationshipResponses];
+export type academicProgramsDeleteAcademicProgramResponse = academicProgramsDeleteAcademicProgramResponses[keyof academicProgramsDeleteAcademicProgramResponses];
 
-export type attendeeRelationshipsReadAttendeeRelationshipData = {
+export type academicProgramsReadAcademicProgramData = {
     body?: never;
     path: {
         /**
-         * Relationship Id
+         * Program Id
          */
-        relationship_id: string;
+        program_id: string;
     };
     query?: never;
-    url: '/api/v1/attendee-relationships/{relationship_id}';
+    url: '/api/v1/academic-programs/{program_id}';
 };
 
-export type attendeeRelationshipsReadAttendeeRelationshipErrors = {
+export type academicProgramsReadAcademicProgramErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeRelationshipsReadAttendeeRelationshipError = attendeeRelationshipsReadAttendeeRelationshipErrors[keyof attendeeRelationshipsReadAttendeeRelationshipErrors];
+export type academicProgramsReadAcademicProgramError = academicProgramsReadAcademicProgramErrors[keyof academicProgramsReadAcademicProgramErrors];
 
-export type attendeeRelationshipsReadAttendeeRelationshipResponses = {
+export type academicProgramsReadAcademicProgramResponses = {
     /**
      * Successful Response
      */
-    200: AttendeeRelationshipPublic;
+    200: AcademicProgramPublic;
 };
 
-export type attendeeRelationshipsReadAttendeeRelationshipResponse = attendeeRelationshipsReadAttendeeRelationshipResponses[keyof attendeeRelationshipsReadAttendeeRelationshipResponses];
+export type academicProgramsReadAcademicProgramResponse = academicProgramsReadAcademicProgramResponses[keyof academicProgramsReadAcademicProgramResponses];
 
-export type attendeeRelationshipsUpdateAttendeeRelationshipData = {
-    body: AttendeeRelationshipUpdate;
+export type academicProgramsUpdateAcademicProgramData = {
+    body: AcademicProgramUpdate;
     path: {
         /**
-         * Relationship Id
+         * Program Id
          */
-        relationship_id: string;
+        program_id: string;
     };
     query?: never;
-    url: '/api/v1/attendee-relationships/{relationship_id}';
+    url: '/api/v1/academic-programs/{program_id}';
 };
 
-export type attendeeRelationshipsUpdateAttendeeRelationshipErrors = {
+export type academicProgramsUpdateAcademicProgramErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeRelationshipsUpdateAttendeeRelationshipError = attendeeRelationshipsUpdateAttendeeRelationshipErrors[keyof attendeeRelationshipsUpdateAttendeeRelationshipErrors];
+export type academicProgramsUpdateAcademicProgramError = academicProgramsUpdateAcademicProgramErrors[keyof academicProgramsUpdateAcademicProgramErrors];
 
-export type attendeeRelationshipsUpdateAttendeeRelationshipResponses = {
+export type academicProgramsUpdateAcademicProgramResponses = {
     /**
      * Successful Response
      */
-    200: AttendeeRelationshipPublic;
+    200: AcademicProgramPublic;
 };
 
-export type attendeeRelationshipsUpdateAttendeeRelationshipResponse = attendeeRelationshipsUpdateAttendeeRelationshipResponses[keyof attendeeRelationshipsUpdateAttendeeRelationshipResponses];
+export type academicProgramsUpdateAcademicProgramResponse = academicProgramsUpdateAcademicProgramResponses[keyof academicProgramsUpdateAcademicProgramResponses];
 
-export type eventsReadEventsData = {
+export type academicSectionsReadAcademicSectionsData = {
     body?: never;
     path?: never;
     query?: {
         /**
-         * Organization Id
+         * Program Id
          */
-        organization_id?: string | null;
+        program_id?: string | null;
         /**
-         * Status
+         * Year Level
          */
-        status?: EventStatus | null;
+        year_level?: string | null;
         /**
-         * Academic Year Id
+         * Academic Year
          */
-        academic_year_id?: string | null;
+        academic_year?: string | null;
         /**
          * Skip
          */
@@ -3528,136 +3532,76 @@ export type eventsReadEventsData = {
          */
         limit?: number;
     };
-    url: '/api/v1/attendee-credentials/';
+    url: '/api/v1/academic-sections/';
 };
 
-export type attendeeCredentialsReadAttendeeCredentialsErrors = {
+export type academicSectionsReadAcademicSectionsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeCredentialsReadAttendeeCredentialsError = attendeeCredentialsReadAttendeeCredentialsErrors[keyof attendeeCredentialsReadAttendeeCredentialsErrors];
+export type academicSectionsReadAcademicSectionsError = academicSectionsReadAcademicSectionsErrors[keyof academicSectionsReadAcademicSectionsErrors];
 
-export type attendeeCredentialsReadAttendeeCredentialsResponses = {
+export type academicSectionsReadAcademicSectionsResponses = {
     /**
      * Successful Response
      */
-    200: AttendeeCredentialsPublic;
+    200: AcademicSectionsPublic;
 };
 
-export type attendeeCredentialsReadAttendeeCredentialsResponse = attendeeCredentialsReadAttendeeCredentialsResponses[keyof attendeeCredentialsReadAttendeeCredentialsResponses];
+export type academicSectionsReadAcademicSectionsResponse = academicSectionsReadAcademicSectionsResponses[keyof academicSectionsReadAcademicSectionsResponses];
 
-export type attendeeCredentialsCreateAttendeeCredentialData = {
-    body: AttendeeCredentialCreate;
+export type academicSectionsCreateAcademicSectionData = {
+    body: AcademicSectionCreate;
     path?: never;
     query?: never;
-    url: '/api/v1/attendee-credentials/';
+    url: '/api/v1/academic-sections/';
 };
 
-export type attendeeCredentialsCreateAttendeeCredentialErrors = {
+export type academicSectionsCreateAcademicSectionErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeCredentialsCreateAttendeeCredentialError = attendeeCredentialsCreateAttendeeCredentialErrors[keyof attendeeCredentialsCreateAttendeeCredentialErrors];
+export type academicSectionsCreateAcademicSectionError = academicSectionsCreateAcademicSectionErrors[keyof academicSectionsCreateAcademicSectionErrors];
 
-export type attendeeCredentialsCreateAttendeeCredentialResponses = {
+export type academicSectionsCreateAcademicSectionResponses = {
     /**
      * Successful Response
      */
-    200: AttendeeCredentialPublic;
+    200: AcademicSectionPublic;
 };
 
-export type attendeeCredentialsCreateAttendeeCredentialResponse = attendeeCredentialsCreateAttendeeCredentialResponses[keyof attendeeCredentialsCreateAttendeeCredentialResponses];
+export type academicSectionsCreateAcademicSectionResponse = academicSectionsCreateAcademicSectionResponses[keyof academicSectionsCreateAcademicSectionResponses];
 
-export type attendeeCredentialsLookupCredentialData = {
+export type academicSectionsDeleteAcademicSectionData = {
     body?: never;
     path: {
         /**
-         * Credential Value
+         * Section Id
          */
-        credential_value: string;
+        section_id: string;
     };
     query?: never;
-    url: '/api/v1/attendee-credentials/lookup/{credential_value}';
+    url: '/api/v1/academic-sections/{section_id}';
 };
 
-export type attendeeCredentialsLookupCredentialErrors = {
+export type academicSectionsDeleteAcademicSectionErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeCredentialsLookupCredentialError = attendeeCredentialsLookupCredentialErrors[keyof attendeeCredentialsLookupCredentialErrors];
+export type academicSectionsDeleteAcademicSectionError = academicSectionsDeleteAcademicSectionErrors[keyof academicSectionsDeleteAcademicSectionErrors];
 
-export type attendeeCredentialsLookupCredentialResponses = {
+export type academicSectionsDeleteAcademicSectionResponses = {
     /**
-     * Successful Response
-     */
-    200: AttendeeCredentialPublic;
-};
-
-export type attendeeCredentialsLookupCredentialResponse = attendeeCredentialsLookupCredentialResponses[keyof attendeeCredentialsLookupCredentialResponses];
-
-export type attendeeCredentialsPublicLookupCredentialData = {
-    body?: never;
-    path: {
-        /**
-         * Credential Value
-         */
-        credential_value: string;
-    };
-    query?: never;
-    url: '/api/v1/attendee-credentials/public/{credential_value}';
-};
-
-export type attendeeCredentialsPublicLookupCredentialErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type attendeeCredentialsPublicLookupCredentialError = attendeeCredentialsPublicLookupCredentialErrors[keyof attendeeCredentialsPublicLookupCredentialErrors];
-
-export type attendeeCredentialsPublicLookupCredentialResponses = {
-    /**
-     * Successful Response
-     */
-    200: PublicCredentialLookup;
-};
-
-export type attendeeCredentialsPublicLookupCredentialResponse = attendeeCredentialsPublicLookupCredentialResponses[keyof attendeeCredentialsPublicLookupCredentialResponses];
-
-export type attendeeCredentialsDeleteAttendeeCredentialData = {
-    body?: never;
-    path: {
-        /**
-         * Credential Id
-         */
-        credential_id: string;
-    };
-    query?: never;
-    url: '/api/v1/attendee-credentials/{credential_id}';
-};
-
-export type attendeeCredentialsDeleteAttendeeCredentialErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type attendeeCredentialsDeleteAttendeeCredentialError = attendeeCredentialsDeleteAttendeeCredentialErrors[keyof attendeeCredentialsDeleteAttendeeCredentialErrors];
-
-export type attendeeCredentialsDeleteAttendeeCredentialResponses = {
-    /**
-     * Response Attendee-Credentials-Delete Attendee Credential
+     * Response Academic-Sections-Delete Academic Section
      *
      * Successful Response
      */
@@ -4290,336 +4234,6 @@ export type peopleReadPeopleData = {
          */
         search?: string | null;
     };
-    url: '/api/v1/academic-programs/';
-};
-
-export type academicProgramsReadAcademicProgramsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicProgramsReadAcademicProgramsError = academicProgramsReadAcademicProgramsErrors[keyof academicProgramsReadAcademicProgramsErrors];
-
-export type academicProgramsReadAcademicProgramsResponses = {
-    /**
-     * Successful Response
-     */
-    200: AcademicProgramsPublic;
-};
-
-export type academicProgramsReadAcademicProgramsResponse = academicProgramsReadAcademicProgramsResponses[keyof academicProgramsReadAcademicProgramsResponses];
-
-export type academicProgramsCreateAcademicProgramData = {
-    body: AcademicProgramCreate;
-    path?: never;
-    query?: never;
-    url: '/api/v1/academic-programs/';
-};
-
-export type academicProgramsCreateAcademicProgramErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicProgramsCreateAcademicProgramError = academicProgramsCreateAcademicProgramErrors[keyof academicProgramsCreateAcademicProgramErrors];
-
-export type academicProgramsCreateAcademicProgramResponses = {
-    /**
-     * Successful Response
-     */
-    200: AcademicProgramPublic;
-};
-
-export type academicProgramsCreateAcademicProgramResponse = academicProgramsCreateAcademicProgramResponses[keyof academicProgramsCreateAcademicProgramResponses];
-
-export type academicProgramsDeleteAcademicProgramData = {
-    body?: never;
-    path: {
-        /**
-         * Program Id
-         */
-        program_id: string;
-    };
-    query?: never;
-    url: '/api/v1/academic-programs/{program_id}';
-};
-
-export type academicProgramsDeleteAcademicProgramErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicProgramsDeleteAcademicProgramError = academicProgramsDeleteAcademicProgramErrors[keyof academicProgramsDeleteAcademicProgramErrors];
-
-export type academicProgramsDeleteAcademicProgramResponses = {
-    /**
-     * Response Academic-Programs-Delete Academic Program
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: string;
-    };
-};
-
-export type academicProgramsDeleteAcademicProgramResponse = academicProgramsDeleteAcademicProgramResponses[keyof academicProgramsDeleteAcademicProgramResponses];
-
-export type academicProgramsReadAcademicProgramData = {
-    body?: never;
-    path: {
-        /**
-         * Program Id
-         */
-        program_id: string;
-    };
-    query?: never;
-    url: '/api/v1/academic-programs/{program_id}';
-};
-
-export type academicProgramsReadAcademicProgramErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicProgramsReadAcademicProgramError = academicProgramsReadAcademicProgramErrors[keyof academicProgramsReadAcademicProgramErrors];
-
-export type academicProgramsReadAcademicProgramResponses = {
-    /**
-     * Successful Response
-     */
-    200: AcademicProgramPublic;
-};
-
-export type academicProgramsReadAcademicProgramResponse = academicProgramsReadAcademicProgramResponses[keyof academicProgramsReadAcademicProgramResponses];
-
-export type academicProgramsUpdateAcademicProgramData = {
-    body: AcademicProgramUpdate;
-    path: {
-        /**
-         * Program Id
-         */
-        program_id: string;
-    };
-    query?: never;
-    url: '/api/v1/academic-programs/{program_id}';
-};
-
-export type academicProgramsUpdateAcademicProgramErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicProgramsUpdateAcademicProgramError = academicProgramsUpdateAcademicProgramErrors[keyof academicProgramsUpdateAcademicProgramErrors];
-
-export type academicProgramsUpdateAcademicProgramResponses = {
-    /**
-     * Successful Response
-     */
-    200: AcademicProgramPublic;
-};
-
-export type academicProgramsUpdateAcademicProgramResponse = academicProgramsUpdateAcademicProgramResponses[keyof academicProgramsUpdateAcademicProgramResponses];
-
-export type academicSectionsReadAcademicSectionsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Program Id
-         */
-        program_id?: string | null;
-        /**
-         * Year Level
-         */
-        year_level?: string | null;
-        /**
-         * Academic Year
-         */
-        academic_year?: string | null;
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/v1/academic-sections/';
-};
-
-export type academicSectionsReadAcademicSectionsErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicSectionsReadAcademicSectionsError = academicSectionsReadAcademicSectionsErrors[keyof academicSectionsReadAcademicSectionsErrors];
-
-export type academicSectionsReadAcademicSectionsResponses = {
-    /**
-     * Successful Response
-     */
-    200: AcademicSectionsPublic;
-};
-
-export type academicSectionsReadAcademicSectionsResponse = academicSectionsReadAcademicSectionsResponses[keyof academicSectionsReadAcademicSectionsResponses];
-
-export type academicSectionsCreateAcademicSectionData = {
-    body: AcademicSectionCreate;
-    path?: never;
-    query?: never;
-    url: '/api/v1/academic-sections/';
-};
-
-export type academicSectionsCreateAcademicSectionErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicSectionsCreateAcademicSectionError = academicSectionsCreateAcademicSectionErrors[keyof academicSectionsCreateAcademicSectionErrors];
-
-export type academicSectionsCreateAcademicSectionResponses = {
-    /**
-     * Successful Response
-     */
-    200: AcademicSectionPublic;
-};
-
-export type academicSectionsCreateAcademicSectionResponse = academicSectionsCreateAcademicSectionResponses[keyof academicSectionsCreateAcademicSectionResponses];
-
-export type academicSectionsDeleteAcademicSectionData = {
-    body?: never;
-    path: {
-        /**
-         * Section Id
-         */
-        section_id: string;
-    };
-    query?: never;
-    url: '/api/v1/academic-sections/{section_id}';
-};
-
-export type academicSectionsDeleteAcademicSectionErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type academicSectionsDeleteAcademicSectionError = academicSectionsDeleteAcademicSectionErrors[keyof academicSectionsDeleteAcademicSectionErrors];
-
-export type academicSectionsDeleteAcademicSectionResponses = {
-    /**
-     * Response Academic-Sections-Delete Academic Section
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: string;
-    };
-};
-
-export type attendeeCredentialsDeleteAttendeeCredentialResponse = attendeeCredentialsDeleteAttendeeCredentialResponses[keyof attendeeCredentialsDeleteAttendeeCredentialResponses];
-
-export type attendeeCredentialsReadAttendeeCredentialData = {
-    body?: never;
-    path: {
-        /**
-         * Credential Id
-         */
-        credential_id: string;
-    };
-    query?: never;
-    url: '/api/v1/attendee-credentials/{credential_id}';
-};
-
-export type attendeeCredentialsReadAttendeeCredentialErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type attendeeCredentialsReadAttendeeCredentialError = attendeeCredentialsReadAttendeeCredentialErrors[keyof attendeeCredentialsReadAttendeeCredentialErrors];
-
-export type attendeeCredentialsReadAttendeeCredentialResponses = {
-    /**
-     * Successful Response
-     */
-    200: AttendeeCredentialPublic;
-};
-
-export type attendeeCredentialsReadAttendeeCredentialResponse = attendeeCredentialsReadAttendeeCredentialResponses[keyof attendeeCredentialsReadAttendeeCredentialResponses];
-
-export type attendeeCredentialsUpdateAttendeeCredentialData = {
-    body: AttendeeCredentialUpdate;
-    path: {
-        /**
-         * Credential Id
-         */
-        credential_id: string;
-    };
-    query?: never;
-    url: '/api/v1/attendee-credentials/{credential_id}';
-};
-
-export type attendeeCredentialsUpdateAttendeeCredentialErrors = {
-    /**
-     * Validation Error
-     */
-    422: HTTPValidationError;
-};
-
-export type attendeeCredentialsUpdateAttendeeCredentialError = attendeeCredentialsUpdateAttendeeCredentialErrors[keyof attendeeCredentialsUpdateAttendeeCredentialErrors];
-
-export type attendeeCredentialsUpdateAttendeeCredentialResponses = {
-    /**
-     * Successful Response
-     */
-    200: AttendeeCredentialPublic;
-};
-
-export type attendeeCredentialsUpdateAttendeeCredentialResponse = attendeeCredentialsUpdateAttendeeCredentialResponses[keyof attendeeCredentialsUpdateAttendeeCredentialResponses];
-
-export type attendeeRelationshipsReadAttendeeRelationshipsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Attendee Id
-         */
-        attendee_id?: string | null;
-        /**
-         * Related Student Id
-         */
-        related_student_id?: string | null;
-        /**
-         * Skip
-         */
-        skip?: number;
-        /**
-         * Limit
-         */
-        limit?: number;
-        /**
-         * Search
-         */
-        search?: string | null;
-    };
     url: '/api/v1/people/';
 };
 
@@ -5115,6 +4729,392 @@ export type attendeeCredentialsReadAttendeeCredentialsData = {
          */
         limit?: number;
     };
+    url: '/api/v1/attendee-credentials/';
+};
+
+export type attendeeCredentialsReadAttendeeCredentialsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeCredentialsReadAttendeeCredentialsError = attendeeCredentialsReadAttendeeCredentialsErrors[keyof attendeeCredentialsReadAttendeeCredentialsErrors];
+
+export type attendeeCredentialsReadAttendeeCredentialsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeCredentialsPublic;
+};
+
+export type attendeeCredentialsReadAttendeeCredentialsResponse = attendeeCredentialsReadAttendeeCredentialsResponses[keyof attendeeCredentialsReadAttendeeCredentialsResponses];
+
+export type attendeeCredentialsCreateAttendeeCredentialData = {
+    body: AttendeeCredentialCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendee-credentials/';
+};
+
+export type attendeeCredentialsCreateAttendeeCredentialErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeCredentialsCreateAttendeeCredentialError = attendeeCredentialsCreateAttendeeCredentialErrors[keyof attendeeCredentialsCreateAttendeeCredentialErrors];
+
+export type attendeeCredentialsCreateAttendeeCredentialResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeCredentialPublic;
+};
+
+export type attendeeCredentialsCreateAttendeeCredentialResponse = attendeeCredentialsCreateAttendeeCredentialResponses[keyof attendeeCredentialsCreateAttendeeCredentialResponses];
+
+export type attendeeCredentialsLookupCredentialData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Value
+         */
+        credential_value: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-credentials/lookup/{credential_value}';
+};
+
+export type attendeeCredentialsLookupCredentialErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeCredentialsLookupCredentialError = attendeeCredentialsLookupCredentialErrors[keyof attendeeCredentialsLookupCredentialErrors];
+
+export type attendeeCredentialsLookupCredentialResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeCredentialPublic;
+};
+
+export type attendeeCredentialsLookupCredentialResponse = attendeeCredentialsLookupCredentialResponses[keyof attendeeCredentialsLookupCredentialResponses];
+
+export type attendeeCredentialsPublicLookupCredentialData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Value
+         */
+        credential_value: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-credentials/public/{credential_value}';
+};
+
+export type attendeeCredentialsPublicLookupCredentialErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeCredentialsPublicLookupCredentialError = attendeeCredentialsPublicLookupCredentialErrors[keyof attendeeCredentialsPublicLookupCredentialErrors];
+
+export type attendeeCredentialsPublicLookupCredentialResponses = {
+    /**
+     * Successful Response
+     */
+    200: PublicCredentialLookup;
+};
+
+export type attendeeCredentialsPublicLookupCredentialResponse = attendeeCredentialsPublicLookupCredentialResponses[keyof attendeeCredentialsPublicLookupCredentialResponses];
+
+export type attendeeCredentialsDeleteAttendeeCredentialData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-credentials/{credential_id}';
+};
+
+export type attendeeCredentialsDeleteAttendeeCredentialErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeCredentialsDeleteAttendeeCredentialError = attendeeCredentialsDeleteAttendeeCredentialErrors[keyof attendeeCredentialsDeleteAttendeeCredentialErrors];
+
+export type attendeeCredentialsDeleteAttendeeCredentialResponses = {
+    /**
+     * Response Attendee-Credentials-Delete Attendee Credential
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type attendeeCredentialsDeleteAttendeeCredentialResponse = attendeeCredentialsDeleteAttendeeCredentialResponses[keyof attendeeCredentialsDeleteAttendeeCredentialResponses];
+
+export type attendeeCredentialsReadAttendeeCredentialData = {
+    body?: never;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-credentials/{credential_id}';
+};
+
+export type attendeeCredentialsReadAttendeeCredentialErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeCredentialsReadAttendeeCredentialError = attendeeCredentialsReadAttendeeCredentialErrors[keyof attendeeCredentialsReadAttendeeCredentialErrors];
+
+export type attendeeCredentialsReadAttendeeCredentialResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeCredentialPublic;
+};
+
+export type attendeeCredentialsReadAttendeeCredentialResponse = attendeeCredentialsReadAttendeeCredentialResponses[keyof attendeeCredentialsReadAttendeeCredentialResponses];
+
+export type attendeeCredentialsUpdateAttendeeCredentialData = {
+    body: AttendeeCredentialUpdate;
+    path: {
+        /**
+         * Credential Id
+         */
+        credential_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-credentials/{credential_id}';
+};
+
+export type attendeeCredentialsUpdateAttendeeCredentialErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeCredentialsUpdateAttendeeCredentialError = attendeeCredentialsUpdateAttendeeCredentialErrors[keyof attendeeCredentialsUpdateAttendeeCredentialErrors];
+
+export type attendeeCredentialsUpdateAttendeeCredentialResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeCredentialPublic;
+};
+
+export type attendeeCredentialsUpdateAttendeeCredentialResponse = attendeeCredentialsUpdateAttendeeCredentialResponses[keyof attendeeCredentialsUpdateAttendeeCredentialResponses];
+
+export type attendeeRelationshipsReadAttendeeRelationshipsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Attendee Id
+         */
+        attendee_id?: string | null;
+        /**
+         * Related Student Id
+         */
+        related_student_id?: string | null;
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/attendee-relationships/';
+};
+
+export type attendeeRelationshipsReadAttendeeRelationshipsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeRelationshipsReadAttendeeRelationshipsError = attendeeRelationshipsReadAttendeeRelationshipsErrors[keyof attendeeRelationshipsReadAttendeeRelationshipsErrors];
+
+export type attendeeRelationshipsReadAttendeeRelationshipsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeRelationshipsPublic;
+};
+
+export type attendeeRelationshipsReadAttendeeRelationshipsResponse = attendeeRelationshipsReadAttendeeRelationshipsResponses[keyof attendeeRelationshipsReadAttendeeRelationshipsResponses];
+
+export type attendeeRelationshipsCreateAttendeeRelationshipData = {
+    body: AttendeeRelationshipCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/attendee-relationships/';
+};
+
+export type attendeeRelationshipsCreateAttendeeRelationshipErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeRelationshipsCreateAttendeeRelationshipError = attendeeRelationshipsCreateAttendeeRelationshipErrors[keyof attendeeRelationshipsCreateAttendeeRelationshipErrors];
+
+export type attendeeRelationshipsCreateAttendeeRelationshipResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeRelationshipPublic;
+};
+
+export type attendeeRelationshipsCreateAttendeeRelationshipResponse = attendeeRelationshipsCreateAttendeeRelationshipResponses[keyof attendeeRelationshipsCreateAttendeeRelationshipResponses];
+
+export type attendeeRelationshipsDeleteAttendeeRelationshipData = {
+    body?: never;
+    path: {
+        /**
+         * Relationship Id
+         */
+        relationship_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-relationships/{relationship_id}';
+};
+
+export type attendeeRelationshipsDeleteAttendeeRelationshipErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeRelationshipsDeleteAttendeeRelationshipError = attendeeRelationshipsDeleteAttendeeRelationshipErrors[keyof attendeeRelationshipsDeleteAttendeeRelationshipErrors];
+
+export type attendeeRelationshipsDeleteAttendeeRelationshipResponses = {
+    /**
+     * Response Attendee-Relationships-Delete Attendee Relationship
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: string;
+    };
+};
+
+export type attendeeRelationshipsDeleteAttendeeRelationshipResponse = attendeeRelationshipsDeleteAttendeeRelationshipResponses[keyof attendeeRelationshipsDeleteAttendeeRelationshipResponses];
+
+export type attendeeRelationshipsReadAttendeeRelationshipData = {
+    body?: never;
+    path: {
+        /**
+         * Relationship Id
+         */
+        relationship_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-relationships/{relationship_id}';
+};
+
+export type attendeeRelationshipsReadAttendeeRelationshipErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeRelationshipsReadAttendeeRelationshipError = attendeeRelationshipsReadAttendeeRelationshipErrors[keyof attendeeRelationshipsReadAttendeeRelationshipErrors];
+
+export type attendeeRelationshipsReadAttendeeRelationshipResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeRelationshipPublic;
+};
+
+export type attendeeRelationshipsReadAttendeeRelationshipResponse = attendeeRelationshipsReadAttendeeRelationshipResponses[keyof attendeeRelationshipsReadAttendeeRelationshipResponses];
+
+export type attendeeRelationshipsUpdateAttendeeRelationshipData = {
+    body: AttendeeRelationshipUpdate;
+    path: {
+        /**
+         * Relationship Id
+         */
+        relationship_id: string;
+    };
+    query?: never;
+    url: '/api/v1/attendee-relationships/{relationship_id}';
+};
+
+export type attendeeRelationshipsUpdateAttendeeRelationshipErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type attendeeRelationshipsUpdateAttendeeRelationshipError = attendeeRelationshipsUpdateAttendeeRelationshipErrors[keyof attendeeRelationshipsUpdateAttendeeRelationshipErrors];
+
+export type attendeeRelationshipsUpdateAttendeeRelationshipResponses = {
+    /**
+     * Successful Response
+     */
+    200: AttendeeRelationshipPublic;
+};
+
+export type attendeeRelationshipsUpdateAttendeeRelationshipResponse = attendeeRelationshipsUpdateAttendeeRelationshipResponses[keyof attendeeRelationshipsUpdateAttendeeRelationshipResponses];
+
+export type eventsReadEventsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Organization Id
+         */
+        organization_id?: string | null;
+        /**
+         * Status
+         */
+        status?: EventStatus | null;
+        /**
+         * Academic Year Id
+         */
+        academic_year_id?: string | null;
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
     url: '/api/v1/events/';
 };
 
@@ -5315,76 +5315,76 @@ export type eventRegistrationsReadEventRegistrationsData = {
          */
         limit?: number;
     };
-    url: '/api/v1/attendee-relationships/';
+    url: '/api/v1/event-registrations/';
 };
 
-export type attendeeRelationshipsReadAttendeeRelationshipsErrors = {
+export type eventRegistrationsReadEventRegistrationsErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeRelationshipsReadAttendeeRelationshipsError = attendeeRelationshipsReadAttendeeRelationshipsErrors[keyof attendeeRelationshipsReadAttendeeRelationshipsErrors];
+export type eventRegistrationsReadEventRegistrationsError = eventRegistrationsReadEventRegistrationsErrors[keyof eventRegistrationsReadEventRegistrationsErrors];
 
-export type attendeeRelationshipsReadAttendeeRelationshipsResponses = {
+export type eventRegistrationsReadEventRegistrationsResponses = {
     /**
      * Successful Response
      */
-    200: AttendeeRelationshipsPublic;
+    200: EventRegistrationsPublic;
 };
 
-export type attendeeRelationshipsReadAttendeeRelationshipsResponse = attendeeRelationshipsReadAttendeeRelationshipsResponses[keyof attendeeRelationshipsReadAttendeeRelationshipsResponses];
+export type eventRegistrationsReadEventRegistrationsResponse = eventRegistrationsReadEventRegistrationsResponses[keyof eventRegistrationsReadEventRegistrationsResponses];
 
-export type attendeeRelationshipsCreateAttendeeRelationshipData = {
-    body: AttendeeRelationshipCreate;
+export type eventRegistrationsCreateEventRegistrationData = {
+    body: EventRegistrationCreate;
     path?: never;
     query?: never;
-    url: '/api/v1/attendee-relationships/';
+    url: '/api/v1/event-registrations/';
 };
 
-export type attendeeRelationshipsCreateAttendeeRelationshipErrors = {
+export type eventRegistrationsCreateEventRegistrationErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeRelationshipsCreateAttendeeRelationshipError = attendeeRelationshipsCreateAttendeeRelationshipErrors[keyof attendeeRelationshipsCreateAttendeeRelationshipErrors];
+export type eventRegistrationsCreateEventRegistrationError = eventRegistrationsCreateEventRegistrationErrors[keyof eventRegistrationsCreateEventRegistrationErrors];
 
-export type attendeeRelationshipsCreateAttendeeRelationshipResponses = {
+export type eventRegistrationsCreateEventRegistrationResponses = {
     /**
      * Successful Response
      */
-    200: AttendeeRelationshipPublic;
+    200: EventRegistrationPublic;
 };
 
-export type attendeeRelationshipsCreateAttendeeRelationshipResponse = attendeeRelationshipsCreateAttendeeRelationshipResponses[keyof attendeeRelationshipsCreateAttendeeRelationshipResponses];
+export type eventRegistrationsCreateEventRegistrationResponse = eventRegistrationsCreateEventRegistrationResponses[keyof eventRegistrationsCreateEventRegistrationResponses];
 
-export type attendeeRelationshipsDeleteAttendeeRelationshipData = {
+export type eventRegistrationsDeleteEventRegistrationData = {
     body?: never;
     path: {
         /**
-         * Relationship Id
+         * Registration Id
          */
-        relationship_id: string;
+        registration_id: string;
     };
     query?: never;
-    url: '/api/v1/attendee-relationships/{relationship_id}';
+    url: '/api/v1/event-registrations/{registration_id}';
 };
 
-export type attendeeRelationshipsDeleteAttendeeRelationshipErrors = {
+export type eventRegistrationsDeleteEventRegistrationErrors = {
     /**
      * Validation Error
      */
     422: HTTPValidationError;
 };
 
-export type attendeeRelationshipsDeleteAttendeeRelationshipError = attendeeRelationshipsDeleteAttendeeRelationshipErrors[keyof attendeeRelationshipsDeleteAttendeeRelationshipErrors];
+export type eventRegistrationsDeleteEventRegistrationError = eventRegistrationsDeleteEventRegistrationErrors[keyof eventRegistrationsDeleteEventRegistrationErrors];
 
-export type attendeeRelationshipsDeleteAttendeeRelationshipResponses = {
+export type eventRegistrationsDeleteEventRegistrationResponses = {
     /**
-     * Response Attendee-Relationships-Delete Attendee Relationship
+     * Response Event-Registrations-Delete Event Registration
      *
      * Successful Response
      */

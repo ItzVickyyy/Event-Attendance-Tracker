@@ -1245,25 +1245,6 @@ export class EventsService {
     }
 }
 
-export class PublicStudentQrService {
-    /**
-     * Lookup Student Qr
-     *
-     * Verify a student's identity and return their stable QR credential.
-     */
-    public static studentQrLookupStudentQr<ThrowOnError extends boolean = true>(options: Options<publicStudentQrLookupStudentQrData, ThrowOnError>) {
-        return (options.client ?? client).post<publicStudentQrLookupStudentQrResponses, publicStudentQrLookupStudentQrErrors, ThrowOnError>({
-            responseType: 'json',
-            url: '/api/v1/public/student-qr',
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            }
-        });
-    }
-}
-
 export class EventRegistrationsService {
     /**
      * Read Event Registrations
@@ -1817,6 +1798,25 @@ export class PrivateService {
         return (options.client ?? client).post<privateCreateUserResponses, privateCreateUserErrors, ThrowOnError>({
             responseType: 'json',
             url: '/api/v1/private/users/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
+export class PublicStudentQrService {
+    /**
+     * Lookup Student Qr
+     *
+     * Verify a student's identity and return their stable QR credential.
+     */
+    public static studentQrLookupStudentQr<ThrowOnError extends boolean = true>(options: Options<publicStudentQrLookupStudentQrData, ThrowOnError>) {
+        return (options.client ?? client).post<publicStudentQrLookupStudentQrResponses, publicStudentQrLookupStudentQrErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/v1/public/student-qr',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
