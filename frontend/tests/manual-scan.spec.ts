@@ -304,6 +304,45 @@ async function setToken(
   )
 }
 
+async function readQueuedScans(page: Page): Promise<
+  Array<{
+    event_id: string
+    attendance_session_id?: string
+    attendee_id?: string
+    credential_value: string
+    scan_method: string
+    synced: boolean
+  }>
+> {
+  return page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const request = indexedDB.open("attendance-offline", 3)
+        request.onsuccess = () => {
+          const db = request.result
+          const tx = db.transaction("attendanceQueue", "readonly")
+          const getAll = tx.objectStore("attendanceQueue").getAll()
+          getAll.onsuccess = () => {
+            const records = getAll.result
+            db.close()
+            resolve(records)
+          }
+          getAll.onerror = () => reject(getAll.error)
+        }
+        request.onerror = () => reject(request.error)
+      }),
+  )
+}
+
+async function setOffline(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "onLine", {
+      configurable: true,
+      value: false,
+    })
+  })
+}
+
 test.describe("Manual attendance scan", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -374,6 +413,7 @@ test.describe("Manual attendance scan", () => {
     await gotoApp(page)
     await setToken(page)
     await page.goto("/scanner?event_id=evt-1")
+    await setOffline(page)
 
     await page.fill(
       'input[placeholder="Search by student number or name..."]',
@@ -382,13 +422,19 @@ test.describe("Manual attendance scan", () => {
     await page.getByRole("button", { name: "Search" }).click()
 
     await expect(
-      page.getByText("Recorded Alice Student (Time-In Recorded)"),
+      page.getByText("Attendance queued - Alice Student"),
     ).toBeVisible({ timeout: 10000 })
 
-    const scans = handle.sent()
-    expect(scans).toHaveLength(1)
-    expect(scans[0].body.attendee_id).toBe(attendeeId)
-    expect(scans[0].body.scan_method).toBe("manual")
+    expect(handle.sent()).toHaveLength(0)
+    const [queued] = await readQueuedScans(page)
+    expect(queued).toMatchObject({
+      event_id: "evt-1",
+      attendance_session_id: "session-1",
+      attendee_id: attendeeId,
+      credential_value: "",
+      scan_method: "manual",
+      synced: false,
+    })
   })
 
   test("multiple matching students shows picker and selects correct attendee", async ({
@@ -477,6 +523,7 @@ test.describe("Manual attendance scan", () => {
     await gotoApp(page)
     await setToken(page)
     await page.goto("/scanner?event_id=evt-1")
+    await setOffline(page)
 
     await page.fill(
       'input[placeholder="Search by student number or name..."]',
@@ -494,15 +541,21 @@ test.describe("Manual attendance scan", () => {
     await page.getByRole("button", { name: "Bob Student" }).click()
 
     await expect(
-      page.getByText("Recorded Bob Student (Time-In Recorded)"),
+      page.getByText("Attendance queued - Bob Student"),
     ).toBeVisible({ timeout: 10000 })
 
-    const scans = handle.sent()
-    expect(scans).toHaveLength(1)
-    expect(scans[0].body.attendee_id).toBe(attendeeId2)
+    expect(handle.sent()).toHaveLength(0)
+    const [queued] = await readQueuedScans(page)
+    expect(queued).toMatchObject({
+      event_id: "evt-1",
+      attendance_session_id: "session-1",
+      attendee_id: attendeeId2,
+      scan_method: "manual",
+      synced: false,
+    })
   })
 
-  test("manual scan error handling - duplicate scan (409)", async ({
+  test("manual scan queues offline and empty searches show no student found", async ({
     page,
     mockHttp,
   }) => {
@@ -514,18 +567,7 @@ test.describe("Manual attendance scan", () => {
 
     await mockHttp(
       page,
-      async (body) => {
-        expect(body.event_id).toBe("evt-1")
-        expect(body.attendee_id).toBe(attendeeId)
-        expect(body.scan_method).toBe("manual")
-        return {
-          status: 409,
-          json: {
-            detail:
-              "Already recorded for this attendee. Existing scan: In: 2026-09-15T09:00:00.000Z",
-          },
-        }
-      },
+      undefined,
       async (query) => {
         // Return Charlie for "Charlie" search, empty for "Another" search
         const search = query.search as string | undefined
@@ -563,6 +605,7 @@ test.describe("Manual attendance scan", () => {
     await gotoApp(page)
     await setToken(page)
     await page.goto("/scanner?event_id=evt-1")
+    await setOffline(page)
 
     await page.fill(
       'input[placeholder="Search by student number or name..."]',
@@ -571,10 +614,9 @@ test.describe("Manual attendance scan", () => {
     await page.getByRole("button", { name: "Search" }).click()
 
     await expect(
-      page.getByText("Already recorded", { exact: true }),
-    ).toBeVisible({
-      timeout: 10000,
-    })
+      page.getByText("Attendance queued - Charlie Student"),
+    ).toBeVisible({ timeout: 10000 })
+    expect(await readQueuedScans(page)).toHaveLength(1)
 
     await page.fill(
       'input[placeholder="Search by student number or name..."]',
