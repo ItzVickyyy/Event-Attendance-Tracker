@@ -10,7 +10,6 @@ from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
-from app.student_academics import AcademicYear
 from app.models import (
     AcademicProgram,
     AcademicSection,
@@ -22,6 +21,7 @@ from app.models import (
     Student,
     get_datetime_utc,
 )
+from app.student_academics import AcademicYear
 
 router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 
