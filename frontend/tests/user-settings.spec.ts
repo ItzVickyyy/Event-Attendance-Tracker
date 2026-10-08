@@ -3,7 +3,9 @@ import { createUser } from "./utils/privateApi.ts"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
 
-test("Account workspace shows profile and security navigation", async ({ page }) => {
+test("Account workspace shows profile and security navigation", async ({
+  page,
+}) => {
   await page.goto("/account/profile")
   await expect(page.getByRole("heading", { name: "My Account" })).toBeVisible()
   await expect(page.getByRole("link", { name: "Profile" })).toBeVisible()
@@ -32,7 +34,9 @@ test.describe("Edit user profile", () => {
     await page.getByLabel("Full name").fill(updatedName)
     await page.getByRole("button", { name: "Save" }).click()
     await expect(page.getByText("User updated successfully")).toBeVisible()
-    await expect(page.locator("form").getByText(updatedName, { exact: true })).toBeVisible()
+    await expect(
+      page.locator("form").getByText(updatedName, { exact: true }),
+    ).toBeVisible()
   })
 
   test("Invalid email shows validation error", async ({ page }) => {
@@ -47,8 +51,12 @@ test.describe("Edit user profile", () => {
     await page.getByLabel("Full name").fill("Temporary Changed Name")
     await page.getByLabel("Email").fill(randomEmail())
     await page.getByRole("button", { name: "Cancel" }).click()
-    await expect(page.locator("form").getByText(email, { exact: true })).toBeVisible()
-    await expect(page.locator("form").getByText("Test User", { exact: true })).toBeVisible()
+    await expect(
+      page.locator("form").getByText(email, { exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.locator("form").getByText("Test User", { exact: true }),
+    ).toBeVisible()
   })
 })
 
@@ -66,7 +74,9 @@ test.describe("Email update", () => {
     await page.getByLabel("Email").fill(updatedEmail)
     await page.getByRole("button", { name: "Save" }).click()
     await expect(page.getByText("User updated successfully")).toBeVisible()
-    await expect(page.locator("form").getByText(updatedEmail, { exact: true })).toBeVisible()
+    await expect(
+      page.locator("form").getByText(updatedEmail, { exact: true }),
+    ).toBeVisible()
   })
 })
 
@@ -99,7 +109,9 @@ test.describe("Change password", () => {
     await page.getByTestId("new-password-input").fill("weak")
     await page.getByTestId("confirm-password-input").fill("weak")
     await page.getByRole("button", { name: "Update Password" }).click()
-    await expect(page.getByText("Password must be at least 8 characters")).toBeVisible()
+    await expect(
+      page.getByText("Password must be at least 8 characters"),
+    ).toBeVisible()
   })
 
   test("Password confirmation must match", async ({ page }) => {
@@ -116,7 +128,9 @@ test.describe("Change password", () => {
   })
 })
 
-test("Appearance control remains available in the sidebar", async ({ page }) => {
+test("Appearance control remains available in the sidebar", async ({
+  page,
+}) => {
   await page.goto("/account/profile")
   await expect(page.getByTestId("theme-button")).toBeVisible()
 })
