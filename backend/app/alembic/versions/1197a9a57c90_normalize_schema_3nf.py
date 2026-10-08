@@ -6,6 +6,10 @@ Create Date: 2026-09-12 17:45:39.755939
 
 """
 from alembic import op
+
+from app.alembic.migration_safety import (
+    guard_populated_normalized_schema_before_downgrade,
+)
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
 from sqlalchemy.dialects import postgresql
@@ -228,6 +232,9 @@ def upgrade():
 
 
 def downgrade():
+    # Refuse rollback before any DDL if it would discard normalized records.
+    guard_populated_normalized_schema_before_downgrade(op.get_bind())
+
     # 1. Recreate old event and student tables
     op.create_table(
         'event',
