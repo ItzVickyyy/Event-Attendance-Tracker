@@ -23,13 +23,11 @@ test.describe("Edit user profile", () => {
   let email: string
   let password: string
 
-  test.beforeAll(async () => {
+  // Give each test its own account so profile edits cannot leak into later tests.
+  test.beforeEach(async ({ page }) => {
     email = randomEmail()
     password = randomPassword()
     await createUser({ email, password })
-  })
-
-  test.beforeEach(async ({ page }) => {
     await logInUser(page, email, password)
     await page.goto("/account/profile")
   })
