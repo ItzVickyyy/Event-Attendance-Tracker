@@ -55,9 +55,7 @@ def test_normalized_schema_downgrade_guard_allows_empty_tables() -> None:
 
 
 @pytest.mark.parametrize("table", NORMALIZED_TABLES)
-def test_normalized_schema_downgrade_guard_refuses_populated_tables(
-    table: str,
-) -> None:
+def test_normalized_schema_downgrade_guard_refuses_populated_tables(table: str) -> None:
     engine = create_engine("sqlite://")
     with engine.begin() as connection:
         create_normalized_tables(connection)
@@ -65,4 +63,3 @@ def test_normalized_schema_downgrade_guard_refuses_populated_tables(
 
         with pytest.raises(RuntimeError, match=f"{table}=1"):
             guard_populated_normalized_schema_before_downgrade(connection)
-
