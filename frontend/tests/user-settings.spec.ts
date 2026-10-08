@@ -13,13 +13,17 @@ test.describe("Account profile", () => {
     await logInUser(page, email, password)
     await page.goto("/account/profile")
 
-    await expect(page.getByRole("heading", { name: "My Account" })).toBeVisible()
+    await expect(
+      page.getByRole("heading", { name: "My Account" }),
+    ).toBeVisible()
     await page.getByRole("button", { name: "Edit" }).click()
     await page.getByLabel("Full name").fill("Updated Test User")
     await page.getByRole("button", { name: "Save" }).click()
 
     await expect(page.getByText("User updated successfully")).toBeVisible()
-    await expect(page.locator("form").getByText("Updated Test User", { exact: true })).toBeVisible()
+    await expect(
+      page.locator("form").getByText("Updated Test User", { exact: true }),
+    ).toBeVisible()
   })
 
   test("Invalid email displays validation feedback", async ({ page }) => {
@@ -35,7 +39,9 @@ test.describe("Account profile", () => {
     await expect(page.getByText("Invalid email address")).toBeVisible()
   })
 
-  test("Canceling profile edits restores the original values", async ({ page }) => {
+  test("Canceling profile edits restores the original values", async ({
+    page,
+  }) => {
     const email = randomEmail()
     const password = randomPassword()
     const user = await createUser({ email, password })
@@ -72,7 +78,9 @@ test.describe("Account security", () => {
     await logInUser(page, email, newPassword)
   })
 
-  test("Password validation rejects weak and mismatched passwords", async ({ page }) => {
+  test("Password validation rejects weak and mismatched passwords", async ({
+    page,
+  }) => {
     const email = randomEmail()
     const password = randomPassword()
     await createUser({ email, password })
@@ -83,7 +91,9 @@ test.describe("Account security", () => {
     await page.getByTestId("new-password-input").fill("weak")
     await page.getByTestId("confirm-password-input").fill("weak")
     await page.getByRole("button", { name: "Update Password" }).click()
-    await expect(page.getByText("Password must be at least 8 characters")).toBeVisible()
+    await expect(
+      page.getByText("Password must be at least 8 characters"),
+    ).toBeVisible()
 
     await page.getByTestId("new-password-input").fill(randomPassword())
     await page.getByTestId("confirm-password-input").fill("different-password")
