@@ -37,7 +37,7 @@ def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> 
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
+    except InvalidTokenError, ValidationError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
