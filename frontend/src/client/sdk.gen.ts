@@ -1788,6 +1788,25 @@ export class ImportBatchesService {
     }
 }
 
+export class PrivateService {
+    /**
+     * Create User
+     *
+     * Create a new user.
+     */
+    public static createUser<ThrowOnError extends boolean = true>(options: Options<privateCreateUserData, ThrowOnError>) {
+        return (options.client ?? client).post<privateCreateUserResponses, privateCreateUserErrors, ThrowOnError>({
+            responseType: 'json',
+            url: '/api/v1/private/users/',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+}
+
 export class PublicStudentQrService {
     /**
      * Lookup Student Qr
@@ -1807,21 +1826,3 @@ export class PublicStudentQrService {
     }
 }
 
-export class PrivateService {
-    /**
-     * Create User
-     *
-     * Create a new user.
-     */
-    public static createUser<ThrowOnError extends boolean = true>(options: Options<privateCreateUserData, ThrowOnError>) {
-        return (options.client ?? client).post<privateCreateUserResponses, privateCreateUserErrors, ThrowOnError>({
-            responseType: 'json',
-            url: '/api/v1/private/users/',
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            }
-        });
-    }
-}
