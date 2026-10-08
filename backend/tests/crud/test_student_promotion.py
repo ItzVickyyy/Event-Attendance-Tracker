@@ -17,8 +17,8 @@ from app.models import (
     StudentImportRecord,
 )
 from app.services.student_import import StudentImportService
-from app.student_academics import AcademicYear
 from app.services.student_promotion import StudentPromotionService
+from app.student_academics import AcademicYear
 
 # ---------------------------------------------------------------------------
 # Section-sheet parsing (item L.1) - no database required.
