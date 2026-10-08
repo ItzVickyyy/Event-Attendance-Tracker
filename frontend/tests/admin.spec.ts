@@ -25,14 +25,16 @@ test("Super Admin can create an account", async ({ page }) => {
   await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible()
 })
 
-test("Account creation requires a valid email and minimum password length", async ({ page }) => {
+test("Account creation requires an email and a password of at least eight characters", async ({ page }) => {
   await page.goto("/administration/users")
   await page.getByRole("button", { name: "Add account" }).click()
 
   const createButton = page.getByRole("button", { name: "Create account" })
   await expect(createButton).toBeDisabled()
-  await page.getByPlaceholder("name@example.com").fill("not-an-email")
+  await page.getByPlaceholder("name@example.com").fill(randomEmail())
   await page.getByPlaceholder("At least 8 characters").fill("short")
+  await expect(createButton).toBeDisabled()
+  await page.getByPlaceholder("At least 8 characters").fill(randomPassword())
   await expect(createButton).toBeEnabled()
 })
 
