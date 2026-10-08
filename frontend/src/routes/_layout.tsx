@@ -51,21 +51,19 @@ export const Route = createFileRoute("/_layout")({
   beforeLoad: async ({ location }) => {
     if (!isLoggedIn()) throw redirect({ to: "/login" })
 
-    let user
-    try {
-      const response = await UsersService.readUserMe()
-      user = response.data
-    } catch (error) {
-      const status =
-        error && typeof error === "object" && "status" in error
-          ? error.status
-          : undefined
-      if (status === 401) {
-        localStorage.removeItem("access_token")
-        throw redirect({ to: "/login" })
-      }
-      throw error
-    }
+    const user = await UsersService.readUserMe()
+      .then((response) => response.data)
+      .catch((error: unknown) => {
+        const status =
+          error && typeof error === "object" && "status" in error
+            ? error.status
+            : undefined
+        if (status === 401) {
+          localStorage.removeItem("access_token")
+          throw redirect({ to: "/login" })
+        }
+        throw error
+      })
 
     const path = location.pathname
     const isSuperAdmin = Boolean(
