@@ -52,19 +52,22 @@ test.describe("Edit user profile", () => {
   })
 })
 
-test("User can update their email", async ({ page }) => {
+test.describe("Email update", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
-  const email = randomEmail()
-  const password = randomPassword()
-  const updatedEmail = randomEmail()
-  await createUser({ email, password })
-  await logInUser(page, email, password)
-  await page.goto("/account/profile")
-  await page.getByRole("button", { name: "Edit" }).click()
-  await page.getByLabel("Email").fill(updatedEmail)
-  await page.getByRole("button", { name: "Save" }).click()
-  await expect(page.getByText("User updated successfully")).toBeVisible()
-  await expect(page.locator("form").getByText(updatedEmail, { exact: true })).toBeVisible()
+
+  test("User can update their email", async ({ page }) => {
+    const email = randomEmail()
+    const password = randomPassword()
+    const updatedEmail = randomEmail()
+    await createUser({ email, password })
+    await logInUser(page, email, password)
+    await page.goto("/account/profile")
+    await page.getByRole("button", { name: "Edit" }).click()
+    await page.getByLabel("Email").fill(updatedEmail)
+    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByText("User updated successfully")).toBeVisible()
+    await expect(page.locator("form").getByText(updatedEmail, { exact: true })).toBeVisible()
+  })
 })
 
 test.describe("Change password", () => {
