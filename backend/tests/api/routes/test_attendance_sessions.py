@@ -480,6 +480,7 @@ def test_cancelled_session_cannot_be_activated_after_event_closes(
         == "Event must be open before a session can be activated"
     )
 
+
 def test_creating_active_session_closes_previous_active_session(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:

@@ -313,9 +313,7 @@ interface ManualQueueRecord {
   synced: boolean
 }
 
-async function readQueuedScans(
-  page: Page,
-): Promise<ManualQueueRecord[]> {
+async function readQueuedScans(page: Page): Promise<ManualQueueRecord[]> {
   return page.evaluate(
     () =>
       new Promise<ManualQueueRecord[]>((resolve, reject) => {
