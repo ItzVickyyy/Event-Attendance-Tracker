@@ -41,6 +41,7 @@ def test_legacy_migration_guard_does_not_block_other_revisions() -> None:
         connection.execute(text('INSERT INTO "student" (id) VALUES (1)'))
         guard_populated_legacy_schema(connection, "1197a9a57c90")
 
+
 def create_normalized_tables(connection: Connection) -> None:
     for table in NORMALIZED_TABLES:
         connection.execute(text(f'CREATE TABLE "{table}" (id INTEGER PRIMARY KEY)'))
