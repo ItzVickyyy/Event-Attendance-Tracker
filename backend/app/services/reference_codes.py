@@ -7,11 +7,13 @@ from sqlmodel import Session
 def next_user_reference_code(session: Session) -> str:
     """Allocate the next USR reference code from the database sequence."""
     return str(
-        session.connection().execute(
+        session.connection()
+        .execute(
             text(
                 "SELECT 'USR-' || LPAD(nextval('user_reference_code_seq'::regclass)::text, 6, '0')"
             )
-        ).scalar_one()
+        )
+        .scalar_one()
     )
 
 
@@ -22,9 +24,11 @@ def next_student_reference_code(session: Session) -> str:
     The database remains the source of truth for the numeric allocation.
     """
     return str(
-        session.connection().execute(
+        session.connection()
+        .execute(
             text(
                 "SELECT 'STU-' || LPAD(nextval('student_reference_code_seq'::regclass)::text, 6, '0')"
             )
-        ).scalar_one()
+        )
+        .scalar_one()
     )
