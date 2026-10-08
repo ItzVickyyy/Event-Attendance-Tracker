@@ -160,7 +160,18 @@ def test_class_representative_routes_reject_wrong_roles_and_missing_assignment(
     students = client.get(
         _api("/class-representatives/me/students"), headers=superuser_token_headers
     )
-    assert students.status_code == 404
+    assert students.status_code == 403
+
+    create_student = client.post(
+        _api("/class-representatives/me/students"),
+        headers=superuser_token_headers,
+        json={
+            "student_number": "SHOULD-BE-BLOCKED",
+            "first_name": "Not",
+            "last_name": "Allowed",
+        },
+    )
+    assert create_student.status_code == 403
 
 
 def test_class_representative_creation_rejects_duplicate_email(
