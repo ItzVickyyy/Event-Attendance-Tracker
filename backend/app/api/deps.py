@@ -54,9 +54,11 @@ def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> 
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
-    if user.must_change_password and not request.url.path.endswith(
-        "/users/me/password"
-    ):
+    password_setup_paths = {
+        f"{settings.API_V1_STR}/users/me",
+        f"{settings.API_V1_STR}/users/me/password",
+    }
+    if user.must_change_password and request.url.path not in password_setup_paths:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
