@@ -216,7 +216,15 @@ def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
 ) -> None:
     headers = superuser_token_headers
     representative, year, section_id = _create_representative(client, headers)
-    start_year = 2400 + uuid4().int % 400
+    existing_years = client.get(
+        _api("/academic-registry/academic-years"), headers=headers
+    )
+    assert existing_years.status_code == 200
+    # Pick a year beyond every existing row so this remains deterministic even
+    # when the test database retains data created by earlier tests.
+    start_year = max(
+        year["end_year"] for year in existing_years.json()["data"]
+    ) + 1
     other_year = client.post(
         _api("/academic-registry/academic-years"),
         headers=headers,
