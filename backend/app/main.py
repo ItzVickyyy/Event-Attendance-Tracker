@@ -124,7 +124,7 @@ async def _audit_mutation(
             continue
         match, _child_scope = matcher(request.scope)
         methods = getattr(candidate, "methods", None)
-        if match is Match.FULL and (not methods or request_method in methods):
+        if match is Match.FULL and (not methods or method in methods):
             route_template = (
                 candidate_path
                 if candidate_path.startswith(api_prefix)
@@ -135,11 +135,14 @@ async def _audit_mutation(
     if route_template is None:
         route = request.scope.get("route")
         candidate_path = getattr(route, "path", None)
-        route_template = (
-            candidate_path
-            if isinstance(candidate_path, str) and candidate_path.startswith(api_prefix)
-            else f"{api_prefix}/unmatched"
-        )
+        if isinstance(candidate_path, str):
+            route_template = (
+                candidate_path
+                if candidate_path.startswith(api_prefix)
+                else f"{api_prefix}{candidate_path}"
+            )
+        else:
+            route_template = f"{api_prefix}/unmatched"
 
     resource = route_template.removeprefix(f"{api_prefix}/").strip("/") or "root"
     resource = resource[:255]
