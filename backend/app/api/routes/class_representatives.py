@@ -85,6 +85,10 @@ def read_my_students(
     current_user: CurrentUser,
     academic_year_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    if current_user.role != UserRole.class_representative:
+        raise HTTPException(
+            status_code=403, detail="Class Representative access required"
+        )
     assignment = _assignment_row(session, current_user.id, academic_year_id)
     if not assignment:
         raise HTTPException(
@@ -122,6 +126,10 @@ def create_my_student(
     current_user: CurrentUser,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
+    if current_user.role != UserRole.class_representative:
+        raise HTTPException(
+            status_code=403, detail="Class Representative access required"
+        )
     assignment = _assignment_row(session, current_user.id)
     if not assignment:
         raise HTTPException(
