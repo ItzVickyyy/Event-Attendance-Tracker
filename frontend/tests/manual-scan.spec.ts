@@ -27,6 +27,16 @@ interface MockHttpHandle {
   meRequested(): number
 }
 
+interface QueuedScanLike {
+  id: string
+  event_id: string
+  attendance_session_id?: string
+  attendee_id?: string
+  scan_method: string
+  synced: boolean
+  sync_status: string
+}
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, OPTIONS",
@@ -282,7 +292,14 @@ async function setToken(
 test.describe("Manual attendance scan", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
-  async function seedActiveSession(page: Page): Promise<void> {
+  async function readQueuedScans(page: Page): Promise<QueuedScanLike[]> {
+  return page.evaluate(async () => {
+    const mod = await import("/src/data/index.ts")
+    return mod.getAllQueuedScans()
+  })
+}
+
+async function seedActiveSession(page: Page): Promise<void> {
     await page.evaluate(() => {
       localStorage.setItem(
         "attendance-active-session:evt-1",
@@ -376,8 +393,12 @@ test.describe("Manual attendance scan", () => {
     await page.getByRole("button", { name: "Search" }).click()
 
     await expect(
-      page.getByText("Recorded Alice Student (Time-In Recorded)"),
+      page.getByText("Attendance queued - Alice Student"),
     ).toBeVisible({ timeout: 10000 })
+    await expect.poll(() => handle.sent()).toHaveLength(1)
+    await expect
+      .poll(async () => (await readQueuedScans(page))[0]?.sync_status)
+      .toBe("SYNCED")
 
     const scans = handle.sent()
     expect(scans).toHaveLength(1)
@@ -489,8 +510,12 @@ test.describe("Manual attendance scan", () => {
     await page.getByRole("button", { name: "Bob Student" }).click()
 
     await expect(
-      page.getByText("Recorded Bob Student (Time-In Recorded)"),
+      page.getByText("Attendance queued - Bob Student"),
     ).toBeVisible({ timeout: 10000 })
+    await expect.poll(() => handle.sent()).toHaveLength(1)
+    await expect
+      .poll(async () => (await readQueuedScans(page))[0]?.sync_status)
+      .toBe("SYNCED")
 
     const scans = handle.sent()
     expect(scans).toHaveLength(1)
@@ -567,10 +592,12 @@ test.describe("Manual attendance scan", () => {
     await page.getByRole("button", { name: "Search" }).click()
 
     await expect(
-      page.getByText("Already recorded", { exact: true }),
-    ).toBeVisible({
-      timeout: 10000,
-    })
+      page.getByText("Attendance queued - Charlie Student"),
+    ).toBeVisible({ timeout: 10000 })
+    await expect.poll(() => handle.sent()).toHaveLength(1)
+    await expect
+      .poll(async () => (await readQueuedScans(page))[0]?.sync_status)
+      .toBe("DUPLICATE")
 
     await page.fill(
       'input[placeholder="Search by student number or name..."]',
