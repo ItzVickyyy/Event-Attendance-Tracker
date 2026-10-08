@@ -476,3 +476,52 @@ def test_cancelled_session_cannot_be_activated_after_event_closes(
     assert activation.status_code == 400
     assert activation.json()["detail"] == "Event must be open before a session can be activated"
 
+def test_creating_active_session_closes_previous_active_session(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Active Session Replacement {random_lower_string()[:6]}",
+            "event_date": "2026-10-04",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    existing = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
+        headers=headers,
+    )
+    assert existing.status_code == 200
+    previous_session = existing.json()["data"][0]
+    assert previous_session["is_active"] is True
+
+    created = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": event_id,
+            "session_date": "2026-10-04",
+            "name": "Replacement Active Session",
+            "session_type": "TIME_IN",
+            "status": "OPEN",
+            "display_order": 2,
+            "is_active": True,
+        },
+    )
+    assert created.status_code == 200
+    assert created.json()["is_active"] is True
+
+    previous = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/{previous_session['id']}",
+        headers=headers,
+    )
+    assert previous.status_code == 200
+    assert previous.json()["is_active"] is False
+    assert previous.json()["status"] == "CLOSED"
+
