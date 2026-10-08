@@ -20,13 +20,11 @@ test_engine = (
 
 
 def init_db(session: Session, engine_to_use: Any = None) -> None:
-    from sqlmodel import SQLModel
-
     from app import student_academics as _student_academics  # noqa: F401
 
-    target_engine = engine_to_use or engine
-    # SQLModel.metadata.create_all(target_engine)
-    # The DB is managed by Alembic
+    # Keep the optional argument for backward compatibility. Alembic manages
+    # schema creation, so this function does not use an engine override.
+    del engine_to_use
 
     user = session.exec(
         select(User).where(User.email == settings.FIRST_SUPERUSER)
