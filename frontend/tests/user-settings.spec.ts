@@ -63,8 +63,8 @@ test.describe("Account security", () => {
 
     await page.goto("/account/security")
     await page.getByLabel("Current password").fill(password)
-    await page.getByLabel("New password").fill(newPassword)
-    await page.getByLabel("Confirm new password").fill(newPassword)
+    await page.getByLabel("New password").last().fill(newPassword)
+    await page.getByLabel("Confirm new password").last().fill(newPassword)
     await page.getByRole("button", { name: "Change password" }).click()
     await expect(page.getByText("Password changed")).toBeVisible()
 
@@ -77,8 +77,11 @@ test.describe("Account security", () => {
 
     await page.goto("/account/security")
     await page.getByLabel("Current password").fill(password)
-    await page.getByLabel("New password").fill(randomPassword())
-    await page.getByLabel("Confirm new password").fill("different-password")
+    await page.getByLabel("New password").last().fill(randomPassword())
+    await page
+      .getByLabel("Confirm new password")
+      .last()
+      .fill("different-password")
     await page.getByRole("button", { name: "Change password" }).click()
 
     await expect(page.getByText("New passwords do not match")).toBeVisible()
