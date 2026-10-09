@@ -62,6 +62,15 @@ def create_user(
     """
     Create new user.
     """
+    if user_in.role == UserRole.class_representative:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Class Representative accounts must be created through "
+                "the dedicated assignment workflow"
+            ),
+        )
+
     is_super_admin = (
         current_user.is_superuser or current_user.role == UserRole.super_admin
     )
