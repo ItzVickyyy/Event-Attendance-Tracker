@@ -490,7 +490,9 @@ test.describe("Offline roster caching and scanning", () => {
     await expect(
       card.getByText("Roster not downloaded for this event"),
     ).toBeVisible()
-    await expect(card.getByText("1 attendees on offline roster")).not.toBeVisible()
+    await expect(
+      card.getByText("1 attendees on offline roster"),
+    ).not.toBeVisible()
   })
 
   test("queues a known offline scan with attendee name", async ({
