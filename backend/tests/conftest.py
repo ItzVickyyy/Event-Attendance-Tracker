@@ -60,9 +60,7 @@ def db() -> Generator[Session]:
             select(User).where(User.email == settings.FIRST_SUPERUSER)
         ).first()
         assert superuser is not None
-        superuser.hashed_password = get_password_hash(
-            settings.FIRST_SUPERUSER_PASSWORD
-        )
+        superuser.hashed_password = get_password_hash(settings.FIRST_SUPERUSER_PASSWORD)
         superuser.is_superuser = True
         superuser.is_developer = False
         superuser.is_active = True
