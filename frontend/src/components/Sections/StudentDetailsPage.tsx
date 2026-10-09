@@ -68,7 +68,7 @@ export function StudentDetailsPage({
       AcademicProgramsService.programsReadAcademicPrograms({
         query: { skip: 0, limit: 100 },
       }),
-    enabled: Boolean(student?.section_id),
+    enabled: Boolean(sectionId),
   })
   const credentialsQuery = useQuery({
     queryKey: ["studentCredentials", student?.attendee_id],
