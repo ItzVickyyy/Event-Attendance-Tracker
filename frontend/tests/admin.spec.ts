@@ -14,6 +14,19 @@ test("User accounts administration is accessible to a super admin", async ({
   await expect(page.getByRole("button", { name: "Add account" })).toBeVisible()
 })
 
+test("Generic account creation does not offer Class Representative role", async ({
+  page,
+}) => {
+  await page.goto("/administration/users")
+  await page.getByRole("button", { name: "Add account" }).click()
+  await page.getByRole("combobox").click()
+  await expect(
+    page.getByRole("option", { name: "class representative", exact: true }),
+  ).toHaveCount(0)
+  await page.getByRole("button", { name: "Cancel" }).click()
+})
+
+
 test("Create a class representative account with an assigned section", async ({
   page,
 }) => {

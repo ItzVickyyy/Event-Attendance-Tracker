@@ -64,9 +64,7 @@ export function UsersAdministrationPage() {
           full_name: name || undefined,
           role,
           ...(isSuperAdmin ? { is_superuser: role === "super_admin" } : {}),
-          ...(isSuperAdmin
-            ? { can_scan: role !== "class_representative" }
-            : {}),
+          ...(isSuperAdmin ? { can_scan: role === "admin" } : {}),
           is_active: true,
         },
       }),
