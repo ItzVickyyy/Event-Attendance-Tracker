@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/migration-data-preservation-20261009
   pull_request:
 permissions:
   contents: read
