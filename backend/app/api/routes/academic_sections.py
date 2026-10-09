@@ -362,6 +362,9 @@ def delete_academic_section(
     section = session.get(AcademicSection, section_id)
     if not section:
         raise HTTPException(status_code=404, detail="Academic section not found")
+    has_students = session.exec(
+        select(Student).where(Student.section_id == section_id)
+    ).first()
     has_enrollments = session.exec(
         select(StudentEnrollment).where(StudentEnrollment.section_id == section_id)
     ).first()
@@ -370,11 +373,11 @@ def delete_academic_section(
             ClassRepresentativeAssignment.section_id == section_id
         )
     ).first()
-    if has_enrollments or has_assignments:
+    if has_students or has_enrollments or has_assignments:
         raise HTTPException(
             status_code=409,
             detail=(
-                "Cannot delete a section that has enrollments or "
+                "Cannot delete a section that has students, enrollments, or "
                 "Class Representative assignments"
             ),
         )
