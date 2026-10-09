@@ -2077,6 +2077,10 @@ export type StudentEnrollmentPublic = {
     section_id: string;
     student_status: StudentStatus;
     /**
+     * Archived At
+     */
+    archived_at?: string | null;
+    /**
      * Created At
      */
     created_at?: string | null;
@@ -4458,7 +4462,12 @@ export type studentsDeleteStudentData = {
          */
         student_id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Academic Year Id
+         */
+        academic_year_id?: string | null;
+    };
     url: '/api/v1/students/{student_id}';
 };
 

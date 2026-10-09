@@ -118,7 +118,9 @@ def read_students(
         statement = statement.join(StudentEnrollment, enrollment_join).where(
             StudentEnrollment.section_id == section_id
         )
-        count_statement = count_statement.where(col(StudentEnrollment.archived_at).is_(None))
+        count_statement = count_statement.where(
+            col(StudentEnrollment.archived_at).is_(None)
+        )
         statement = statement.where(col(StudentEnrollment.archived_at).is_(None))
         if section:
             count_statement = count_statement.where(
