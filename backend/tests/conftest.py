@@ -7,11 +7,6 @@ from sqlmodel import Session, delete, select
 from app.academic_catalog import AcademicMajor, AcademicSectionMajor
 from app.core.config import settings
 
-# API dependencies choose their database engine from this setting. Force test
-# mode before importing the application so direct `pytest` runs cannot target
-# the development database when .env sets FASTAPI_ENV=development.
-settings.FASTAPI_ENV = "test"
-
 from app.core.db import engine, init_db, test_engine
 from app.core.security import get_password_hash
 from app.initial_data import _seed_academic_catalog
@@ -41,6 +36,11 @@ from app.student_academics import (
 )
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
+
+# API dependencies read this setting when requests are handled. Force test mode
+# so direct `pytest` runs cannot target the development database when .env sets
+# FASTAPI_ENV=development.
+settings.FASTAPI_ENV = "test"
 
 
 @pytest.fixture(scope="session", autouse=True)
