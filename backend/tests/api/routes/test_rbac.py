@@ -495,13 +495,13 @@ def test_class_representative_can_reach_scoped_attendance_read_routes(
         f"{settings.API_V1_STR}/attendance/", headers=class_rep_headers
     )
     assert list_response.status_code == 403
-    assert "assignment" in list_response.json()["detail"].lower()
+    assert "assigned" in list_response.json()["detail"].lower()
 
     export_response = client.get(
         f"{settings.API_V1_STR}/attendance/export", headers=class_rep_headers
     )
     assert export_response.status_code == 403
-    assert "assignment" in export_response.json()["detail"].lower()
+    assert "assigned" in export_response.json()["detail"].lower()
 
     # The detail route is reachable, but a nonexistent record remains not found.
     detail_response = client.get(
