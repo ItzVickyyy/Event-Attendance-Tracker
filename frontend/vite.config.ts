@@ -86,44 +86,11 @@ export default defineConfig({
         importScripts: ["sw-sync.js"],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\/api\/v1\/attendance\/scan/,
+            // API responses are account- and role-specific. Never put them in
+            // a shared Cache Storage cache; offline scanning uses its own
+            // explicit IndexedDB roster and queue.
+            urlPattern: ({ url }) => url.pathname.startsWith("/api/v1/"),
             handler: "NetworkOnly",
-          },
-          {
-            urlPattern: /^https:\/\/.*\/api\/v1\/events/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "events-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24,
-              },
-              networkTimeoutSeconds: 10,
-            },
-          },
-          {
-            urlPattern: /^https:\/\/.*\/api\/v1\/students/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "students-cache",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24,
-              },
-              networkTimeoutSeconds: 10,
-            },
-          },
-          {
-            urlPattern: /^https:\/\/.*\/api\/v1\/attendee-credentials/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "credentials-cache",
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24,
-              },
-              networkTimeoutSeconds: 10,
-            },
           },
           {
             urlPattern: ({ url }) => url.pathname.startsWith("/assets/"),
