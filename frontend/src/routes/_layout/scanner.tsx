@@ -147,6 +147,7 @@ function useSyncStatus(eventId?: string) {
   const [online, setOnline] = useState(() => navigator.onLine)
   const [pendingScans, setPendingScans] = useState<QueuedScanRecord[]>([])
   const [unassignedPendingCount, setUnassignedPendingCount] = useState(0)
+  const [otherAccountPendingCount, setOtherAccountPendingCount] = useState(0)
   const [isSyncing, setIsSyncing] = useState(false)
   const [roster, setRoster] = useState<RosterRecord | null>(null)
   const [isDownloadingRoster, setIsDownloadingRoster] = useState(false)
@@ -166,9 +167,20 @@ function useSyncStatus(eventId?: string) {
       setUnassignedPendingCount(
         queued.filter((record) => !record.synced && !record.account_id).length,
       )
+      setOtherAccountPendingCount(
+        accountId
+          ? queued.filter(
+              (record) =>
+                !record.synced &&
+                Boolean(record.account_id) &&
+                record.account_id !== accountId,
+            ).length
+          : 0,
+      )
     } catch {
       setPendingScans([])
       setUnassignedPendingCount(0)
+      setOtherAccountPendingCount(0)
     }
   }, [])
 
@@ -294,6 +306,7 @@ function useSyncStatus(eventId?: string) {
     online,
     pendingScans,
     unassignedPendingCount,
+    otherAccountPendingCount,
     isSyncing,
     retrySync,
     roster,
@@ -307,6 +320,7 @@ function SyncStatusCard({
   online,
   pendingScans,
   unassignedPendingCount,
+  otherAccountPendingCount,
   isSyncing,
   onRetry,
   roster,
@@ -318,6 +332,7 @@ function SyncStatusCard({
   online: boolean
   pendingScans: QueuedScanRecord[]
   unassignedPendingCount: number
+  otherAccountPendingCount: number
   isSyncing: boolean
   onRetry: () => void
   roster: RosterRecord | null
@@ -347,6 +362,17 @@ function SyncStatusCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {otherAccountPendingCount > 0 && (
+          <div
+            className="rounded-md border p-3 text-sm"
+            role="status"
+          >
+            {otherAccountPendingCount} pending scan
+            {otherAccountPendingCount === 1 ? " belongs" : "s belong"} to
+            another account. They are left untouched. Sign in as that account
+            to sync them.
+          </div>
+        )}
         {unassignedPendingCount > 0 && (
           <div
             className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm"
@@ -1291,6 +1317,7 @@ function Scanner() {
         online={syncStatus.online}
         pendingScans={syncStatus.pendingScans}
         unassignedPendingCount={syncStatus.unassignedPendingCount}
+        otherAccountPendingCount={syncStatus.otherAccountPendingCount}
         isSyncing={syncStatus.isSyncing}
         onRetry={syncStatus.retrySync}
         roster={syncStatus.roster}
