@@ -51,6 +51,7 @@ def _ensure_class_rep_student_access(
             WHERE student_id = :student_id
               AND section_id = :section_id
               AND academic_year_id = :academic_year_id
+              AND archived_at IS NULL
             LIMIT 1
         """),
             {
@@ -114,6 +115,10 @@ def read_students(
         statement = statement.join(StudentEnrollment, enrollment_join).where(
             StudentEnrollment.section_id == section_id
         )
+        count_statement = count_statement.where(
+            StudentEnrollment.archived_at.is_(None)
+        )
+        statement = statement.where(StudentEnrollment.archived_at.is_(None))
         if section:
             count_statement = count_statement.where(
                 StudentEnrollment.academic_year_id == section.academic_year_id
@@ -303,6 +308,32 @@ def delete_student(
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
+
+    if _current_user.role == UserRole.class_representative:
+        assignment = class_rep_assignment(session, _current_user)
+        if not assignment:
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
+        enrollment = session.exec(
+            select(StudentEnrollment).where(
+                StudentEnrollment.student_id == student_id,
+                StudentEnrollment.section_id == assignment["section_id"],
+                StudentEnrollment.academic_year_id == assignment["academic_year_id"],
+                StudentEnrollment.archived_at.is_(None),
+            )
+        ).first()
+        if not enrollment:
+            raise HTTPException(
+                status_code=404, detail="Student enrollment not found"
+            )
+        now = get_datetime_utc()
+        enrollment.archived_at = now
+        enrollment.updated_at = now
+        session.add(enrollment)
+        session.commit()
+        return {"message": "Student archived from your section successfully"}
+
     session.connection().execute(
         text(
             "UPDATE students SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND archived_at IS NULL"
