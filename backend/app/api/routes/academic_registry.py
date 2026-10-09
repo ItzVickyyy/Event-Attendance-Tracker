@@ -13,7 +13,14 @@ from app.api.deps import (
     require_admin,
     require_super_admin,
 )
-from app.models import AcademicSection, Person, Student, UserRole, get_datetime_utc
+from app.models import (
+    AcademicSection,
+    AcademicStatus,
+    Person,
+    Student,
+    UserRole,
+    get_datetime_utc,
+)
 from app.services.reference_codes import next_student_reference_code
 from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
@@ -387,9 +394,9 @@ def create_student_in_section(
         person_id=person.id,
         student_number=student_number,
         section_id=section_id,
-        academic_status="irregular"
+        academic_status=AcademicStatus.irregular
         if student_status == StudentStatus.irregular
-        else "regular",
+        else AcademicStatus.regular,
         reference_code=next_student_reference_code(session),
     )
     session.add(student)
