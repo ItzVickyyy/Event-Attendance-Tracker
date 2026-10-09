@@ -118,10 +118,8 @@ def read_students(
         statement = statement.join(StudentEnrollment, enrollment_join).where(
             StudentEnrollment.section_id == section_id
         )
-        count_statement = count_statement.where(
-            StudentEnrollment.archived_at.is_(None)
-        )
-        statement = statement.where(StudentEnrollment.archived_at.is_(None))
+        count_statement = count_statement.where(col(StudentEnrollment.archived_at).is_(None))
+        statement = statement.where(col(StudentEnrollment.archived_at).is_(None))
         if section:
             count_statement = count_statement.where(
                 StudentEnrollment.academic_year_id == section.academic_year_id
@@ -318,9 +316,7 @@ def delete_student(
         raise HTTPException(status_code=404, detail="Student not found")
 
     if _current_user.role == UserRole.class_representative:
-        assignment = class_rep_assignment(
-            session, _current_user, academic_year_id
-        )
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
             raise HTTPException(
                 status_code=403, detail="No Class Representative assignment found"
@@ -330,20 +326,20 @@ def delete_student(
                 StudentEnrollment.student_id == student_id,
                 StudentEnrollment.section_id == assignment["section_id"],
                 StudentEnrollment.academic_year_id == assignment["academic_year_id"],
-                StudentEnrollment.archived_at.is_(None),
+                col(StudentEnrollment.archived_at).is_(None),
             )
         ).first()
         if not enrollment:
-            raise HTTPException(
-                status_code=404, detail="Student enrollment not found"
-            )
+            raise HTTPException(status_code=404, detail="Student enrollment not found")
         now = get_datetime_utc()
         enrollment.archived_at = now
         enrollment.updated_at = now
         session.add(enrollment)
         session.flush()
-        latest_section_id = session.connection().execute(
-            text("""
+        latest_section_id = (
+            session.connection()
+            .execute(
+                text("""
                 SELECT se.section_id
                 FROM student_enrollments se
                 JOIN academic_years ay ON ay.id = se.academic_year_id
@@ -352,8 +348,10 @@ def delete_student(
                 ORDER BY ay.start_year DESC, se.created_at DESC
                 LIMIT 1
             """),
-            {"student_id": student_id},
-        ).scalar_one_or_none()
+                {"student_id": student_id},
+            )
+            .scalar_one_or_none()
+        )
         student.section_id = latest_section_id
         student.updated_at = now
         session.add(student)

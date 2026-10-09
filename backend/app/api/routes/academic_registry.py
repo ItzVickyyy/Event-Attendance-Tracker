@@ -635,8 +635,10 @@ def create_enrollment(
         existing.updated_at = get_datetime_utc()
         session.add(existing)
         session.flush()
-        latest_section_id = session.connection().execute(
-            text("""
+        latest_section_id = (
+            session.connection()
+            .execute(
+                text("""
                 SELECT se.section_id
                 FROM student_enrollments se
                 JOIN academic_years ay ON ay.id = se.academic_year_id
@@ -645,8 +647,10 @@ def create_enrollment(
                 ORDER BY ay.start_year DESC, se.created_at DESC
                 LIMIT 1
             """),
-            {"student_id": student.id},
-        ).scalar_one_or_none()
+                {"student_id": student.id},
+            )
+            .scalar_one_or_none()
+        )
         student.section_id = latest_section_id
         student.updated_at = get_datetime_utc()
         session.add(student)
