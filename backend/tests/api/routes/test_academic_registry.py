@@ -578,3 +578,59 @@ def test_academic_section_with_enrollment_cannot_be_deleted(
     sections = client.get(_api("/academic-registry/sections"), headers=headers)
     assert sections.status_code == 200
     assert any(row["id"] == section["id"] for row in sections.json()["data"])
+
+
+def test_section_roster_uses_historical_enrollment_not_legacy_section(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    year, section = _current_year_and_program(client, headers)
+    sections = client.get(_api("/academic-registry/sections"), headers=headers)
+    assert sections.status_code == 200
+    next_year_section = next(
+        (
+            row
+            for row in sections.json()["data"]
+            if row["academic_year_id"] != year["id"]
+        ),
+        None,
+    )
+    assert next_year_section is not None
+
+    created = client.post(
+        _api("/academic-registry/students"),
+        headers=headers,
+        json={
+            "student_number": f"HIST-{random_lower_string()[:10].upper()}",
+            "first_name": "Historical",
+            "last_name": "Student",
+            "section_id": section["id"],
+            "academic_year_id": year["id"],
+        },
+    )
+    assert created.status_code == 200
+    student = created.json()
+
+    moved_legacy_pointer = client.patch(
+        _api(f"/students/{student['id']}"),
+        headers=headers,
+        json={"section_id": next_year_section["id"]},
+    )
+    assert moved_legacy_pointer.status_code == 200
+
+    historical_roster = client.get(
+        _api("/students/"),
+        headers=headers,
+        params={"section_id": section["id"]},
+    )
+    assert historical_roster.status_code == 200
+    assert any(
+        row["id"] == student["id"]
+        for row in historical_roster.json()["data"]
+    )
+
+    historical_export = client.get(
+        _api(f"/academic-sections/{section['id']}/export/xlsx"),
+        headers=headers,
+    )
+    assert historical_export.status_code == 200
