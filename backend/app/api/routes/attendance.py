@@ -547,9 +547,17 @@ def read_attendance(
                     EventRegistration,
                     cast(Any, col(EventRegistration.attendee_id) == col(Attendee.id)),
                 )
+                .join(
+                    StudentEnrollment,
+                    cast(
+                        Any,
+                        col(StudentEnrollment.student_id) == col(Student.id),
+                    ),
+                )
                 .where(
                     EventRegistration.id == record.registration_id,
-                    Student.section_id == assignment["section_id"],
+                    StudentEnrollment.section_id == assignment["section_id"],
+                    StudentEnrollment.academic_year_id == record.academic_year_id,
                 )
             )
             .first()
