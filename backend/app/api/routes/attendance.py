@@ -13,8 +13,8 @@ from app.api.deps import (
     SessionDep,
     class_rep_assignment,
     require_admin,
-    require_class_rep_or_higher,
     require_class_rep_assignment,
+    require_class_rep_or_higher,
     require_scanner_permission,
 )
 from app.models import (
@@ -47,7 +47,9 @@ router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
 @router.get(
-    "/", response_model=AttendancesPublic, dependencies=[Depends(require_class_rep_or_higher)]
+    "/",
+    response_model=AttendancesPublic,
+    dependencies=[Depends(require_class_rep_or_higher)],
 )
 def read_attendances(
     session: SessionDep,
