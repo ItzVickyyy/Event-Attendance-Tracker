@@ -756,7 +756,7 @@ class StudentImportService:
             return section
 
         # Compatibility fallback for simple names such as "1A".
-        match = re.fullmatch(r"(\\d+)([A-Z]+)", section_name)
+        match = re.fullmatch(r"(\d+)([A-Z]+)", section_name)
         if not match:
             return None
 
