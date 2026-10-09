@@ -166,6 +166,12 @@ def update_attendance_session(
 
     will_be_active = update_dict.get("is_active", record.is_active)
     if will_be_active:
+        event = _validate_event(session, record.event_id)
+        if event.status != EventStatus.open:
+            raise HTTPException(
+                status_code=400,
+                detail="Event must be open before a session can be activated",
+            )
         active_sessions = session.exec(
             select(AttendanceSession).where(
                 col(AttendanceSession.event_id) == record.event_id,
