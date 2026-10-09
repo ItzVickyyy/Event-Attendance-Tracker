@@ -1,6 +1,8 @@
+from io import BytesIO
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 
 from app.core.config import settings
 from tests.utils.utils import random_email, random_lower_string
@@ -634,3 +636,6 @@ def test_section_roster_uses_historical_enrollment_not_legacy_section(
         headers=headers,
     )
     assert historical_export.status_code == 200
+    workbook = load_workbook(BytesIO(historical_export.content), read_only=True)
+    exported_rows = list(workbook.active.values)
+    assert any(student["student_number"] in row for row in exported_rows)
