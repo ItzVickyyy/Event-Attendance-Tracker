@@ -480,3 +480,33 @@ def test_super_admin_cannot_delete_self_by_role_only(
     )
     response = client.delete(f"{settings.API_V1_STR}/users/me", headers=headers)
     assert response.status_code == 403
+
+
+def test_class_representative_can_reach_scoped_attendance_read_routes(
+    client: TestClient, db: Session
+) -> None:
+    class_rep_headers = get_token_headers_for_role(
+        client, db, role=UserRole.class_representative, can_scan=False
+    )
+
+    # A Class Representative is authorized for these read routes, but must have
+    # an assignment before the collection/export endpoints return any records.
+    list_response = client.get(
+        f"{settings.API_V1_STR}/attendance/", headers=class_rep_headers
+    )
+    assert list_response.status_code == 403
+    assert "assignment" in list_response.json()["detail"].lower()
+
+    export_response = client.get(
+        f"{settings.API_V1_STR}/attendance/export", headers=class_rep_headers
+    )
+    assert export_response.status_code == 403
+    assert "assignment" in export_response.json()["detail"].lower()
+
+    # The detail route is reachable, but a nonexistent record remains not found.
+    detail_response = client.get(
+        f"{settings.API_V1_STR}/attendance/00000000-0000-0000-0000-000000000000",
+        headers=class_rep_headers,
+    )
+    assert detail_response.status_code == 404
+    assert detail_response.json()["detail"] == "Attendance record not found"
