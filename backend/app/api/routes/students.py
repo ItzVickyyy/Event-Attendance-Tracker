@@ -341,6 +341,22 @@ def delete_student(
         enrollment.archived_at = now
         enrollment.updated_at = now
         session.add(enrollment)
+        session.flush()
+        latest_section_id = session.connection().execute(
+            text("""
+                SELECT se.section_id
+                FROM student_enrollments se
+                JOIN academic_years ay ON ay.id = se.academic_year_id
+                WHERE se.student_id = :student_id
+                  AND se.archived_at IS NULL
+                ORDER BY ay.start_year DESC, se.created_at DESC
+                LIMIT 1
+            """),
+            {"student_id": student_id},
+        ).scalar_one_or_none()
+        student.section_id = latest_section_id
+        student.updated_at = now
+        session.add(student)
         session.commit()
         return {"message": "Student archived from your section successfully"}
 
