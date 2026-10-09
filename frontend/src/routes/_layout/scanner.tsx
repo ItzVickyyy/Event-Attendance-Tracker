@@ -147,6 +147,7 @@ export const Route = createFileRoute("/_layout/scanner")({
 function useSyncStatus(eventId?: string) {
   const [online, setOnline] = useState(() => navigator.onLine)
   const [pendingScans, setPendingScans] = useState<QueuedScanRecord[]>([])
+  const [unassignedPendingCount, setUnassignedPendingCount] = useState(0)
   const [isSyncing, setIsSyncing] = useState(false)
   const [roster, setRoster] = useState<RosterRecord | null>(null)
   const [isDownloadingRoster, setIsDownloadingRoster] = useState(false)
@@ -156,9 +157,19 @@ function useSyncStatus(eventId?: string) {
 
   const reload = useCallback(async () => {
     try {
-      setPendingScans(await getPendingScans())
+      const accountId = await getOfflineAccountId()
+      const queued = await getAllQueuedScans()
+      setPendingScans(
+        queued.filter(
+          (record) => !record.synced && record.account_id === accountId,
+        ),
+      )
+      setUnassignedPendingCount(
+        queued.filter((record) => !record.synced && !record.account_id).length,
+      )
     } catch {
       setPendingScans([])
+      setUnassignedPendingCount(0)
     }
   }, [])
 
@@ -283,6 +294,7 @@ function useSyncStatus(eventId?: string) {
   return {
     online,
     pendingScans,
+    unassignedPendingCount,
     isSyncing,
     retrySync,
     roster,
@@ -295,6 +307,7 @@ function useSyncStatus(eventId?: string) {
 function SyncStatusCard({
   online,
   pendingScans,
+  unassignedPendingCount,
   isSyncing,
   onRetry,
   roster,
@@ -305,6 +318,7 @@ function SyncStatusCard({
 }: {
   online: boolean
   pendingScans: QueuedScanRecord[]
+  unassignedPendingCount: number
   isSyncing: boolean
   onRetry: () => void
   roster: RosterRecord | null
@@ -334,6 +348,19 @@ function SyncStatusCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {unassignedPendingCount > 0 && (
+          <div
+            className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm"
+            role="alert"
+          >
+            {unassignedPendingCount} older pending scan
+            {unassignedPendingCount === 1 ? " has" : "s have"} no saved account
+            owner. They are preserved but will not sync automatically because
+            doing so could record attendance under the wrong account. Do not
+            clear this browser's site data. Contact the system administrator
+            for recovery.
+          </div>
+        )}
         {activeSession ? (
           <div className="flex items-center justify-between border-b pb-3 text-sm">
             <span className="text-muted-foreground">Active session</span>
