@@ -1000,6 +1000,7 @@ def test_summary_reconciliation_matching_workbook():
     assert all(row["source_sheet"] != "Summary" for row in parsed_rows)
 
     reconciliation = service.get_summary_reconciliation()
+    assert reconciliation is not None
     assert reconciliation["summary_sheet_found"] is True
     assert reconciliation["status"] == "matched"
     assert reconciliation["discrepancies"] == []
