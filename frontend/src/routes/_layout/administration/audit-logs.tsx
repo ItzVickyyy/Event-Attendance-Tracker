@@ -8,7 +8,10 @@ export const Route = createFileRoute("/_layout/administration/audit-logs")({
   beforeLoad: async () => {
     const { data: user } = await UsersService.readUserMe()
     const canReviewAuditLogs =
-      user.is_superuser || user.role === "super_admin" || user.role === "admin"
+      user.is_superuser ||
+      user.role === "super_admin" ||
+      user.role === "admin" ||
+      user.is_developer
 
     if (!canReviewAuditLogs) {
       throw redirect({ to: user.is_developer ? "/developer" : "/dashboard" })

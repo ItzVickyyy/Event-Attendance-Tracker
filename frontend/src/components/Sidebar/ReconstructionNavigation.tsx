@@ -134,12 +134,21 @@ export function ReconstructionNavigation() {
   const isSuperAdmin = Boolean(isSuperuser || role === "super_admin")
   const canManageClassRepresentatives = isSuperAdmin
   const classRep = role === "class_representative" && !isSuperuser
+  const isolatedDeveloper = Boolean(
+    user?.is_developer &&
+      !isSuperuser &&
+      role !== "admin" &&
+      role !== "super_admin",
+  )
 
   const groups = navigationGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
         if (item.developerOnly) return Boolean(user?.is_developer)
+        // Isolated Developers have a separate, read-only workspace.
+        if (isolatedDeveloper && ["/dashboard", "/scanner"].includes(item.path))
+          return false
         if (item.superAdminOrDeveloper)
           return Boolean(isSuperAdmin || user?.is_developer)
         if (item.superAdminOnly && !isSuperAdmin) return false
