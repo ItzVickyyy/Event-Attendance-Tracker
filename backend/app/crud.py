@@ -7,7 +7,9 @@ from app.models import User, UserCreate, UserUpdate
 from app.services.reference_codes import next_user_reference_code
 
 
-def create_user(*, session: Session, user_create: UserCreate) -> User:
+def create_user(
+    *, session: Session, user_create: UserCreate, commit: bool = True
+) -> User:
     db_obj = User.model_validate(
         user_create,
         update={
@@ -16,7 +18,10 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
         },
     )
     session.add(db_obj)
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     session.refresh(db_obj)
     return db_obj
 
