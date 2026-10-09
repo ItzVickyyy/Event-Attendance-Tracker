@@ -315,7 +315,7 @@ def test_class_representative_creation_rolls_back_when_email_fails(
         _api("/login/access-token"),
         data={"username": email, "password": TEMPORARY_PASSWORD},
     )
-    assert login.status_code == 401
+    assert login.status_code == 400
     listing = client.get(
         _api("/class-representatives/"), headers=superuser_token_headers
     )
