@@ -1,4 +1,5 @@
 import { type DBSchema, type IDBPDatabase, openDB } from "idb"
+import { getOfflineAccountId } from "./account"
 import { registerAttendanceSync, syncNow } from "./sync"
 
 export const QUEUE_CHANGED_EVENT = "pwa:queue-changed"
@@ -29,6 +30,8 @@ interface CredentialRecord {
 
 interface QueueRecord {
   id: string
+  /** Server-verified account that created this scan. Missing on legacy rows. */
+  account_id?: string
   event_id: string
   attendance_session_id?: string
   attendee_id?: string
@@ -70,6 +73,8 @@ interface RosterEntryRecord {
 
 export interface RosterRecord {
   event_id: string
+  /** Account that downloaded this roster. Missing on legacy rows. */
+  account_id?: string
   entries: RosterEntryRecord[]
   downloaded_at: string
   entry_count: number
@@ -184,12 +189,17 @@ export interface QueuedScan {
 export interface QueuedScanRecord extends QueueRecord {}
 
 export async function enqueueScan(scan: QueuedScan): Promise<string> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) {
+    throw new Error("Account identity is not verified for offline scanning")
+  }
   const db = await getDB()
   const local_id = crypto.randomUUID()
   const now = new Date().toISOString()
 
   const record: QueueRecord = {
     id: local_id,
+    account_id: accountId,
     event_id: scan.event_id,
     attendance_session_id: scan.attendance_session_id,
     attendee_id: scan.attendee_id,
@@ -377,13 +387,22 @@ export async function getAllCredentials(): Promise<CredentialRecord[]> {
 export async function getRoster(
   eventId: string,
 ): Promise<RosterRecord | undefined> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return undefined
   const db = await getDB()
-  return db.get("rosters", eventId)
+  const roster = await db.get("rosters", eventId)
+  return roster?.account_id === accountId ? roster : undefined
 }
 
 export async function putRoster(roster: RosterRecord): Promise<void> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) {
+    throw new Error(
+      "Account identity is not verified for offline roster storage",
+    )
+  }
   const db = await getDB()
-  await db.put("rosters", roster)
+  await db.put("rosters", { ...roster, account_id: accountId })
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(ROSTER_CHANGED_EVENT))
   }
@@ -398,8 +417,12 @@ export async function removeRoster(eventId: string): Promise<void> {
 }
 
 export async function getAllRosters(): Promise<RosterRecord[]> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return []
   const db = await getDB()
-  return db.getAll("rosters")
+  return (await db.getAll("rosters")).filter(
+    (roster) => roster.account_id === accountId,
+  )
 }
 
 export async function getRosterEntryByCredential(

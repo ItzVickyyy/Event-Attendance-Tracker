@@ -1,5 +1,6 @@
 import { AxiosError } from "axios"
 import { AttendanceService } from "@/client"
+import { getOfflineAccountId } from "./account"
 import {
   getPendingScans,
   markFailed,
@@ -126,10 +127,15 @@ export function setupSyncMessageHandlers(): void {
     if (data?.type !== "PWA_SYNC_GET_TOKEN") return
     const port = event.ports?.[0]
     if (!port) return
-    port.postMessage({
-      type: "PWA_SYNC_TOKEN",
-      token: localStorage.getItem("access_token") ?? "",
-      apiBase: import.meta.env.VITE_API_URL ?? "",
+    const token = localStorage.getItem("access_token") ?? ""
+    void getOfflineAccountId(token).then((accountId) => {
+      const sessionUnchanged = localStorage.getItem("access_token") === token
+      port.postMessage({
+        type: "PWA_SYNC_TOKEN",
+        token: sessionUnchanged ? token : "",
+        accountId: sessionUnchanged ? accountId : null,
+        apiBase: import.meta.env.VITE_API_URL ?? "",
+      })
     })
   })
 }
@@ -186,7 +192,13 @@ export function runForegroundSync(): Promise<ForegroundSyncResult> {
 }
 
 async function executeForegroundSync(): Promise<ForegroundSyncResult> {
-  const pending = await getPendingScans()
+  const accountId = await getOfflineAccountId()
+  const allPending = await getPendingScans()
+  // Never submit legacy or another account's records using this session.
+  // Legacy records remain intact for recovery instead of being reassigned.
+  const pending = accountId
+    ? allPending.filter((record) => record.account_id === accountId)
+    : []
   let syncedCount = 0
   let needsRetry = false
   let authRequired = false
@@ -208,7 +220,7 @@ async function executeForegroundSync(): Promise<ForegroundSyncResult> {
     processedCount: pending.length,
     syncedCount,
     needsRetry,
-    authRequired,
+    authRequired: authRequired || (allPending.length > 0 && !accountId),
   }
 }
 

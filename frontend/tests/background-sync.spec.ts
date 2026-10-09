@@ -9,6 +9,7 @@ const SCAN_URL = "**/api/v1/attendance/scan*"
 
 interface QueueRecordLike {
   id: string
+  account_id?: string
   event_id: string
   credential_value: string
   scan_method: string
@@ -49,6 +50,7 @@ function record(overrides: Partial<QueueRecordLike> = {}): QueueRecordLike {
   const created_at = "2026-01-01T00:00:00.000Z"
   return {
     id: "rec-1",
+    account_id: "user-1",
     event_id: "evt-1",
     credential_value: "CRED-1",
     scan_method: "qr",
@@ -162,10 +164,22 @@ async function gotoApp(page: Page): Promise<void> {
 async function setToken(
   page: Page,
   token = "test-access-token",
+  accountId = "user-1",
 ): Promise<void> {
   await page.evaluate(
-    (value) => localStorage.setItem("access_token", value),
-    token,
+    async ({ value, userId }) => {
+      localStorage.setItem("access_token", value)
+      const digest = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(value),
+      )
+      const fingerprint = Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("")
+      localStorage.setItem("offline_account_id", userId)
+      localStorage.setItem("offline_account_token_fingerprint", fingerprint)
+    },
+    { value: token, userId: accountId },
   )
 }
 
@@ -297,6 +311,32 @@ test.describe("Attendance background sync", () => {
       expect(queued.synced_at).toBeTruthy()
       expect(queued.synced_at_server).toBeTruthy()
     }
+  })
+
+  test("does not sync another account's queued scans", async ({
+    page,
+    mockScan,
+  }) => {
+    const scan = await mockScan(page, () => ({
+      status: 201,
+      json: { ok: true },
+    }))
+    await gotoApp(page)
+    await setToken(page, "account-one-token", "user-1")
+    await seedRecords(page, [
+      record({ id: "rec-other-account", account_id: "user-2" }),
+      record({ id: "rec-legacy", account_id: undefined }),
+    ])
+    await triggerSyncNow(page)
+
+    await expect.poll(() => scan.count(), { timeout: 1500 }).toBe(0)
+    const queue = await readQueue(page)
+    expect(queue).toHaveLength(2)
+    expect(queue.every((queued) => !queued.synced)).toBe(true)
+    expect(queue.map((queued) => queued.id)).toEqual([
+      "rec-other-account",
+      "rec-legacy",
+    ])
   })
 
   test("409 duplicate scans are treated as resolved", async ({

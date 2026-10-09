@@ -15,6 +15,7 @@ const SCAN_URL = "**/api/v1/attendance/scan*"
 
 interface QueueRecordLike {
   id: string
+  account_id?: string
   event_id: string
   credential_value: string
   scan_method: string
@@ -56,6 +57,7 @@ function record(overrides: Partial<QueueRecordLike> = {}): QueueRecordLike {
   const created_at = "2026-01-01T00:00:00.000Z"
   return {
     id: "rec-1",
+    account_id: "user-1",
     event_id: "evt-1",
     credential_value: "CRED-1",
     scan_method: "qr",
@@ -94,7 +96,11 @@ const test = base.extend<{
           status: 200,
           contentType: "application/json",
           headers: corsHeaders,
-          body: JSON.stringify({ is_superuser: true, can_scan: true }),
+          body: JSON.stringify({
+            id: "user-1",
+            is_superuser: true,
+            can_scan: true,
+          }),
         })
       })
       await cdp.send("Fetch.enable", {
@@ -265,6 +271,31 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 test.describe("Scanner sync status UI", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
+
+  test("exports legacy pending scans for administrator recovery", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    await page.goto("/login")
+    await setToken(page)
+    await page.goto("/scanner")
+    await seedRecords(page, [
+      record({ id: "rec-legacy", account_id: undefined }),
+    ])
+    await notifyQueueChanged(page)
+
+    const card = await getTrackerCard(page)
+    await expect(card.getByRole("alert")).toContainText(
+      "no saved account owner",
+    )
+    const downloadPromise = page.waitForEvent("download")
+    await card.getByRole("button", { name: "Export legacy scans" }).click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toMatch(
+      /^legacy-attendance-scans-\d{4}-\d{2}-\d{2}\.json$/,
+    )
+  })
 
   test("shows all synced with an empty queue", async ({ page, mockHttp }) => {
     await mockHttp(page)

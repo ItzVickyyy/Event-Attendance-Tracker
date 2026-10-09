@@ -42,13 +42,13 @@ import type { QueuedScanRecord, RosterRecord } from "@/data"
 import {
   enqueueScan,
   getAllQueuedScans,
-  getPendingScans,
   getRoster,
   getRosterEntryByCredential,
   putRoster,
   QUEUE_CHANGED_EVENT,
   ROSTER_CHANGED_EVENT,
 } from "@/data"
+import { getOfflineAccountId, rememberOfflineAccount } from "@/data/account"
 import {
   type AttendanceSession,
   getActiveAttendanceSession,
@@ -120,9 +120,17 @@ export const Route = createFileRoute("/_layout/scanner")({
   }),
   component: Scanner,
   beforeLoad: async () => {
+    const sessionToken = localStorage.getItem("access_token") ?? ""
     const { data: user } = await UsersService.readUserMe().catch(() => ({
       data: null,
     }))
+    if (
+      user &&
+      sessionToken &&
+      localStorage.getItem("access_token") === sessionToken
+    ) {
+      await rememberOfflineAccount(user.id, sessionToken)
+    }
     if (
       !user ||
       (!user.is_superuser &&
@@ -145,6 +153,8 @@ export const Route = createFileRoute("/_layout/scanner")({
 function useSyncStatus(eventId?: string) {
   const [online, setOnline] = useState(() => navigator.onLine)
   const [pendingScans, setPendingScans] = useState<QueuedScanRecord[]>([])
+  const [unassignedPendingCount, setUnassignedPendingCount] = useState(0)
+  const [otherAccountPendingCount, setOtherAccountPendingCount] = useState(0)
   const [isSyncing, setIsSyncing] = useState(false)
   const [roster, setRoster] = useState<RosterRecord | null>(null)
   const [isDownloadingRoster, setIsDownloadingRoster] = useState(false)
@@ -154,9 +164,32 @@ function useSyncStatus(eventId?: string) {
 
   const reload = useCallback(async () => {
     try {
-      setPendingScans(await getPendingScans())
+      const accountId = await getOfflineAccountId()
+      const queued = await getAllQueuedScans()
+      setPendingScans(
+        accountId
+          ? queued.filter(
+              (record) => !record.synced && record.account_id === accountId,
+            )
+          : [],
+      )
+      setUnassignedPendingCount(
+        queued.filter((record) => !record.synced && !record.account_id).length,
+      )
+      setOtherAccountPendingCount(
+        accountId
+          ? queued.filter(
+              (record) =>
+                !record.synced &&
+                Boolean(record.account_id) &&
+                record.account_id !== accountId,
+            ).length
+          : 0,
+      )
     } catch {
       setPendingScans([])
+      setUnassignedPendingCount(0)
+      setOtherAccountPendingCount(0)
     }
   }, [])
 
@@ -281,6 +314,8 @@ function useSyncStatus(eventId?: string) {
   return {
     online,
     pendingScans,
+    unassignedPendingCount,
+    otherAccountPendingCount,
     isSyncing,
     retrySync,
     roster,
@@ -290,9 +325,42 @@ function useSyncStatus(eventId?: string) {
   }
 }
 
+async function exportLegacyAttendanceScans(): Promise<void> {
+  const records = (await getAllQueuedScans()).filter(
+    (record) => !record.synced && !record.account_id,
+  )
+  if (records.length === 0) {
+    toast.info("No unassigned pending scans to export")
+    return
+  }
+
+  const payload = {
+    export_type: "legacy-attendance-scans",
+    exported_at: new Date().toISOString(),
+    record_count: records.length,
+    records,
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `legacy-attendance-scans-${new Date().toISOString().slice(0, 10)}.json`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  toast.success(
+    "Legacy scans exported. Keep the file private and give it to the system administrator.",
+  )
+}
+
 function SyncStatusCard({
   online,
   pendingScans,
+  unassignedPendingCount,
+  otherAccountPendingCount,
   isSyncing,
   onRetry,
   roster,
@@ -303,6 +371,8 @@ function SyncStatusCard({
 }: {
   online: boolean
   pendingScans: QueuedScanRecord[]
+  unassignedPendingCount: number
+  otherAccountPendingCount: number
   isSyncing: boolean
   onRetry: () => void
   roster: RosterRecord | null
@@ -332,6 +402,41 @@ function SyncStatusCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {otherAccountPendingCount > 0 && (
+          <div className="rounded-md border p-3 text-sm" role="status">
+            {otherAccountPendingCount} pending scan
+            {otherAccountPendingCount === 1 ? " belongs" : "s belong"} to
+            another account. They are left untouched. Sign in as that account to
+            sync them.
+          </div>
+        )}
+        {unassignedPendingCount > 0 && (
+          <div
+            className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm"
+            role="alert"
+          >
+            {unassignedPendingCount} older pending scan
+            {unassignedPendingCount === 1 ? " has" : "s have"} no saved account
+            owner. They are preserved but will not sync automatically because
+            doing so could record attendance under the wrong account. Do not
+            clear this browser's site data. Export the records for administrator
+            recovery before closing this browser.
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void exportLegacyAttendanceScans()}
+              >
+                <Download className="mr-1 h-3 w-3" />
+                Export legacy scans
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              The export contains attendance and credential data. Keep it
+              private and share it only with the system administrator.
+            </p>
+          </div>
+        )}
         {activeSession ? (
           <div className="flex items-center justify-between border-b pb-3 text-sm">
             <span className="text-muted-foreground">Active session</span>
@@ -496,6 +601,11 @@ function Scanner() {
         toast.error("No active attendance session")
         return
       }
+      const accountId = await getOfflineAccountId()
+      if (!accountId) {
+        toast.error("Reconnect and verify your account before scanning")
+        return
+      }
       const nowStr = new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -520,6 +630,7 @@ function Scanner() {
           const queued = await getAllQueuedScans()
           const isDuplicate = queued.some(
             (record) =>
+              record.account_id === accountId &&
               !record.synced &&
               record.event_id === eventId &&
               record.attendance_session_id === activeSession.id &&
@@ -1256,6 +1367,8 @@ function Scanner() {
       <SyncStatusCard
         online={syncStatus.online}
         pendingScans={syncStatus.pendingScans}
+        unassignedPendingCount={syncStatus.unassignedPendingCount}
+        otherAccountPendingCount={syncStatus.otherAccountPendingCount}
         isSyncing={syncStatus.isSyncing}
         onRetry={syncStatus.retrySync}
         roster={syncStatus.roster}

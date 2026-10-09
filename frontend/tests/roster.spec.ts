@@ -40,6 +40,7 @@ interface RosterEntryLike {
 
 interface RosterRecordLike {
   event_id: string
+  account_id?: string
   entries: RosterEntryLike[]
   downloaded_at: string
   entry_count: number
@@ -128,7 +129,11 @@ const test = base.extend<{
           status: 200,
           contentType: "application/json",
           headers: corsHeaders,
-          body: JSON.stringify({ is_superuser: true, can_scan: true }),
+          body: JSON.stringify({
+            id: "user-1",
+            is_superuser: true,
+            can_scan: true,
+          }),
         })
       })
       await page.route(
@@ -321,7 +326,10 @@ async function seedRoster(page: Page, roster: RosterRecordLike): Promise<void> {
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("rosters", "readwrite")
-          tx.objectStore("rosters").add(r)
+          tx.objectStore("rosters").add({
+            ...r,
+            account_id: r.account_id ?? "user-1",
+          })
           tx.oncomplete = () => {
             db.close()
             resolve()
@@ -461,6 +469,32 @@ test.describe("Offline roster caching and scanning", () => {
     await expect(card.getByText("2 attendees on offline roster")).toBeVisible()
     await expect(
       card.getByText("Roster not downloaded for this event"),
+    ).not.toBeVisible()
+  })
+
+  test("does not use another account's cached offline roster", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    await gotoApp(page)
+    await setToken(page)
+    await seedRoster(page, {
+      event_id: "evt-1",
+      account_id: "user-2",
+      entries: [rosterEntry()],
+      downloaded_at: "2026-01-01T00:00:00.000Z",
+      entry_count: 1,
+      credential_count: 2,
+    })
+    await page.goto("/scanner?event_id=evt-1")
+
+    const card = await getSyncStatusCard(page)
+    await expect(
+      card.getByText("Roster not downloaded for this event"),
+    ).toBeVisible()
+    await expect(
+      card.getByText("1 attendees on offline roster"),
     ).not.toBeVisible()
   })
 
