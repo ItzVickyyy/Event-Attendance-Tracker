@@ -592,6 +592,15 @@ def update_attendance(
         target = session.get(AttendanceSession, update_dict["attendance_session_id"])
         if not target:
             raise HTTPException(status_code=404, detail="Attendance session not found")
+        registration = session.get(EventRegistration, record.registration_id)
+        if not registration or target.event_id != registration.event_id:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Attendance session must belong to the same event "
+                    "as the attendance record"
+                ),
+            )
     record.sqlmodel_update(update_dict)
     record.updated_at = get_datetime_utc()
     session.add(record)

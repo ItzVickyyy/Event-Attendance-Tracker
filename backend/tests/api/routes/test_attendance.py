@@ -1073,6 +1073,41 @@ def test_attendance_read_filtering_and_admin_crud(
     assert patch_res.status_code == 200
     assert patch_res.json()["status"] == AttendanceStatus.present.value
 
+    # An attendance record cannot be moved to a session from another event.
+    other_event_res = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=superuser_token_headers,
+        json={
+            "event_name": f"Other CRUD Event {random_lower_string()[:5]}",
+            "event_date": "2026-09-16",
+            "status": "open",
+        },
+    )
+    assert other_event_res.status_code == 200
+    other_event_id = other_event_res.json()["id"]
+    other_sessions_res = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={other_event_id}",
+        headers=superuser_token_headers,
+    )
+    assert other_sessions_res.status_code == 200
+    other_session_id = other_sessions_res.json()["data"][0]["id"]
+
+    original_session_id = scan_res.json()["attendance"]["attendance_session_id"]
+    cross_event_patch = client.patch(
+        f"{settings.API_V1_STR}/attendance/{rec_id}",
+        headers=superuser_token_headers,
+        json={"attendance_session_id": other_session_id},
+    )
+    assert cross_event_patch.status_code == 400
+    assert "same event" in cross_event_patch.json()["detail"].lower()
+
+    unchanged = client.get(
+        f"{settings.API_V1_STR}/attendance/{rec_id}",
+        headers=superuser_token_headers,
+    )
+    assert unchanged.status_code == 200
+    assert unchanged.json()["attendance_session_id"] == original_session_id
+
     # 6. Delete record (admin)
     del_res = client.delete(
         f"{settings.API_V1_STR}/attendance/{rec_id}",
