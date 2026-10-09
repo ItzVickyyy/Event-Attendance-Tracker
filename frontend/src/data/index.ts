@@ -397,7 +397,9 @@ export async function getRoster(
 export async function putRoster(roster: RosterRecord): Promise<void> {
   const accountId = await getOfflineAccountId()
   if (!accountId) {
-    throw new Error("Account identity is not verified for offline roster storage")
+    throw new Error(
+      "Account identity is not verified for offline roster storage",
+    )
   }
   const db = await getDB()
   await db.put("rosters", { ...roster, account_id: accountId })
