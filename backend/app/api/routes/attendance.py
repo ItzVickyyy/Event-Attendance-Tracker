@@ -13,6 +13,7 @@ from app.api.deps import (
     SessionDep,
     class_rep_assignment,
     require_admin,
+    require_class_rep_or_higher,
     require_class_rep_assignment,
     require_scanner_permission,
 )
@@ -46,7 +47,7 @@ router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
 @router.get(
-    "/", response_model=AttendancesPublic, dependencies=[Depends(require_admin)]
+    "/", response_model=AttendancesPublic, dependencies=[Depends(require_class_rep_or_higher)]
 )
 def read_attendances(
     session: SessionDep,
@@ -164,7 +165,7 @@ def read_attendances(
     )
 
 
-@router.get("/export", dependencies=[Depends(require_admin)])
+@router.get("/export", dependencies=[Depends(require_class_rep_or_higher)])
 def export_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -517,7 +518,7 @@ def scan_attendance_manual(
 @router.get(
     "/{record_id}",
     response_model=AttendancePublic,
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_class_rep_or_higher)],
 )
 def read_attendance(
     session: SessionDep, _current_user: CurrentUser, record_id: uuid.UUID
