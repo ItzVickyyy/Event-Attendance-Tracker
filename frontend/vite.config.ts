@@ -11,7 +11,11 @@ const bundleDiagnostics = {
   apply: "build" as const,
   generateBundle(_options, bundle) {
     for (const output of Object.values(bundle)) {
-      if (output.type !== "chunk" || !output.isEntry || output.code.length < 500_000) {
+      if (
+        output.type !== "chunk" ||
+        !output.isEntry ||
+        output.code.length < 500_000
+      ) {
         continue
       }
       const largestModules = Object.entries(output.modules)
