@@ -29,10 +29,7 @@ from app.models import (
     User,
     UserRole,
 )
-from app.student_academics import (
-    ClassRepresentativeAssignment,
-    StudentEnrollment,
-)
+from app.student_academics import ClassRepresentativeAssignment, StudentEnrollment
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
