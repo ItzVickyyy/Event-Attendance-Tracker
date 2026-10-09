@@ -6,7 +6,6 @@ from sqlmodel import Session, delete, select
 
 from app.academic_catalog import AcademicMajor, AcademicSectionMajor
 from app.core.config import settings
-
 from app.core.db import engine, init_db, test_engine
 from app.core.security import get_password_hash
 from app.initial_data import _seed_academic_catalog
