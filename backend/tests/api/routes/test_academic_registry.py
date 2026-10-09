@@ -636,3 +636,18 @@ def test_section_roster_uses_historical_enrollment_not_legacy_section(
     workbook = load_workbook(BytesIO(historical_export.content), read_only=True)
     exported_rows = list(workbook.active.values)
     assert any(student["student_number"] in row for row in exported_rows)
+
+    historical_details = client.get(
+        _api(f"/academic-registry/students/{student['id']}"),
+        headers=headers,
+        params={"section_id": section["id"]},
+    )
+    assert historical_details.status_code == 200
+    assert historical_details.json()["section_id"] == section["id"]
+
+    wrong_section_details = client.get(
+        _api(f"/academic-registry/students/{student['id']}"),
+        headers=headers,
+        params={"section_id": next_year_section["id"]},
+    )
+    assert wrong_section_details.status_code == 404

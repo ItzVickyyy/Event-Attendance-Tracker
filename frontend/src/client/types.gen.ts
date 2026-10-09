@@ -4028,7 +4028,12 @@ export type academicRegistryReadStudentDetailsData = {
          */
         student_id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Section Id
+         */
+        section_id?: string | null;
+    };
     url: '/api/v1/academic-registry/students/{student_id}';
 };
 

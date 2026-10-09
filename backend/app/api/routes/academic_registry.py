@@ -255,7 +255,10 @@ def read_section_students(
 
 @router.get("/students/{student_id}")
 def read_student_details(
-    session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
+    session: SessionDep,
+    _current_user: CurrentUser,
+    student_id: uuid.UUID,
+    section_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     if not _current_user.is_superuser and _current_user.role not in (
         UserRole.super_admin,
@@ -272,6 +275,12 @@ def read_student_details(
             raise HTTPException(
                 status_code=403, detail="No Class Representative assignment found"
             )
+        if section_id is not None and section_id != assignment["section_id"]:
+            raise HTTPException(
+                status_code=403,
+                detail="Section is outside your assigned section",
+            )
+        section_id = assignment["section_id"]
         allowed = (
             session.connection()
             .execute(
@@ -296,19 +305,24 @@ def read_student_details(
                 status_code=403, detail="Student is outside your assigned section"
             )
 
+    section_filter = " AND se.section_id=:section_id" if section_id is not None else ""
+    parameters = {"id": student_id}
+    if section_id is not None:
+        parameters["section_id"] = section_id
     row = (
         session.connection()
         .execute(
-            text("""
+            text(f"""
         SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name, p.name_extension,
                p.email, p.contact_number, se.id AS enrollment_id, se.student_status, se.section_id, se.academic_year_id,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='nfc' AND c.is_active=true) AS nfc_registered,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true) AS qr_registered,
                (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS qr_credential_value
         FROM students s JOIN people p ON p.id=s.person_id LEFT JOIN student_enrollments se ON se.student_id=s.id
-        WHERE s.id=:id AND s.archived_at IS NULL ORDER BY se.created_at DESC NULLS LAST LIMIT 1
+        WHERE s.id=:id AND s.archived_at IS NULL{section_filter}
+        ORDER BY se.created_at DESC NULLS LAST LIMIT 1
     """),
-            {"id": student_id},
+            parameters,
         )
         .mappings()
         .first()
