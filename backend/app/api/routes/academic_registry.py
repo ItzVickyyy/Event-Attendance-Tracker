@@ -53,7 +53,10 @@ def _section_row_query() -> str:
         JOIN academic_years ay ON ay.id = s.academic_year_id
         LEFT JOIN academic_section_majors sm ON sm.section_id = s.id
         LEFT JOIN academic_majors m ON m.id = sm.major_id
-        LEFT JOIN student_enrollments se ON se.section_id = s.id AND se.academic_year_id = ay.id
+        LEFT JOIN student_enrollments se
+          ON se.section_id = s.id
+         AND se.academic_year_id = ay.id
+         AND se.archived_at IS NULL
         LEFT JOIN students st ON st.id = se.student_id
         GROUP BY s.id, s.program_id, p.program_code, p.program_name,
                  m.code, m.name, s.section_code, s.section_name, s.year_level, ay.id, ay.label
