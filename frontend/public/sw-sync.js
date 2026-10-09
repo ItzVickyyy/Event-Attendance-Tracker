@@ -123,7 +123,11 @@ function getPendingRecords(db, accountId) {
     const store = tx.objectStore("attendanceQueue")
     const request = store.getAll()
     request.onsuccess = () => {
-      // Missing account_id identifies legacy records. Keep them queued, but\n      // never submit them under an account that did not create them.\n      const records = (request.result || []).filter(\n        (record) => !record.synced && record.account_id === accountId,\n      )
+      // Missing account_id identifies legacy records. Keep them queued, but
+      // never submit them under an account that did not create them.
+      const records = (request.result || []).filter(
+        (record) => !record.synced && record.account_id === accountId,
+      )
       records.sort((a, b) => {
         const byCreated =
           a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0
@@ -285,7 +289,11 @@ function requestAuthFromClients() {
             if (data.type === "PWA_SYNC_TOKEN") {
               settled = true
               clearTimeout(timer)
-              resolve({\n                token: data.token || "",\n                accountId: data.accountId || "",\n                apiBase: data.apiBase || "",\n              })
+              resolve({
+                token: data.token || "",
+                accountId: data.accountId || "",
+                apiBase: data.apiBase || "",
+              })
             }
           }
           try {
