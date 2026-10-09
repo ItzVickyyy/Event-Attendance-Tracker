@@ -39,7 +39,10 @@ def _section_rows(session: SessionDep, section_id: uuid.UUID):
             StudentEnrollment,
             col(StudentEnrollment.student_id) == col(Student.id),
         )
-        .where(StudentEnrollment.section_id == section_id)
+        .where(
+            StudentEnrollment.section_id == section_id,
+            StudentEnrollment.archived_at.is_(None),
+        )
     )
     if section:
         statement = statement.where(
