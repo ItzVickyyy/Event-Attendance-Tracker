@@ -257,6 +257,17 @@ def update_user(
         current_user.is_superuser or current_user.role == UserRole.super_admin
     )
     submitted_fields = user_in.model_dump(exclude_unset=True)
+    if (
+        db_user.role != UserRole.class_representative
+        and submitted_fields.get("role") == UserRole.class_representative
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Class Representative role changes must use "
+                "the dedicated assignment workflow"
+            ),
+        )
     if db_user.id == current_user.id and is_super_admin:
         requested_role = submitted_fields.get("role", db_user.role)
         requested_superuser = submitted_fields.get("is_superuser", db_user.is_superuser)

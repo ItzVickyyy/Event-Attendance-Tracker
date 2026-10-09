@@ -202,6 +202,34 @@ def test_create_class_representative_requires_assignment_workflow(
         assert crud.get_user_by_email(session=db, email=email) is None
 
 
+def test_user_cannot_be_promoted_to_class_representative_without_assignment(
+    client: TestClient,
+    db: Session,
+) -> None:
+    target = create_random_user(db)
+    admin_headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.admin,
+    )
+    super_admin_headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.super_admin,
+        is_superuser=True,
+    )
+
+    for headers in (admin_headers, super_admin_headers):
+        response = client.patch(
+            f"{settings.API_V1_STR}/users/{target.id}",
+            headers=headers,
+            json={"role": UserRole.class_representative.value},
+        )
+        assert response.status_code == 403
+        db.refresh(target)
+        assert target.role != UserRole.class_representative
+
+
 def test_retrieve_users(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:

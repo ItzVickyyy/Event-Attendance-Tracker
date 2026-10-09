@@ -14,20 +14,29 @@ test("User accounts administration is accessible to a super admin", async ({
   await expect(page.getByRole("button", { name: "Add account" })).toBeVisible()
 })
 
-test("Create a class representative account", async ({ page }) => {
-  await page.goto("/administration/users")
+test("Create a class representative account with an assigned section", async ({
+  page,
+}) => {
+  await page.goto("/administration/class-representatives")
   const email = randomEmail()
-  const password = randomPassword()
 
-  await page.getByRole("button", { name: "Add account" }).click()
-  await page.getByPlaceholder("Full name").fill("Test Class Representative")
-  await page.getByPlaceholder("name@example.com").fill(email)
-  await page.getByPlaceholder("At least 8 characters").fill(password)
+  await page.getByRole("button", { name: "Create Class Representative" }).click()
+  await page.getByLabel("First Name").fill("Test")
+  await page.getByLabel("Middle Initial").fill("A")
+  await page.getByLabel("Last Name").fill("Representative")
+  await page.getByLabel("Email").fill(email)
+
+  await page.getByRole("combobox").nth(0).click()
+  await page.getByRole("option", { name: /2026-2027/ }).click()
+  await page.getByRole("combobox").nth(1).click()
+  await page.getByRole("option", { name: /BSIT WMAD 3A/ }).click()
   await page.getByRole("button", { name: "Create account" }).click()
 
-  await expect(page.getByText("Account created")).toBeVisible()
+  await expect(page.getByText("Class Representative account created")).toBeVisible()
   await expect(page.getByRole("dialog")).not.toBeVisible()
-  await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible()
+  const row = page.getByRole("row").filter({ hasText: email })
+  await expect(row).toBeVisible()
+  await expect(row).toContainText("WMAD 3A")
 })
 
 test("Super admin can create an admin account", async ({ page }) => {
