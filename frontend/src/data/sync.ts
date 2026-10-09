@@ -127,11 +127,13 @@ export function setupSyncMessageHandlers(): void {
     if (data?.type !== "PWA_SYNC_GET_TOKEN") return
     const port = event.ports?.[0]
     if (!port) return
-    void getOfflineAccountId().then((accountId) => {
+    const token = localStorage.getItem("access_token") ?? ""
+    void getOfflineAccountId(token).then((accountId) => {
+      const sessionUnchanged = localStorage.getItem("access_token") === token
       port.postMessage({
         type: "PWA_SYNC_TOKEN",
-        token: localStorage.getItem("access_token") ?? "",
-        accountId,
+        token: sessionUnchanged ? token : "",
+        accountId: sessionUnchanged ? accountId : null,
         apiBase: import.meta.env.VITE_API_URL ?? "",
       })
     })
