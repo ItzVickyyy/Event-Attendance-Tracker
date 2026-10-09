@@ -97,10 +97,10 @@ const test = base.extend<{
           contentType: "application/json",
           headers: corsHeaders,
           body: JSON.stringify({
-              id: "user-1",
-              is_superuser: true,
-              can_scan: true,
-            }),
+            id: "user-1",
+            is_superuser: true,
+            can_scan: true,
+          }),
         })
       })
       await cdp.send("Fetch.enable", {
