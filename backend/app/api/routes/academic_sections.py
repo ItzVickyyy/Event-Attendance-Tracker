@@ -31,12 +31,21 @@ router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 
 
 def _section_rows(session: SessionDep, section_id: uuid.UUID):
-    return session.exec(
+    section = session.get(AcademicSection, section_id)
+    statement = (
         select(Student, Person)
         .join(Person, cast(Any, col(Person.id) == col(Student.person_id)))
-        .where(Student.section_id == section_id)
-        .order_by(col(Student.student_number).asc())
-    ).all()
+        .join(
+            StudentEnrollment,
+            col(StudentEnrollment.student_id) == col(Student.id),
+        )
+        .where(StudentEnrollment.section_id == section_id)
+    )
+    if section:
+        statement = statement.where(
+            StudentEnrollment.academic_year_id == section.academic_year_id
+        )
+    return session.exec(statement.order_by(col(Student.student_number).asc())).all()
 
 
 def _student_status(student: Student) -> str:

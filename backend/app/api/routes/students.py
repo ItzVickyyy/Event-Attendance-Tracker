@@ -19,6 +19,7 @@ from app.models import (
     get_datetime_utc,
 )
 from app.services.reference_codes import next_student_reference_code
+from app.student_academics import StudentEnrollment
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -105,8 +106,21 @@ def read_students(
             )
         section_id = assignment["section_id"]
     if section_id:
-        count_statement = count_statement.where(col(Student.section_id) == section_id)
-        statement = statement.where(col(Student.section_id) == section_id)
+        section = session.get(AcademicSection, section_id)
+        enrollment_join = col(StudentEnrollment.student_id) == col(Student.id)
+        count_statement = count_statement.join(
+            StudentEnrollment, enrollment_join
+        ).where(StudentEnrollment.section_id == section_id)
+        statement = statement.join(StudentEnrollment, enrollment_join).where(
+            StudentEnrollment.section_id == section_id
+        )
+        if section:
+            count_statement = count_statement.where(
+                StudentEnrollment.academic_year_id == section.academic_year_id
+            )
+            statement = statement.where(
+                StudentEnrollment.academic_year_id == section.academic_year_id
+            )
 
     if person_id:
         count_statement = count_statement.where(col(Student.person_id) == person_id)
