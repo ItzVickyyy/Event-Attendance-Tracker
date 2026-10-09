@@ -275,6 +275,7 @@ def create_class_representative(
             name_extension=payload.extension.strip() if payload.extension else None,
             can_scan=False,
         ),
+        commit=False,
     )
     user.must_change_password = True
     session.add(user)
@@ -284,17 +285,29 @@ def create_class_representative(
         section_id=section["id"],
     )
     session.add(assignment)
+    session.flush()
+    if settings.emails_enabled:
+        try:
+            email_data = generate_new_account_email(
+                email_to=user.email,
+                username=user.email,
+                password=temporary_password,
+            )
+            send_email(
+                email_to=user.email,
+                subject=email_data.subject,
+                html_content=email_data.html_content,
+            )
+        except Exception as exc:
+            session.rollback()
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Class Representative account was not created because "
+                    "credentials could not be delivered. Check email delivery "
+                    "and retry."
+                ),
+            ) from exc
     session.commit()
     session.refresh(user)
-    if settings.emails_enabled:
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.email,
-            password=temporary_password,
-        )
-        send_email(
-            email_to=user.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
     return user
