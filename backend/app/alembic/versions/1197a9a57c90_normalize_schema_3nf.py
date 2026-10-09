@@ -5,6 +5,8 @@ Revises: bdb851e7e407
 Create Date: 2026-09-12 17:45:39.755939
 
 """
+import uuid
+
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
@@ -26,6 +28,211 @@ attendeetype_enum = postgresql.ENUM('student', 'faculty', 'staff', 'parent_guard
 credentialtype_enum = postgresql.ENUM('nfc', 'qr', name='credentialtype', create_type=False)
 relationshiptype_enum = postgresql.ENUM('mother', 'father', 'guardian', 'grandparent', 'sibling', 'other', name='relationshiptype', create_type=False)
 registrationstatus_enum = postgresql.ENUM('registered', 'cancelled', name='registrationstatus', create_type=False)
+
+
+
+
+def _legacy_uuid(value: str) -> uuid.UUID:
+    """Return a stable UUID for records created while normalizing legacy data."""
+    return uuid.uuid5(uuid.NAMESPACE_URL, f"event-attendance-tracker:legacy:{value}")
+
+
+def _copy_legacy_records(bind):
+    """Copy legacy event, student, NFC, and attendance relationships before dropping old tables."""
+    legacy_events = bind.execute(sa.text(
+        "SELECT id, event_name, event_date, start_time, end_time, attendance_mode, "
+        "organizer, status, created_at, updated_at FROM event ORDER BY id"
+    )).mappings().all()
+    legacy_students = bind.execute(sa.text(
+        "SELECT id, student_number, first_name, middle_name, last_name, extension, "
+        "year, section, nfc_uid, nfc_registered, created_at, updated_at "
+        "FROM student ORDER BY id"
+    )).mappings().all()
+    legacy_attendance = bind.execute(sa.text(
+        "SELECT id, event_id, student_id, created_at, updated_at FROM attendance ORDER BY id"
+    )).mappings().all()
+
+    organization_ids = {}
+    organizations = {}
+    for event in legacy_events:
+        organizer = event["organizer"]
+        if organizer not in organization_ids:
+            organization_id = _legacy_uuid(f"organization:{organizer}")
+            organization_ids[organizer] = organization_id
+            organizations[organizer] = {
+                "id": organization_id,
+                "name": organizer,
+                "description": None,
+                "created_at": None,
+                "updated_at": None,
+            }
+    if organizations:
+        bind.execute(sa.text(
+            "INSERT INTO organizations (id, name, description, created_at, updated_at) "
+            "VALUES (:id, :name, :description, :created_at, :updated_at)"
+        ), list(organizations.values()))
+
+    program_id = _legacy_uuid("academic-program")
+    section_ids = {}
+    if legacy_students:
+        bind.execute(sa.text(
+            "INSERT INTO academic_programs (id, program_code, program_name, created_at, updated_at) "
+            "VALUES (:id, :program_code, :program_name, NULL, NULL)"
+        ), {
+            "id": program_id,
+            "program_code": "LEGACY",
+            "program_name": "Legacy imported program",
+        })
+
+        for student in legacy_students:
+            key = (student["year"], student["section"])
+            if key not in section_ids:
+                section_ids[key] = _legacy_uuid(
+                    f"academic-section:{key[0]}:{key[1]}"
+                )
+        bind.execute(sa.text(
+            "INSERT INTO academic_sections "
+            "(id, program_id, year_level, section_name, academic_year, created_at, updated_at) "
+            "VALUES (:id, :program_id, :year_level, :section_name, :academic_year, NULL, NULL)"
+        ), [
+            {
+                "id": section_id,
+                "program_id": program_id,
+                "year_level": year_level,
+                "section_name": section_name,
+                # The legacy schema has no academic-year field. Preserve that uncertainty explicitly.
+                "academic_year": "legacy-unknown",
+            }
+            for (year_level, section_name), section_id in section_ids.items()
+        ])
+
+        bind.execute(sa.text(
+            "INSERT INTO people "
+            "(id, first_name, middle_name, last_name, name_extension, contact_number, email, created_at, updated_at) "
+            "VALUES (:id, :first_name, :middle_name, :last_name, :name_extension, NULL, NULL, :created_at, :updated_at)"
+        ), [
+            {
+                "id": student["id"],
+                "first_name": student["first_name"],
+                "middle_name": student["middle_name"],
+                "last_name": student["last_name"],
+                "name_extension": student["extension"],
+                "created_at": student["created_at"],
+                "updated_at": student["updated_at"],
+            }
+            for student in legacy_students
+        ])
+        bind.execute(sa.text(
+            "INSERT INTO attendees (id, person_id, attendee_type, created_at, updated_at) "
+            "VALUES (:id, :person_id, 'student', :created_at, :updated_at)"
+        ), [
+            {
+                "id": student["id"],
+                "person_id": student["id"],
+                "created_at": student["created_at"],
+                "updated_at": student["updated_at"],
+            }
+            for student in legacy_students
+        ])
+        bind.execute(sa.text(
+            "INSERT INTO students (id, person_id, student_number, section_id, created_at, updated_at) "
+            "VALUES (:id, :person_id, :student_number, :section_id, :created_at, :updated_at)"
+        ), [
+            {
+                "id": student["id"],
+                "person_id": student["id"],
+                "student_number": student["student_number"],
+                "section_id": section_ids[(student["year"], student["section"])],
+                "created_at": student["created_at"],
+                "updated_at": student["updated_at"],
+            }
+            for student in legacy_students
+        ])
+        credentials = [
+            {
+                "id": _legacy_uuid(f"nfc-credential:{student['id']}"),
+                "attendee_id": student["id"],
+                "credential_type": "nfc",
+                "credential_value": student["nfc_uid"],
+                "is_active": student["nfc_registered"],
+                "created_at": student["created_at"],
+                "updated_at": student["updated_at"],
+            }
+            for student in legacy_students
+            if student["nfc_uid"] is not None
+        ]
+        if credentials:
+            bind.execute(sa.text(
+                "INSERT INTO attendee_credentials "
+                "(id, attendee_id, credential_type, credential_value, is_active, created_at, updated_at) "
+                "VALUES (:id, :attendee_id, :credential_type, :credential_value, :is_active, :created_at, :updated_at)"
+            ), credentials)
+
+    if legacy_events:
+        bind.execute(sa.text(
+            "INSERT INTO events "
+            "(id, event_name, description, event_date, start_time, end_time, attendance_mode, organization_id, status, created_at, updated_at) "
+            "VALUES (:id, :event_name, NULL, :event_date, :start_time, :end_time, :attendance_mode, :organization_id, :status, :created_at, :updated_at)"
+        ), [
+            {
+                "id": event["id"],
+                "event_name": event["event_name"],
+                "event_date": event["event_date"],
+                "start_time": event["start_time"],
+                "end_time": event["end_time"],
+                "attendance_mode": event["attendance_mode"],
+                "organization_id": organization_ids[event["organizer"]],
+                "status": event["status"],
+                "created_at": event["created_at"],
+                "updated_at": event["updated_at"],
+            }
+            for event in legacy_events
+        ])
+
+    registrations = {}
+    for row in legacy_attendance:
+        key = (row["event_id"], row["student_id"])
+        registrations[key] = {
+            "id": _legacy_uuid(f"registration:{row['event_id']}:{row['student_id']}"),
+            "event_id": row["event_id"],
+            "attendee_id": row["student_id"],
+            "registration_status": "registered",
+            "registered_at": None,
+            "created_at": None,
+            "updated_at": None,
+        }
+    if registrations:
+        bind.execute(sa.text(
+            "INSERT INTO event_registrations "
+            "(id, event_id, attendee_id, registration_status, registered_at, created_at, updated_at) "
+            "VALUES (:id, :event_id, :attendee_id, :registration_status, :registered_at, :created_at, :updated_at)"
+        ), list(registrations.values()))
+
+
+def _restore_legacy_records(bind):
+    """Rebuild legacy event and student rows before dropping normalized tables."""
+    bind.execute(sa.text(
+        "INSERT INTO event "
+        "(id, event_name, event_date, start_time, end_time, attendance_mode, organizer, status, created_at, updated_at) "
+        "SELECT e.id, e.event_name, e.event_date, e.start_time, e.end_time, e.attendance_mode, "
+        "COALESCE(o.name, 'Unknown (normalized event)'), e.status, e.created_at, e.updated_at "
+        "FROM events e LEFT JOIN organizations o ON o.id = e.organization_id"
+    ))
+    bind.execute(sa.text(
+        "INSERT INTO student "
+        "(id, student_number, first_name, middle_name, last_name, extension, year, section, nfc_uid, nfc_registered, created_at, updated_at) "
+        "SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name, p.name_extension, "
+        "COALESCE(sec.year_level, 'unknown'), COALESCE(sec.section_name, 'unknown'), "
+        "cred.credential_value, COALESCE(cred.is_active, FALSE), s.created_at, s.updated_at "
+        "FROM students s JOIN people p ON p.id = s.person_id "
+        "LEFT JOIN academic_sections sec ON sec.id = s.section_id "
+        "LEFT JOIN LATERAL ("
+        "  SELECT ac.credential_value, ac.is_active FROM attendee_credentials ac "
+        "  JOIN attendees a ON a.id = ac.attendee_id "
+        "  WHERE a.person_id = s.person_id AND ac.credential_type = 'nfc' "
+        "  ORDER BY ac.is_active DESC, ac.created_at NULLS LAST, ac.id LIMIT 1"
+        ") cred ON TRUE"
+    ))
 
 
 def upgrade():
@@ -187,7 +394,31 @@ def upgrade():
         sa.UniqueConstraint('attendee_id', 'related_student_id', name='uq_attendee_student_relationship')
     )
 
-    # Drop old student / event FKs and scanned_by FK from attendance
+    # Copy every legacy record before changing or dropping the old relationships.
+    bind = op.get_bind()
+    _copy_legacy_records(bind)
+
+    # Add the new key as nullable, backfill it from each old event/student pair,
+    # then enforce NOT NULL only after every row has a valid registration.
+    op.add_column('attendance', sa.Column('registration_id', sa.Uuid(), nullable=True))
+    op.execute("""
+        UPDATE attendance AS a
+        SET registration_id = er.id
+        FROM event_registrations AS er
+        WHERE er.event_id = a.event_id
+          AND er.attendee_id = a.student_id
+    """)
+    missing_registrations = bind.execute(sa.text(
+        "SELECT count(*) FROM attendance WHERE registration_id IS NULL"
+    )).scalar_one()
+    if missing_registrations:
+        raise RuntimeError(
+            f"Cannot normalize attendance: {missing_registrations} legacy attendance rows "
+            "could not be mapped to event registrations."
+        )
+    op.alter_column('attendance', 'registration_id', nullable=False)
+
+    # Only now remove the old keys. The registration relationship is already populated.
     op.drop_constraint(op.f('attendance_event_id_fkey'), 'attendance', type_='foreignkey')
     op.drop_constraint(op.f('attendance_student_id_fkey'), 'attendance', type_='foreignkey')
     op.drop_constraint(op.f('attendance_scanned_by_fkey'), 'attendance', type_='foreignkey')
@@ -195,8 +426,6 @@ def upgrade():
     op.drop_column('attendance', 'event_id')
     op.drop_column('attendance', 'student_id')
 
-    # Update attendance table
-    op.add_column('attendance', sa.Column('registration_id', sa.Uuid(), nullable=False))
     op.create_index(op.f('ix_attendance_registration_id'), 'attendance', ['registration_id'], unique=True)
     op.create_foreign_key('attendance_registration_id_fkey', 'attendance', 'event_registrations', ['registration_id'], ['id'], ondelete='CASCADE')
     op.create_foreign_key('attendance_scanned_by_fkey', 'attendance', 'user', ['scanned_by'], ['id'], ondelete='SET NULL')
@@ -263,15 +492,39 @@ def downgrade():
     op.create_index(op.f('ix_student_student_number'), 'student', ['student_number'], unique=True)
     op.create_index(op.f('ix_student_nfc_uid'), 'student', ['nfc_uid'], unique=True)
 
-    # 2. Revert attendance table
+    # Restore the legacy event/student records before dropping normalized tables.
+    bind = op.get_bind()
+    _restore_legacy_records(bind)
+
+    # Resolve every attendance row back to a legacy student and event before
+    # removing registration_id. Refuse to discard attendance for non-student attendees.
+    op.add_column('attendance', sa.Column('student_id', sa.Uuid(), nullable=True))
+    op.add_column('attendance', sa.Column('event_id', sa.Uuid(), nullable=True))
+    op.execute("""
+        UPDATE attendance AS a
+        SET event_id = er.event_id,
+            student_id = s.id
+        FROM event_registrations AS er
+        JOIN attendees AS at ON at.id = er.attendee_id
+        JOIN students AS s ON s.person_id = at.person_id
+        WHERE er.id = a.registration_id
+    """)
+    unmapped_attendance = bind.execute(sa.text(
+        "SELECT count(*) FROM attendance WHERE event_id IS NULL OR student_id IS NULL"
+    )).scalar_one()
+    if unmapped_attendance:
+        raise RuntimeError(
+            f"Cannot downgrade safely: {unmapped_attendance} attendance rows do not map "
+            "to a legacy student and event."
+        )
+    op.alter_column('attendance', 'student_id', nullable=False)
+    op.alter_column('attendance', 'event_id', nullable=False)
+
     op.drop_table('attendance_corrections')
     op.drop_constraint('attendance_scanned_by_fkey', 'attendance', type_='foreignkey')
     op.drop_constraint('attendance_registration_id_fkey', 'attendance', type_='foreignkey')
     op.drop_index(op.f('ix_attendance_registration_id'), table_name='attendance')
     op.drop_column('attendance', 'registration_id')
-
-    op.add_column('attendance', sa.Column('student_id', sa.Uuid(), nullable=False))
-    op.add_column('attendance', sa.Column('event_id', sa.Uuid(), nullable=False))
     op.create_foreign_key('attendance_scanned_by_fkey', 'attendance', 'user', ['scanned_by'], ['id'])
     op.create_foreign_key('attendance_student_id_fkey', 'attendance', 'student', ['student_id'], ['id'])
     op.create_foreign_key('attendance_event_id_fkey', 'attendance', 'event', ['event_id'], ['id'])
