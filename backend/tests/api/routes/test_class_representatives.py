@@ -178,6 +178,21 @@ def test_super_admin_can_manage_class_representative_assignment_and_students(
     )
     assert archived_enrollment.status_code == 404
 
+    active_roster = client.get(
+        _api(f"/academic-registry/sections/{section_id}/students"),
+        headers=superuser_token_headers,
+    )
+    assert active_roster.status_code == 200
+    assert all(row["id"] != student_id for row in active_roster.json()["data"])
+
+    archived_roster = client.get(
+        _api(f"/academic-registry/sections/{section_id}/students"),
+        headers=superuser_token_headers,
+        params={"include_archived": True},
+    )
+    assert archived_roster.status_code == 200
+    assert any(row["id"] == student_id for row in archived_roster.json()["data"])
+
     restored = client.post(
         _api("/academic-registry/enrollments"),
         headers=superuser_token_headers,
