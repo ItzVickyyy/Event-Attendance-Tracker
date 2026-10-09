@@ -323,6 +323,7 @@ class StudentPromotionService:
         else:
             enrollment.section_id = academic_section.id
             enrollment.student_status = status
+            enrollment.archived_at = None
             enrollment.updated_at = get_datetime_utc()
 
         self.session.add(enrollment)

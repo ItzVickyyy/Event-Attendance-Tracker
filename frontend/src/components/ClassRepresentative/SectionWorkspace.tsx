@@ -166,10 +166,13 @@ export function ClassRepresentativeSectionWorkspace() {
       )
     )
       return
-    const response = await fetch(`${api}/students/${student.id}`, {
-      method: "DELETE",
-      headers: authHeaders(),
-    })
+    const response = await fetch(
+      `${api}/students/${student.id}?academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      },
+    )
     if (!response.ok) {
       const body = await response.json().catch(() => null)
       toast.error(body?.detail ?? "Unable to archive student")

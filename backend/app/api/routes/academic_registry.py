@@ -53,7 +53,10 @@ def _section_row_query() -> str:
         JOIN academic_years ay ON ay.id = s.academic_year_id
         LEFT JOIN academic_section_majors sm ON sm.section_id = s.id
         LEFT JOIN academic_majors m ON m.id = sm.major_id
-        LEFT JOIN student_enrollments se ON se.section_id = s.id AND se.academic_year_id = ay.id
+        LEFT JOIN student_enrollments se
+          ON se.section_id = s.id
+         AND se.academic_year_id = ay.id
+         AND se.archived_at IS NULL
         LEFT JOIN students st ON st.id = se.student_id
         GROUP BY s.id, s.program_id, p.program_code, p.program_name,
                  m.code, m.name, s.section_code, s.section_name, s.year_level, ay.id, ay.label
@@ -290,6 +293,7 @@ def read_student_details(
                 WHERE student_id = :student_id
                   AND section_id = :section_id
                   AND academic_year_id = :academic_year_id
+                  AND archived_at IS NULL
                 LIMIT 1
             """),
                 {
@@ -318,7 +322,8 @@ def read_student_details(
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='nfc' AND c.is_active=true) AS nfc_registered,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true) AS qr_registered,
                (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS qr_credential_value
-        FROM students s JOIN people p ON p.id=s.person_id LEFT JOIN student_enrollments se ON se.student_id=s.id
+        FROM students s JOIN people p ON p.id=s.person_id
+        LEFT JOIN student_enrollments se ON se.student_id=s.id AND se.archived_at IS NULL
         WHERE s.id=:id AND s.archived_at IS NULL{section_filter}
         ORDER BY se.created_at DESC NULLS LAST LIMIT 1
     """),
@@ -619,9 +624,39 @@ def create_enrollment(
         )
     ).first()
     if existing:
-        raise HTTPException(
-            status_code=409, detail="Student is already enrolled for this academic year"
+        if existing.archived_at is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Student is already enrolled for this academic year",
+            )
+        existing.section_id = enrollment_in.section_id
+        existing.student_status = enrollment_in.student_status
+        existing.archived_at = None
+        existing.updated_at = get_datetime_utc()
+        session.add(existing)
+        session.flush()
+        latest_section_id = (
+            session.connection()
+            .execute(
+                text("""
+                SELECT se.section_id
+                FROM student_enrollments se
+                JOIN academic_years ay ON ay.id = se.academic_year_id
+                WHERE se.student_id = :student_id
+                  AND se.archived_at IS NULL
+                ORDER BY ay.start_year DESC, se.created_at DESC
+                LIMIT 1
+            """),
+                {"student_id": student.id},
+            )
+            .scalar_one_or_none()
         )
+        student.section_id = latest_section_id
+        student.updated_at = get_datetime_utc()
+        session.add(student)
+        session.commit()
+        session.refresh(existing)
+        return existing
     enrollment = StudentEnrollment.model_validate(enrollment_in)
     session.add(enrollment)
     session.commit()

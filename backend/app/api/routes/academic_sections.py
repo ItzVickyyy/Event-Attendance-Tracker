@@ -7,6 +7,7 @@ from xml.sax.saxutils import escape
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook  # type: ignore[import-untyped]
+from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
@@ -39,7 +40,11 @@ def _section_rows(session: SessionDep, section_id: uuid.UUID):
             StudentEnrollment,
             col(StudentEnrollment.student_id) == col(Student.id),
         )
-        .where(StudentEnrollment.section_id == section_id)
+        .where(
+            StudentEnrollment.section_id == section_id,
+            col(StudentEnrollment.archived_at).is_(None),
+            text("students.archived_at IS NULL"),
+        )
     )
     if section:
         statement = statement.where(

@@ -37,13 +37,16 @@ def _assignment_row(
         SELECT cra.id, cra.user_id, cra.academic_year_id, cra.section_id,
                ay.label AS academic_year, p.program_code, p.program_name,
                s.section_code, s.section_name, s.year_level,
-               COUNT(DISTINCT CASE WHEN st.archived_at IS NULL THEN se.id END) AS student_count
+               COUNT(DISTINCT CASE
+                   WHEN st.archived_at IS NULL AND se.archived_at IS NULL THEN se.id
+               END) AS student_count
         FROM class_representative_assignments cra
         JOIN academic_years ay ON ay.id = cra.academic_year_id
         JOIN academic_sections s ON s.id = cra.section_id
         JOIN academic_programs p ON p.id = s.program_id
         LEFT JOIN student_enrollments se
           ON se.section_id = s.id AND se.academic_year_id = ay.id
+         AND se.archived_at IS NULL
         LEFT JOIN students st ON st.id = se.student_id
         WHERE cra.user_id = :user_id
     """
@@ -106,6 +109,7 @@ def read_my_students(
             JOIN people p ON p.id = s.person_id
             WHERE se.section_id = :section_id
               AND se.academic_year_id = :academic_year_id
+              AND se.archived_at IS NULL
               AND s.archived_at IS NULL
             ORDER BY p.last_name, p.first_name, s.student_number
         """),

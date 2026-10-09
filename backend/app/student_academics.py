@@ -67,6 +67,7 @@ class StudentEnrollment(SQLModel, table=True):
         foreign_key="academic_sections.id", index=True, ondelete="RESTRICT"
     )
     student_status: StudentStatus = Field(default=StudentStatus.regular, max_length=50)
+    archived_at: datetime | None = Field(default=None, index=True)
     created_at: datetime | None = Field(default_factory=get_datetime_utc)
     updated_at: datetime | None = Field(default_factory=get_datetime_utc)
 
@@ -77,6 +78,7 @@ class StudentEnrollmentPublic(SQLModel):
     academic_year_id: uuid.UUID
     section_id: uuid.UUID
     student_status: StudentStatus
+    archived_at: datetime | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
