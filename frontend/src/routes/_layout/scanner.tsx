@@ -43,7 +43,6 @@ import type { QueuedScanRecord, RosterRecord } from "@/data"
 import {
   enqueueScan,
   getAllQueuedScans,
-  getPendingScans,
   getRoster,
   getRosterEntryByCredential,
   putRoster,
