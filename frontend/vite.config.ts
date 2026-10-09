@@ -22,6 +22,20 @@ export default defineConfig({
   build: {
     outDir: "../backend/app/frontend",
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "qr-scanner",
+              test: /node_modules[\\/]html5-qrcode[\\/]/,
+              priority: 100,
+              entriesAware: true,
+            },
+          ],
+        },
+      },
+    },
   },
   resolve: {
     alias: {
