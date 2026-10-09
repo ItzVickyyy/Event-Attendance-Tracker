@@ -2,10 +2,13 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, delete
+from sqlmodel import Session, delete, select
 
+from app.academic_catalog import AcademicMajor, AcademicSectionMajor
 from app.core.config import settings
-from app.core.db import init_db, test_engine
+from app.core.db import engine, init_db, test_engine
+from app.core.security import get_password_hash
+from app.initial_data import _seed_academic_catalog
 from app.main import app
 from app.models import (
     AcademicProgram,
@@ -24,10 +27,16 @@ from app.models import (
     Student,
     StudentImportRecord,
     User,
+    UserRole,
 )
 from app.student_academics import ClassRepresentativeAssignment, StudentEnrollment
 from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
+
+# API dependencies read this setting when requests are handled. Force test mode
+# so direct `pytest` runs cannot target the development database when .env sets
+# FASTAPI_ENV=development.
+settings.FASTAPI_ENV = "test"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -37,8 +46,32 @@ def db() -> Generator[Session]:
         "test database. Set TEST_DATABASE_URL in .env to a separate database "
         "(e.g. postgresql+psycopg://postgres:changethis@localhost:5433/app_test)."
     )
+    assert test_engine.url.database != engine.url.database, (
+        "TEST_DATABASE_URL must target a different database name than DATABASE_URL. "
+        "Tests must never run against the development database."
+    )
     with Session(test_engine) as session:
         init_db(session, test_engine)
+
+        # A reused test database may contain a stale superuser password from a
+        # previous run. Reconcile only the isolated test account so every test
+        # starts with the credentials configured for this run.
+        superuser = session.exec(
+            select(User).where(User.email == settings.FIRST_SUPERUSER)
+        ).first()
+        assert superuser is not None
+        superuser.hashed_password = get_password_hash(settings.FIRST_SUPERUSER_PASSWORD)
+        superuser.is_superuser = True
+        superuser.is_developer = False
+        superuser.is_active = True
+        superuser.can_scan = True
+        superuser.role = UserRole.super_admin
+        session.add(superuser)
+        session.commit()
+
+        # API and import tests rely on the same baseline academic catalog as
+        # the development seed, but must create it inside TEST_DATABASE_URL.
+        _seed_academic_catalog(session)
         yield session
         for model in [
             StudentImportRecord,
@@ -53,8 +86,10 @@ def db() -> Generator[Session]:
             Attendee,
             StudentEnrollment,
             ClassRepresentativeAssignment,
+            AcademicSectionMajor,
             Student,
             AcademicSection,
+            AcademicMajor,
             AcademicProgram,
             Person,
             Organization,
