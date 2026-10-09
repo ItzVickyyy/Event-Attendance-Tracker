@@ -290,7 +290,11 @@ function requestAuthFromClients() {
           channel.port1.onmessage = (event) => {
             if (settled) return
             const data = event.data || {}
-            if (data.type === "PWA_SYNC_TOKEN") {
+            if (
+              data.type === "PWA_SYNC_TOKEN" &&
+              data.token &&
+              data.accountId
+            ) {
               settled = true
               clearTimeout(timer)
               resolve({
