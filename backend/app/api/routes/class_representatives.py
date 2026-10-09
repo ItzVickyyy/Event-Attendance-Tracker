@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from typing import Any
 
@@ -20,6 +21,13 @@ from app.utils import generate_new_account_email, send_email
 router = APIRouter(prefix="/class-representatives", tags=["class-representatives"])
 
 TEMPORARY_PASSWORD = "Change" + "ThisPassword"
+
+
+def _generate_temporary_password() -> str:
+    """Use a predictable password only in tests, never for real accounts."""
+    if settings.FASTAPI_ENV == "test":
+        return TEMPORARY_PASSWORD
+    return secrets.token_urlsafe(24)
 
 
 def _assignment_row(
@@ -212,6 +220,11 @@ def create_class_representative(
     _current_user: CurrentUser,
     payload: ClassRepresentativeCreate,
 ) -> User:
+    if not settings.emails_enabled and settings.FASTAPI_ENV != "test":
+        raise HTTPException(
+            status_code=503,
+            detail="Email delivery must be configured before creating Class Representative accounts",
+        )
     if crud.get_user_by_email(session=session, email=payload.email):
         raise HTTPException(
             status_code=409, detail="A user with this email already exists"
@@ -248,11 +261,12 @@ def create_class_representative(
         ]
         if part
     )
+    temporary_password = _generate_temporary_password()
     user = crud.create_user(
         session=session,
         user_create=UserCreate(
             email=payload.email,
-            password=TEMPORARY_PASSWORD,
+            password=temporary_password,
             role=UserRole.class_representative,
             full_name=full_name,
             first_name=payload.first_name.strip(),
@@ -276,7 +290,7 @@ def create_class_representative(
         email_data = generate_new_account_email(
             email_to=user.email,
             username=user.email,
-            password=TEMPORARY_PASSWORD,
+            password=temporary_password,
         )
         send_email(
             email_to=user.email,
