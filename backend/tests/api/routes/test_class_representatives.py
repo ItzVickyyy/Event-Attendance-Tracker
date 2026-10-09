@@ -275,4 +275,3 @@ def test_temporary_password_is_random_outside_test_mode(monkeypatch) -> None:
     assert first != second
     assert len(first) >= 32
     assert first != TEMPORARY_PASSWORD
-
