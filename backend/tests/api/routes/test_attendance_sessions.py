@@ -480,6 +480,24 @@ def test_cancelled_session_cannot_be_activated_after_event_closes(
         == "Event must be open before a session can be activated"
     )
 
+    patch_activation = client.patch(
+        f"{settings.API_V1_STR}/attendance-sessions/{session_id}",
+        headers=headers,
+        json={"status": "OPEN"},
+    )
+    assert patch_activation.status_code == 400
+    assert (
+        patch_activation.json()["detail"]
+        == "Event must be open before a session can be activated"
+    )
+    unchanged = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/{session_id}",
+        headers=headers,
+    )
+    assert unchanged.status_code == 200
+    assert unchanged.json()["status"] == "CANCELLED"
+    assert unchanged.json()["is_active"] is False
+
 
 def test_creating_active_session_closes_previous_active_session(
     client: TestClient, superuser_token_headers: dict[str, str]
