@@ -2,7 +2,10 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from app.api.routes.class_representatives import TEMPORARY_PASSWORD
+from app.api.routes.class_representatives import (
+    TEMPORARY_PASSWORD,
+    _generate_temporary_password,
+)
 from app.core.config import settings
 from tests.utils.utils import random_email, random_lower_string
 
@@ -261,3 +264,14 @@ def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
     )
     assert missing_fields.status_code == 422
     assert year["id"] != other_year.json()["id"]
+
+
+def test_temporary_password_is_random_outside_test_mode(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "FASTAPI_ENV", "development")
+
+    first = _generate_temporary_password()
+    second = _generate_temporary_password()
+
+    assert first != second
+    assert len(first) >= 32
+    assert first != TEMPORARY_PASSWORD
