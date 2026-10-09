@@ -8,8 +8,8 @@ import {
   type UserRegister,
   UsersService,
 } from "@/client"
-import { handleError } from "@/utils"
 import { clearOfflineAccount } from "@/data/account"
+import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
 const isLoggedIn = () => {
