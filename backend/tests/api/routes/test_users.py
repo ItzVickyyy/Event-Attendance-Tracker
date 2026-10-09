@@ -7,8 +7,8 @@ from sqlmodel import Session, select
 from app import crud
 from app.core.config import settings
 from app.core.security import verify_password
-from app.models import User, UserCreate
-from tests.utils.user import create_random_user
+from app.models import User, UserCreate, UserRole
+from tests.utils.user import create_random_user, get_token_headers_for_role
 from tests.utils.utils import random_email, random_lower_string
 
 
@@ -174,6 +174,60 @@ def test_create_user_by_normal_user(
         json=data,
     )
     assert r.status_code == 403
+
+
+def test_create_class_representative_requires_assignment_workflow(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: Session,
+) -> None:
+    admin_headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.admin,
+    )
+    for headers in (superuser_token_headers, admin_headers):
+        email = random_email()
+        response = client.post(
+            f"{settings.API_V1_STR}/users/",
+            headers=headers,
+            json={
+                "email": email,
+                "password": random_lower_string(),
+                "role": "class_representative",
+            },
+        )
+        assert response.status_code == 403
+        assert "dedicated assignment workflow" in response.json()["detail"]
+        assert crud.get_user_by_email(session=db, email=email) is None
+
+
+def test_user_cannot_be_promoted_to_class_representative_without_assignment(
+    client: TestClient,
+    db: Session,
+) -> None:
+    target = create_random_user(db)
+    admin_headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.admin,
+    )
+    super_admin_headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.super_admin,
+        is_superuser=True,
+    )
+
+    for headers in (admin_headers, super_admin_headers):
+        response = client.patch(
+            f"{settings.API_V1_STR}/users/{target.id}",
+            headers=headers,
+            json={"role": UserRole.class_representative.value},
+        )
+        assert response.status_code == 403
+        db.refresh(target)
+        assert target.role != UserRole.class_representative
 
 
 def test_retrieve_users(

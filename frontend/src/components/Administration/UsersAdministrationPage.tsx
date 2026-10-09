@@ -23,18 +23,9 @@ import {
 } from "@/components/ui/select"
 import useAuth from "@/hooks/useAuth"
 
-const roles: UserRole[] = [
-  "super_admin",
-  "admin",
-  "class_representative",
-  "student",
-]
-const superAdminAccountRoles: UserRole[] = [
-  "super_admin",
-  "admin",
-  "class_representative",
-]
-const adminAccountRoles: UserRole[] = ["class_representative"]
+const roles: UserRole[] = ["super_admin", "admin", "student"]
+const superAdminAccountRoles: UserRole[] = ["super_admin", "admin", "student"]
+const adminAccountRoles: UserRole[] = ["student"]
 
 export function UsersAdministrationPage() {
   const qc = useQueryClient()
@@ -48,7 +39,7 @@ export function UsersAdministrationPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState<UserRole>("class_representative")
+  const [role, setRole] = useState<UserRole>("student")
   const query = useQuery({
     queryKey: ["admin-users"],
     queryFn: () => UsersService.readUsers({ query: { skip: 0, limit: 1000 } }),
@@ -73,9 +64,7 @@ export function UsersAdministrationPage() {
           full_name: name || undefined,
           role,
           ...(isSuperAdmin ? { is_superuser: role === "super_admin" } : {}),
-          ...(isSuperAdmin
-            ? { can_scan: role !== "class_representative" }
-            : {}),
+          ...(isSuperAdmin ? { can_scan: role === "admin" } : {}),
           is_active: true,
         },
       }),
@@ -85,7 +74,7 @@ export function UsersAdministrationPage() {
       setName("")
       setEmail("")
       setPassword("")
-      setRole("class_representative")
+      setRole("student")
       void qc.invalidateQueries({ queryKey: ["admin-users"] })
     },
     onError: () => toast.error("Unable to create account"),
@@ -255,8 +244,12 @@ function UserRow({
   const canEdit =
     isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
   const editableRoles: UserRole[] = isSuperAdmin
-    ? roles
-    : ["student", "class_representative"]
+    ? user.role === "class_representative"
+      ? [...roles, "class_representative"]
+      : roles
+    : user.role === "class_representative"
+      ? ["student", "class_representative"]
+      : ["student"]
   const save = () => {
     const body: Parameters<typeof UsersService.updateUser>[0]["body"] = {
       role,

@@ -397,7 +397,7 @@ def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> Non
         client, db, role=UserRole.super_admin, is_superuser=True
     )
 
-    # Admins may create operational accounts such as Class Representatives.
+    # Class Representative accounts must use the assignment workflow.
     create_class_rep = client.post(
         f"{settings.API_V1_STR}/users/",
         headers=admin_headers,
@@ -407,8 +407,20 @@ def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> Non
             "role": UserRole.class_representative.value,
         },
     )
-    assert create_class_rep.status_code == 200
-    class_rep_id = create_class_rep.json()["id"]
+    assert create_class_rep.status_code == 403
+
+    # Admins may still create ordinary operational accounts.
+    create_operational_user = client.post(
+        f"{settings.API_V1_STR}/users/",
+        headers=admin_headers,
+        json={
+            "email": random_email(),
+            "password": random_lower_string(),
+            "role": UserRole.student.value,
+        },
+    )
+    assert create_operational_user.status_code == 200
+    operational_user_id = create_operational_user.json()["id"]
 
     # Admins cannot grant scanner capability while creating an account.
     create_scanner = client.post(
@@ -437,7 +449,7 @@ def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> Non
 
     # Admins cannot grant scanner permissions through the general Users API.
     grant_scanner = client.patch(
-        f"{settings.API_V1_STR}/users/{class_rep_id}",
+        f"{settings.API_V1_STR}/users/{operational_user_id}",
         headers=admin_headers,
         json={"can_scan": True},
     )
