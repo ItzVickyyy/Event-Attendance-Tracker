@@ -59,7 +59,7 @@ def create_test_xlsx_sheet(
 
 
 def create_test_xlsx_workbook(
-    sheets: dict[str, list[dict]], headers: list[str] = None
+    sheets: dict[str, list[dict]], headers: list[str] | None = None
 ) -> bytes:
     """Helper to create a test XLSX workbook with multiple sheets in memory"""
     wb = Workbook()
@@ -1049,6 +1049,7 @@ def test_summary_reconciliation_total_mismatch():
     assert len(parsed_rows) == 2
 
     reconciliation = service.get_summary_reconciliation()
+    assert reconciliation is not None
     assert reconciliation["status"] == "mismatched"
     total_check = reconciliation["checks"]["total_students"]
     assert total_check["status"] == "mismatched"
@@ -1103,6 +1104,7 @@ def test_summary_reconciliation_regular_irregular_mismatch():
 
     service.parse_student_import(import_batch, xlsx_data)
     reconciliation = service.get_summary_reconciliation()
+    assert reconciliation is not None
 
     assert reconciliation["status"] == "mismatched"
     regular_check = reconciliation["checks"]["regular"]
@@ -1158,6 +1160,7 @@ def test_summary_reconciliation_section_count_mismatch():
 
     service.parse_student_import(import_batch, xlsx_data)
     reconciliation = service.get_summary_reconciliation()
+    assert reconciliation is not None
 
     assert reconciliation["status"] == "mismatched"
     sections_check = reconciliation["checks"]["sections"]
@@ -1231,6 +1234,7 @@ def test_summary_reconciliation_no_hardcoded_totals():
     assert len(parsed_rows) == 9
 
     reconciliation = service.get_summary_reconciliation()
+    assert reconciliation is not None
     assert reconciliation["status"] == "matched"
     assert reconciliation["checks"]["total_students"]["calculated"] == 9
     assert reconciliation["checks"]["regular"]["calculated"] == 7
@@ -1262,6 +1266,7 @@ def test_summary_reconciliation_missing_summary_sheet_is_unavailable():
 
     service.parse_student_import(import_batch, xlsx_data)
     reconciliation = service.get_summary_reconciliation()
+    assert reconciliation is not None
 
     assert reconciliation["summary_sheet_found"] is False
     assert reconciliation["status"] == "unavailable"
@@ -1308,6 +1313,7 @@ def test_summary_reconciliation_unknown_status_values_reported_unavailable():
 
     service.parse_student_import(import_batch, xlsx_data)
     reconciliation = service.get_summary_reconciliation()
+    assert reconciliation is not None
 
     assert reconciliation["checks"]["regular"]["status"] == "unavailable"
     assert reconciliation["checks"]["irregular"]["status"] == "unavailable"

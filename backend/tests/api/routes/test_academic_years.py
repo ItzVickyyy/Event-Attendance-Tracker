@@ -52,6 +52,13 @@ def test_super_admin_can_create_and_switch_academic_year(
     old_year = next(year for year in years if year["label"] == "2026-2027")
     assert old_year["is_current"] is False
 
+    restore_current = client.post(
+        f"{settings.API_V1_STR}/academic-registry/academic-years/{old_year['id']}/set-current",
+        headers=superuser_token_headers,
+    )
+    assert restore_current.status_code == 200
+    assert restore_current.json()["is_current"] is True
+
 
 def test_academic_year_creation_rejects_invalid_range(
     client: TestClient, superuser_token_headers: dict[str, str]
