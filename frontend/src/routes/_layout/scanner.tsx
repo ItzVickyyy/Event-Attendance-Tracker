@@ -347,8 +347,10 @@ async function exportLegacyAttendanceScans(): Promise<void> {
   const link = document.createElement("a")
   link.href = url
   link.download = `legacy-attendance-scans-${new Date().toISOString().slice(0, 10)}.json`
+  document.body.appendChild(link)
   link.click()
-  URL.revokeObjectURL(url)
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   toast.success(
     "Legacy scans exported. Keep the file private and give it to the system administrator.",
   )
