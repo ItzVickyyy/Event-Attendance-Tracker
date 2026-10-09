@@ -482,6 +482,79 @@ test.describe("Offline roster caching and scanning", () => {
     ).not.toBeVisible()
   })
 
+  test("migrates owned rosters and removes unowned legacy cache rows", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    await page.goto("/login")
+    await setToken(page)
+    await page.evaluate(
+      (rosters) =>
+        new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open("attendance-offline", 3)
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore("rosters", {
+              keyPath: "event_id",
+            })
+          }
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction("rosters", "readwrite")
+            for (const roster of rosters) {
+              tx.objectStore("rosters").put(roster)
+            }
+            tx.oncomplete = () => {
+              db.close()
+              resolve()
+            }
+            tx.onerror = () => reject(tx.error)
+            tx.onabort = () => reject(tx.error)
+          }
+          request.onerror = () => reject(request.error)
+        }),
+      [
+        {
+          event_id: "evt-1",
+          account_id: "user-1",
+          entries: [rosterEntry()],
+          downloaded_at: "2026-01-01T00:00:00.000Z",
+          entry_count: 1,
+          credential_count: 2,
+        },
+        {
+          event_id: "evt-legacy",
+          entries: [rosterEntry()],
+          downloaded_at: "2026-01-01T00:00:00.000Z",
+          entry_count: 1,
+          credential_count: 2,
+        },
+      ],
+    )
+
+    await page.goto("/scanner")
+    const migrated = await readRoster(page)
+    expect(migrated?.account_id).toBe("user-1")
+    const legacyRowsRemaining = await page.evaluate(
+      () =>
+        new Promise<number>((resolve, reject) => {
+          const request = indexedDB.open("attendance-offline", 4)
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction("rosters", "readonly")
+            const getAll = tx.objectStore("rosters").getAll()
+            getAll.onsuccess = () => {
+              db.close()
+              resolve(getAll.result.length)
+            }
+            getAll.onerror = () => reject(getAll.error)
+          }
+          request.onerror = () => reject(request.error)
+        }),
+    )
+    expect(legacyRowsRemaining).toBe(0)
+  })
+
   test("keeps the same event roster separate for different accounts", async ({
     page,
     mockHttp,
