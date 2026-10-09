@@ -107,15 +107,13 @@ def read_students(
         section_id = assignment["section_id"]
     if section_id:
         section = session.get(AcademicSection, section_id)
-        enrollment_join = (
-            col(StudentEnrollment.student_id) == col(Student.id)
-        )
+        enrollment_join = col(StudentEnrollment.student_id) == col(Student.id)
         count_statement = count_statement.join(
             StudentEnrollment, enrollment_join
         ).where(StudentEnrollment.section_id == section_id)
-        statement = statement.join(
-            StudentEnrollment, enrollment_join
-        ).where(StudentEnrollment.section_id == section_id)
+        statement = statement.join(StudentEnrollment, enrollment_join).where(
+            StudentEnrollment.section_id == section_id
+        )
         if section:
             count_statement = count_statement.where(
                 StudentEnrollment.academic_year_id == section.academic_year_id
