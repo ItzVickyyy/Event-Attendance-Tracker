@@ -3,6 +3,7 @@ import {
   type CDPSession,
   expect,
   type Page,
+  type Route,
 } from "@playwright/test"
 
 const SCAN_URL = "http://localhost:8001/api/v1/attendance/scan*"
@@ -273,7 +274,7 @@ async function _seedRecords(
   await page.evaluate(
     (recs) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 3)
+        const request = indexedDB.open("attendance-offline", 4)
         request.onupgradeneeded = () => {
           const db = request.result
           if (!db.objectStoreNames.contains("attendanceQueue")) {
@@ -285,6 +286,12 @@ async function _seedRecords(
           }
           if (!db.objectStoreNames.contains("rosters")) {
             db.createObjectStore("rosters", { keyPath: "event_id" })
+          }
+          if (!db.objectStoreNames.contains("rostersByAccount")) {
+            db.createObjectStore("rostersByAccount", { keyPath: "id" })
+          }
+          if (!db.objectStoreNames.contains("rostersByAccount")) {
+            db.createObjectStore("rostersByAccount", { keyPath: "id" })
           }
         }
         request.onsuccess = () => {
@@ -309,7 +316,7 @@ async function seedRoster(page: Page, roster: RosterRecordLike): Promise<void> {
   await page.evaluate(
     (r) =>
       new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 3)
+        const request = indexedDB.open("attendance-offline", 4)
         request.onupgradeneeded = () => {
           const db = request.result
           if (!db.objectStoreNames.contains("attendanceQueue")) {
@@ -325,10 +332,12 @@ async function seedRoster(page: Page, roster: RosterRecordLike): Promise<void> {
         }
         request.onsuccess = () => {
           const db = request.result
-          const tx = db.transaction("rosters", "readwrite")
-          tx.objectStore("rosters").add({
+          const accountId = r.account_id ?? "user-1"
+          const tx = db.transaction("rostersByAccount", "readwrite")
+          tx.objectStore("rostersByAccount").add({
             ...r,
-            account_id: r.account_id ?? "user-1",
+            id: JSON.stringify([accountId, r.event_id]),
+            account_id: accountId,
           })
           tx.oncomplete = () => {
             db.close()
@@ -347,7 +356,7 @@ async function readQueue(page: Page): Promise<QueueRecordLike[]> {
   return page.evaluate(
     () =>
       new Promise<QueueRecordLike[]>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 3)
+        const request = indexedDB.open("attendance-offline", 4)
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("attendanceQueue", "readonly")
@@ -375,11 +384,13 @@ async function readRoster(page: Page): Promise<RosterRecordLike | undefined> {
   return page.evaluate(
     () =>
       new Promise<RosterRecordLike | undefined>((resolve, reject) => {
-        const request = indexedDB.open("attendance-offline", 3)
+        const request = indexedDB.open("attendance-offline", 4)
         request.onsuccess = () => {
           const db = request.result
-          const tx = db.transaction("rosters", "readonly")
-          const getReq = tx.objectStore("rosters").get("evt-1")
+          const tx = db.transaction("rostersByAccount", "readonly")
+          const getReq = tx
+            .objectStore("rostersByAccount")
+            .get(JSON.stringify(["user-1", "evt-1"]))
           getReq.onsuccess = () => {
             const roster = getReq.result as RosterRecordLike | undefined
             db.close()
@@ -470,6 +481,116 @@ test.describe("Offline roster caching and scanning", () => {
     await expect(
       card.getByText("Roster not downloaded for this event"),
     ).not.toBeVisible()
+  })
+
+  test("migrates owned rosters and removes unowned legacy cache rows", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    const blankLogin = async (route: Route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><html><body></body></html>",
+      })
+    await page.route("**/login", blankLogin)
+    await page.goto("/login")
+    await setToken(page)
+    await page.evaluate(
+      (rosters) =>
+        new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open("attendance-offline", 3)
+          request.onupgradeneeded = () => {
+            request.result.createObjectStore("rosters", {
+              keyPath: "event_id",
+            })
+          }
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction("rosters", "readwrite")
+            for (const roster of rosters) {
+              tx.objectStore("rosters").put(roster)
+            }
+            tx.oncomplete = () => {
+              db.close()
+              resolve()
+            }
+            tx.onerror = () => reject(tx.error)
+            tx.onabort = () => reject(tx.error)
+          }
+          request.onerror = () => reject(request.error)
+        }),
+      [
+        {
+          event_id: "evt-1",
+          account_id: "user-1",
+          entries: [rosterEntry()],
+          downloaded_at: "2026-01-01T00:00:00.000Z",
+          entry_count: 1,
+          credential_count: 2,
+        },
+        {
+          event_id: "evt-legacy",
+          entries: [rosterEntry()],
+          downloaded_at: "2026-01-01T00:00:00.000Z",
+          entry_count: 1,
+          credential_count: 2,
+        },
+      ],
+    )
+
+    await page.unroute("**/login", blankLogin)
+    await page.goto("/scanner")
+    const migrated = await readRoster(page)
+    expect(migrated?.account_id).toBe("user-1")
+    const legacyRowsRemaining = await page.evaluate(
+      () =>
+        new Promise<number>((resolve, reject) => {
+          const request = indexedDB.open("attendance-offline", 4)
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction("rosters", "readonly")
+            const getAll = tx.objectStore("rosters").getAll()
+            getAll.onsuccess = () => {
+              db.close()
+              resolve(getAll.result.length)
+            }
+            getAll.onerror = () => reject(getAll.error)
+          }
+          request.onerror = () => reject(request.error)
+        }),
+    )
+    expect(legacyRowsRemaining).toBe(0)
+  })
+
+  test("keeps the same event roster separate for different accounts", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    await gotoApp(page)
+    await setToken(page)
+    await seedRoster(page, {
+      event_id: "evt-1",
+      account_id: "user-1",
+      entries: [rosterEntry({ person_name: "Account One Attendee" })],
+      downloaded_at: "2026-01-01T00:00:00.000Z",
+      entry_count: 1,
+      credential_count: 2,
+    })
+    await seedRoster(page, {
+      event_id: "evt-1",
+      account_id: "user-2",
+      entries: [rosterEntry({ person_name: "Account Two Attendee" })],
+      downloaded_at: "2026-01-02T00:00:00.000Z",
+      entry_count: 1,
+      credential_count: 2,
+    })
+
+    const stored = await readRoster(page)
+    expect(stored?.account_id).toBe("user-1")
+    expect(stored?.entries[0]?.person_name).toBe("Account One Attendee")
   })
 
   test("does not use another account's cached offline roster", async ({
