@@ -362,7 +362,9 @@ test.describe("Foreground sync fallback (no service worker)", () => {
     }))
     await gotoApp(page)
     await setToken(page, "account-one-token", "user-1")
-    await seedRecords(page, [record({ id: "rec-other-account", account_id: "user-2" })])
+    await seedRecords(page, [
+      record({ id: "rec-other-account", account_id: "user-2" }),
+    ])
 
     const result = await runForegroundSync(page)
 
