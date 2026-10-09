@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete, select
 
+from app.academic_catalog import AcademicMajor, AcademicSectionMajor
 from app.core.config import settings
 from app.core.db import init_db, test_engine
 from app.core.security import get_password_hash
@@ -28,9 +29,7 @@ from app.models import (
     User,
     UserRole,
 )
-from app.academic_catalog import AcademicMajor, AcademicSectionMajor
 from app.student_academics import (
-    AcademicYear,
     ClassRepresentativeAssignment,
     StudentEnrollment,
 )
@@ -88,7 +87,6 @@ def db() -> Generator[Session]:
             AcademicSection,
             AcademicMajor,
             AcademicProgram,
-            AcademicYear,
             Person,
             Organization,
             User,
