@@ -268,16 +268,18 @@ def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
     assert year["id"] != other_year.json()["id"]
 
 
-
-
 def test_class_representative_creation_rolls_back_when_email_fails(
     client: TestClient,
     superuser_token_headers: dict[str, str],
     monkeypatch,
 ) -> None:
-    years = client.get(_api("/academic-registry/academic-years"), headers=superuser_token_headers)
+    years = client.get(
+        _api("/academic-registry/academic-years"), headers=superuser_token_headers
+    )
     year = next(year for year in years.json()["data"] if year["label"] == "2026-2027")
-    sections = client.get(_api("/academic-registry/sections"), headers=superuser_token_headers)
+    sections = client.get(
+        _api("/academic-registry/sections"), headers=superuser_token_headers
+    )
     section = next(
         section
         for section in sections.json()["data"]
@@ -292,7 +294,7 @@ def test_class_representative_creation_rolls_back_when_email_fails(
         SimpleNamespace(emails_enabled=True, FASTAPI_ENV="test"),
     )
 
-    def fail_send_email(**kwargs) -> None:
+    def fail_send_email(**_kwargs) -> None:
         raise RuntimeError("simulated SMTP failure")
 
     monkeypatch.setattr(class_representatives_routes, "send_email", fail_send_email)
