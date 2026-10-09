@@ -265,6 +265,7 @@ def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
     assert missing_fields.status_code == 422
     assert year["id"] != other_year.json()["id"]
 
+
 def test_temporary_password_is_random_outside_test_mode(monkeypatch) -> None:
     monkeypatch.setattr(settings, "FASTAPI_ENV", "development")
 
