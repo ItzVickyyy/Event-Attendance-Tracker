@@ -18,6 +18,7 @@ from app.models import (
 )
 from app.services.student_import import StudentImportService
 from app.services.student_promotion import StudentPromotionService
+from app.student_academics import AcademicYear
 
 # ---------------------------------------------------------------------------
 # Section-sheet parsing (item L.1) - no database required.
@@ -67,6 +68,22 @@ def test_derive_program_from_sheet_unchanged():
 
 
 def _make_batch(db_session: Session, academic_year: str = "2026-2027") -> ImportBatch:
+    year = db_session.exec(
+        select(AcademicYear).where(AcademicYear.label == academic_year)
+    ).first()
+    if year is None:
+        start_year, end_year = (
+            int(value) for value in academic_year.split("-", maxsplit=1)
+        )
+        db_session.add(
+            AcademicYear(
+                label=academic_year,
+                start_year=start_year,
+                end_year=end_year,
+            )
+        )
+        db_session.flush()
+
     batch = ImportBatch(source_filename="masterlist.xlsx", academic_year=academic_year)
     db_session.add(batch)
     db_session.commit()

@@ -27,7 +27,11 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=RostersPublic)
+@router.get(
+    "/",
+    response_model=RostersPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def read_event_roster(
     *,
     session: SessionDep,
@@ -118,6 +122,7 @@ def _build_roster_entries(
             continue
         person = person_by_id.get(attendee.person_id)
         person_name = f"{person.first_name} {person.last_name}" if person else "Unknown"
+        attendance = attendance_by_registration_id.get(reg.id)
         entries.append(
             RosterEntry(
                 event_id=reg.event_id,
@@ -127,31 +132,11 @@ def _build_roster_entries(
                 student_number=student_number_by_person_id.get(attendee.person_id),
                 credentials=credentials_by_attendee_id.get(reg.attendee_id, []),
                 attendance_session_id=attendance_session_id,
-                attendance_status=(
-                    attendance_by_registration_id.get(reg.id).status
-                    if attendance_by_registration_id.get(reg.id)
-                    else None
-                ),
-                time_in=(
-                    attendance_by_registration_id.get(reg.id).time_in
-                    if attendance_by_registration_id.get(reg.id)
-                    else None
-                ),
-                time_out=(
-                    attendance_by_registration_id.get(reg.id).time_out
-                    if attendance_by_registration_id.get(reg.id)
-                    else None
-                ),
-                is_late=(
-                    attendance_by_registration_id.get(reg.id).is_late
-                    if attendance_by_registration_id.get(reg.id)
-                    else False
-                ),
-                scan_method=(
-                    attendance_by_registration_id.get(reg.id).scan_method
-                    if attendance_by_registration_id.get(reg.id)
-                    else None
-                ),
+                attendance_status=(attendance.status if attendance else None),
+                time_in=(attendance.time_in if attendance else None),
+                time_out=(attendance.time_out if attendance else None),
+                is_late=(attendance.is_late if attendance else False),
+                scan_method=(attendance.scan_method if attendance else None),
             )
         )
 

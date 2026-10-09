@@ -1,5 +1,9 @@
 export type AttendanceSessionType = "TIME_IN" | "TIME_OUT" | "CUSTOM"
-export type AttendanceSessionStatus = "SCHEDULED" | "OPEN" | "CLOSED" | "CANCELLED"
+export type AttendanceSessionStatus =
+  | "SCHEDULED"
+  | "OPEN"
+  | "CLOSED"
+  | "CANCELLED"
 
 export interface AttendanceSession {
   id: string
@@ -41,41 +45,65 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json()
 }
 
-export async function getAttendanceSessions(eventId: string): Promise<AttendanceSession[]> {
-  const result = await request<{ data: AttendanceSession[] }>(`/attendance-sessions/?event_id=${encodeURIComponent(eventId)}`)
+export async function getAttendanceSessions(
+  eventId: string,
+): Promise<AttendanceSession[]> {
+  const result = await request<{ data: AttendanceSession[] }>(
+    `/attendance-sessions/?event_id=${encodeURIComponent(eventId)}`,
+  )
   return result.data
 }
 
-export async function getActiveAttendanceSession(eventId: string): Promise<AttendanceSession | null> {
+export async function getActiveAttendanceSession(
+  eventId: string,
+): Promise<AttendanceSession | null> {
   try {
-    const session = await request<AttendanceSession>(`/attendance-sessions/active/${encodeURIComponent(eventId)}`)
+    const session = await request<AttendanceSession>(
+      `/attendance-sessions/active/${encodeURIComponent(eventId)}`,
+    )
     localStorage.setItem(cacheKey(eventId), JSON.stringify(session))
     return session
   } catch {
     const cached = localStorage.getItem(cacheKey(eventId))
     if (!cached) return null
-    try { return JSON.parse(cached) as AttendanceSession } catch { return null }
+    try {
+      return JSON.parse(cached) as AttendanceSession
+    } catch {
+      return null
+    }
   }
 }
 
 export async function createAttendanceSession(
   session: Omit<AttendanceSession, "id" | "created_at" | "updated_at">,
 ): Promise<AttendanceSession> {
-  const created = await request<AttendanceSession>("/attendance-sessions/", { method: "POST", body: JSON.stringify(session) })
-  if (created.is_active) localStorage.setItem(cacheKey(created.event_id), JSON.stringify(created))
+  const created = await request<AttendanceSession>("/attendance-sessions/", {
+    method: "POST",
+    body: JSON.stringify(session),
+  })
+  if (created.is_active)
+    localStorage.setItem(cacheKey(created.event_id), JSON.stringify(created))
   return created
 }
 
-export async function activateAttendanceSession(id: string): Promise<AttendanceSession> {
-  const activated = await request<AttendanceSession>(`/attendance-sessions/${id}/activate`, { method: "POST" })
+export async function activateAttendanceSession(
+  id: string,
+): Promise<AttendanceSession> {
+  const activated = await request<AttendanceSession>(
+    `/attendance-sessions/${id}/activate`,
+    { method: "POST" },
+  )
   localStorage.setItem(cacheKey(activated.event_id), JSON.stringify(activated))
   return activated
 }
 
-export async function closeAttendanceSession(id: string): Promise<AttendanceSession> {
-  return request<AttendanceSession>(`/attendance-sessions/${id}/close`, { method: "POST" })
+export async function closeAttendanceSession(
+  id: string,
+): Promise<AttendanceSession> {
+  return request<AttendanceSession>(`/attendance-sessions/${id}/close`, {
+    method: "POST",
+  })
 }
-
 
 export interface SessionRosterEntry {
   event_id: string
@@ -89,7 +117,11 @@ export interface SessionRosterEntry {
   time_out?: string | null
   is_late?: boolean
   scan_method?: string | null
-  credentials: Array<{ credential_type: string; credential_value: string; is_active: boolean }>
+  credentials: Array<{
+    credential_type: string
+    credential_value: string
+    is_active: boolean
+  }>
 }
 
 export async function getEventRoster(

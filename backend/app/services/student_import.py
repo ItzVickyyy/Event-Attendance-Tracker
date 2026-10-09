@@ -5,7 +5,7 @@ import io
 import re
 from typing import Any, TypedDict
 
-from openpyxl import load_workbook
+from openpyxl import load_workbook  # type: ignore[import-untyped]
 from sqlmodel import Session, col, select
 
 from app.models import (
@@ -61,14 +61,18 @@ class StudentImportService:
 
         parsed_rows: list[dict[str, Any]] = []
         for row_number, raw_row in enumerate(reader, start=2):
-            if all(value is None or str(value).strip() == "" for value in raw_row.values()):
+            if all(
+                value is None or str(value).strip() == "" for value in raw_row.values()
+            ):
                 continue
             normalized = {
                 str(k).strip().lower(): self._safe_cell_value(v)
                 for k, v in raw_row.items()
                 if k is not None
             }
-            section = normalized.get("section") or self._default_section_name(import_batch)
+            section = normalized.get("section") or self._default_section_name(
+                import_batch
+            )
             if not section:
                 raise ValueError(
                     f"Row {row_number} has no Section. Add a Section column or select a section before uploading."
@@ -105,13 +109,13 @@ class StudentImportService:
         source_no: Any,
         values: dict[str, Any],
     ) -> dict[str, Any]:
+        source_no_value = self._safe_cell_value(source_no)
         return {
             "source_sheet": source_sheet,
             "source_row": source_row,
             "source_no": (
-                int(self._safe_cell_value(source_no))
-                if self._safe_cell_value(source_no)
-                and self._safe_cell_value(source_no).isdigit()
+                int(source_no_value)
+                if source_no_value and source_no_value.isdigit()
                 else None
             ),
             "raw_student_number": values.get("student number"),
@@ -334,9 +338,12 @@ class StudentImportService:
         }
 
         for field_name, col_key in col_lookup.items():
-            col_idx = header_to_col_idx.get(col_key)
-            if col_idx is not None and col_idx < len(row):
-                data[field_name] = self._safe_cell_value(row[col_idx])
+            header_col_idx = header_to_col_idx.get(col_key)
+            if field_name == "raw_status" and header_col_idx is None:
+                # Real masterlists commonly label this column simply "Status".
+                header_col_idx = header_to_col_idx.get("status")
+            if header_col_idx is not None and header_col_idx < len(row):
+                data[field_name] = self._safe_cell_value(row[header_col_idx])
 
         return data
 
@@ -688,7 +695,9 @@ class StudentImportService:
             "discrepancies": discrepancies,
         }
 
-    def _resolve_import_section(self, import_batch: ImportBatch, section_reference: str) -> AcademicSection | None:
+    def _resolve_import_section(
+        self, import_batch: ImportBatch, section_reference: str
+    ) -> AcademicSection | None:
         """Resolve a human-readable section reference against the academic registry.
 
         Canonical import references are formatted as:
@@ -734,13 +743,20 @@ class StudentImportService:
         if section:
             return section
 
-        # Compatibility fallback for simpler registry representations such as
-        # section_name="1A" / section_code="1A".
-        try:
-            match = re.fullmatch(r"(\d+)([A-Z]+)", section_name)
-        except re.error:
-            match = None
+        # Legacy imports may use section_code instead of section_name.
+        # Match that exact code before interpreting it as a year/section pattern.
+        section = self.session.exec(
+            select(AcademicSection).where(
+                col(AcademicSection.academic_year) == import_batch.academic_year,
+                col(AcademicSection.program_id) == program.id,
+                col(AcademicSection.section_code) == section_name,
+            )
+        ).first()
+        if section:
+            return section
 
+        # Compatibility fallback for simple names such as "1A".
+        match = re.fullmatch(r"(\\d+)([A-Z]+)", section_name)
         if not match:
             return None
 
@@ -753,32 +769,17 @@ class StudentImportService:
             "4": "4th Year",
         }
         year_level = year_level_names.get(year_level_number)
-
-        conditions = [
-            col(AcademicSection.section_name) == section_code,
-            col(AcademicSection.section_code) == section_code,
-        ]
+        conditions = (col(AcademicSection.section_name) == section_code) | (
+            col(AcademicSection.section_code) == section_code
+        )
+        statement = select(AcademicSection).where(
+            col(AcademicSection.academic_year) == import_batch.academic_year,
+            col(AcademicSection.program_id) == program.id,
+            conditions,
+        )
         if year_level:
-            conditions = [
-                col(AcademicSection.year_level) == year_level,
-                (col(AcademicSection.section_name) == section_code)
-                | (col(AcademicSection.section_code) == section_code),
-            ]
-
-        return self.session.exec(
-            select(AcademicSection).where(
-                col(AcademicSection.academic_year) == import_batch.academic_year,
-                col(AcademicSection.program_id) == program.id,
-                conditions[0] if len(conditions) == 1 else conditions[0],
-            )
-        ).first() if len(conditions) == 1 else self.session.exec(
-            select(AcademicSection).where(
-                col(AcademicSection.academic_year) == import_batch.academic_year,
-                col(AcademicSection.program_id) == program.id,
-                conditions[0],
-                conditions[1],
-            )
-        ).first()
+            statement = statement.where(col(AcademicSection.year_level) == year_level)
+        return self.session.exec(statement).first()
 
     def _validate_and_detect_conflicts(
         self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
@@ -789,9 +790,9 @@ class StudentImportService:
             student_number = (row_data.get("raw_student_number") or "").strip()
             first_name = (row_data.get("raw_first_name") or "").strip()
             last_name = (row_data.get("raw_last_name") or "").strip()
-            section_ref = (row_data.get("raw_section") or row_data.get("source_sheet") or "").strip()
-            status = self._normalize_status(row_data.get("raw_status"))
-
+            section_ref = (
+                row_data.get("raw_section") or row_data.get("source_sheet") or ""
+            ).strip()
             if not student_number:
                 errors.append("Missing Student Number.")
             if not first_name:
@@ -800,10 +801,6 @@ class StudentImportService:
                 errors.append("Missing Last Name.")
             if not section_ref:
                 errors.append("Missing Section.")
-            if not status:
-                errors.append("Academic Status must be Regular or Irregular.")
-            if section_ref and self._resolve_import_section(import_batch, section_ref) is None:
-                errors.append(f"Section '{section_ref}' does not exist in Academic Year '{import_batch.academic_year}'.")
 
             if errors:
                 row_data["validation_status"] = ImportValidationStatus.invalid
@@ -940,7 +937,7 @@ class StudentImportService:
         self, import_batch: ImportBatch, parsed_rows: list[dict[str, Any]]
     ) -> list[StudentImportRecord]:
         """Create StudentImportRecord staging records from parsed rows"""
-        records = []
+        records: list[StudentImportRecord] = []
 
         for row_data in parsed_rows:
             record = StudentImportRecord(
@@ -948,9 +945,9 @@ class StudentImportService:
                 source_sheet=row_data["source_sheet"],
                 source_row=row_data["source_row"],
                 source_no=row_data.get("source_no"),
-                raw_student_number=row_data.get("raw_student_number"),
-                raw_last_name=row_data.get("raw_last_name"),
-                raw_first_name=row_data.get("raw_first_name"),
+                raw_student_number=row_data.get("raw_student_number") or "",
+                raw_last_name=row_data.get("raw_last_name") or "",
+                raw_first_name=row_data.get("raw_first_name") or "",
                 raw_middle_name=row_data.get("raw_middle_name"),
                 raw_name_extension=row_data.get("raw_name_extension"),
                 raw_section=row_data.get("raw_section"),
@@ -973,7 +970,7 @@ class StudentImportService:
         self, parsed_rows: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Get validation summary from parsed rows"""
-        summary = {
+        summary: dict[str, Any] = {
             "total_rows": len(parsed_rows),
             "valid_rows": 0,
             "invalid_rows": 0,

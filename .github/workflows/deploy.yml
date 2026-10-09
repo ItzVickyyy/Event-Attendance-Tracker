@@ -11,6 +11,9 @@ permissions:
 
 jobs:
   deploy:
+    # Deployment is opt-in until the required Cloud app and repository secrets
+    # are configured. CI must not attempt a production deploy with empty secrets.
+    if: ${{ vars.ENABLE_FASTAPI_CLOUD_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

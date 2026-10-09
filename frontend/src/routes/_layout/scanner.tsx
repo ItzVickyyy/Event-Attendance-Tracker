@@ -49,8 +49,11 @@ import {
   QUEUE_CHANGED_EVENT,
   ROSTER_CHANGED_EVENT,
 } from "@/data"
+import {
+  type AttendanceSession,
+  getActiveAttendanceSession,
+} from "@/data/attendanceSessions"
 import { setupSyncStatusListener, syncNow } from "@/data/sync"
-import { getActiveAttendanceSession, type AttendanceSession } from "@/data/attendanceSessions"
 
 interface NfcDiagnosticRecord {
   recordType: string
@@ -145,24 +148,44 @@ function useSyncStatus(eventId?: string) {
   const [isSyncing, setIsSyncing] = useState(false)
   const [roster, setRoster] = useState<RosterRecord | null>(null)
   const [isDownloadingRoster, setIsDownloadingRoster] = useState(false)
-  const [activeSession, setActiveSession] = useState<AttendanceSession | null>(null)
+  const [activeSession, setActiveSession] = useState<AttendanceSession | null>(
+    null,
+  )
 
   const reload = useCallback(async () => {
-    try { setPendingScans(await getPendingScans()) } catch { setPendingScans([]) }
+    try {
+      setPendingScans(await getPendingScans())
+    } catch {
+      setPendingScans([])
+    }
   }, [])
 
   const reloadRoster = useCallback(async () => {
-    if (!eventId) { setRoster(null); return }
-    try { setRoster((await getRoster(eventId)) ?? null) } catch { setRoster(null) }
+    if (!eventId) {
+      setRoster(null)
+      return
+    }
+    try {
+      setRoster((await getRoster(eventId)) ?? null)
+    } catch {
+      setRoster(null)
+    }
   }, [eventId])
 
   const reloadActiveSession = useCallback(async () => {
-    if (!eventId) { setActiveSession(null); return }
+    if (!eventId) {
+      setActiveSession(null)
+      return
+    }
     setActiveSession(await getActiveAttendanceSession(eventId))
   }, [eventId])
 
   useEffect(() => {
-    const handleOnline = () => { setOnline(true); void reload(); void reloadActiveSession() }
+    const handleOnline = () => {
+      setOnline(true)
+      void reload()
+      void reloadActiveSession()
+    }
     const handleOffline = () => setOnline(false)
     const handleQueueChanged = () => void reload()
     const handleRosterChanged = () => void reloadRoster()
@@ -175,7 +198,10 @@ function useSyncStatus(eventId?: string) {
     }
     const unsubscribe = setupSyncStatusListener({
       onSyncStart: () => setIsSyncing(true),
-      onSyncEnd: () => { setIsSyncing(false); void reload() },
+      onSyncEnd: () => {
+        setIsSyncing(false)
+        void reload()
+      },
     })
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)
@@ -204,7 +230,8 @@ function useSyncStatus(eventId?: string) {
       if (result.mechanism === "foreground") {
         setIsSyncing(false)
         await reload()
-        if (result.authRequired) toast.error("Sign in again to sync pending scans")
+        if (result.authRequired)
+          toast.error("Sign in again to sync pending scans")
         else if (result.needsRetry) toast.error("Some scans failed to sync")
       }
     } catch {
@@ -218,7 +245,9 @@ function useSyncStatus(eventId?: string) {
     if (!eventId) return
     setIsDownloadingRoster(true)
     try {
-      const result = await EventsService.readEventRoster({ path: { event_id: eventId } })
+      const result = await EventsService.readEventRoster({
+        path: { event_id: eventId },
+      })
       const entries = (result.data?.data ?? []).map((entry) => ({
         event_id: entry.event_id,
         attendee_id: entry.attendee_id,
@@ -236,14 +265,29 @@ function useSyncStatus(eventId?: string) {
         entries,
         downloaded_at: new Date().toISOString(),
         entry_count: entries.length,
-        credential_count: entries.reduce((total, entry) => total + entry.credentials.length, 0),
+        credential_count: entries.reduce(
+          (total, entry) => total + entry.credentials.length,
+          0,
+        ),
       })
       toast.success("Roster downloaded for offline scanning")
-    } catch { toast.error("Failed to download roster") }
-    finally { setIsDownloadingRoster(false) }
+    } catch {
+      toast.error("Failed to download roster")
+    } finally {
+      setIsDownloadingRoster(false)
+    }
   }, [eventId])
 
-  return { online, pendingScans, isSyncing, retrySync, roster, isDownloadingRoster, downloadRoster, activeSession }
+  return {
+    online,
+    pendingScans,
+    isSyncing,
+    retrySync,
+    roster,
+    isDownloadingRoster,
+    downloadRoster,
+    activeSession,
+  }
 }
 
 function SyncStatusCard({
@@ -291,10 +335,14 @@ function SyncStatusCard({
         {activeSession ? (
           <div className="flex items-center justify-between border-b pb-3 text-sm">
             <span className="text-muted-foreground">Active session</span>
-            <span className="font-medium">{activeSession.name} · {activeSession.session_type}</span>
+            <span className="font-medium">
+              {activeSession.name} · {activeSession.session_type}
+            </span>
           </div>
         ) : eventId ? (
-          <div className="border-b pb-3 text-sm text-amber-600">No active attendance session</div>
+          <div className="border-b pb-3 text-sm text-amber-600">
+            No active attendance session
+          </div>
         ) : null}
 
         {isSyncing ? (
@@ -439,19 +487,33 @@ function Scanner() {
 
   const queueScan = useCallback(
     async (credentialValue: string, scanMethod: "nfc" | "qr") => {
-      if (!eventId) { toast.error("Please select an event first"); return }
+      if (!eventId) {
+        toast.error("Please select an event first")
+        return
+      }
       const activeSession = await getActiveAttendanceSession(eventId)
       if (!activeSession) {
         toast.error("No active attendance session")
         return
       }
-      const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      const nowStr = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
 
       if (!navigator.onLine) {
         try {
-          const entry = await getRosterEntryByCredential(eventId, credentialValue)
+          const entry = await getRosterEntryByCredential(
+            eventId,
+            credentialValue,
+          )
           if (!entry) {
-            setLastResult({ type: "error", message: "Credential not recognized in offline roster", timestamp: nowStr })
+            setLastResult({
+              type: "error",
+              message: "Credential not recognized in offline roster",
+              timestamp: nowStr,
+            })
             toast.error("No offline roster entry for this credential")
             return
           }
@@ -461,10 +523,17 @@ function Scanner() {
               !record.synced &&
               record.event_id === eventId &&
               record.attendance_session_id === activeSession.id &&
-              record.credential_value.toUpperCase() === credentialValue.toUpperCase(),
+              record.credential_value.toUpperCase() ===
+                credentialValue.toUpperCase(),
           )
           if (isDuplicate) {
-            setLastResult({ type: "duplicate", message: "Already queued for this attendee", name: entry.person_name, studentNumber: entry.student_number, timestamp: nowStr })
+            setLastResult({
+              type: "duplicate",
+              message: "Already queued for this attendee",
+              name: entry.person_name,
+              studentNumber: entry.student_number,
+              timestamp: nowStr,
+            })
             toast.info("Already queued for this attendee")
             return
           }
@@ -474,10 +543,20 @@ function Scanner() {
             credential_value: credentialValue,
             scan_method: scanMethod,
           })
-          setLastResult({ type: "success", message: "Saved offline", name: entry.person_name, studentNumber: entry.student_number, timestamp: nowStr })
+          setLastResult({
+            type: "success",
+            message: "Saved offline",
+            name: entry.person_name,
+            studentNumber: entry.student_number,
+            timestamp: nowStr,
+          })
           toast.success(`Scan queued - ${entry.person_name}`)
         } catch {
-          setLastResult({ type: "error", message: "Failed to queue offline scan", timestamp: nowStr })
+          setLastResult({
+            type: "error",
+            message: "Failed to queue offline scan",
+            timestamp: nowStr,
+          })
           toast.error("Failed to queue scan")
         }
         return
@@ -489,16 +568,23 @@ function Scanner() {
           credential_value: credentialValue,
           scan_method: scanMethod,
         })
-        setLastResult({ type: "success", message: "Scan queued for sync", timestamp: nowStr })
+        setLastResult({
+          type: "success",
+          message: "Scan queued for sync",
+          timestamp: nowStr,
+        })
         toast.success("Scan queued locally")
       } catch {
-        setLastResult({ type: "error", message: "Failed to queue scan", timestamp: nowStr })
+        setLastResult({
+          type: "error",
+          message: "Failed to queue scan",
+          timestamp: nowStr,
+        })
         toast.error("Failed to queue scan")
       }
     },
     [eventId],
   )
-
 
   const handleNfcLookup = useCallback(
     async (uid: string) => {
@@ -760,16 +846,29 @@ function Scanner() {
 
   const submitManualScan = async (student: StudentPublic) => {
     try {
-      if (!eventId) { toast.error("No event selected"); return }
+      if (!eventId) {
+        toast.error("No event selected")
+        return
+      }
       const attendeeResp = await AttendeesService.readAttendees({
         query: { person_id: student.person_id ?? "", limit: 1 },
         throwOnError: false,
       })
       const attendeeId = attendeeResp.data?.data?.[0]?.id
-      if (!attendeeId) { toast.error("No attendee record found for this student"); return }
+      if (!attendeeId) {
+        toast.error("No attendee record found for this student")
+        return
+      }
       const activeSession = await getActiveAttendanceSession(eventId)
-      if (!activeSession) { toast.error("No active attendance session"); return }
-      const nowStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      if (!activeSession) {
+        toast.error("No active attendance session")
+        return
+      }
+      const nowStr = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
       await enqueueScan({
         event_id: eventId,
         attendance_session_id: activeSession.id,
@@ -779,12 +878,16 @@ function Scanner() {
       })
       setLastResult({
         type: "success",
-        message: navigator.onLine ? "Manual attendance queued" : "Saved offline",
+        message: navigator.onLine
+          ? "Manual attendance queued"
+          : "Saved offline",
         name: student.person_name ?? undefined,
         studentNumber: student.student_number ?? undefined,
         timestamp: nowStr,
       })
-      toast.success(`Attendance queued - ${student.person_name ?? student.student_number}`)
+      toast.success(
+        `Attendance queued - ${student.person_name ?? student.student_number}`,
+      )
     } catch {
       toast.error("Failed to submit manual scan")
     } finally {
@@ -793,7 +896,6 @@ function Scanner() {
       setManualSearch("")
     }
   }
-
 
   const handleManualSearch = (e: React.FormEvent) => {
     e.preventDefault()

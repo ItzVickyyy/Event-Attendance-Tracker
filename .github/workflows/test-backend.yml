@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/release-readiness-migrations-and-ci
   pull_request:
 permissions:
   contents: read
@@ -34,10 +35,12 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "latest-known"
+          enable-cache: false
       - name: Set up Bun
         uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2.1.3
         with:
           bun-version: 1.3.12
+          no-cache: true
       - name: Install frontend dependencies
         run: bun ci
         working-directory: frontend
@@ -48,6 +51,13 @@ jobs:
       - run: docker compose up -d --wait db mailpit
       - name: Create test database
         run: docker compose exec -T db psql -U postgres -d app -c 'CREATE DATABASE app_test;'
+      - name: Create migration rehearsal database
+        run: docker compose exec -T db psql -U postgres -d app -c 'CREATE DATABASE migration_rehearsal;'
+      - name: Test legacy normalization data preservation
+        env:
+          MIGRATION_REHEARSAL_DATABASE_URL: postgresql+psycopg://postgres:qa-postgres-password@localhost:5433/migration_rehearsal
+        run: uv run bash scripts/test-legacy-normalization-migration.sh
+        working-directory: backend
       - name: Migrate test DB
         run: |
           set -a

@@ -36,16 +36,18 @@ def upgrade() -> None:
                 )
 
     if inspector.has_table("user"):
-        columns = {column["name"] for column in inspector.get_columns("user")}
-        if "role" in columns:
-            if "is_developer" in columns:
+        user_columns = {
+            column["name"] for column in inspector.get_columns("user")
+        }
+        if "role" in user_columns:
+            if "is_developer" in user_columns:
                 bind.execute(
                     sa.text(
                         "UPDATE \"user\" SET is_developer = TRUE "
                         "WHERE role = 'developer'"
                     )
                 )
-            if "is_superuser" in columns:
+            if "is_superuser" in user_columns:
                 bind.execute(
                     sa.text(
                         "UPDATE \"user\" SET is_superuser = FALSE "

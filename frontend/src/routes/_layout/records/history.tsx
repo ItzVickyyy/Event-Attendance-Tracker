@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { RecordsWorkspace } from "@/components/Records/RecordsWorkspace"
 
-export const Route = createFileRoute("/_layout/records/history")({ component: () => <RecordsWorkspace mode="history" /> })
+export const Route = createFileRoute("/_layout/records/history")({
+  component: () => <RecordsWorkspace mode="history" />,
+})

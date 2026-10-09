@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_super_admin
+from app.api.deps import CurrentUser, SessionDep, require_admin, require_super_admin
 from app.models import (
     Organization,
     OrganizationCreate,
@@ -17,7 +17,9 @@ from app.models import (
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 
-@router.get("/", response_model=OrganizationsPublic)
+@router.get(
+    "/", response_model=OrganizationsPublic, dependencies=[Depends(require_admin)]
+)
 def read_organizations(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -69,7 +71,11 @@ def create_organization(
     return organization
 
 
-@router.get("/{organization_id}", response_model=OrganizationPublic)
+@router.get(
+    "/{organization_id}",
+    response_model=OrganizationPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_organization(
     session: SessionDep, _current_user: CurrentUser, organization_id: uuid.UUID
 ) -> Any:

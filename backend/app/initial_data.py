@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def _seed_academic_catalog(session: Session) -> None:
-    session.exec(
+    session.connection().execute(
         text(
             """
         INSERT INTO academic_years
@@ -22,7 +22,7 @@ def _seed_academic_catalog(session: Session) -> None:
     """
         )
     )
-    session.exec(
+    session.connection().execute(
         text("""
         UPDATE academic_years
         SET is_current = true, updated_at = now()
@@ -32,14 +32,14 @@ def _seed_academic_catalog(session: Session) -> None:
           )
     """)
     )
-    session.exec(
+    session.connection().execute(
         text("""
         INSERT INTO academic_programs (id, program_code, program_name, created_at, updated_at)
         SELECT gen_random_uuid(), 'BSIT', 'Bachelor of Science in Information Technology', now(), now()
         WHERE NOT EXISTS (SELECT 1 FROM academic_programs WHERE program_code = 'BSIT')
     """)
     )
-    session.exec(
+    session.connection().execute(
         text("""
         INSERT INTO academic_programs (id, program_code, program_name, created_at, updated_at)
         SELECT gen_random_uuid(), 'BSCS', 'Bachelor of Science in Computer Science', now(), now()
@@ -52,7 +52,7 @@ def _seed_academic_catalog(session: Session) -> None:
         ("SMP", "Service Management Program"),
         ("WMAD", "Web and Mobile Application Development"),
     ]:
-        session.exec(
+        session.connection().execute(
             text("""
             INSERT INTO academic_majors
                 (id, program_id, code, name, display_in_section_name, created_at, updated_at)
@@ -88,7 +88,7 @@ def _seed_academic_catalog(session: Session) -> None:
         ("BSIT", "4th Year", "WMAD 4B"),
     ]
     for program, year_level, section_name in sections:
-        session.exec(
+        session.connection().execute(
             text("""
             INSERT INTO academic_sections
                 (id, program_id, year_level, section_name, academic_year,
@@ -110,7 +110,7 @@ def _seed_academic_catalog(session: Session) -> None:
             )
         )
 
-    session.exec(
+    session.connection().execute(
         text("""
         UPDATE academic_sections s
         SET academic_year_id = ay.id,
@@ -132,7 +132,7 @@ def _seed_academic_catalog(session: Session) -> None:
         ("BSIT", "WMAD 4A", "WMAD"),
         ("BSIT", "WMAD 4B", "WMAD"),
     ]:
-        session.exec(
+        session.connection().execute(
             text("""
             INSERT INTO academic_section_majors
                 (id, section_id, major_id, created_at, updated_at)
@@ -157,7 +157,7 @@ def _seed_academic_catalog(session: Session) -> None:
     # Seed the development Class Representative account with a real assignment.
     # The account is created by the authentication seed, while this assignment
     # depends on the academic catalog created above.
-    session.exec(
+    session.connection().execute(
         text("""
         INSERT INTO class_representative_assignments
             (id, user_id, academic_year_id, section_id, created_at, updated_at)

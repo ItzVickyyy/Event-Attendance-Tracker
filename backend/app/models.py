@@ -4,7 +4,10 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint, text
+from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint, event, text
+from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy.engine import Connection
+from sqlalchemy.orm import Mapper
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -91,7 +94,17 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     __tablename__ = "user"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        unique=True,
+        index=True,
+        max_length=20,
+        sa_column_kwargs={
+            "server_default": text(
+                "'USR-' || LPAD(nextval('user_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     created_at: datetime | None = Field(
@@ -250,7 +263,17 @@ class OrganizationUpdate(SQLModel):
 class Organization(OrganizationBase, table=True):
     __tablename__ = "organizations"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        unique=True,
+        index=True,
+        max_length=20,
+        sa_column_kwargs={
+            "server_default": text(
+                "'ORG-' || LPAD(nextval('organization_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -298,7 +321,17 @@ class AcademicProgramUpdate(SQLModel):
 class AcademicProgram(AcademicProgramBase, table=True):
     __tablename__ = "academic_programs"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        unique=True,
+        index=True,
+        max_length=20,
+        sa_column_kwargs={
+            "server_default": text(
+                "'PRG-' || LPAD(nextval('academic_program_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -371,7 +404,17 @@ class AcademicSection(AcademicSectionBase, table=True):
         ),
     )
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        unique=True,
+        index=True,
+        max_length=20,
+        sa_column_kwargs={
+            "server_default": text(
+                "'SEC-' || LPAD(nextval('academic_section_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -384,6 +427,28 @@ class AcademicSection(AcademicSectionBase, table=True):
 
     program: AcademicProgram | None = Relationship(back_populates="sections")
     students: list["Student"] = Relationship(back_populates="section")
+
+
+@event.listens_for(AcademicSection, "before_insert")
+def _set_academic_section_code_before_insert(
+    _mapper: Mapper[AcademicSection],
+    _connection: Connection,
+    target: AcademicSection,
+) -> None:
+    """Keep the required database code populated for all creation paths."""
+    if not target.section_code:
+        target.section_code = target.section_name
+
+
+@event.listens_for(AcademicSection, "before_update")
+def _set_academic_section_code_before_update(
+    _mapper: Mapper[AcademicSection],
+    _connection: Connection,
+    target: AcademicSection,
+) -> None:
+    """Backfill section codes for legacy objects updated through the ORM."""
+    if not target.section_code:
+        target.section_code = target.section_name
 
 
 class AcademicSectionPublic(AcademicSectionBase):
@@ -494,7 +559,17 @@ class StudentUpdate(SQLModel):
 class Student(StudentBase, table=True):
     __tablename__ = "students"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        unique=True,
+        index=True,
+        max_length=20,
+        sa_column_kwargs={
+            "server_default": text(
+                "'STU-' || LPAD(nextval('student_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -758,11 +833,33 @@ class AttendanceSessionBase(SQLModel):
     )
     session_date: str = Field(max_length=20)
     name: str = Field(max_length=255)
-    session_type: AttendanceSessionType = Field(default=AttendanceSessionType.time_in)
+    session_type: AttendanceSessionType = Field(
+        default=AttendanceSessionType.time_in,
+        sa_column=Column(
+            SQLAlchemyEnum(
+                AttendanceSessionType,
+                name="attendancesessiontype",
+                values_callable=lambda enum_cls: [member.value for member in enum_cls],
+            ),
+            nullable=False,
+            server_default=text("'TIME_IN'"),
+        ),
+    )
     start_time: str | None = Field(default=None, max_length=10)
     end_time: str | None = Field(default=None, max_length=10)
     late_cutoff: str | None = Field(default=None, max_length=10)
-    status: AttendanceSessionStatus = Field(default=AttendanceSessionStatus.scheduled)
+    status: AttendanceSessionStatus = Field(
+        default=AttendanceSessionStatus.scheduled,
+        sa_column=Column(
+            SQLAlchemyEnum(
+                AttendanceSessionStatus,
+                name="attendancesessionstatus",
+                values_callable=lambda enum_cls: [member.value for member in enum_cls],
+            ),
+            nullable=False,
+            server_default=text("'SCHEDULED'"),
+        ),
+    )
     display_order: int = Field(default=0)
     is_active: bool = Field(default=False)
 
@@ -793,7 +890,17 @@ class AttendanceSession(AttendanceSessionBase, table=True):
         ),
     )
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        unique=True,
+        index=True,
+        max_length=20,
+        sa_column_kwargs={
+            "server_default": text(
+                "'SES-' || LPAD(nextval('attendance_session_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -825,7 +932,17 @@ class AttendanceSessionsPublic(SQLModel):
 class Event(EventBase, table=True):
     __tablename__ = "events"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        unique=True,
+        index=True,
+        max_length=20,
+        sa_column_kwargs={
+            "server_default": text(
+                "'EVT-' || LPAD(nextval('event_reference_code_seq'::regclass)::text, 6, '0')"
+            )
+        },
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -1185,7 +1302,9 @@ class ImportBatchBase(SQLModel):
     )
     status: ImportBatchStatus = Field(default=ImportBatchStatus.pending)
     notes: str | None = Field(default=None, max_length=2000)
-    validation_summary: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    validation_summary: dict | None = Field(
+        default=None, sa_column=Column(JSON, nullable=True)
+    )
 
 
 class ImportBatchCreate(ImportBatchBase):
@@ -1200,7 +1319,9 @@ class ImportBatchUpdate(SQLModel):
     imported_by: uuid.UUID | None = None
     status: ImportBatchStatus | None = None
     notes: str | None = Field(default=None, max_length=2000)
-    validation_summary: dict | None = Field(default=None, sa_column=Column(JSON, nullable=True))
+    validation_summary: dict | None = Field(
+        default=None, sa_column=Column(JSON, nullable=True)
+    )
 
 
 class ImportBatchPublic(ImportBatchBase):

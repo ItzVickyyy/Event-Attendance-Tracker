@@ -44,7 +44,9 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ## Configure Continuous Deployment
 
-The included `.github/workflows/deploy.yml` workflow builds the frontend, prepares the database, and deploys the application whenever changes are pushed to `master`. You can also run it manually from the **Actions** tab.
+The included `.github/workflows/deploy.yml` workflow builds the frontend, prepares the database, and deploys the application when changes are pushed to `master`, once deployment is explicitly enabled. You can also run it manually from the **Actions** tab.
+
+Before enabling it, configure the FastAPI Cloud application and all required repository variables and secrets listed below. Then set the repository Actions variable `ENABLE_FASTAPI_CLOUD_DEPLOY` to `true`. Until that flag is enabled, the workflow skips deployment rather than repeatedly attempting a deployment with missing credentials.
 
 Log in to FastAPI Cloud and configure the [deploy token](https://fastapicloud.com/docs/advanced-features/deploy-tokens/) and application ID as GitHub repository secrets:
 

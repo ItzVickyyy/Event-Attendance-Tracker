@@ -468,3 +468,15 @@ def test_admin_user_management_hierarchy(client: TestClient, db: Session) -> Non
         headers=admin_headers,
     )
     assert delete_admin.status_code == 403
+
+
+def test_super_admin_cannot_delete_self_by_role_only(
+    client: TestClient, db: Session
+) -> None:
+    # The role itself must protect Super Admin accounts even if a legacy row
+    # has is_superuser=False.
+    headers = get_token_headers_for_role(
+        client, db, role=UserRole.super_admin, is_superuser=False
+    )
+    response = client.delete(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert response.status_code == 403

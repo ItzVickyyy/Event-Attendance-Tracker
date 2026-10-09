@@ -4,7 +4,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
+    require_admin,
+    require_scanner_permission,
+)
 from app.models import (
     AttendanceSession,
     AttendanceSessionCreate,
@@ -27,7 +32,11 @@ def _validate_event(session, event_id: uuid.UUID) -> Event:
     return event
 
 
-@router.get("/", response_model=AttendanceSessionsPublic)
+@router.get(
+    "/",
+    response_model=AttendanceSessionsPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def read_attendance_sessions(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -60,7 +69,11 @@ def read_attendance_sessions(
     )
 
 
-@router.get("/active/{event_id}", response_model=AttendanceSessionPublic)
+@router.get(
+    "/active/{event_id}",
+    response_model=AttendanceSessionPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def read_active_attendance_session(
     session: SessionDep, _current_user: CurrentUser, event_id: uuid.UUID
 ) -> Any:
@@ -104,6 +117,8 @@ def create_attendance_session(
             active.is_active = False
             active.status = AttendanceSessionStatus.closed
             active.updated_at = get_datetime_utc()
+        # Release the partial unique index before inserting the replacement.
+        session.flush()
     record = AttendanceSession.model_validate(session_in)
     session.add(record)
     session.commit()
@@ -111,7 +126,11 @@ def create_attendance_session(
     return record
 
 
-@router.get("/{session_id}", response_model=AttendanceSessionPublic)
+@router.get(
+    "/{session_id}",
+    response_model=AttendanceSessionPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def read_attendance_session(
     session: SessionDep, _current_user: CurrentUser, session_id: uuid.UUID
 ) -> Any:
@@ -144,9 +163,9 @@ def update_attendance_session(
         AttendanceSessionStatus.cancelled,
     ):
         update_dict["is_active"] = False
-    record.sqlmodel_update(update_dict)
-    record.updated_at = get_datetime_utc()
-    if record.is_active:
+
+    will_be_active = update_dict.get("is_active", record.is_active)
+    if will_be_active:
         active_sessions = session.exec(
             select(AttendanceSession).where(
                 col(AttendanceSession.event_id) == record.event_id,
@@ -158,6 +177,12 @@ def update_attendance_session(
             active.is_active = False
             active.status = AttendanceSessionStatus.closed
             active.updated_at = get_datetime_utc()
+        # Flush the old active session before activating this one. The database
+        # enforces one active session per event with a partial unique index.
+        session.flush()
+
+    record.sqlmodel_update(update_dict)
+    record.updated_at = get_datetime_utc()
     session.add(record)
     session.commit()
     session.refresh(record)

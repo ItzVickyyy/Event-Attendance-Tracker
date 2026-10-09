@@ -10,6 +10,15 @@ env:
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    # Import-time settings for static checks and OpenAPI generation only.
+    # These QA values are never used for deployment.
+    env:
+      FASTAPI_ENV: development
+      PROJECT_NAME: Event Attendance Tracker CI
+      SECRET_KEY: qa-only-static-check-secret-key-not-for-production
+      DATABASE_URL: postgresql://postgres:qa-postgres-password@localhost:5433/app
+      FIRST_SUPERUSER: SuperAdmin@sample.com
+      FIRST_SUPERUSER_PASSWORD: qa-only-superuser-password
     permissions:
       contents: read
       id-token: write
@@ -64,29 +73,12 @@ jobs:
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Get PR Push token
-        id: pr-push
-        if: env.CAN_PUSH == 'true' && steps.changes.outputs.changed == 'true'
-        uses: tiangolo/pr-push@f336b3817f32ea9b8273a8c15f8ecb739ac38167 # 0.0.4
-      - name: Commit and push changes
-        if: env.CAN_PUSH == 'true' && steps.changes.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ steps.pr-push.outputs.token }}
+      - name: Report formatter changes
+        if: steps.changes.outputs.changed == 'true'
         run: |
-          git config user.name "pr-push[bot]"
-          git config user.email "pr-push[bot]@users.noreply.github.com"
-          gh auth setup-git
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "🎨 Auto format and update with pre-commit"
-            git push
-          fi
-      - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43 # v1.1.0
-        if: env.CAN_PUSH == 'false'
-        with:
-          msg: 🎨 Auto format and update with pre-commit
+          echo "::error::Pre-commit modified files. Apply the formatter locally and commit the changes."
+          git diff --check
+
       - name: Error out on pre-commit errors
         if: steps.precommit.outcome == 'failure'
         run: exit 1

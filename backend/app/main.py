@@ -13,6 +13,7 @@ from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
+from starlette.routing import Match
 
 from app.api.main import api_router
 from app.core import security
@@ -60,7 +61,9 @@ def _persist_audit_log(
     duration_ms: float,
 ) -> None:
     """Persist an audit entry in its own short-lived database session."""
-    target_engine = (test_engine or engine) if settings.FASTAPI_ENV == "test" else engine
+    target_engine = (
+        (test_engine or engine) if settings.FASTAPI_ENV == "test" else engine
+    )
     with Session(target_engine) as session:
         if session.get(User, actor_id) is None:
             return
@@ -110,15 +113,38 @@ async def _audit_mutation(
             algorithms=[security.ALGORITHM],
         )
         actor_id = UUID(str(payload.get("sub")))
-    except (jwt.InvalidTokenError, ValueError, TypeError):
+    except jwt.InvalidTokenError, ValueError, TypeError:
         return
 
-    # Use FastAPI's matched route template, not the raw URL. This avoids
-    # retaining student IDs, opaque QR tokens, or other path identifiers.
-    route = request.scope.get("route")
-    route_template = getattr(route, "path", None)
-    if not isinstance(route_template, str) or not route_template.startswith(api_prefix):
-        route_template = f"{api_prefix}/unmatched"
+    # Ask Starlette to match the incoming scope against the registered routes.
+    # This preserves the route template without persisting IDs from the raw URL.
+    route_template = None
+    for candidate in request.app.routes:
+        matcher = getattr(candidate, "matches", None)
+        candidate_path = getattr(candidate, "path", None)
+        if not callable(matcher) or not isinstance(candidate_path, str):
+            continue
+        match, _child_scope = matcher(request.scope)
+        methods = getattr(candidate, "methods", None)
+        if match is Match.FULL and (not methods or method in methods):
+            route_template = (
+                candidate_path
+                if candidate_path.startswith(api_prefix)
+                else f"{api_prefix}{candidate_path}"
+            )
+            break
+
+    if route_template is None:
+        route = request.scope.get("route")
+        candidate_path = getattr(route, "path", None)
+        if isinstance(candidate_path, str):
+            route_template = (
+                candidate_path
+                if candidate_path.startswith(api_prefix)
+                else f"{api_prefix}{candidate_path}"
+            )
+        else:
+            route_template = f"{api_prefix}/unmatched"
 
     resource = route_template.removeprefix(f"{api_prefix}/").strip("/") or "root"
     resource = resource[:255]

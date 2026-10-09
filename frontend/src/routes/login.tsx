@@ -136,7 +136,10 @@ function Login() {
                 Sign up
               </RouterLink>
             </div>
-            <RouterLink to="/get-my-qr" className="underline underline-offset-4">
+            <RouterLink
+              to="/get-my-qr"
+              className="underline underline-offset-4"
+            >
               Get My QR Code
             </RouterLink>
           </div>

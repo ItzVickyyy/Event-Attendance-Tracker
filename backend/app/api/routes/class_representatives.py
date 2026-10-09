@@ -49,7 +49,7 @@ def _assignment_row(
         ORDER BY ay.start_year DESC
         LIMIT 1
     """
-    row = session.execute(text(query), params).mappings().first()
+    row = session.connection().execute(text(query), params).mappings().first()
     return dict(row) if row else None
 
 
@@ -77,11 +77,18 @@ def read_my_students(
     current_user: CurrentUser,
     academic_year_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
+    if current_user.role != UserRole.class_representative:
+        raise HTTPException(
+            status_code=403, detail="Class Representative access required"
+        )
     assignment = _assignment_row(session, current_user.id, academic_year_id)
     if not assignment:
-        raise HTTPException(status_code=404, detail="No Class Representative assignment found")
+        raise HTTPException(
+            status_code=404, detail="No Class Representative assignment found"
+        )
     rows = (
-        session.execute(
+        session.connection()
+        .execute(
             text("""
             SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name,
                    p.name_extension AS extension, p.email, p.contact_number,
@@ -94,11 +101,13 @@ def read_my_students(
               AND s.archived_at IS NULL
             ORDER BY p.last_name, p.first_name, s.student_number
         """),
-        {
-            "section_id": assignment["section_id"],
-            "academic_year_id": assignment["academic_year_id"],
-        },
-    ).mappings().all()
+            {
+                "section_id": assignment["section_id"],
+                "academic_year_id": assignment["academic_year_id"],
+            },
+        )
+        .mappings()
+        .all()
     )
     return {"data": [dict(row) for row in rows], "count": len(rows)}
 
@@ -110,9 +119,15 @@ def create_my_student(
     current_user: CurrentUser,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
+    if current_user.role != UserRole.class_representative:
+        raise HTTPException(
+            status_code=403, detail="Class Representative access required"
+        )
     assignment = _assignment_row(session, current_user.id)
     if not assignment:
-        raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+        raise HTTPException(
+            status_code=403, detail="No Class Representative assignment found"
+        )
     required = {"student_number", "first_name", "last_name"}
     if not required.issubset(payload):
         raise HTTPException(
@@ -167,7 +182,8 @@ def list_class_representatives(
     session: SessionDep, _current_user: CurrentUser
 ) -> dict[str, Any]:
     rows = (
-        session.execute(
+        session.connection()
+        .execute(
             text("""
             SELECT u.id, u.email, u.full_name, u.is_active,
                    cra.id AS assignment_id, cra.academic_year_id, cra.section_id,
@@ -202,7 +218,8 @@ def create_class_representative(
         )
     year = session.get(AcademicYear, payload.academic_year_id)
     section = (
-        session.execute(
+        session.connection()
+        .execute(
             text("SELECT id, academic_year_id FROM academic_sections WHERE id=:id"),
             {"id": payload.section_id},
         )
@@ -215,18 +232,17 @@ def create_class_representative(
         )
     if section["academic_year_id"] != year.id:
         raise HTTPException(
-            status_code=400, detail="Section does not belong to the selected academic year"
+            status_code=400,
+            detail="Section does not belong to the selected academic year",
         )
+    middle_initial = payload.middle_initial.strip() if payload.middle_initial else ""
     full_name = " ".join(
         part
         for part in [
             payload.first_name.strip(),
-            f"{payload.middle_initial.strip()}."
-            if payload.middle_initial
-            and not payload.middle_initial.strip().endswith(".")
-            else (
-                payload.middle_initial.strip() if payload.middle_initial else ""
-            ),
+            f"{middle_initial}."
+            if middle_initial and not middle_initial.endswith(".")
+            else middle_initial,
             payload.last_name.strip(),
             payload.extension.strip() if payload.extension else "",
         ]
@@ -240,7 +256,7 @@ def create_class_representative(
             role=UserRole.class_representative,
             full_name=full_name,
             first_name=payload.first_name.strip(),
-            middle_name=payload.middle_initial.strip().rstrip(".") or None,
+            middle_name=middle_initial.rstrip(".") or None,
             last_name=payload.last_name.strip(),
             name_extension=payload.extension.strip() if payload.extension else None,
             can_scan=False,

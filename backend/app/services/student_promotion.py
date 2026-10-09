@@ -6,6 +6,7 @@ Student") for CLEAN (validation_status == valid) StudentImportRecord rows,
 per the locked 3C-06 design.
 """
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
@@ -27,7 +28,7 @@ from app.models import (
 from app.services.reference_codes import next_student_reference_code
 from app.services.student_credentials import ensure_student_qr_credential
 from app.services.student_import import StudentImportService
-from app.student_academics import StudentEnrollment, StudentStatus
+from app.student_academics import AcademicYear, StudentEnrollment, StudentStatus
 
 
 @dataclass
@@ -183,14 +184,55 @@ class StudentPromotionService:
                 "ImportBatch has no academic_year set; cannot resolve the AcademicSection."
             )
 
+        section_reference = row.raw_section or row.source_sheet
+        parts = " ".join(section_reference.strip().split()).upper().split(maxsplit=1)
+        if len(parts) != 2:
+            raise _PromotionBlocked(
+                f"Section reference {section_reference!r} must include a program and section."
+            )
+        program_code, _section_name = parts
+        academic_program = self.session.exec(
+            select(AcademicProgram).where(
+                col(AcademicProgram.program_code) == program_code
+            )
+        ).first()
+        if academic_program is None:
+            raise _PromotionBlocked(
+                f"AcademicProgram {program_code!r} does not exist. "
+                "Create the academic program before promoting students."
+            )
+
         academic_section = self._resolve_section(
-            row.raw_section or row.source_sheet,
+            section_reference,
             import_batch.academic_year,
         )
         if academic_section is None:
-            raise _PromotionBlocked(
-                f"Academic section {row.raw_section or row.source_sheet!r} "
-                f"does not exist for academic year {import_batch.academic_year!r}."
+            section_identity = parts[1]
+            section_tokens = section_identity.split()
+            section_code = section_tokens[-1]
+            match = re.fullmatch(r"(\d+)([A-Z]+)", section_code)
+            if match is None:
+                raise _PromotionBlocked(
+                    f"Academic section {section_reference!r} could not be normalized."
+                )
+            year_number, suffix = match.groups()
+            section_prefix = " ".join(section_tokens[:-1])
+            if section_prefix:
+                section_name = f"{section_prefix} {section_code}"
+                year_level = {
+                    "1": "1st Year",
+                    "2": "2nd Year",
+                    "3": "3rd Year",
+                    "4": "4th Year",
+                }.get(year_number, year_number)
+            else:
+                section_name = suffix
+                year_level = year_number
+            academic_section = self._get_or_create_section(
+                academic_program.id,
+                year_level,
+                section_name,
+                import_batch.academic_year,
             )
 
         academic_status = self._import_service._normalize_status(row.raw_status)
@@ -254,24 +296,27 @@ class StudentPromotionService:
         academic_status: str | None,
     ) -> None:
         """Create or update the year-scoped enrollment used by the roster."""
+        academic_year_id = academic_section.academic_year_id
+        if academic_year_id is None:
+            raise ValueError(
+                "Cannot synchronize student enrollment for a section without an academic year."
+            )
+
         enrollment = self.session.exec(
             select(StudentEnrollment).where(
                 col(StudentEnrollment.student_id) == student.id,
-                col(StudentEnrollment.academic_year_id)
-                == academic_section.academic_year_id,
+                col(StudentEnrollment.academic_year_id) == academic_year_id,
             )
         ).first()
 
         status = (
-            StudentStatus(academic_status)
-            if academic_status
-            else StudentStatus.regular
+            StudentStatus(academic_status) if academic_status else StudentStatus.regular
         )
 
         if enrollment is None:
             enrollment = StudentEnrollment(
                 student_id=student.id,
-                academic_year_id=academic_section.academic_year_id,
+                academic_year_id=academic_year_id,
                 section_id=academic_section.id,
                 student_status=status,
             )
@@ -327,11 +372,24 @@ class StudentPromotionService:
         if existing is not None:
             return existing
 
+        year = self.session.exec(
+            select(AcademicYear).where(AcademicYear.label == academic_year)
+        ).first()
+        if year is None:
+            raise _PromotionBlocked(
+                f"Academic year {academic_year!r} does not exist. "
+                "Create the academic year before promoting students."
+            )
+
         section = AcademicSection(
             program_id=program_id,
             year_level=year_level,
             section_name=section_name,
+            section_code=(
+                section_name if " " in section_name else f"{year_level}{section_name}"
+            ),
             academic_year=academic_year,
+            academic_year_id=year.id,
         )
         self.session.add(section)
         self.session.flush()

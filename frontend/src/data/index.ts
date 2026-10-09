@@ -1,5 +1,5 @@
 import { type DBSchema, type IDBPDatabase, openDB } from "idb"
-import { registerAttendanceSync, requestImmediateSync } from "./sync"
+import { registerAttendanceSync, syncNow } from "./sync"
 
 export const QUEUE_CHANGED_EVENT = "pwa:queue-changed"
 export const ROSTER_CHANGED_EVENT = "pwa:roster-changed"
@@ -211,7 +211,7 @@ export async function enqueueScan(scan: QueuedScan): Promise<string> {
 
   void registerAttendanceSync()
   if (navigator.onLine) {
-    void requestImmediateSync()
+    void syncNow()
   }
 
   return local_id

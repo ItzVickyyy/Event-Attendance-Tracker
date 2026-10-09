@@ -4,7 +4,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, func, select
 
-from app.api.deps import CurrentUser, SessionDep, require_admin
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
+    require_admin,
+    require_scanner_permission,
+)
 from app.models import (
     AcademicSection,
     Attendee,
@@ -23,7 +28,9 @@ from app.models import (
 router = APIRouter(prefix="/attendee-credentials", tags=["attendee-credentials"])
 
 
-@router.get("/", response_model=AttendeeCredentialsPublic)
+@router.get(
+    "/", response_model=AttendeeCredentialsPublic, dependencies=[Depends(require_admin)]
+)
 def read_attendee_credentials(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -98,7 +105,11 @@ def create_attendee_credential(
     return credential
 
 
-@router.get("/lookup/{credential_value}", response_model=AttendeeCredentialPublic)
+@router.get(
+    "/lookup/{credential_value}",
+    response_model=AttendeeCredentialPublic,
+    dependencies=[Depends(require_scanner_permission)],
+)
 def lookup_credential(
     session: SessionDep, _current_user: CurrentUser, credential_value: str
 ) -> Any:
@@ -131,6 +142,11 @@ def public_lookup_credential(session: SessionDep, credential_value: str) -> Any:
     student = session.exec(
         select(Student).where(col(Student.person_id) == person.id)
     ).first()
+    section = (
+        session.get(AcademicSection, student.section_id)
+        if student and student.section_id
+        else None
+    )
     return PublicCredentialLookup(
         attendee_id=attendee.id,
         attendee_type=attendee.attendee_type,
@@ -145,17 +161,15 @@ def public_lookup_credential(session: SessionDep, credential_value: str) -> Any:
             if p
         ),
         student_number=student.student_number if student else None,
-        section_name=(
-            session.get(AcademicSection, student.section_id).section_name
-            if student
-            and student.section_id
-            and session.get(AcademicSection, student.section_id)
-            else None
-        ),
+        section_name=section.section_name if section else None,
     )
 
 
-@router.get("/{credential_id}", response_model=AttendeeCredentialPublic)
+@router.get(
+    "/{credential_id}",
+    response_model=AttendeeCredentialPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_attendee_credential(
     session: SessionDep, _current_user: CurrentUser, credential_id: uuid.UUID
 ) -> Any:

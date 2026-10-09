@@ -28,16 +28,16 @@ router = APIRouter(prefix="/developer", tags=["developer"])
 
 
 def require_audit_log_access(current_user: CurrentUser) -> User:
-    """Restrict audit history to Super Admins and the separate technical Developer capability."""
+    """Restrict audit history to administrators and the separate technical Developer capability."""
     if (
         current_user.is_superuser
-        or current_user.role == UserRole.super_admin
+        or current_user.role in (UserRole.super_admin, UserRole.admin)
         or current_user.is_developer
     ):
         return current_user
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Super Admin or Developer access is required for audit logs",
+        detail="Administrator or Developer access is required for audit logs",
     )
 
 
@@ -74,7 +74,7 @@ def read_system_health(session: SessionDep) -> Any:
     started = time.perf_counter()
     database_status = "connected"
     try:
-        session.execute(text("SELECT 1"))
+        session.connection().execute(text("SELECT 1"))
     except Exception:
         session.rollback()
         database_status = "error"

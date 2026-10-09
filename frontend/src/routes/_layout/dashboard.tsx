@@ -1,8 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 
 import { UsersService } from "@/client"
-import { OperationalDashboard } from "@/components/Dashboard/OperationalDashboard"
 import { ClassRepresentativeDashboard } from "@/components/ClassRepresentative/Dashboard"
+import { OperationalDashboard } from "@/components/Dashboard/OperationalDashboard"
 import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/dashboard")({

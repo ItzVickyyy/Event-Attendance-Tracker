@@ -1,10 +1,11 @@
 import csv
 import io
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
+from sqlalchemy import select as sa_select
 from sqlmodel import col, func, select
 
 from app.api.deps import (
@@ -24,7 +25,6 @@ from app.models import (
     AttendanceStatus,
     AttendanceUpdate,
     Attendee,
-    UserRole,
     AttendeeCredential,
     AttendeeType,
     Event,
@@ -36,6 +36,7 @@ from app.models import (
     ScanRequest,
     ScanResponse,
     Student,
+    UserRole,
     get_datetime_utc,
 )
 from app.services.attendance_processing import record_registered_attendance
@@ -44,7 +45,9 @@ from app.student_academics import StudentEnrollment
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
-@router.get("/", response_model=AttendancesPublic)
+@router.get(
+    "/", response_model=AttendancesPublic, dependencies=[Depends(require_admin)]
+)
 def read_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -64,7 +67,9 @@ def read_attendances(
 ) -> Any:
     # Authorization: Class Representatives can only access their assigned section
     if _current_user.role == UserRole.class_representative:
-        assignment = require_class_rep_assignment(session, _current_user, academic_year_id)
+        assignment = require_class_rep_assignment(
+            session, _current_user, academic_year_id
+        )
         section_id = assignment["section_id"]
         academic_year_id = assignment["academic_year_id"]
     count_statement = select(func.count()).select_from(Attendance)
@@ -94,8 +99,11 @@ def read_attendances(
     if section_id:
         registration_filter = (
             registration_filter.join(Attendee)
-            .join(Student, Student.person_id == Attendee.person_id)
-            .join(StudentEnrollment, StudentEnrollment.student_id == Student.id)
+            .join(Student, cast(Any, col(Student.person_id) == col(Attendee.person_id)))
+            .join(
+                StudentEnrollment,
+                cast(Any, col(StudentEnrollment.student_id) == col(Student.id)),
+            )
             .where(col(StudentEnrollment.section_id) == section_id)
         )
         if academic_year_id:
@@ -156,7 +164,7 @@ def read_attendances(
     )
 
 
-@router.get("/export")
+@router.get("/export", dependencies=[Depends(require_admin)])
 def export_attendances(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -174,7 +182,9 @@ def export_attendances(
     if _current_user.role.value == "class_representative":
         assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
-            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
         section_id = assignment["section_id"]
         academic_year_id = assignment["academic_year_id"]
 
@@ -185,7 +195,7 @@ def export_attendances(
             raise HTTPException(status_code=404, detail="Event not found")
 
     statement = (
-        select(
+        cast(Any, sa_select)(
             Attendance,
             EventRegistration,
             Event,
@@ -194,46 +204,52 @@ def export_attendances(
             Student,
             AttendanceSession,
         )
-        .join(EventRegistration, Attendance.registration_id == EventRegistration.id)
-        .join(Event, EventRegistration.event_id == Event.id)
-        .join(Attendee, EventRegistration.attendee_id == Attendee.id)
-        .join(Person, Attendee.person_id == Person.id)
         .join(
-            AttendanceSession, Attendance.attendance_session_id == AttendanceSession.id
+            EventRegistration,
+            cast(Any, col(Attendance.registration_id) == col(EventRegistration.id)),
         )
-        .outerjoin(Student, Student.person_id == Person.id)
+        .join(Event, cast(Any, col(EventRegistration.event_id) == col(Event.id)))
+        .join(Attendee, col(EventRegistration.attendee_id) == col(Attendee.id))
+        .join(Person, col(Attendee.person_id) == col(Person.id))
+        .join(
+            AttendanceSession,
+            col(Attendance.attendance_session_id) == col(AttendanceSession.id),
+        )
+        .outerjoin(Student, col(Student.person_id) == col(Person.id))
     )
 
     if event_id:
-        statement = statement.where(EventRegistration.event_id == event_id)
+        statement = statement.where(col(EventRegistration.event_id) == event_id)
     if academic_year_id:
-        statement = statement.where(Attendance.academic_year_id == academic_year_id)
+        statement = statement.where(
+            col(Attendance.academic_year_id) == academic_year_id
+        )
 
     if attendance_status:
-        statement = statement.where(Attendance.status == attendance_status)
+        statement = statement.where(col(Attendance.status) == attendance_status)
     if attendance_session_id:
         statement = statement.where(
-            Attendance.attendance_session_id == attendance_session_id
+            col(Attendance.attendance_session_id) == attendance_session_id
         )
     if scan_method:
-        statement = statement.where(Attendance.scan_method == scan_method)
+        statement = statement.where(col(Attendance.scan_method) == scan_method)
     if session_date:
-        statement = statement.where(AttendanceSession.session_date == session_date)
+        statement = statement.where(col(AttendanceSession.session_date) == session_date)
     if attendee_type:
-        statement = statement.where(Attendee.attendee_type == attendee_type)
+        statement = statement.where(col(Attendee.attendee_type) == attendee_type)
     if section_id:
         if _current_user.role.value == "class_representative":
             statement = statement.join(
                 StudentEnrollment,
-                StudentEnrollment.student_id == Student.id,
+                col(StudentEnrollment.student_id) == col(Student.id),
             ).where(
-                StudentEnrollment.section_id == section_id,
-                StudentEnrollment.academic_year_id == academic_year_id,
+                col(StudentEnrollment.section_id) == section_id,
+                col(StudentEnrollment.academic_year_id) == academic_year_id,
             )
         else:
-            statement = statement.where(Student.section_id == section_id)
+            statement = statement.where(col(Student.section_id) == section_id)
     if is_late is not None:
-        statement = statement.where(Attendance.is_late == is_late)
+        statement = statement.where(col(Attendance.is_late) == is_late)
 
     statement = statement.order_by(col(Attendance.created_at).desc())
     results = session.exec(statement).all()
@@ -498,7 +514,11 @@ def scan_attendance_manual(
     )
 
 
-@router.get("/{record_id}", response_model=AttendancePublic)
+@router.get(
+    "/{record_id}",
+    response_model=AttendancePublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_attendance(
     session: SessionDep, _current_user: CurrentUser, record_id: uuid.UUID
 ) -> Any:
@@ -514,17 +534,30 @@ def read_attendance(
                 status_code=403,
                 detail="Attendance record is outside your assigned section",
             )
-        allowed = session.execute(
-            select(Student.id)
-            .join(Attendee, Attendee.person_id == Student.person_id)
-            .join(EventRegistration, EventRegistration.attendee_id == Attendee.id)
-            .where(
-                EventRegistration.id == record.registration_id,
-                Student.section_id == assignment["section_id"],
+        allowed = (
+            session.connection()
+            .execute(
+                select(Student.id)
+                .join(
+                    Attendee,
+                    cast(Any, col(Attendee.person_id) == col(Student.person_id)),
+                )
+                .join(
+                    EventRegistration,
+                    cast(Any, col(EventRegistration.attendee_id) == col(Attendee.id)),
+                )
+                .where(
+                    EventRegistration.id == record.registration_id,
+                    Student.section_id == assignment["section_id"],
+                )
             )
-        ).first()
+            .first()
+        )
         if not allowed:
-            raise HTTPException(status_code=403, detail="Attendance record is outside your assigned section")
+            raise HTTPException(
+                status_code=403,
+                detail="Attendance record is outside your assigned section",
+            )
     return record
 
 

@@ -13,7 +13,7 @@ from app.api.deps import (
     require_admin,
     require_super_admin,
 )
-from app.models import AcademicSection, Person, Student, get_datetime_utc
+from app.models import AcademicSection, Person, Student, UserRole, get_datetime_utc
 from app.services.reference_codes import next_student_reference_code
 from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
@@ -28,8 +28,8 @@ from app.student_academics import (
     StudentEnrollmentPublic,
     StudentEnrollmentUpdate,
     StudentRosterPublic,
-    StudentStatus,
     StudentRosterRow,
+    StudentStatus,
 )
 
 router = APIRouter(prefix="/academic-registry", tags=["academic-registry"])
@@ -54,11 +54,13 @@ def _section_row_query() -> str:
     """
 
 
-@router.get("/academic-years", response_model=AcademicYearsPublic)
+@router.get(
+    "/academic-years",
+    response_model=AcademicYearsPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_academic_years(session: SessionDep, _current_user: CurrentUser) -> Any:
-    years = session.exec(
-        select(AcademicYear).order_by(AcademicYear.start_year.desc())
-    ).all()
+    years = session.exec(select(AcademicYear).order_by(text("start_year DESC"))).all()
     return AcademicYearsPublic(
         data=[AcademicYearPublic.model_validate(year) for year in years],
         count=len(years),
@@ -120,7 +122,7 @@ def set_current_academic_year(
     if not academic_year:
         raise HTTPException(status_code=404, detail="Academic year not found")
 
-    session.execute(
+    session.connection().execute(
         text(
             "UPDATE academic_years SET is_current = false, updated_at = CURRENT_TIMESTAMP"
         )
@@ -139,7 +141,16 @@ def read_sections(
     _current_user: CurrentUser,
     academic_year_id: uuid.UUID | None = None,
 ) -> Any:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
             raise HTTPException(
@@ -150,13 +161,18 @@ def read_sections(
             "GROUP BY s.id,",
             "WHERE s.id = :section_id AND ay.id = :academic_year_id\n        GROUP BY s.id,",
         )
-        rows = session.execute(
-            text(query),
-            {
-                "section_id": assignment["section_id"],
-                "academic_year_id": academic_year_id,
-            },
-        ).mappings().all()
+        rows = (
+            session.connection()
+            .execute(
+                text(query),
+                {
+                    "section_id": assignment["section_id"],
+                    "academic_year_id": academic_year_id,
+                },
+            )
+            .mappings()
+            .all()
+        )
         return SectionRegistryPublic(
             data=[SectionRegistryRow(**dict(row)) for row in rows], count=len(rows)
         )
@@ -168,12 +184,13 @@ def read_sections(
             "WHERE ay.id = :academic_year_id\n        GROUP BY s.id,",
         )
         rows = (
-            session.execute(text(query), {"academic_year_id": academic_year_id})
+            session.connection()
+            .execute(text(query), {"academic_year_id": academic_year_id})
             .mappings()
             .all()
         )
     else:
-        rows = session.execute(text(query)).mappings().all()
+        rows = session.connection().execute(text(query)).mappings().all()
     return SectionRegistryPublic(
         data=[SectionRegistryRow(**dict(row)) for row in rows], count=len(rows)
     )
@@ -186,7 +203,16 @@ def read_section_students(
     section_id: uuid.UUID,
     include_archived: bool = False,
 ) -> Any:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment or assignment["section_id"] != section_id:
             raise HTTPException(
@@ -194,7 +220,8 @@ def read_section_students(
             )
     archived_filter = "" if include_archived else "AND s.archived_at IS NULL"
     rows = (
-        session.execute(
+        session.connection()
+        .execute(
             text(f"""
         SELECT s.id, s.student_number, p.last_name, p.first_name, p.middle_name,
                p.name_extension AS extension, p.email, p.contact_number,
@@ -219,12 +246,25 @@ def read_section_students(
 def read_student_details(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> dict[str, Any]:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
-            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
-        allowed = session.execute(
-            text("""
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
+        allowed = (
+            session.connection()
+            .execute(
+                text("""
                 SELECT 1
                 FROM student_enrollments
                 WHERE student_id = :student_id
@@ -232,19 +272,22 @@ def read_student_details(
                   AND academic_year_id = :academic_year_id
                 LIMIT 1
             """),
-            {
-                "student_id": student_id,
-                "section_id": assignment["section_id"],
-                "academic_year_id": assignment["academic_year_id"],
-            },
-        ).first()
+                {
+                    "student_id": student_id,
+                    "section_id": assignment["section_id"],
+                    "academic_year_id": assignment["academic_year_id"],
+                },
+            )
+            .first()
+        )
         if not allowed:
             raise HTTPException(
                 status_code=403, detail="Student is outside your assigned section"
             )
 
     row = (
-        session.execute(
+        session.connection()
+        .execute(
             text("""
         SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name, p.name_extension,
                p.email, p.contact_number, se.id AS enrollment_id, se.student_status, se.section_id, se.academic_year_id,
@@ -264,32 +307,64 @@ def read_student_details(
     return dict(row)
 
 
-@router.post(
-    "/students",
-    dependencies=[Depends(require_admin)],
-)
+@router.post("/students")
 def create_student_in_section(
     *,
     session: SessionDep,
     _current_user: CurrentUser,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    required = {"student_number", "first_name", "last_name", "section_id", "academic_year_id"}
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    required = {
+        "student_number",
+        "first_name",
+        "last_name",
+        "section_id",
+        "academic_year_id",
+    }
     if not required.issubset(payload):
-        raise HTTPException(status_code=422, detail=f"Required fields: {', '.join(sorted(required))}")
+        raise HTTPException(
+            status_code=422, detail=f"Required fields: {', '.join(sorted(required))}"
+        )
 
     section_id = uuid.UUID(str(payload["section_id"]))
     academic_year_id = uuid.UUID(str(payload["academic_year_id"]))
     section = session.get(AcademicSection, section_id)
     year = session.get(AcademicYear, academic_year_id)
     if not section or not year or section.academic_year_id != academic_year_id:
-        raise HTTPException(status_code=404, detail="Section or academic year not found")
+        raise HTTPException(
+            status_code=404, detail="Section or academic year not found"
+        )
+    if _current_user.role == UserRole.class_representative:
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
+        if not assignment or assignment["section_id"] != section_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Section is outside your assigned section",
+            )
 
     student_number = str(payload["student_number"]).strip()
     if not student_number:
         raise HTTPException(status_code=422, detail="Student number is required")
-    if session.execute(text("SELECT 1 FROM students WHERE student_number=:student_number"), {"student_number": student_number}).first():
-        raise HTTPException(status_code=409, detail="A student with this student number already exists")
+    if (
+        session.connection()
+        .execute(
+            text("SELECT 1 FROM students WHERE student_number=:student_number"),
+            {"student_number": student_number},
+        )
+        .first()
+    ):
+        raise HTTPException(
+            status_code=409, detail="A student with this student number already exists"
+        )
 
     status_value = str(payload.get("student_status", "regular"))
     try:
@@ -312,7 +387,9 @@ def create_student_in_section(
         person_id=person.id,
         student_number=student_number,
         section_id=section_id,
-        academic_status="irregular" if student_status == StudentStatus.irregular else "regular",
+        academic_status="irregular"
+        if student_status == StudentStatus.irregular
+        else "regular",
         reference_code=next_student_reference_code(session),
     )
     session.add(student)
@@ -339,31 +416,54 @@ def update_student_details(
     student_id: uuid.UUID,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    if _current_user.role.value == "class_representative":
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
+    if _current_user.role == UserRole.class_representative:
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
-            raise HTTPException(status_code=403, detail="No Class Representative assignment found")
-        allowed = session.execute(
-            text("""
+            raise HTTPException(
+                status_code=403, detail="No Class Representative assignment found"
+            )
+        allowed = (
+            session.connection()
+            .execute(
+                text("""
                 SELECT 1 FROM student_enrollments
                 WHERE student_id=:student_id
                   AND section_id=:section_id
                   AND academic_year_id=:academic_year_id
                 LIMIT 1
             """),
-            {
-                "student_id": student_id,
-                "section_id": assignment["section_id"],
-                "academic_year_id": assignment["academic_year_id"],
-            },
-        ).first()
+                {
+                    "student_id": student_id,
+                    "section_id": assignment["section_id"],
+                    "academic_year_id": assignment["academic_year_id"],
+                },
+            )
+            .first()
+        )
         if not allowed:
-            raise HTTPException(status_code=403, detail="Student is outside your assigned section")
-        if payload.get("section_id") and str(payload["section_id"]) != str(assignment["section_id"]):
-            raise HTTPException(status_code=403, detail="Class Representatives cannot move students between sections")
+            raise HTTPException(
+                status_code=403, detail="Student is outside your assigned section"
+            )
+        if payload.get("section_id") and str(payload["section_id"]) != str(
+            assignment["section_id"]
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="Class Representatives cannot move students between sections",
+            )
 
     row = (
-        session.execute(
+        session.connection()
+        .execute(
             text("SELECT person_id FROM students WHERE id=:id AND archived_at IS NULL"),
             {"id": student_id},
         )
@@ -383,23 +483,27 @@ def update_student_details(
     person_updates = {k: payload[k] for k in person_fields if k in payload}
     if person_updates:
         assignments = ", ".join(f"{key} = :{key}" for key in person_updates)
-        session.execute(
+        session.connection().execute(
             text(
                 f"UPDATE people SET {assignments}, updated_at=CURRENT_TIMESTAMP WHERE id=:person_id"
             ),
             {**person_updates, "person_id": row["person_id"]},
         )
     if "student_number" in payload:
-        duplicate = session.execute(
-            text("SELECT 1 FROM students WHERE student_number=:number AND id<>:id"),
-            {"number": payload["student_number"], "id": student_id},
-        ).first()
+        duplicate = (
+            session.connection()
+            .execute(
+                text("SELECT 1 FROM students WHERE student_number=:number AND id<>:id"),
+                {"number": payload["student_number"], "id": student_id},
+            )
+            .first()
+        )
         if duplicate:
             raise HTTPException(
                 status_code=409,
                 detail="A student with this student number already exists",
             )
-        session.execute(
+        session.connection().execute(
             text(
                 "UPDATE students SET student_number=:number, updated_at=CURRENT_TIMESTAMP WHERE id=:id"
             ),
@@ -413,7 +517,7 @@ def update_student_details(
             updates["student_status"] = str(payload["student_status"])
         if updates:
             assignments = ", ".join(f"{key} = :{key}" for key in updates)
-            session.execute(
+            session.connection().execute(
                 text(
                     f"UPDATE student_enrollments SET {assignments}, updated_at=CURRENT_TIMESTAMP WHERE id=:enrollment_id AND student_id=:student_id"
                 ),
@@ -528,13 +632,17 @@ def create_section(
             status_code=400,
             detail="A major is required for third- and fourth-year sections",
         )
-    if not session.execute(
-        text("SELECT 1 FROM academic_programs WHERE id=:id"), {"id": program_id}
-    ).first():
+    if (
+        not session.connection()
+        .execute(
+            text("SELECT 1 FROM academic_programs WHERE id=:id"), {"id": program_id}
+        )
+        .first()
+    ):
         raise HTTPException(status_code=404, detail="Course not found")
     section_id = uuid.uuid4()
     try:
-        session.execute(
+        session.connection().execute(
             text(
                 "INSERT INTO academic_sections (id, program_id, year_level, section_name, academic_year, academic_year_id, section_code, created_at, updated_at) VALUES (:id,:program_id,:year_level,:section_code,:academic_year,:academic_year_id,:section_code,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)"
             ),
@@ -548,7 +656,7 @@ def create_section(
             },
         )
         if major_id:
-            session.execute(
+            session.connection().execute(
                 text(
                     "INSERT INTO academic_section_majors (id, section_id, major_id, created_at, updated_at) VALUES (:id,:section_id,:major_id,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)"
                 ),
@@ -591,14 +699,22 @@ def update_section(
         raise HTTPException(
             status_code=422, detail=f"Unknown fields: {', '.join(sorted(unknown))}"
         )
-    current_year_id = session.execute(
-        text("SELECT academic_year_id FROM academic_sections WHERE id=:id"),
-        {"id": section_id},
-    ).scalar_one()
-    current_section_code = session.execute(
-        text("SELECT section_code FROM academic_sections WHERE id=:id"),
-        {"id": section_id},
-    ).scalar_one()
+    current_year_id = (
+        session.connection()
+        .execute(
+            text("SELECT academic_year_id FROM academic_sections WHERE id=:id"),
+            {"id": section_id},
+        )
+        .scalar_one()
+    )
+    current_section_code = (
+        session.connection()
+        .execute(
+            text("SELECT section_code FROM academic_sections WHERE id=:id"),
+            {"id": section_id},
+        )
+        .scalar_one()
+    )
     values = {
         "program_id": uuid.UUID(str(payload.get("program_id", section.program_id))),
         "academic_year_id": uuid.UUID(str(payload.get("academic_year_id")))
@@ -611,10 +727,16 @@ def update_section(
     }
     major_id = uuid.UUID(str(payload["major_id"])) if payload.get("major_id") else None
     if values["year_level"] in {"3rd Year", "4th Year"} and not major_id:
-        major_id = session.execute(
-            text("SELECT major_id FROM academic_section_majors WHERE section_id=:id"),
-            {"id": section_id},
-        ).scalar_one_or_none()
+        major_id = (
+            session.connection()
+            .execute(
+                text(
+                    "SELECT major_id FROM academic_section_majors WHERE section_id=:id"
+                ),
+                {"id": section_id},
+            )
+            .scalar_one_or_none()
+        )
     if values["year_level"] in {"3rd Year", "4th Year"} and not major_id:
         raise HTTPException(
             status_code=400,
@@ -629,18 +751,18 @@ def update_section(
     year = session.get(AcademicYear, values["academic_year_id"])
     if not year:
         raise HTTPException(status_code=404, detail="Academic year not found")
-    session.execute(
+    session.connection().execute(
         text(
             "UPDATE academic_sections SET program_id=:program_id, year_level=:year_level, section_code=:section_code, section_name=:section_code, academic_year_id=:academic_year_id, academic_year=:academic_year, updated_at=CURRENT_TIMESTAMP WHERE id=:id"
         ),
         {**values, "academic_year": year.label, "id": section_id},
     )
-    session.execute(
+    session.connection().execute(
         text("DELETE FROM academic_section_majors WHERE section_id=:id"),
         {"id": section_id},
     )
     if major_id:
-        session.execute(
+        session.connection().execute(
             text(
                 "INSERT INTO academic_section_majors (id, section_id, major_id, created_at, updated_at) VALUES (:id,:section_id,:major_id,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)"
             ),
@@ -655,7 +777,8 @@ def _get_section(session: SessionDep, section_id: uuid.UUID) -> SectionRegistryR
         "ORDER BY p.program_code, s.year_level, m.code NULLS FIRST, s.section_code", ""
     )
     row = (
-        session.execute(
+        session.connection()
+        .execute(
             text(f"SELECT * FROM ({base_query}) section_rows WHERE id=:section_id"),
             {"section_id": section_id},
         )

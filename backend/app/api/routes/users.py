@@ -180,9 +180,10 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     Delete own user.
     """
-    if current_user.is_superuser:
+    if current_user.is_superuser or current_user.role == UserRole.super_admin:
         raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves"
+            status_code=403,
+            detail="Super users are not allowed to delete themselves",
         )
     session.delete(current_user)
     session.commit()
@@ -209,23 +210,20 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
 def read_user_by_id(
     user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
-    """
-    Get a specific user by id.
-    """
+    """Get a specific user without leaking user existence to non-admins."""
+    may_read_other_users = current_user.is_superuser or current_user.role in (
+        UserRole.super_admin,
+        UserRole.admin,
+    )
+    if user_id != current_user.id and not may_read_other_users:
+        raise HTTPException(
+            status_code=403,
+            detail="The user doesn't have enough privileges",
+        )
     user = session.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    if user == current_user:
-        return user
-    if current_user.is_superuser or current_user.role in (
-        UserRole.super_admin,
-        UserRole.admin,
-    ):
-        return user
-    raise HTTPException(
-        status_code=403,
-        detail="The user doesn't have enough privileges",
-    )
+    return user
 
 
 @router.patch("/{user_id}", response_model=UserPublic)
@@ -246,7 +244,9 @@ def update_user(
             status_code=404,
             detail="The user with this id does not exist in the system",
         )
-    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+    is_super_admin = (
+        current_user.is_superuser or current_user.role == UserRole.super_admin
+    )
     submitted_fields = user_in.model_dump(exclude_unset=True)
     if db_user.id == current_user.id and is_super_admin:
         requested_role = submitted_fields.get("role", db_user.role)
@@ -303,10 +303,15 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user == current_user:
-        raise HTTPException(
-            status_code=403, detail="Admins are not allowed to delete themselves"
+        detail = (
+            "Super users are not allowed to delete themselves"
+            if current_user.is_superuser or current_user.role == UserRole.super_admin
+            else "Admins are not allowed to delete themselves"
         )
-    is_super_admin = current_user.is_superuser or current_user.role == UserRole.super_admin
+        raise HTTPException(status_code=403, detail=detail)
+    is_super_admin = (
+        current_user.is_superuser or current_user.role == UserRole.super_admin
+    )
     if not is_super_admin and (
         user.role in (UserRole.admin, UserRole.super_admin)
         or user.is_superuser

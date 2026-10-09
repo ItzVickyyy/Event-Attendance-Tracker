@@ -1,12 +1,12 @@
 import io
 import uuid
 import zipfile
-from typing import Any
+from typing import Any, cast
 from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from openpyxl import Workbook
+from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, require_admin
@@ -21,6 +21,7 @@ from app.models import (
     Student,
     get_datetime_utc,
 )
+from app.student_academics import AcademicYear
 
 router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 def _section_rows(session: SessionDep, section_id: uuid.UUID):
     return session.exec(
         select(Student, Person)
-        .join(Person, Person.id == Student.person_id)
+        .join(Person, cast(Any, col(Person.id) == col(Student.person_id)))
         .where(Student.section_id == section_id)
         .order_by(col(Student.student_number).asc())
     ).all()
@@ -61,7 +62,7 @@ def _build_docx(
     ]
     table_rows.extend(
         [
-            index,
+            str(index),
             student.student_number,
             person.last_name,
             person.first_name,
@@ -104,7 +105,9 @@ def _build_docx(
     return buffer
 
 
-@router.get("/", response_model=AcademicSectionsPublic)
+@router.get(
+    "/", response_model=AcademicSectionsPublic, dependencies=[Depends(require_admin)]
+)
 def read_academic_sections(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -168,14 +171,41 @@ def create_academic_section(
             status_code=400,
             detail="A section with this program, year level, name, and academic year already exists.",
         )
-    section = AcademicSection.model_validate(section_in)
+    academic_year = session.exec(
+        select(AcademicYear).where(AcademicYear.label == section_in.academic_year)
+    ).first()
+    if academic_year is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Academic year '{section_in.academic_year}' was not found",
+        )
+    if (
+        section_in.academic_year_id is not None
+        and section_in.academic_year_id != academic_year.id
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Academic year ID does not match the selected academic year",
+        )
+
+    section = AcademicSection.model_validate(
+        section_in,
+        update={
+            "academic_year_id": academic_year.id,
+            "section_code": section_in.section_code or section_in.section_name,
+        },
+    )
     session.add(section)
     session.commit()
     session.refresh(section)
     return section
 
 
-@router.get("/{section_id}", response_model=AcademicSectionPublic)
+@router.get(
+    "/{section_id}",
+    response_model=AcademicSectionPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_academic_section(
     session: SessionDep, _current_user: CurrentUser, section_id: uuid.UUID
 ) -> Any:
@@ -278,6 +308,22 @@ def update_academic_section(
         program = session.get(AcademicProgram, update_dict["program_id"])
         if not program:
             raise HTTPException(status_code=404, detail="Academic program not found")
+    if "academic_year" in update_dict:
+        year = session.exec(
+            select(AcademicYear).where(
+                AcademicYear.label == update_dict["academic_year"]
+            )
+        ).first()
+        if year is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Academic year '{update_dict['academic_year']}' was not found",
+            )
+        update_dict["academic_year_id"] = year.id
+    if "section_name" in update_dict:
+        update_dict["section_code"] = (
+            update_dict.get("section_code") or update_dict["section_name"]
+        )
     section.sqlmodel_update(update_dict)
     section.updated_at = get_datetime_utc()
     session.add(section)

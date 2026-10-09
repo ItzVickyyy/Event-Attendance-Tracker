@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -44,6 +44,17 @@ const UserInformation = () => {
     },
   })
 
+  // Auth state may load after this component mounts. Keep the form in sync
+  // while viewing the profile, without overwriting edits in progress.
+  useEffect(() => {
+    if (!editMode && currentUser) {
+      form.reset({
+        full_name: currentUser.full_name ?? undefined,
+        email: currentUser.email,
+      })
+    }
+  }, [currentUser, editMode, form])
+
   const toggleEditMode = () => {
     setEditMode(!editMode)
   }
@@ -76,8 +87,13 @@ const UserInformation = () => {
   }
 
   const onCancel = () => {
-    form.reset()
-    toggleEditMode()
+    // Reset to the authenticated user's current values, not the form's
+    // mount-time defaults, which may have been empty before auth loaded.
+    form.reset({
+      full_name: currentUser?.full_name ?? undefined,
+      email: currentUser?.email,
+    })
+    setEditMode(false)
   }
 
   return (
@@ -157,7 +173,11 @@ const UserInformation = () => {
                 </Button>
               </>
             ) : (
-              <Button type="button" onClick={toggleEditMode}>
+              <Button
+                type="button"
+                onClick={toggleEditMode}
+                disabled={!currentUser}
+              >
                 Edit
               </Button>
             )}

@@ -27,6 +27,16 @@ interface MockHttpHandle {
   meRequested(): number
 }
 
+interface QueuedScanLike {
+  id: string
+  event_id: string
+  attendance_session_id?: string
+  attendee_id?: string
+  scan_method: string
+  synced: boolean
+  sync_status: string
+}
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, OPTIONS",
@@ -217,7 +227,9 @@ const test = base.extend<{
               })
               return
             }
-            const scanBody = (request.postData ? JSON.parse(request.postData) : {}) as Record<string, unknown>
+            const scanBody = (
+              request.postData ? JSON.parse(request.postData) : {}
+            ) as Record<string, unknown>
             const authHeader = Object.entries(request.headers).find(
               ([k]) => k.toLowerCase() === "authorization",
             )
@@ -279,6 +291,31 @@ async function setToken(
 
 test.describe("Manual attendance scan", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
+
+  async function readQueuedScans(page: Page): Promise<QueuedScanLike[]> {
+    return page.evaluate(async () => {
+      const mod = await import("/src/data/index.ts")
+      return mod.getAllQueuedScans()
+    })
+  }
+
+  async function seedActiveSession(page: Page): Promise<void> {
+    await page.evaluate(() => {
+      localStorage.setItem(
+        "attendance-active-session:evt-1",
+        JSON.stringify({
+          id: "session-1",
+          event_id: "evt-1",
+          session_date: "2026-01-01",
+          name: "Morning Session",
+          session_type: "TIME_IN",
+          status: "OPEN",
+          display_order: 1,
+          is_active: true,
+        }),
+      )
+    })
+  }
 
   test("single student search and successful manual scan", async ({
     page,
@@ -346,6 +383,7 @@ test.describe("Manual attendance scan", () => {
 
     await gotoApp(page)
     await setToken(page)
+    await seedActiveSession(page)
     await page.goto("/scanner?event_id=evt-1")
 
     await page.fill(
@@ -355,8 +393,12 @@ test.describe("Manual attendance scan", () => {
     await page.getByRole("button", { name: "Search" }).click()
 
     await expect(
-      page.getByText("Recorded Alice Student (Time-In Recorded)"),
+      page.getByText("Attendance queued - Alice Student"),
     ).toBeVisible({ timeout: 10000 })
+    await expect.poll(() => handle.sent()).toHaveLength(1)
+    await expect
+      .poll(async () => (await readQueuedScans(page))[0]?.sync_status)
+      .toBe("SYNCED")
 
     const scans = handle.sent()
     expect(scans).toHaveLength(1)
@@ -449,6 +491,7 @@ test.describe("Manual attendance scan", () => {
 
     await gotoApp(page)
     await setToken(page)
+    await seedActiveSession(page)
     await page.goto("/scanner?event_id=evt-1")
 
     await page.fill(
@@ -466,9 +509,13 @@ test.describe("Manual attendance scan", () => {
 
     await page.getByRole("button", { name: "Bob Student" }).click()
 
-    await expect(
-      page.getByText("Recorded Bob Student (Time-In Recorded)"),
-    ).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText("Attendance queued - Bob Student")).toBeVisible(
+      { timeout: 10000 },
+    )
+    await expect.poll(() => handle.sent()).toHaveLength(1)
+    await expect
+      .poll(async () => (await readQueuedScans(page))[0]?.sync_status)
+      .toBe("SYNCED")
 
     const scans = handle.sent()
     expect(scans).toHaveLength(1)
@@ -485,7 +532,7 @@ test.describe("Manual attendance scan", () => {
     const studentNumber = "STU-0003"
     const studentName = "Charlie Student"
 
-    await mockHttp(
+    const handle = await mockHttp(
       page,
       async (body) => {
         expect(body.event_id).toBe("evt-1")
@@ -535,6 +582,7 @@ test.describe("Manual attendance scan", () => {
 
     await gotoApp(page)
     await setToken(page)
+    await seedActiveSession(page)
     await page.goto("/scanner?event_id=evt-1")
 
     await page.fill(
@@ -543,9 +591,13 @@ test.describe("Manual attendance scan", () => {
     )
     await page.getByRole("button", { name: "Search" }).click()
 
-    await expect(page.getByText("Already recorded", { exact: true })).toBeVisible({
-      timeout: 10000,
-    })
+    await expect(
+      page.getByText("Attendance queued - Charlie Student"),
+    ).toBeVisible({ timeout: 10000 })
+    await expect.poll(() => handle.sent()).toHaveLength(1)
+    await expect
+      .poll(async () => (await readQueuedScans(page))[0]?.sync_status)
+      .toBe("DUPLICATE")
 
     await page.fill(
       'input[placeholder="Search by student number or name..."]',

@@ -129,22 +129,37 @@ function getPendingRecords(db) {
 }
 
 async function syncRecord(db, token, apiBase, record) {
-  const url = record.scan_method === "manual"
-    ? `${apiBase}/api/v1/attendance/scan-manual`
-    : `${apiBase}/api/v1/attendance/scan`
+  const url =
+    record.scan_method === "manual"
+      ? `${apiBase}/api/v1/attendance/scan-manual`
+      : `${apiBase}/api/v1/attendance/scan`
   const now = () => new Date().toISOString()
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
   }
-  if (record.attendance_session_id) headers["X-Attendance-Session-ID"] = record.attendance_session_id
+  if (record.attendance_session_id)
+    headers["X-Attendance-Session-ID"] = record.attendance_session_id
 
   let response
   try {
-    const body = record.scan_method === "manual"
-      ? { event_id: record.event_id, attendee_id: record.attendee_id, scan_method: "manual" }
-      : { event_id: record.event_id, credential_value: record.credential_value, scan_method: record.scan_method }
-    response = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) })
+    const body =
+      record.scan_method === "manual"
+        ? {
+            event_id: record.event_id,
+            attendee_id: record.attendee_id,
+            scan_method: "manual",
+          }
+        : {
+            event_id: record.event_id,
+            credential_value: record.credential_value,
+            scan_method: record.scan_method,
+          }
+    response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    })
   } catch (_error) {
     await markRecord(db, record.id, {
       sync_status: "RETRY",

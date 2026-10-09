@@ -6,8 +6,6 @@ from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, class_rep_assignment, require_admin
-from app.services.reference_codes import next_student_reference_code
-
 from app.models import (
     AcademicSection,
     Attendee,
@@ -17,20 +15,36 @@ from app.models import (
     StudentPublic,
     StudentsPublic,
     StudentUpdate,
+    UserRole,
     get_datetime_utc,
 )
+from app.services.reference_codes import next_student_reference_code
 
 router = APIRouter(prefix="/students", tags=["students"])
 
 
-def _ensure_class_rep_student_access(session: SessionDep, current_user: CurrentUser, student_id: uuid.UUID) -> None:
-    if current_user.role.value != "class_representative":
+def _ensure_class_rep_student_access(
+    session: SessionDep, current_user: CurrentUser, student_id: uuid.UUID
+) -> None:
+    if current_user.is_superuser or current_user.role in (
+        UserRole.super_admin,
+        UserRole.admin,
+    ):
         return
+    if current_user.role != UserRole.class_representative:
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
     assignment = class_rep_assignment(session, current_user)
     if not assignment:
-        raise HTTPException(status_code=403, detail="No Class Representative assignment found")
-    allowed = session.execute(
-        text("""
+        raise HTTPException(
+            status_code=403, detail="No Class Representative assignment found"
+        )
+    allowed = (
+        session.connection()
+        .execute(
+            text("""
             SELECT 1
             FROM student_enrollments
             WHERE student_id = :student_id
@@ -38,14 +52,18 @@ def _ensure_class_rep_student_access(session: SessionDep, current_user: CurrentU
               AND academic_year_id = :academic_year_id
             LIMIT 1
         """),
-        {
-            "student_id": student_id,
-            "section_id": assignment["section_id"],
-            "academic_year_id": assignment["academic_year_id"],
-        },
-    ).first()
+            {
+                "student_id": student_id,
+                "section_id": assignment["section_id"],
+                "academic_year_id": assignment["academic_year_id"],
+            },
+        )
+        .first()
+    )
     if not allowed:
-        raise HTTPException(status_code=403, detail="Student is outside your assigned section")
+        raise HTTPException(
+            status_code=403, detail="Student is outside your assigned section"
+        )
 
 
 @router.get("/", response_model=StudentsPublic)
@@ -58,6 +76,15 @@ def read_students(
     limit: int = 100,
     search: str | None = None,
 ) -> Any:
+    if not _current_user.is_superuser and _current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+        UserRole.class_representative,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
+        )
     count_statement = (
         select(func.count())
         .select_from(Student)
@@ -74,8 +101,8 @@ def read_students(
         assignment = class_rep_assignment(session, _current_user)
         if not assignment:
             raise HTTPException(
-            status_code=403, detail="No Class Representative assignment found"
-        )
+                status_code=403, detail="No Class Representative assignment found"
+            )
         section_id = assignment["section_id"]
     if section_id:
         count_statement = count_statement.where(col(Student.section_id) == section_id)
@@ -159,13 +186,17 @@ def create_student(
 def read_student(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> Any:
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    _ensure_class_rep_student_access(session, _current_user, student_id)
-    archived = session.execute(
-        text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
-    ).scalar_one_or_none()
+    archived = (
+        session.connection()
+        .execute(
+            text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
+        )
+        .scalar_one_or_none()
+    )
     if archived is not None:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
@@ -179,16 +210,19 @@ def update_student(
     student_id: uuid.UUID,
     student_in: StudentUpdate,
 ) -> Any:
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    archived = session.execute(
-        text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
-    ).scalar_one_or_none()
+    archived = (
+        session.connection()
+        .execute(
+            text("SELECT archived_at FROM students WHERE id = :id"), {"id": student_id}
+        )
+        .scalar_one_or_none()
+    )
     if archived is not None:
         raise HTTPException(status_code=404, detail="Student is archived")
-
-    _ensure_class_rep_student_access(session, _current_user, student_id)
 
     update_dict = student_in.model_dump(exclude_unset=True)
 
@@ -251,11 +285,11 @@ def update_student(
 def delete_student(
     session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
 ) -> dict[str, str]:
+    _ensure_class_rep_student_access(session, _current_user, student_id)
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
-    _ensure_class_rep_student_access(session, _current_user, student_id)
-    session.execute(
+    session.connection().execute(
         text(
             "UPDATE students SET archived_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = :id AND archived_at IS NULL"
         ),

@@ -2,7 +2,7 @@ from collections.abc import Callable, Generator
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
@@ -31,15 +31,13 @@ SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-def get_current_user(
-    session: SessionDep, token: TokenDep
-) -> User:
+def get_current_user(request: Request, session: SessionDep, token: TokenDep) -> User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
+    except InvalidTokenError, ValidationError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -56,6 +54,18 @@ def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+    password_setup_paths = {
+        f"{settings.API_V1_STR}/users/me",
+        f"{settings.API_V1_STR}/users/me/password",
+    }
+    if user.must_change_password and request.url.path not in password_setup_paths:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "password_change_required",
+                "message": "Change your temporary password before accessing this resource.",
+            },
+        )
 
     return user
 
@@ -79,7 +89,7 @@ def require_role(
         if current_user.role not in allowed_set:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="The user does not have sufficient permissions for this operation",
+                detail="The user doesn't have enough privileges",
             )
         return current_user
 
@@ -136,7 +146,7 @@ def class_rep_assignment(
         query += " AND academic_year_id = :academic_year_id"
         params["academic_year_id"] = academic_year_id
     query += " ORDER BY created_at DESC LIMIT 1"
-    return session.execute(text(query), params).mappings().first()
+    return session.connection().execute(text(query), params).mappings().first()
 
 
 def require_class_rep_assignment(
