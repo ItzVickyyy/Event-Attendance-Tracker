@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 
 from app import crud
 from app.core.db import engine
-from app.models import AcademicSection, User, UserCreate, UserRole
+from app.models import AcademicSection, UserCreate, UserRole
 from app.student_academics import AcademicYear, ClassRepresentativeAssignment
 
 logger = logging.getLogger(__name__)
