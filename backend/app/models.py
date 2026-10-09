@@ -4,7 +4,7 @@ from enum import StrEnum
 from typing import Optional
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint, text
+from sqlalchemy import JSON, Column, DateTime, Index, String, UniqueConstraint, text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -91,7 +91,16 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     __tablename__ = "user"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        sa_column=Column(
+            String(20),
+            nullable=False,
+            unique=True,
+            index=True,
+            server_default=text("'USR-' || LPAD(nextval('user_reference_code_seq'::regclass)::text, 6, '0')"),
+        ),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     created_at: datetime | None = Field(
@@ -250,7 +259,16 @@ class OrganizationUpdate(SQLModel):
 class Organization(OrganizationBase, table=True):
     __tablename__ = "organizations"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        sa_column=Column(
+            String(20),
+            nullable=False,
+            unique=True,
+            index=True,
+            server_default=text("'ORG-' || LPAD(nextval('organization_reference_code_seq'::regclass)::text, 6, '0')"),
+        ),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -298,7 +316,16 @@ class AcademicProgramUpdate(SQLModel):
 class AcademicProgram(AcademicProgramBase, table=True):
     __tablename__ = "academic_programs"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        sa_column=Column(
+            String(20),
+            nullable=False,
+            unique=True,
+            index=True,
+            server_default=text("'PRG-' || LPAD(nextval('academic_program_reference_code_seq'::regclass)::text, 6, '0')"),
+        ),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -371,7 +398,16 @@ class AcademicSection(AcademicSectionBase, table=True):
         ),
     )
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        sa_column=Column(
+            String(20),
+            nullable=False,
+            unique=True,
+            index=True,
+            server_default=text("'SEC-' || LPAD(nextval('academic_section_reference_code_seq'::regclass)::text, 6, '0')"),
+        ),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -494,7 +530,16 @@ class StudentUpdate(SQLModel):
 class Student(StudentBase, table=True):
     __tablename__ = "students"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        sa_column=Column(
+            String(20),
+            nullable=False,
+            unique=True,
+            index=True,
+            server_default=text("'STU-' || LPAD(nextval('student_reference_code_seq'::regclass)::text, 6, '0')"),
+        ),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -793,7 +838,16 @@ class AttendanceSession(AttendanceSessionBase, table=True):
         ),
     )
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        sa_column=Column(
+            String(20),
+            nullable=False,
+            unique=True,
+            index=True,
+            server_default=text("'SES-' || LPAD(nextval('attendance_session_reference_code_seq'::regclass)::text, 6, '0')"),
+        ),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
@@ -825,7 +879,16 @@ class AttendanceSessionsPublic(SQLModel):
 class Event(EventBase, table=True):
     __tablename__ = "events"
 
-    reference_code: str | None = Field(default=None, unique=True, index=True, max_length=20)
+    reference_code: str | None = Field(
+        default=None,
+        sa_column=Column(
+            String(20),
+            nullable=False,
+            unique=True,
+            index=True,
+            server_default=text("'EVT-' || LPAD(nextval('event_reference_code_seq'::regclass)::text, 6, '0')"),
+        ),
+    )
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
