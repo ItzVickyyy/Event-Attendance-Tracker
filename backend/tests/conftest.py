@@ -1,8 +1,8 @@
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import inspect
 from fastapi.testclient import TestClient
+from sqlalchemy import inspect
 from sqlmodel import Session, delete, select
 
 from app.academic_catalog import AcademicMajor, AcademicSectionMajor
