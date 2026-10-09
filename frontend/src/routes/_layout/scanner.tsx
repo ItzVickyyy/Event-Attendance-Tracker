@@ -160,9 +160,12 @@ function useSyncStatus(eventId?: string) {
       const accountId = await getOfflineAccountId()
       const queued = await getAllQueuedScans()
       setPendingScans(
-        queued.filter(
-          (record) => !record.synced && record.account_id === accountId,
-        ),
+        accountId
+          ? queued.filter(
+              (record) =>
+                !record.synced && record.account_id === accountId,
+            )
+          : [],
       )
       setUnassignedPendingCount(
         queued.filter((record) => !record.synced && !record.account_id).length,
