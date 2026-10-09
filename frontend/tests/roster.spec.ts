@@ -3,6 +3,7 @@ import {
   type CDPSession,
   expect,
   type Page,
+  type Route,
 } from "@playwright/test"
 
 const SCAN_URL = "http://localhost:8001/api/v1/attendance/scan*"
@@ -487,6 +488,13 @@ test.describe("Offline roster caching and scanning", () => {
     mockHttp,
   }) => {
     await mockHttp(page)
+    const blankLogin = async (route: Route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><html><body></body></html>",
+      })
+    await page.route("**/login", blankLogin)
     await page.goto("/login")
     await setToken(page)
     await page.evaluate(
@@ -532,6 +540,7 @@ test.describe("Offline roster caching and scanning", () => {
       ],
     )
 
+    await page.unroute("**/login", blankLogin)
     await page.goto("/scanner")
     const migrated = await readRoster(page)
     expect(migrated?.account_id).toBe("user-1")
