@@ -460,6 +460,39 @@ def update_student_details(
             raise HTTPException(
                 status_code=403, detail="Student is outside your assigned section"
             )
+        if payload.get("enrollment_id") is not None:
+            try:
+                enrollment_id = uuid.UUID(str(payload["enrollment_id"]))
+            except (ValueError, TypeError, AttributeError) as exc:
+                raise HTTPException(
+                    status_code=422, detail="Invalid enrollment ID"
+                ) from exc
+            enrollment_allowed = (
+                session.connection()
+                .execute(
+                    text("""
+                    SELECT 1
+                    FROM student_enrollments
+                    WHERE id = :enrollment_id
+                      AND student_id = :student_id
+                      AND section_id = :section_id
+                      AND academic_year_id = :academic_year_id
+                    LIMIT 1
+                """),
+                    {
+                        "enrollment_id": enrollment_id,
+                        "student_id": student_id,
+                        "section_id": assignment["section_id"],
+                        "academic_year_id": assignment["academic_year_id"],
+                    },
+                )
+                .first()
+            )
+            if not enrollment_allowed:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Enrollment is outside your assigned section and academic year",
+                )
         if payload.get("section_id") and str(payload["section_id"]) != str(
             assignment["section_id"]
         ):
