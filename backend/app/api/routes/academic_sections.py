@@ -5,6 +5,7 @@ from typing import Any, cast
 from xml.sax.saxutils import escape
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, func, select
@@ -42,6 +43,7 @@ def _section_rows(session: SessionDep, section_id: uuid.UUID):
         .where(
             StudentEnrollment.section_id == section_id,
             StudentEnrollment.archived_at.is_(None),
+            text("students.archived_at IS NULL"),
         )
     )
     if section:
