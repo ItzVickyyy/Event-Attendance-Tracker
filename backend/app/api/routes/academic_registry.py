@@ -236,7 +236,11 @@ def read_section_students(
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='nfc' AND c.is_active=true) AS nfc_registered,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true) AS qr_registered
         FROM student_enrollments se JOIN students s ON s.id=se.student_id JOIN people p ON p.id=s.person_id
-        WHERE se.section_id=:section_id {archived_filter}
+        WHERE se.section_id=:section_id
+          AND se.academic_year_id = (
+              SELECT academic_year_id FROM academic_sections WHERE id=:section_id
+          )
+          {archived_filter}
         ORDER BY p.last_name, p.first_name, s.student_number
     """),
             {"section_id": section_id},
@@ -589,6 +593,11 @@ def create_enrollment(
         raise HTTPException(
             status_code=404, detail="Student, section, or academic year not found"
         )
+    if section.academic_year_id != enrollment_in.academic_year_id:
+        raise HTTPException(
+            status_code=422,
+            detail="Section does not belong to the selected academic year",
+        )
     existing = session.exec(
         select(StudentEnrollment).where(
             StudentEnrollment.student_id == enrollment_in.student_id,
@@ -622,12 +631,15 @@ def update_enrollment(
     if not enrollment:
         raise HTTPException(status_code=404, detail="Enrollment not found")
     updates = enrollment_in.model_dump(exclude_unset=True)
-    if (
-        "section_id" in updates
-        and updates["section_id"] is not None
-        and not session.get(AcademicSection, updates["section_id"])
-    ):
-        raise HTTPException(status_code=404, detail="Academic section not found")
+    if "section_id" in updates and updates["section_id"] is not None:
+        section = session.get(AcademicSection, updates["section_id"])
+        if not section:
+            raise HTTPException(status_code=404, detail="Academic section not found")
+        if section.academic_year_id != enrollment.academic_year_id:
+            raise HTTPException(
+                status_code=422,
+                detail="Section does not belong to the enrollment's academic year",
+            )
     enrollment.sqlmodel_update(updates)
     session.add(enrollment)
     session.commit()
@@ -791,6 +803,33 @@ def update_section(
     year = session.get(AcademicYear, values["academic_year_id"])
     if not year:
         raise HTTPException(status_code=404, detail="Academic year not found")
+    if values["academic_year_id"] != current_year_id:
+        has_enrollments = (
+            session.connection()
+            .execute(
+                text("SELECT 1 FROM student_enrollments WHERE section_id=:id LIMIT 1"),
+                {"id": section_id},
+            )
+            .first()
+        )
+        has_assignments = (
+            session.connection()
+            .execute(
+                text(
+                    "SELECT 1 FROM class_representative_assignments WHERE section_id=:id LIMIT 1"
+                ),
+                {"id": section_id},
+            )
+            .first()
+        )
+        if has_enrollments or has_assignments:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Cannot change the academic year of a section that has "
+                    "enrollments or Class Representative assignments"
+                ),
+            )
     session.connection().execute(
         text(
             "UPDATE academic_sections SET program_id=:program_id, year_level=:year_level, section_code=:section_code, section_name=:section_code, academic_year_id=:academic_year_id, academic_year=:academic_year, updated_at=CURRENT_TIMESTAMP WHERE id=:id"

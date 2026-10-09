@@ -485,3 +485,61 @@ def test_academic_registry_section_creation_and_update_validation(
         json={"academic_year_id": str(uuid4())},
     )
     assert invalid_year.status_code == 404
+
+
+def test_academic_registry_rejects_enrollment_section_year_mismatch(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    year, section = _current_year_and_program(client, headers)
+    sections = client.get(_api("/academic-registry/sections"), headers=headers)
+    assert sections.status_code == 200
+    other_section = next(
+        (
+            row
+            for row in sections.json()["data"]
+            if row["academic_year_id"] != year["id"]
+        ),
+        None,
+    )
+    assert other_section is not None
+
+    created = client.post(
+        _api("/academic-registry/students"),
+        headers=headers,
+        json={
+            "student_number": f"YEAR-{random_lower_string()[:10].upper()}",
+            "first_name": "Year",
+            "last_name": "Mismatch",
+            "section_id": section["id"],
+            "academic_year_id": year["id"],
+        },
+    )
+    assert created.status_code == 200
+    student = created.json()
+
+    mismatched_create = client.post(
+        _api("/academic-registry/enrollments"),
+        headers=headers,
+        json={
+            "student_id": student["id"],
+            "section_id": other_section["id"],
+            "academic_year_id": year["id"],
+            "student_status": "regular",
+        },
+    )
+    assert mismatched_create.status_code == 422
+
+    mismatched_update = client.patch(
+        _api(f"/academic-registry/enrollments/{student['enrollment_id']}"),
+        headers=headers,
+        json={"section_id": other_section["id"]},
+    )
+    assert mismatched_update.status_code == 422
+
+    moved_section = client.patch(
+        _api(f"/academic-registry/sections/{section['id']}"),
+        headers=headers,
+        json={"academic_year_id": other_section["academic_year_id"]},
+    )
+    assert moved_section.status_code == 409
