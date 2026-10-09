@@ -91,6 +91,15 @@ def record_registered_attendance(
     attendance_session_id: uuid.UUID | None = None,
     now: datetime | None = None,
 ) -> tuple[Attendance, str, AttendanceResultCode]:
+    if event.status != EventStatus.open:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Event is not open for attendance scanning "
+                f"(current status: {event.status.value})"
+            ),
+        )
+
     if registration.registration_status == RegistrationStatus.cancelled:
         raise HTTPException(
             status_code=400, detail="Attendee registration is cancelled for this event"
