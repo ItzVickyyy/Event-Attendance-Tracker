@@ -6,6 +6,28 @@ import react from "@vitejs/plugin-react-swc"
 import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 
+const bundleDiagnostics = {
+  name: "temporary-bundle-diagnostics",
+  apply: "build" as const,
+  generateBundle(_options, bundle) {
+    for (const output of Object.values(bundle)) {
+      if (output.type !== "chunk" || !output.isEntry || output.code.length < 500_000) {
+        continue
+      }
+      const largestModules = Object.entries(output.modules)
+        .sort(([, a], [, b]) => b.renderedLength - a.renderedLength)
+        .slice(0, 30)
+        .map(([id, info]) => ({
+          module: path.relative(import.meta.dirname, id).replaceAll("\\", "/"),
+          renderedBytes: info.renderedLength,
+          originalBytes: info.originalLength,
+        }))
+      console.log("[bundle-diagnostics] large entry modules:")
+      console.log(JSON.stringify(largestModules, null, 2))
+    }
+  },
+}
+
 const httpsCertDir = path.resolve(import.meta.dirname, ".certs")
 const httpsKeyPath = path.join(httpsCertDir, "localhost+lan-key.pem")
 const httpsCertPath = path.join(httpsCertDir, "localhost+lan.pem")
@@ -44,6 +66,7 @@ export default defineConfig({
       autoCodeSplitting: true,
     }),
     react(),
+    bundleDiagnostics,
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
