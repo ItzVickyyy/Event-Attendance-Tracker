@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { rememberOfflineAccount } from "@/data/account"
+import { getOfflineAccountId, rememberOfflineAccount } from "@/data/account"
 import type { QueuedScanRecord, RosterRecord } from "@/data"
 import {
   enqueueScan,
@@ -498,6 +498,11 @@ function Scanner() {
         toast.error("No active attendance session")
         return
       }
+      const accountId = await getOfflineAccountId()
+      if (!accountId) {
+        toast.error("Reconnect and verify your account before scanning")
+        return
+      }
       const nowStr = new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -522,6 +527,7 @@ function Scanner() {
           const queued = await getAllQueuedScans()
           const isDuplicate = queued.some(
             (record) =>
+              record.account_id === accountId &&
               !record.synced &&
               record.event_id === eventId &&
               record.attendance_session_id === activeSession.id &&
