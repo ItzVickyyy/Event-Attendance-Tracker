@@ -114,7 +114,7 @@ def db() -> Generator[Session]:
             Organization,
             User,
         ]:
-            session.execute(delete(model))
+            session.exec(delete(model))
         session.commit()
 
 
