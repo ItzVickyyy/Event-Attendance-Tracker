@@ -1,6 +1,7 @@
 from collections.abc import Generator
 
 import pytest
+from sqlalchemy import inspect
 from fastapi.testclient import TestClient
 from sqlmodel import Session, delete, select
 
@@ -50,6 +51,24 @@ def db() -> Generator[Session]:
         "TEST_DATABASE_URL must target a different database name than DATABASE_URL. "
         "Tests must never run against the development database."
     )
+
+    # A persistent local app_test database must not carry state between pytest
+    # runs. Reset only after proving that the configured test database name is
+    # different from the development database. Keep Alembic's schema revision.
+    table_names = [
+        name
+        for name in inspect(test_engine).get_table_names(schema="public")
+        if name != "alembic_version"
+    ]
+    if table_names:
+        quoted_tables = ", ".join(
+            f"public.{test_engine.dialect.identifier_preparer.quote(name)}"
+            for name in table_names
+        )
+        with test_engine.begin() as connection:
+            connection.exec_driver_sql(
+                f"TRUNCATE TABLE {quoted_tables} RESTART IDENTITY CASCADE"
+            )
     with Session(test_engine) as session:
         init_db(session, test_engine)
 
