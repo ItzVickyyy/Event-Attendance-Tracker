@@ -146,7 +146,7 @@ const test = base.extend<{
             status: 200,
             contentType: "application/json",
             headers: corsHeaders,
-            body: JSON.stringify({ is_superuser: true, can_scan: true }),
+            body: JSON.stringify({ id: "user-1", is_superuser: true, can_scan: true }),
           })
         })
         await page.route(STUDENTS_SEARCH_URL, async (route) => {
