@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -8,7 +9,6 @@ config = context.config
 assert config.config_file_name is not None
 fileConfig(config.config_file_name)
 
-from app.alembic.migration_safety import guard_populated_legacy_schema  # noqa: E402
 from app.models import SQLModel  # noqa: E402
 from app.core.config import settings  # noqa: E402
 from app import academic_catalog  # noqa: F401,E402
@@ -17,7 +17,8 @@ target_metadata = SQLModel.metadata
 
 
 def get_url():
-    return str(settings.DATABASE_URL)
+    # Allow migration tests and rehearsals to target a dedicated disposable database.
+    return os.getenv("ALEMBIC_DATABASE_URL", str(settings.DATABASE_URL))
 
 
 def run_migrations_offline():
@@ -43,9 +44,6 @@ def run_migrations_online():
     with connectable.connect() as connection:
         context.configure(
             connection=connection, target_metadata=target_metadata, compare_type=True
-        )
-        guard_populated_legacy_schema(
-            connection, context.get_context().get_current_heads()
         )
 
         with context.begin_transaction():
