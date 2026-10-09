@@ -317,13 +317,20 @@ test.describe("Attendance background sync", () => {
     const scan = await mockScan(page, () => ({ status: 201, json: { ok: true } }))
     await gotoApp(page)
     await setToken(page, "account-one-token", "user-1")
-    await seedRecords(page, [record({ id: "rec-other-account", account_id: "user-2" })])
+    await seedRecords(page, [
+      record({ id: "rec-other-account", account_id: "user-2" }),
+      record({ id: "rec-legacy", account_id: undefined }),
+    ])
     await triggerSyncNow(page)
 
     await expect.poll(() => scan.count(), { timeout: 1500 }).toBe(0)
-    const [queued] = await readQueue(page)
-    expect(queued.synced).toBe(false)
-    expect(queued.account_id).toBe("user-2")
+    const queue = await readQueue(page)
+    expect(queue).toHaveLength(2)
+    expect(queue.every((queued) => !queued.synced)).toBe(true)
+    expect(queue.map((queued) => queued.id)).toEqual([
+      "rec-other-account",
+      "rec-legacy",
+    ])
   })
 
   test("409 duplicate scans are treated as resolved", async ({
