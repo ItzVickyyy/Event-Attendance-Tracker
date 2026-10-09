@@ -323,7 +323,9 @@ def test_existing_student_number_reused_across_batches(db_session: Session):
     StudentPromotionService(session=db_session).promote_import_batch(batch1.id)
     db_session.refresh(row1)
     original_student_id = row1.promoted_student_id
-    original_person_id = db_session.get(Student, original_student_id).person_id
+    original_student = db_session.get(Student, original_student_id)
+    assert original_student is not None
+    original_person_id = original_student.person_id
 
     # Later import batch: same student, new section/status.
     batch2 = _make_batch(db_session, academic_year="2026-2027")
@@ -352,6 +354,7 @@ def test_existing_student_number_reused_across_batches(db_session: Session):
     student = students[0]
     assert student.person_id == original_person_id  # Person identity preserved
     assert student.academic_status == AcademicStatus.irregular  # status updated
+    assert student.section is not None
     assert student.section.section_name == "B"  # section updated
     assert student.section.year_level == "2"
 
@@ -360,10 +363,11 @@ def test_existing_student_number_reused_across_batches(db_session: Session):
     enrollments = db_session.exec(
         select(StudentEnrollment).where(StudentEnrollment.student_id == student.id)
     ).all()
-    enrollments_by_year = {
-        db_session.get(AcademicYear, enrollment.academic_year_id).label: enrollment
-        for enrollment in enrollments
-    }
+    enrollments_by_year = {}
+    for enrollment in enrollments:
+        academic_year = db_session.get(AcademicYear, enrollment.academic_year_id)
+        assert academic_year is not None
+        enrollments_by_year[academic_year.label] = enrollment
     assert set(enrollments_by_year) == {"2025-2026", "2026-2027"}
 
     historical_enrollment = enrollments_by_year["2025-2026"]
