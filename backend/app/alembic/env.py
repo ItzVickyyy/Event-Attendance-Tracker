@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -16,7 +17,8 @@ target_metadata = SQLModel.metadata
 
 
 def get_url():
-    return str(settings.DATABASE_URL)
+    # Allow migration tests and rehearsals to target a dedicated disposable database.
+    return os.getenv("ALEMBIC_DATABASE_URL", str(settings.DATABASE_URL))
 
 
 def run_migrations_offline():
