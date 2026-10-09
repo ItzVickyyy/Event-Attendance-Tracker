@@ -13,7 +13,7 @@ import argparse
 import logging
 from datetime import UTC, datetime, timedelta
 
-from sqlmodel import Session, delete, func, select
+from sqlmodel import Session, col, delete, func, select
 
 from app.core.db import engine
 from app.models import AuditLog
@@ -44,7 +44,7 @@ def main() -> None:
         expired_count = session.exec(
             select(func.count())
             .select_from(AuditLog)
-            .where(AuditLog.__table__.c.occurred_at < cutoff)
+            .where(col(AuditLog.occurred_at) < cutoff)
         ).one()
         logger.info("Retention cutoff: %s", cutoff.isoformat())
         logger.info("Expired audit entries: %s", expired_count)
@@ -53,7 +53,7 @@ def main() -> None:
             logger.info("Dry run only. Re-run with --execute to delete these entries.")
             return
 
-        session.exec(delete(AuditLog).where(AuditLog.occurred_at < cutoff))
+        session.exec(delete(AuditLog).where(col(AuditLog.occurred_at) < cutoff))
         session.add(
             AuditLog(
                 actor_user_id=None,
