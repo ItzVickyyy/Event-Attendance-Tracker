@@ -29,17 +29,20 @@ export async function rememberOfflineAccount(
   localStorage.setItem(ACCOUNT_TOKEN_FINGERPRINT_KEY, fingerprint)
 }
 
-export async function getOfflineAccountId(): Promise<string | null> {
-  const token = localStorage.getItem("access_token")
+export async function getOfflineAccountId(
+  token = localStorage.getItem("access_token") ?? "",
+): Promise<string | null> {
   if (!token || !crypto.subtle) return null
   const [accountId, savedFingerprint] = [
     localStorage.getItem(ACCOUNT_ID_KEY),
     localStorage.getItem(ACCOUNT_TOKEN_FINGERPRINT_KEY),
   ]
   if (!accountId || !savedFingerprint) return null
-  return (await fingerprintToken(token)) === savedFingerprint
-    ? accountId
-    : null
+  const matches = (await fingerprintToken(token)) === savedFingerprint
+  // Re-check after hashing so a session switch in another tab cannot pair
+  // the old identity with a newly stored token.
+  if (localStorage.getItem("access_token") !== token) return null
+  return matches ? accountId : null
 }
 
 export function clearOfflineAccount(): void {
