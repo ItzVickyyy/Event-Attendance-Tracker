@@ -6,7 +6,13 @@ from sqlmodel import Session, delete, select
 
 from app.academic_catalog import AcademicMajor, AcademicSectionMajor
 from app.core.config import settings
-from app.core.db import init_db, test_engine
+
+# API dependencies choose their database engine from this setting. Force test
+# mode before importing the application so direct `pytest` runs cannot target
+# the development database when .env sets FASTAPI_ENV=development.
+settings.FASTAPI_ENV = "test"
+
+from app.core.db import engine, init_db, test_engine
 from app.core.security import get_password_hash
 from app.initial_data import _seed_academic_catalog
 from app.main import app
@@ -43,6 +49,10 @@ def db() -> Generator[Session]:
         "TEST_DATABASE_URL is not set. Tests cannot run without an isolated "
         "test database. Set TEST_DATABASE_URL in .env to a separate database "
         "(e.g. postgresql+psycopg://postgres:changethis@localhost:5433/app_test)."
+    )
+    assert test_engine.url.database != engine.url.database, (
+        "TEST_DATABASE_URL must target a different database name than DATABASE_URL. "
+        "Tests must never run against the development database."
     )
     with Session(test_engine) as session:
         init_db(session, test_engine)
