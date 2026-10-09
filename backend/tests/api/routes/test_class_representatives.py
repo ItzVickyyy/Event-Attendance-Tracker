@@ -338,9 +338,7 @@ def test_temporary_password_is_random_outside_test_mode(monkeypatch) -> None:
 def test_class_representative_cannot_modify_enrollment_outside_assigned_year(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
-    representative, year, _ = _create_representative(
-        client, superuser_token_headers
-    )
+    representative, year, _ = _create_representative(client, superuser_token_headers)
     rep_headers = _representative_headers(client, representative["email"])
     created = client.post(
         _api("/class-representatives/me/students"),
@@ -395,7 +393,5 @@ def test_class_representative_cannot_modify_enrollment_outside_assigned_year(
         headers=superuser_token_headers,
     )
     assert roster.status_code == 200
-    student_row = next(
-        row for row in roster.json()["data"] if row["id"] == student_id
-    )
+    student_row = next(row for row in roster.json()["data"] if row["id"] == student_id)
     assert student_row["student_status"] == "regular"
