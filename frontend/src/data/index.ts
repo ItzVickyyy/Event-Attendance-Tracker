@@ -81,6 +81,10 @@ export interface RosterRecord {
   credential_count: number
 }
 
+interface AccountRosterRecord extends RosterRecord {
+  id: string
+}
+
 interface OfflineDB extends DBSchema {
   events: {
     key: string
@@ -114,14 +118,22 @@ interface OfflineDB extends DBSchema {
     key: string
     value: RosterRecord
   }
+  rostersByAccount: {
+    key: string
+    value: AccountRosterRecord
+  }
+}
+
+function rosterCacheId(accountId: string, eventId: string): string {
+  return JSON.stringify([accountId, eventId])
 }
 
 let dbPromise: Promise<IDBPDatabase<OfflineDB>> | null = null
 
 export function getDB(): Promise<IDBPDatabase<OfflineDB>> {
   if (!dbPromise) {
-    dbPromise = openDB<OfflineDB>("attendance-offline", 3, {
-      upgrade(db) {
+    dbPromise = openDB<OfflineDB>("attendance-offline", 4, {
+      upgrade(db, _oldVersion, _newVersion, transaction) {
         if (!db.objectStoreNames.contains("events")) {
           const eventStore = db.createObjectStore("events", { keyPath: "id" })
           eventStore.createIndex("by-status", "status")
@@ -156,6 +168,30 @@ export function getDB(): Promise<IDBPDatabase<OfflineDB>> {
 
         if (!db.objectStoreNames.contains("rosters")) {
           db.createObjectStore("rosters", { keyPath: "event_id" })
+        }
+
+        if (!db.objectStoreNames.contains("rostersByAccount")) {
+          const scopedRosters = db.createObjectStore("rostersByAccount", {
+            keyPath: "id",
+          })
+          const legacyRosters = transaction.objectStore("rosters")
+          const cursorRequest = legacyRosters.openCursor()
+          cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result
+            if (!cursor) return
+            const roster = cursor.value as RosterRecord
+            if (roster.account_id) {
+              scopedRosters.put({
+                ...roster,
+                id: rosterCacheId(roster.account_id, roster.event_id),
+              })
+            }
+            // Legacy rows without a verified owner cannot be used safely.
+            // Rosters are a cache and can be downloaded again. This migration
+            // does not touch the attendance queue or its unsynced records.
+            cursor.delete()
+            cursor.continue()
+          }
         }
       },
     })
@@ -390,7 +426,10 @@ export async function getRoster(
   const accountId = await getOfflineAccountId()
   if (!accountId) return undefined
   const db = await getDB()
-  const roster = await db.get("rosters", eventId)
+  const roster = await db.get(
+    "rostersByAccount",
+    rosterCacheId(accountId, eventId),
+  )
   return roster?.account_id === accountId ? roster : undefined
 }
 
@@ -402,15 +441,21 @@ export async function putRoster(roster: RosterRecord): Promise<void> {
     )
   }
   const db = await getDB()
-  await db.put("rosters", { ...roster, account_id: accountId })
+  await db.put("rostersByAccount", {
+    ...roster,
+    id: rosterCacheId(accountId, roster.event_id),
+    account_id: accountId,
+  })
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(ROSTER_CHANGED_EVENT))
   }
 }
 
 export async function removeRoster(eventId: string): Promise<void> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return
   const db = await getDB()
-  await db.delete("rosters", eventId)
+  await db.delete("rostersByAccount", rosterCacheId(accountId, eventId))
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event(ROSTER_CHANGED_EVENT))
   }
@@ -420,7 +465,7 @@ export async function getAllRosters(): Promise<RosterRecord[]> {
   const accountId = await getOfflineAccountId()
   if (!accountId) return []
   const db = await getDB()
-  return (await db.getAll("rosters")).filter(
+  return (await db.getAll("rostersByAccount")).filter(
     (roster) => roster.account_id === accountId,
   )
 }
@@ -449,5 +494,6 @@ export async function clearAllData(): Promise<void> {
     db.clear("attendanceQueue"),
     db.clear("syncMeta"),
     db.clear("rosters"),
+    db.clear("rostersByAccount"),
   ])
 }
