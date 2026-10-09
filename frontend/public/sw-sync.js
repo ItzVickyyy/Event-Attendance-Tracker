@@ -64,7 +64,11 @@ async function runAttendanceSync() {
       return { skipped: true, needsRetry: false }
     }
     broadcastToClients({ type: "PWA_SYNC_START" })
-    const result = await flushPendingScans(auth.token, auth.apiBase, auth.accountId)
+    const result = await flushPendingScans(
+      auth.token,
+      auth.apiBase,
+      auth.accountId,
+    )
     console.log(
       `[sw-sync] flushed attendance queue in creation order ` +
         `(needsRetry=${result.needsRetry})`,
