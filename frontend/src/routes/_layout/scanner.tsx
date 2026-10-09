@@ -38,8 +38,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { getOfflineAccountId, rememberOfflineAccount } from "@/data/account"
 import type { QueuedScanRecord, RosterRecord } from "@/data"
+import { getOfflineAccountId, rememberOfflineAccount } from "@/data/account"
 import {
   enqueueScan,
   getAllQueuedScans,
@@ -356,8 +356,8 @@ function SyncStatusCard({
             {unassignedPendingCount === 1 ? " has" : "s have"} no saved account
             owner. They are preserved but will not sync automatically because
             doing so could record attendance under the wrong account. Do not
-            clear this browser's site data. Contact the system administrator
-            for recovery.
+            clear this browser's site data. Contact the system administrator for
+            recovery.
           </div>
         )}
         {activeSession ? (
