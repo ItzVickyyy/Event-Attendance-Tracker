@@ -6,41 +6,6 @@ import react from "@vitejs/plugin-react-swc"
 import { defineConfig } from "vite"
 import { VitePWA } from "vite-plugin-pwa"
 
-const qrChunkDiagnostics = {
-  name: "temporary-qr-chunk-diagnostics",
-  apply: "build" as const,
-  generateBundle(_options, bundle) {
-    for (const output of Object.values(bundle)) {
-      if (output.type !== "chunk") continue
-      const modules = Object.keys(output.modules).filter((id) =>
-        /html5-qrcode|zxing-js/.test(id),
-      )
-      if (modules.length > 0) {
-        console.log(
-          "[qr-chunk-diagnostics]",
-          JSON.stringify({
-            file: output.fileName,
-            isEntry: output.isEntry,
-            imports: output.imports,
-            dynamicImports: output.dynamicImports,
-            modules: modules.map((id) => ({
-              id: path.relative(import.meta.dirname, id),
-              renderedBytes: output.modules[id]?.renderedLength,
-            })),
-            bytes: output.code.length,
-            indexHtmlReferencesChunk: Object.values(bundle).some(
-              (asset) =>
-                asset.type === "asset" &&
-                asset.fileName === "index.html" &&
-                String(asset.source).includes(output.fileName),
-            ),
-          }),
-        )
-      }
-    }
-  },
-}
-
 const httpsCertDir = path.resolve(import.meta.dirname, ".certs")
 const httpsKeyPath = path.join(httpsCertDir, "localhost+lan-key.pem")
 const httpsCertPath = path.join(httpsCertDir, "localhost+lan.pem")
@@ -93,7 +58,6 @@ export default defineConfig({
       autoCodeSplitting: true,
     }),
     react(),
-    qrChunkDiagnostics,
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
