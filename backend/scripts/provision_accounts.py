@@ -1,28 +1,28 @@
-"""Provision application accounts and assignments from a local CSV file.
+"""Provision application accounts and class-representative assignments from CSV.
 
-The CSV is intentionally kept outside the repository because it contains account
-identifiers and passwords. See scripts/provision_accounts.example.csv for the
-expected columns.
+Keep the input CSV outside version control because it contains account identifiers
+and initial passwords. See scripts/provision_accounts.example.csv for its columns.
 """
 
 import csv
+import logging
 import sys
 from pathlib import Path
 
 from sqlmodel import Session, select
 
 from app import crud
-from app.account_assignments import OrganizationMembership, UserSectionAssignment
 from app.core.db import engine
-from app.models import AcademicSection, Organization, UserCreate, UserRole
+from app.models import AcademicSection, User, UserCreate, UserRole
+from app.student_academics import AcademicYear, ClassRepresentativeAssignment
 
+logger = logging.getLogger(__name__)
 
 REQUIRED_COLUMNS = {
     "email",
     "full_name",
     "password",
     "role",
-    "position",
     "academic_year",
     "section_name",
     "can_scan",
@@ -34,8 +34,11 @@ def as_bool(value: str) -> bool:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     if len(sys.argv) != 2:
-        raise SystemExit("Usage: uv run python scripts/provision_accounts.py <accounts.csv>")
+        raise SystemExit(
+            "Usage: uv run python scripts/provision_accounts.py <accounts.csv>"
+        )
 
     csv_path = Path(sys.argv[1])
     if not csv_path.is_file():
@@ -49,98 +52,125 @@ def main() -> None:
             raise SystemExit(f"Missing CSV columns: {', '.join(sorted(missing))}")
         rows = list(reader)
 
+    created = 0
+    updated = 0
+    assignments_created = 0
+
+    # All changes are committed together. Invalid rows raise before commit, so
+    # the session rolls back the pending account and assignment changes.
     with Session(engine) as session:
-        organization = session.exec(
-            select(Organization).where(Organization.name == "CCS Student Council")
-        ).first()
-        if not organization:
-            organization = Organization(
-                name="CCS Student Council",
-                description="College of Computer Studies Student Council",
-            )
-            session.add(organization)
-            session.commit()
-            session.refresh(organization)
-
-        created = 0
-        updated = 0
-        for row in rows:
-            role = UserRole(row["role"].strip())
+        for line_number, row in enumerate(rows, start=2):
             email = row["email"].strip()
-            user = crud.get_user_by_email(session=session, email=email)
+            if not email:
+                raise SystemExit(f"CSV row {line_number}: email is required")
 
-            if user:
-                user.full_name = row["full_name"].strip() or user.full_name
+            try:
+                role = UserRole(row["role"].strip())
+            except ValueError as exc:
+                allowed = ", ".join(role.value for role in UserRole)
+                raise SystemExit(
+                    f"CSV row {line_number}: invalid role. Choose one of: {allowed}"
+                ) from exc
+
+            academic_year_label = row["academic_year"].strip()
+            section_name = row["section_name"].strip()
+            academic_year = None
+            section = None
+
+            if role == UserRole.class_representative:
+                if not academic_year_label or not section_name:
+                    raise SystemExit(
+                        f"CSV row {line_number}: class representatives require "
+                        "academic_year and section_name"
+                    )
+
+                academic_year = session.exec(
+                    select(AcademicYear).where(
+                        AcademicYear.label == academic_year_label
+                    )
+                ).first()
+                if academic_year is None:
+                    raise SystemExit(
+                        f"CSV row {line_number}: academic year "
+                        f"'{academic_year_label}' was not found"
+                    )
+
+                # Accept either the stored section name (for example, "A") or
+                # its section code (for example, "BSIT 3A").
+                matches = session.exec(
+                    select(AcademicSection).where(
+                        AcademicSection.academic_year_id == academic_year.id,
+                        (AcademicSection.section_name == section_name)
+                        | (AcademicSection.section_code == section_name),
+                    )
+                ).all()
+                if len(matches) != 1:
+                    reason = "not found" if not matches else "ambiguous"
+                    raise SystemExit(
+                        f"CSV row {line_number}: section '{section_name}' is "
+                        f"{reason} for academic year '{academic_year_label}'"
+                    )
+                section = matches[0]
+
+            user = crud.get_user_by_email(session=session, email=email)
+            full_name = row["full_name"].strip() or None
+            can_scan = as_bool(row["can_scan"])
+
+            if user is not None:
+                user.full_name = full_name or user.full_name
                 user.role = role
-                user.can_scan = as_bool(row["can_scan"])
+                user.is_superuser = role == UserRole.super_admin
+                user.can_scan = can_scan
                 session.add(user)
                 updated += 1
             else:
+                password = row["password"]
+                if not password:
+                    raise SystemExit(
+                        f"CSV row {line_number}: password is required for new accounts"
+                    )
                 user = crud.create_user(
                     session=session,
                     user_create=UserCreate(
                         email=email,
-                        password=row["password"],
-                        full_name=row["full_name"].strip() or None,
+                        password=password,
+                        full_name=full_name,
                         role=role,
-                        can_scan=as_bool(row["can_scan"]),
-                        is_superuser=role in {UserRole.developer, UserRole.super_admin},
+                        can_scan=can_scan,
+                        is_superuser=role == UserRole.super_admin,
+                        is_developer=False,
                     ),
+                    commit=False,
                 )
                 created += 1
 
-            academic_year = row["academic_year"].strip()
-            position = row["position"].strip()
-            if position:
-                existing_membership = session.exec(
-                    select(OrganizationMembership).where(
-                        OrganizationMembership.user_id == user.id,
-                        OrganizationMembership.organization_id == organization.id,
-                        OrganizationMembership.academic_year == academic_year,
-                        OrganizationMembership.position == position,
+            if academic_year is not None and section is not None:
+                assignment = session.exec(
+                    select(ClassRepresentativeAssignment).where(
+                        ClassRepresentativeAssignment.user_id == user.id,
+                        ClassRepresentativeAssignment.academic_year_id
+                        == academic_year.id,
+                        ClassRepresentativeAssignment.section_id == section.id,
                     )
                 ).first()
-                if not existing_membership:
+                if assignment is None:
                     session.add(
-                        OrganizationMembership(
+                        ClassRepresentativeAssignment(
                             user_id=user.id,
-                            organization_id=organization.id,
-                            academic_year=academic_year,
-                            position=position,
-                        )
-                    )
-
-            section_name = row["section_name"].strip()
-            if role == UserRole.class_representative and section_name:
-                section = session.exec(
-                    select(AcademicSection).where(
-                        AcademicSection.section_name == section_name,
-                        AcademicSection.academic_year == academic_year,
-                    )
-                ).first()
-                if not section:
-                    raise SystemExit(
-                        f"Section '{section_name}' for academic year '{academic_year}' was not found"
-                    )
-                existing_assignment = session.exec(
-                    select(UserSectionAssignment).where(
-                        UserSectionAssignment.user_id == user.id,
-                        UserSectionAssignment.section_id == section.id,
-                        UserSectionAssignment.academic_year == academic_year,
-                    )
-                ).first()
-                if not existing_assignment:
-                    session.add(
-                        UserSectionAssignment(
-                            user_id=user.id,
+                            academic_year_id=academic_year.id,
                             section_id=section.id,
-                            academic_year=academic_year,
                         )
                     )
+                    assignments_created += 1
 
         session.commit()
 
-    print(f"Provisioned accounts: created={created}, updated={updated}")
+    logger.info(
+        "Provisioned accounts: created=%s, updated=%s, assignments_created=%s",
+        created,
+        updated,
+        assignments_created,
+    )
 
 
 if __name__ == "__main__":
