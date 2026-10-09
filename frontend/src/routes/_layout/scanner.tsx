@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import type { QueuedScanRecord, RosterRecord } from "@/data"
-import { getOfflineAccountId, rememberOfflineAccount } from "@/data/account"
 import {
   enqueueScan,
   getAllQueuedScans,
@@ -49,6 +48,7 @@ import {
   QUEUE_CHANGED_EVENT,
   ROSTER_CHANGED_EVENT,
 } from "@/data"
+import { getOfflineAccountId, rememberOfflineAccount } from "@/data/account"
 import {
   type AttendanceSession,
   getActiveAttendanceSession,
@@ -366,14 +366,11 @@ function SyncStatusCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {otherAccountPendingCount > 0 && (
-          <div
-            className="rounded-md border p-3 text-sm"
-            role="status"
-          >
+          <div className="rounded-md border p-3 text-sm" role="status">
             {otherAccountPendingCount} pending scan
             {otherAccountPendingCount === 1 ? " belongs" : "s belong"} to
-            another account. They are left untouched. Sign in as that account
-            to sync them.
+            another account. They are left untouched. Sign in as that account to
+            sync them.
           </div>
         )}
         {unassignedPendingCount > 0 && (
