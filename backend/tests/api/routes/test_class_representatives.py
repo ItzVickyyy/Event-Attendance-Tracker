@@ -333,3 +333,69 @@ def test_temporary_password_is_random_outside_test_mode(monkeypatch) -> None:
     assert first != second
     assert len(first) >= 32
     assert first != TEMPORARY_PASSWORD
+
+
+def test_class_representative_cannot_modify_enrollment_outside_assigned_year(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, year, _ = _create_representative(
+        client, superuser_token_headers
+    )
+    rep_headers = _representative_headers(client, representative["email"])
+    created = client.post(
+        _api("/class-representatives/me/students"),
+        headers=rep_headers,
+        json={
+            "student_number": f"SCOPE-{random_lower_string()[:10].upper()}",
+            "first_name": "Scoped",
+            "last_name": "Student",
+        },
+    )
+    assert created.status_code == 200
+    student_id = created.json()["id"]
+
+    sections = client.get(
+        _api("/academic-registry/sections"), headers=superuser_token_headers
+    )
+    assert sections.status_code == 200
+    other_section = next(
+        (
+            section
+            for section in sections.json()["data"]
+            if section["academic_year_id"] != year["id"]
+        ),
+        None,
+    )
+    assert other_section is not None
+
+    other_enrollment = client.post(
+        _api("/academic-registry/enrollments"),
+        headers=superuser_token_headers,
+        json={
+            "student_id": student_id,
+            "section_id": other_section["id"],
+            "academic_year_id": other_section["academic_year_id"],
+            "student_status": "regular",
+        },
+    )
+    assert other_enrollment.status_code == 200
+
+    attempted_update = client.patch(
+        _api(f"/academic-registry/students/{student_id}"),
+        headers=rep_headers,
+        json={
+            "enrollment_id": other_enrollment.json()["id"],
+            "student_status": "irregular",
+        },
+    )
+    assert attempted_update.status_code == 403
+
+    roster = client.get(
+        _api(f"/academic-registry/sections/{other_section['id']}/students"),
+        headers=superuser_token_headers,
+    )
+    assert roster.status_code == 200
+    student_row = next(
+        row for row in roster.json()["data"] if row["id"] == student_id
+    )
+    assert student_row["student_status"] == "regular"
