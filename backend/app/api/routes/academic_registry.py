@@ -280,6 +280,7 @@ def read_student_details(
                 status_code=403,
                 detail="Section is outside your assigned section",
             )
+        section_id = assignment["section_id"]
         allowed = (
             session.connection()
             .execute(
