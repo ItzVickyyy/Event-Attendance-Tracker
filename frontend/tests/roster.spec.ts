@@ -289,6 +289,9 @@ async function _seedRecords(
           if (!db.objectStoreNames.contains("rostersByAccount")) {
             db.createObjectStore("rostersByAccount", { keyPath: "id" })
           }
+          if (!db.objectStoreNames.contains("rostersByAccount")) {
+            db.createObjectStore("rostersByAccount", { keyPath: "id" })
+          }
         }
         request.onsuccess = () => {
           const db = request.result
@@ -386,7 +389,7 @@ async function readRoster(page: Page): Promise<RosterRecordLike | undefined> {
           const tx = db.transaction("rostersByAccount", "readonly")
           const getReq = tx
             .objectStore("rostersByAccount")
-             .get(JSON.stringify(["user-1", "evt-1"]))
+            .get(JSON.stringify(["user-1", "evt-1"]))
           getReq.onsuccess = () => {
             const roster = getReq.result as RosterRecordLike | undefined
             db.close()
@@ -477,6 +480,35 @@ test.describe("Offline roster caching and scanning", () => {
     await expect(
       card.getByText("Roster not downloaded for this event"),
     ).not.toBeVisible()
+  })
+
+  test("keeps the same event roster separate for different accounts", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    await gotoApp(page)
+    await setToken(page)
+    await seedRoster(page, {
+      event_id: "evt-1",
+      account_id: "user-1",
+      entries: [rosterEntry({ person_name: "Account One Attendee" })],
+      downloaded_at: "2026-01-01T00:00:00.000Z",
+      entry_count: 1,
+      credential_count: 2,
+    })
+    await seedRoster(page, {
+      event_id: "evt-1",
+      account_id: "user-2",
+      entries: [rosterEntry({ person_name: "Account Two Attendee" })],
+      downloaded_at: "2026-01-02T00:00:00.000Z",
+      entry_count: 1,
+      credential_count: 2,
+    })
+
+    const stored = await readRoster(page)
+    expect(stored?.account_id).toBe("user-1")
+    expect(stored?.entries[0]?.person_name).toBe("Account One Attendee")
   })
 
   test("does not use another account's cached offline roster", async ({
