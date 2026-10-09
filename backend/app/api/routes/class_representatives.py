@@ -287,12 +287,12 @@ def create_class_representative(
     session.add(assignment)
     session.flush()
     if settings.emails_enabled:
-        email_data = generate_new_account_email(
-            email_to=user.email,
-            username=user.email,
-            password=temporary_password,
-        )
         try:
+            email_data = generate_new_account_email(
+                email_to=user.email,
+                username=user.email,
+                password=temporary_password,
+            )
             send_email(
                 email_to=user.email,
                 subject=email_data.subject,
