@@ -290,6 +290,7 @@ def read_student_details(
                 WHERE student_id = :student_id
                   AND section_id = :section_id
                   AND academic_year_id = :academic_year_id
+                  AND archived_at IS NULL
                 LIMIT 1
             """),
                 {
@@ -318,7 +319,8 @@ def read_student_details(
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='nfc' AND c.is_active=true) AS nfc_registered,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true) AS qr_registered,
                (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS qr_credential_value
-        FROM students s JOIN people p ON p.id=s.person_id LEFT JOIN student_enrollments se ON se.student_id=s.id
+        FROM students s JOIN people p ON p.id=s.person_id
+        LEFT JOIN student_enrollments se ON se.student_id=s.id AND se.archived_at IS NULL
         WHERE s.id=:id AND s.archived_at IS NULL{section_filter}
         ORDER BY se.created_at DESC NULLS LAST LIMIT 1
     """),
@@ -619,9 +621,19 @@ def create_enrollment(
         )
     ).first()
     if existing:
-        raise HTTPException(
-            status_code=409, detail="Student is already enrolled for this academic year"
-        )
+        if existing.archived_at is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Student is already enrolled for this academic year",
+            )
+        existing.section_id = enrollment_in.section_id
+        existing.student_status = enrollment_in.student_status
+        existing.archived_at = None
+        existing.updated_at = get_datetime_utc()
+        session.add(existing)
+        session.commit()
+        session.refresh(existing)
+        return existing
     enrollment = StudentEnrollment.model_validate(enrollment_in)
     session.add(enrollment)
     session.commit()
