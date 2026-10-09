@@ -9,6 +9,13 @@ permissions: {}
 
 jobs:
   smokeshow:
+    # Pull-request runs may not upload coverage artifacts, and failed runs
+    # cannot produce a trustworthy coverage report. Only publish coverage for
+    # successful pushes to the default branch.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == github.event.repository.default_branch
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
