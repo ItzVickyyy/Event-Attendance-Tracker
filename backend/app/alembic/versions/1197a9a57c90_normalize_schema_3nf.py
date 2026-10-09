@@ -501,6 +501,11 @@ def _assert_downgrade_data_representable(bind) -> None:
             "SELECT count(*) FROM people WHERE contact_number IS NOT NULL OR email IS NOT NULL",
         ),
         (
+            "people without attendees",
+            "SELECT count(*) FROM people p "
+            "WHERE NOT EXISTS (SELECT 1 FROM attendees a WHERE a.person_id = p.id)",
+        ),
+        (
             "organizations not represented by legacy events",
             "SELECT count(*) FROM organizations o "
             "WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.organization_id = o.id)",
