@@ -266,6 +266,7 @@ def read_student_details(
     _current_user: CurrentUser,
     student_id: uuid.UUID,
     section_id: uuid.UUID | None = None,
+    academic_year_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     if not _current_user.is_superuser and _current_user.role not in (
         UserRole.super_admin,
@@ -277,11 +278,12 @@ def read_student_details(
             detail="Administrator or assigned Class Representative access is required",
         )
     if _current_user.role == UserRole.class_representative:
-        assignment = class_rep_assignment(session, _current_user)
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
             raise HTTPException(
                 status_code=403, detail="No Class Representative assignment found"
             )
+        academic_year_id = assignment["academic_year_id"]
         if section_id is not None and section_id != assignment["section_id"]:
             raise HTTPException(
                 status_code=403,
@@ -314,9 +316,16 @@ def read_student_details(
             )
 
     section_filter = " AND se.section_id=:section_id" if section_id is not None else ""
+    year_filter = (
+        " AND se.academic_year_id=:academic_year_id"
+        if academic_year_id is not None
+        else ""
+    )
     parameters = {"id": student_id}
     if section_id is not None:
         parameters["section_id"] = section_id
+    if academic_year_id is not None:
+        parameters["academic_year_id"] = academic_year_id
     row = (
         session.connection()
         .execute(
@@ -328,7 +337,7 @@ def read_student_details(
                (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS qr_credential_value
         FROM students s JOIN people p ON p.id=s.person_id
         LEFT JOIN student_enrollments se ON se.student_id=s.id AND se.archived_at IS NULL
-        WHERE s.id=:id AND s.archived_at IS NULL{section_filter}
+        WHERE s.id=:id AND s.archived_at IS NULL{section_filter}{year_filter}
         ORDER BY se.created_at DESC NULLS LAST LIMIT 1
     """),
             parameters,
@@ -439,7 +448,13 @@ def create_student_in_section(
     session.flush()
     ensure_student_qr_credential(session, student)
     session.commit()
-    return read_student_details(session, _current_user, student.id)
+    return read_student_details(
+        session,
+        _current_user,
+        student.id,
+        section_id=section_id,
+        academic_year_id=academic_year_id,
+    )
 
 
 @router.patch("/students/{student_id}")
@@ -449,6 +464,7 @@ def update_student_details(
     _current_user: CurrentUser,
     student_id: uuid.UUID,
     payload: dict[str, Any],
+    academic_year_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     if not _current_user.is_superuser and _current_user.role not in (
         UserRole.super_admin,
@@ -460,11 +476,12 @@ def update_student_details(
             detail="Administrator or assigned Class Representative access is required",
         )
     if _current_user.role == UserRole.class_representative:
-        assignment = class_rep_assignment(session, _current_user)
+        assignment = class_rep_assignment(session, _current_user, academic_year_id)
         if not assignment:
             raise HTTPException(
                 status_code=403, detail="No Class Representative assignment found"
             )
+        academic_year_id = assignment["academic_year_id"]
         allowed = (
             session.connection()
             .execute(
@@ -473,6 +490,7 @@ def update_student_details(
                 WHERE student_id=:student_id
                   AND section_id=:section_id
                   AND academic_year_id=:academic_year_id
+                  AND archived_at IS NULL
                 LIMIT 1
             """),
                 {
@@ -504,6 +522,7 @@ def update_student_details(
                       AND student_id = :student_id
                       AND section_id = :section_id
                       AND academic_year_id = :academic_year_id
+                      AND archived_at IS NULL
                     LIMIT 1
                 """),
                     {
@@ -595,7 +614,12 @@ def update_student_details(
                 },
             )
     session.commit()
-    return read_student_details(session, _current_user, student_id)
+    return read_student_details(
+        session,
+        _current_user,
+        student_id,
+        academic_year_id=academic_year_id,
+    )
 
 
 @router.post(

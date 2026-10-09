@@ -10,6 +10,7 @@ from app import crud
 from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.core.config import settings
 from app.models import Person, Student, User, UserCreate, UserPublic, UserRole
+from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
     AcademicYear,
     ClassRepresentativeAssignment,
@@ -130,12 +131,13 @@ def create_my_student(
     session: SessionDep,
     current_user: CurrentUser,
     payload: dict[str, Any],
+    academic_year_id: uuid.UUID | None = None,
 ) -> dict[str, Any]:
     if current_user.role != UserRole.class_representative:
         raise HTTPException(
             status_code=403, detail="Class Representative access required"
         )
-    assignment = _assignment_row(session, current_user.id)
+    assignment = _assignment_row(session, current_user.id, academic_year_id)
     if not assignment:
         raise HTTPException(
             status_code=403, detail="No Class Representative assignment found"
@@ -175,6 +177,7 @@ def create_my_student(
     )
     session.add(student)
     session.flush()
+    ensure_student_qr_credential(session, student)
     enrollment = StudentEnrollment(
         student_id=student.id,
         academic_year_id=assignment["academic_year_id"],

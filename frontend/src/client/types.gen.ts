@@ -4037,6 +4037,10 @@ export type academicRegistryReadStudentDetailsData = {
          * Section Id
          */
         section_id?: string | null;
+        /**
+         * Academic Year Id
+         */
+        academic_year_id?: string | null;
     };
     url: '/api/v1/academic-registry/students/{student_id}';
 };
@@ -4076,7 +4080,12 @@ export type academicRegistryUpdateStudentDetailsData = {
          */
         student_id: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * Academic Year Id
+         */
+        academic_year_id?: string | null;
+    };
     url: '/api/v1/academic-registry/students/{student_id}';
 };
 
@@ -6208,7 +6217,12 @@ export type classRepresentativesCreateMyStudentData = {
         [key: string]: unknown;
     };
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Academic Year Id
+         */
+        academic_year_id?: string | null;
+    };
     url: '/api/v1/class-representatives/me/students';
 };
 
