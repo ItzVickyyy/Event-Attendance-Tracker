@@ -180,18 +180,21 @@ async function setToken(
   token = "test-access-token",
   accountId = "user-1",
 ): Promise<void> {
-  await page.evaluate(async ({ value, userId }) => {
-    localStorage.setItem("access_token", value)
-    const digest = await crypto.subtle.digest(
-      "SHA-256",
-      new TextEncoder().encode(value),
-    )
-    const fingerprint = Array.from(new Uint8Array(digest), (byte) =>
-      byte.toString(16).padStart(2, "0"),
-    ).join("")
-    localStorage.setItem("offline_account_id", userId)
-    localStorage.setItem("offline_account_token_fingerprint", fingerprint)
-  }, { value: token, userId: accountId })
+  await page.evaluate(
+    async ({ value, userId }) => {
+      localStorage.setItem("access_token", value)
+      const digest = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(value),
+      )
+      const fingerprint = Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("")
+      localStorage.setItem("offline_account_id", userId)
+      localStorage.setItem("offline_account_token_fingerprint", fingerprint)
+    },
+    { value: token, userId: accountId },
+  )
 }
 
 async function seedRecords(
@@ -353,7 +356,10 @@ test.describe("Foreground sync fallback (no service worker)", () => {
     page,
     mockScan,
   }) => {
-    const scan = await mockScan(page, () => ({ status: 201, json: { ok: true } }))
+    const scan = await mockScan(page, () => ({
+      status: 201,
+      json: { ok: true },
+    }))
     await gotoApp(page)
     await setToken(page, "account-one-token", "user-1")
     await seedRecords(page, [record({ id: "rec-other-account", account_id: "user-2" })])
