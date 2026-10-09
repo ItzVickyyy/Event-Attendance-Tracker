@@ -153,6 +153,44 @@ def test_super_admin_can_manage_class_representative_assignment_and_students(
     )
     assert duplicate.status_code == 409
 
+    student_id = students.json()["data"][0]["id"]
+    archived = client.delete(_api(f"/students/{student_id}"), headers=headers)
+    assert archived.status_code == 200
+    assert "from your section" in archived.json()["message"].lower()
+
+    students = client.get(_api("/class-representatives/me/students"), headers=headers)
+    assert students.status_code == 200
+    assert students.json()["count"] == 0
+
+    global_student = client.get(
+        _api(f"/students/{student_id}"), headers=superuser_token_headers
+    )
+    assert global_student.status_code == 200
+
+    archived_enrollment = client.get(
+        _api(f"/academic-registry/students/{student_id}"),
+        headers=superuser_token_headers,
+        params={"section_id": section_id},
+    )
+    assert archived_enrollment.status_code == 404
+
+    restored = client.post(
+        _api("/academic-registry/enrollments"),
+        headers=superuser_token_headers,
+        json={
+            "student_id": student_id,
+            "academic_year_id": year["id"],
+            "section_id": section_id,
+            "student_status": "regular",
+        },
+    )
+    assert restored.status_code == 200
+    assert restored.json()["archived_at"] is None
+
+    students = client.get(_api("/class-representatives/me/students"), headers=headers)
+    assert students.status_code == 200
+    assert students.json()["count"] == 1
+
 
 def test_class_representative_routes_reject_wrong_roles_and_missing_assignment(
     client: TestClient, superuser_token_headers: dict[str, str]
