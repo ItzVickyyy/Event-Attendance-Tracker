@@ -543,3 +543,10 @@ def test_academic_registry_rejects_enrollment_section_year_mismatch(
         json={"academic_year_id": other_section["academic_year_id"]},
     )
     assert moved_section.status_code == 409
+
+    legacy_moved_section = client.patch(
+        _api(f"/academic-sections/{section['id']}"),
+        headers=headers,
+        json={"academic_year": other_section["academic_year"]},
+    )
+    assert legacy_moved_section.status_code == 409

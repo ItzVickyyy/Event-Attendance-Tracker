@@ -21,7 +21,11 @@ from app.models import (
     Student,
     get_datetime_utc,
 )
-from app.student_academics import AcademicYear
+from app.student_academics import (
+    AcademicYear,
+    ClassRepresentativeAssignment,
+    StudentEnrollment,
+)
 
 router = APIRouter(prefix="/academic-sections", tags=["academic-sections"])
 
@@ -319,6 +323,25 @@ def update_academic_section(
                 status_code=404,
                 detail=f"Academic year '{update_dict['academic_year']}' was not found",
             )
+        if year.id != section.academic_year_id:
+            has_enrollments = session.exec(
+                select(StudentEnrollment).where(
+                    StudentEnrollment.section_id == section_id
+                )
+            ).first()
+            has_assignments = session.exec(
+                select(ClassRepresentativeAssignment).where(
+                    ClassRepresentativeAssignment.section_id == section_id
+                )
+            ).first()
+            if has_enrollments or has_assignments:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "Cannot change the academic year of a section that has "
+                        "enrollments or Class Representative assignments"
+                    ),
+                )
         update_dict["academic_year_id"] = year.id
     if "section_name" in update_dict:
         update_dict["section_code"] = (
