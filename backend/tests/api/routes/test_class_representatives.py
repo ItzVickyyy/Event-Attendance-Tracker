@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -285,7 +286,11 @@ def test_class_representative_creation_rolls_back_when_email_fails(
         and section["academic_year_id"] == year["id"]
     )
     email = random_email()
-    monkeypatch.setattr(class_representatives_routes.settings, "emails_enabled", True)
+    monkeypatch.setattr(
+        class_representatives_routes,
+        "settings",
+        SimpleNamespace(emails_enabled=True, FASTAPI_ENV="test"),
+    )
 
     def fail_send_email(**kwargs) -> None:
         raise RuntimeError("simulated SMTP failure")
