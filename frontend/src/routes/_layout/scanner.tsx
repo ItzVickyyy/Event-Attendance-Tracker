@@ -1290,6 +1290,7 @@ function Scanner() {
       <SyncStatusCard
         online={syncStatus.online}
         pendingScans={syncStatus.pendingScans}
+        unassignedPendingCount={syncStatus.unassignedPendingCount}
         isSyncing={syncStatus.isSyncing}
         onRetry={syncStatus.retrySync}
         roster={syncStatus.roster}
