@@ -569,6 +569,81 @@ def test_scan_unregistered_attendee_rejected(
     assert r_ok.json()["message"] == "Time-In Recorded"
 
 
+def test_attendance_create_rejects_closed_event(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    event_response = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=superuser_token_headers,
+        json={
+            "event_name": f"Closed Direct Attendance {random_lower_string()[:5]}",
+            "event_date": "2026-09-15",
+            "status": "open",
+        },
+    )
+    assert event_response.status_code == 200
+    event_id = event_response.json()["id"]
+
+    person_response = client.post(
+        f"{settings.API_V1_STR}/people/",
+        headers=superuser_token_headers,
+        json={
+            "first_name": "Closed",
+            "last_name": "Attendance",
+            "email": random_email(),
+        },
+    )
+    assert person_response.status_code == 200
+    attendee_response = client.post(
+        f"{settings.API_V1_STR}/attendees/",
+        headers=superuser_token_headers,
+        json={
+            "person_id": person_response.json()["id"],
+            "attendee_type": "guest",
+        },
+    )
+    assert attendee_response.status_code == 200
+    registration_response = client.post(
+        f"{settings.API_V1_STR}/event-registrations/",
+        headers=superuser_token_headers,
+        json={
+            "event_id": event_id,
+            "attendee_id": attendee_response.json()["id"],
+            "registration_status": "registered",
+        },
+    )
+    assert registration_response.status_code == 200
+
+    closed = client.patch(
+        f"{settings.API_V1_STR}/events/{event_id}",
+        headers=superuser_token_headers,
+        json={"status": "closed"},
+    )
+    assert closed.status_code == 200
+
+    response = client.post(
+        f"{settings.API_V1_STR}/attendance/",
+        headers=superuser_token_headers,
+        json={
+            "registration_id": registration_response.json()["id"],
+            "scan_method": "manual",
+        },
+    )
+    assert response.status_code == 400
+    assert "not open for attendance scanning" in response.json()["detail"].lower()
+
+    records = client.get(
+        f"{settings.API_V1_STR}/attendance/",
+        headers=superuser_token_headers,
+        params={
+            "event_id": event_id,
+            "attendee_id": attendee_response.json()["id"],
+        },
+    )
+    assert records.status_code == 200
+    assert records.json()["count"] == 0
+
+
 def test_scan_registration_cancelled_validation(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
