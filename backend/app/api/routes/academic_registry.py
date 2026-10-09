@@ -804,18 +804,24 @@ def update_section(
     if not year:
         raise HTTPException(status_code=404, detail="Academic year not found")
     if values["academic_year_id"] != current_year_id:
-        has_enrollments = session.connection().execute(
-            text(
-                "SELECT 1 FROM student_enrollments WHERE section_id=:id LIMIT 1"
-            ),
-            {"id": section_id},
-        ).first()
-        has_assignments = session.connection().execute(
-            text(
-                "SELECT 1 FROM class_representative_assignments WHERE section_id=:id LIMIT 1"
-            ),
-            {"id": section_id},
-        ).first()
+        has_enrollments = (
+            session.connection()
+            .execute(
+                text("SELECT 1 FROM student_enrollments WHERE section_id=:id LIMIT 1"),
+                {"id": section_id},
+            )
+            .first()
+        )
+        has_assignments = (
+            session.connection()
+            .execute(
+                text(
+                    "SELECT 1 FROM class_representative_assignments WHERE section_id=:id LIMIT 1"
+                ),
+                {"id": section_id},
+            )
+            .first()
+        )
         if has_enrollments or has_assignments:
             raise HTTPException(
                 status_code=409,
