@@ -255,7 +255,7 @@ export function StudentDetailsPage({
             label="Academic status"
             value={
               sectionEnrollmentQuery.data?.student_status ??
-                (student.academic_status ? String(student.academic_status) : "—")
+              (student.academic_status ? String(student.academic_status) : "—")
             }
           />
           <Info label="Contact number" value={person?.contact_number ?? "—"} />
