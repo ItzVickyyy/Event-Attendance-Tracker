@@ -18,7 +18,7 @@ from app.models import (
 )
 from app.services.student_import import StudentImportService
 from app.services.student_promotion import StudentPromotionService
-from app.student_academics import AcademicYear
+from app.student_academics import AcademicYear, StudentEnrollment, StudentStatus
 
 # ---------------------------------------------------------------------------
 # Section-sheet parsing (item L.1) - no database required.
@@ -354,6 +354,31 @@ def test_existing_student_number_reused_across_batches(db_session: Session):
     assert student.academic_status == AcademicStatus.irregular  # status updated
     assert student.section.section_name == "B"  # section updated
     assert student.section.year_level == "2"
+
+    # Promoting the same student into a later academic year must preserve the
+    # previous year's enrollment instead of rewriting it to the current section.
+    enrollments = db_session.exec(
+        select(StudentEnrollment).where(StudentEnrollment.student_id == student.id)
+    ).all()
+    enrollments_by_year = {
+        db_session.get(AcademicYear, enrollment.academic_year_id).label: enrollment
+        for enrollment in enrollments
+    }
+    assert set(enrollments_by_year) == {"2025-2026", "2026-2027"}
+
+    historical_enrollment = enrollments_by_year["2025-2026"]
+    historical_section = db_session.get(AcademicSection, historical_enrollment.section_id)
+    assert historical_section is not None
+    assert historical_section.academic_year == "2025-2026"
+    assert historical_section.section_name == "A"
+    assert historical_enrollment.student_status == StudentStatus.regular
+
+    current_enrollment = enrollments_by_year["2026-2027"]
+    current_section = db_session.get(AcademicSection, current_enrollment.section_id)
+    assert current_section is not None
+    assert current_section.academic_year == "2026-2027"
+    assert current_section.section_name == "B"
+    assert current_enrollment.student_status == StudentStatus.irregular
 
 
 def test_batch_status_becomes_promoted_after_success(db_session: Session):
