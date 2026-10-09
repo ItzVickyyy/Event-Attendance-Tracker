@@ -15,6 +15,7 @@ const SCAN_URL = "**/api/v1/attendance/scan*"
 
 interface QueueRecordLike {
   id: string
+  account_id?: string
   event_id: string
   credential_value: string
   scan_method: string
@@ -56,6 +57,7 @@ function record(overrides: Partial<QueueRecordLike> = {}): QueueRecordLike {
   const created_at = "2026-01-01T00:00:00.000Z"
   return {
     id: "rec-1",
+    account_id: "user-1",
     event_id: "evt-1",
     credential_value: "CRED-1",
     scan_method: "qr",
