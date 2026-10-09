@@ -229,6 +229,9 @@ def read_section_students(
                 status_code=403, detail="Section is outside your assignment"
             )
     archived_filter = "" if include_archived else "AND s.archived_at IS NULL"
+    enrollment_archived_filter = (
+        "" if include_archived else "AND se.archived_at IS NULL"
+    )
     rows = (
         session.connection()
         .execute(
@@ -243,6 +246,7 @@ def read_section_students(
           AND se.academic_year_id = (
               SELECT academic_year_id FROM academic_sections WHERE id=:section_id
           )
+          {enrollment_archived_filter}
           {archived_filter}
         ORDER BY p.last_name, p.first_name, s.student_number
     """),
