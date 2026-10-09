@@ -52,6 +52,17 @@ def _copy_legacy_records(bind):
         "SELECT id, event_id, student_id, created_at, updated_at FROM attendance ORDER BY id"
     )).mappings().all()
 
+    # The normalized credential model cannot represent "registered" without a UID.
+    # Stop rather than silently discard this inconsistent legacy state.
+    inconsistent_nfc_count = bind.execute(sa.text(
+        "SELECT count(*) FROM student WHERE nfc_registered IS TRUE AND nfc_uid IS NULL"
+    )).scalar_one()
+    if inconsistent_nfc_count:
+        raise RuntimeError(
+            f"Cannot normalize safely: {inconsistent_nfc_count} students are marked NFC-registered "
+            "but have no NFC UID. Correct those records before retrying."
+        )
+
     organization_ids = {}
     organizations = {}
     for event in legacy_events:
@@ -88,7 +99,7 @@ def _copy_legacy_records(bind):
             key = (student["year"], student["section"])
             if key not in section_ids:
                 section_ids[key] = _legacy_uuid(
-                    f"academic-section:{key[0]}:{key[1]}"
+                    f"academic-section:{key!r}"
                 )
         bind.execute(sa.text(
             "INSERT INTO academic_sections "
