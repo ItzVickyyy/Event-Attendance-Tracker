@@ -316,7 +316,11 @@ def read_student_details(
             )
 
     section_filter = " AND se.section_id=:section_id" if section_id is not None else ""
-    year_filter = " AND se.academic_year_id=:academic_year_id" if academic_year_id is not None else ""
+    year_filter = (
+        " AND se.academic_year_id=:academic_year_id"
+        if academic_year_id is not None
+        else ""
+    )
     parameters = {"id": student_id}
     if section_id is not None:
         parameters["section_id"] = section_id
@@ -445,7 +449,11 @@ def create_student_in_section(
     ensure_student_qr_credential(session, student)
     session.commit()
     return read_student_details(
-        session, _current_user, student.id, section_id=section_id, academic_year_id=academic_year_id
+        session,
+        _current_user,
+        student.id,
+        section_id=section_id,
+        academic_year_id=academic_year_id,
     )
 
 
