@@ -100,7 +100,7 @@ export function ClassRepresentativeSectionWorkspace() {
   const openStudentQr = async (student: any) => {
     try {
       const response = await fetch(
-        `${api}/academic-registry/students/${student.id}`,
+        `${api}/academic-registry/students/${student.id}?academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}`,
         { headers: authHeaders() },
       )
       const details = await response.json().catch(() => null)
@@ -135,13 +135,20 @@ export function ClassRepresentativeSectionWorkspace() {
   }
 
   const save = async () => {
+    const yearQuery = activeAcademicYear
+      ? `?academic_year_id=${encodeURIComponent(activeAcademicYear.id)}`
+      : ""
     const url = editing
-      ? `${api}/academic-registry/students/${editing.id}`
-      : `${api}/class-representatives/me/students`
+      ? `${api}/academic-registry/students/${editing.id}${yearQuery}`
+      : `${api}/class-representatives/me/students${yearQuery}`
     const response = await fetch(url, {
       method: editing ? "PATCH" : "POST",
       headers: authHeaders(),
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        name_extension: form.extension,
+        enrollment_id: editing?.enrollment_id,
+      }),
     })
     if (!response.ok) {
       const body = await response.json().catch(() => null)
