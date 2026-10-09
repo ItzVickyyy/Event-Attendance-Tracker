@@ -60,11 +60,11 @@ async function runAttendanceSync() {
   syncRunning = true
   try {
     const auth = await requestAuthFromClients()
-    if (!auth?.token) {
+    if (!auth?.token || !auth?.accountId) {
       return { skipped: true, needsRetry: false }
     }
     broadcastToClients({ type: "PWA_SYNC_START" })
-    const result = await flushPendingScans(auth.token, auth.apiBase)
+    const result = await flushPendingScans(auth.token, auth.apiBase, auth.accountId)
     console.log(
       `[sw-sync] flushed attendance queue in creation order ` +
         `(needsRetry=${result.needsRetry})`,
@@ -96,11 +96,11 @@ function broadcastToClients(message) {
     .catch(() => undefined)
 }
 
-async function flushPendingScans(token, apiBase) {
+async function flushPendingScans(token, apiBase, accountId) {
   const db = await openQueueDB()
   let needsRetry = false
   try {
-    const pending = await getPendingRecords(db)
+    const pending = await getPendingRecords(db, accountId)
     for (const record of pending) {
       if (inFlightRecords.has(record.id)) continue
       inFlightRecords.add(record.id)
@@ -117,13 +117,13 @@ async function flushPendingScans(token, apiBase) {
   }
 }
 
-function getPendingRecords(db) {
+function getPendingRecords(db, accountId) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("attendanceQueue", "readonly")
     const store = tx.objectStore("attendanceQueue")
     const request = store.getAll()
     request.onsuccess = () => {
-      const records = (request.result || []).filter((record) => !record.synced)
+      // Missing account_id identifies legacy records. Keep them queued, but\n      // never submit them under an account that did not create them.\n      const records = (request.result || []).filter(\n        (record) => !record.synced && record.account_id === accountId,\n      )
       records.sort((a, b) => {
         const byCreated =
           a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0
@@ -285,7 +285,7 @@ function requestAuthFromClients() {
             if (data.type === "PWA_SYNC_TOKEN") {
               settled = true
               clearTimeout(timer)
-              resolve({ token: data.token || "", apiBase: data.apiBase || "" })
+              resolve({\n                token: data.token || "",\n                accountId: data.accountId || "",\n                apiBase: data.apiBase || "",\n              })
             }
           }
           try {
