@@ -467,7 +467,95 @@ def upgrade():
     op.drop_table('event')
 
 
+def _assert_downgrade_data_representable(bind) -> None:
+    """Refuse downgrades that would discard data the legacy schema cannot store."""
+    checks = (
+        (
+            "non-student attendees",
+            "SELECT count(*) FROM attendees a "
+            "WHERE NOT EXISTS (SELECT 1 FROM students s WHERE s.person_id = a.person_id)",
+        ),
+        ("attendee relationships", "SELECT count(*) FROM attendee_relationships"),
+        ("attendance corrections", "SELECT count(*) FROM attendance_corrections"),
+        (
+            "non-NFC or duplicate NFC credentials",
+            "SELECT count(*) FROM ("
+            " SELECT attendee_id FROM attendee_credentials GROUP BY attendee_id"
+            " HAVING count(*) FILTER (WHERE credential_type <> 'nfc') > 0"
+            " OR count(*) FILTER (WHERE credential_type = 'nfc') > 1"
+            ") unsupported_credentials",
+        ),
+        (
+            "registrations not represented by attendance",
+            "SELECT count(*) FROM event_registrations er "
+            "WHERE er.registration_status <> 'registered' "
+            "OR NOT EXISTS (SELECT 1 FROM attendance a WHERE a.registration_id = er.id)",
+        ),
+        (
+            "events with non-legacy descriptions or missing organizations",
+            "SELECT count(*) FROM events "
+            "WHERE description IS NOT NULL OR organization_id IS NULL",
+        ),
+        (
+            "people with non-legacy contact details",
+            "SELECT count(*) FROM people WHERE contact_number IS NOT NULL OR email IS NOT NULL",
+        ),
+        (
+            "organizations not represented by legacy events",
+            "SELECT count(*) FROM organizations o "
+            "WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.organization_id = o.id)",
+        ),
+        (
+            "students without a legacy section",
+            "SELECT count(*) FROM students WHERE section_id IS NULL",
+        ),
+    )
+    unsupported = []
+    for label, query in checks:
+        count = bind.execute(sa.text(query)).scalar_one()
+        if count:
+            unsupported.append(f"{label}={count}")
+
+    legacy_program_id = _legacy_uuid("academic-program")
+    programs = bind.execute(
+        sa.text("SELECT id, program_code, program_name FROM academic_programs")
+    ).mappings().all()
+    if programs and (
+        len(programs) != 1
+        or programs[0]["id"] != legacy_program_id
+        or programs[0]["program_code"] != "LEGACY"
+        or programs[0]["program_name"] != "Legacy imported program"
+    ):
+        unsupported.append("academic programs contain non-legacy catalog data")
+
+    sections = bind.execute(
+        sa.text(
+            "SELECT id, program_id, year_level, section_name, academic_year "
+            "FROM academic_sections"
+        )
+    ).mappings().all()
+    for section in sections:
+        expected_id = _legacy_uuid(
+            f"academic-section:{(section['year_level'], section['section_name'])!r}"
+        )
+        if (
+            section["id"] != expected_id
+            or section["program_id"] != legacy_program_id
+            or section["academic_year"] != "legacy-unknown"
+        ):
+            unsupported.append("academic sections contain non-legacy catalog data")
+            break
+
+    if unsupported:
+        raise RuntimeError(
+            "Cannot downgrade safely because the legacy schema cannot represent: "
+            + ", ".join(unsupported)
+            + ". Keep the database on the normalized schema or migrate these records first."
+        )
+
+
 def downgrade():
+    _assert_downgrade_data_representable(op.get_bind())
     # 1. Recreate old event and student tables
     op.create_table(
         'event',
