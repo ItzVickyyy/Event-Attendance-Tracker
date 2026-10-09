@@ -154,7 +154,11 @@ def test_super_admin_can_manage_class_representative_assignment_and_students(
     assert duplicate.status_code == 409
 
     student_id = students.json()["data"][0]["id"]
-    archived = client.delete(_api(f"/students/{student_id}"), headers=headers)
+    archived = client.delete(
+        _api(f"/students/{student_id}"),
+        headers=headers,
+        params={"academic_year_id": year["id"]},
+    )
     assert archived.status_code == 200
     assert "from your section" in archived.json()["message"].lower()
 
