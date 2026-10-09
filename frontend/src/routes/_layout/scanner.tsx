@@ -120,10 +120,17 @@ export const Route = createFileRoute("/_layout/scanner")({
   }),
   component: Scanner,
   beforeLoad: async () => {
+    const sessionToken = localStorage.getItem("access_token") ?? ""
     const { data: user } = await UsersService.readUserMe().catch(() => ({
       data: null,
     }))
-    if (user) await rememberOfflineAccount(user.id)
+    if (
+      user &&
+      sessionToken &&
+      localStorage.getItem("access_token") === sessionToken
+    ) {
+      await rememberOfflineAccount(user.id, sessionToken)
+    }
     if (
       !user ||
       (!user.is_superuser &&
