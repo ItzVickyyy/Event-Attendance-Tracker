@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { rememberOfflineAccount } from "@/data/account"
 import type { QueuedScanRecord, RosterRecord } from "@/data"
 import {
   enqueueScan,
@@ -123,6 +124,7 @@ export const Route = createFileRoute("/_layout/scanner")({
     const { data: user } = await UsersService.readUserMe().catch(() => ({
       data: null,
     }))
+    if (user) await rememberOfflineAccount(user.id)
     if (
       !user ||
       (!user.is_superuser &&
