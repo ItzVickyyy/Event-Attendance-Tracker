@@ -1,4 +1,5 @@
 import { type DBSchema, type IDBPDatabase, openDB } from "idb"
+import { getOfflineAccountId } from "./account"
 import { registerAttendanceSync, syncNow } from "./sync"
 
 export const QUEUE_CHANGED_EVENT = "pwa:queue-changed"
@@ -29,6 +30,8 @@ interface CredentialRecord {
 
 interface QueueRecord {
   id: string
+  /** Server-verified account that created this scan. Missing on legacy rows. */
+  account_id?: string
   event_id: string
   attendance_session_id?: string
   attendee_id?: string
@@ -184,12 +187,17 @@ export interface QueuedScan {
 export interface QueuedScanRecord extends QueueRecord {}
 
 export async function enqueueScan(scan: QueuedScan): Promise<string> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) {
+    throw new Error("Account identity is not verified for offline scanning")
+  }
   const db = await getDB()
   const local_id = crypto.randomUUID()
   const now = new Date().toISOString()
 
   const record: QueueRecord = {
     id: local_id,
+    account_id: accountId,
     event_id: scan.event_id,
     attendance_session_id: scan.attendance_session_id,
     attendee_id: scan.attendee_id,
