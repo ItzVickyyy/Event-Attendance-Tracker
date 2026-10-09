@@ -169,8 +169,7 @@ function useSyncStatus(eventId?: string) {
       setPendingScans(
         accountId
           ? queued.filter(
-              (record) =>
-                !record.synced && record.account_id === accountId,
+              (record) => !record.synced && record.account_id === accountId,
             )
           : [],
       )
