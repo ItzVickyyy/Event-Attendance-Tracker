@@ -1,6 +1,6 @@
 import { AxiosError } from "axios"
-import { getOfflineAccountId } from "./account"
 import { AttendanceService } from "@/client"
+import { getOfflineAccountId } from "./account"
 import {
   getPendingScans,
   markFailed,
