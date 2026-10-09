@@ -130,10 +130,10 @@ const test = base.extend<{
           contentType: "application/json",
           headers: corsHeaders,
           body: JSON.stringify({
-              id: "user-1",
-              is_superuser: true,
-              can_scan: true,
-            }),
+            id: "user-1",
+            is_superuser: true,
+            can_scan: true,
+          }),
         })
       })
       await page.route(
@@ -326,7 +326,10 @@ async function seedRoster(page: Page, roster: RosterRecordLike): Promise<void> {
         request.onsuccess = () => {
           const db = request.result
           const tx = db.transaction("rosters", "readwrite")
-          tx.objectStore("rosters").add({ ...r, account_id: r.account_id ?? "user-1" })
+          tx.objectStore("rosters").add({
+            ...r,
+            account_id: r.account_id ?? "user-1",
+          })
           tx.oncomplete = () => {
             db.close()
             resolve()
