@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
+import app.api.routes.class_representatives as class_representatives_routes
 from app.api.routes.class_representatives import (
     TEMPORARY_PASSWORD,
     _generate_temporary_password,
@@ -264,6 +265,56 @@ def test_class_representative_rejects_year_mismatch_and_scoped_lookup(
     )
     assert missing_fields.status_code == 422
     assert year["id"] != other_year.json()["id"]
+
+
+
+
+def test_class_representative_creation_rolls_back_when_email_fails(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    monkeypatch,
+) -> None:
+    years = client.get(_api("/academic-registry/academic-years"), headers=superuser_token_headers)
+    year = next(year for year in years.json()["data"] if year["label"] == "2026-2027")
+    sections = client.get(_api("/academic-registry/sections"), headers=superuser_token_headers)
+    section = next(
+        section
+        for section in sections.json()["data"]
+        if section["program_code"] == "BSIT"
+        and section["section_name"] == "WMAD 3A"
+        and section["academic_year_id"] == year["id"]
+    )
+    email = random_email()
+    monkeypatch.setattr(class_representatives_routes.settings, "emails_enabled", True)
+
+    def fail_send_email(**kwargs) -> None:
+        raise RuntimeError("simulated SMTP failure")
+
+    monkeypatch.setattr(class_representatives_routes, "send_email", fail_send_email)
+    response = client.post(
+        _api("/class-representatives/"),
+        headers=superuser_token_headers,
+        json={
+            "email": email,
+            "first_name": "Taylor",
+            "middle_initial": "M",
+            "last_name": "Student",
+            "extension": "Jr.",
+            "academic_year_id": year["id"],
+            "section_id": section["id"],
+        },
+    )
+
+    assert response.status_code == 503
+    login = client.post(
+        _api("/login/access-token"),
+        data={"username": email, "password": TEMPORARY_PASSWORD},
+    )
+    assert login.status_code == 401
+    listing = client.get(
+        _api("/class-representatives/"), headers=superuser_token_headers
+    )
+    assert all(row["email"] != email for row in listing.json()["data"])
 
 
 def test_temporary_password_is_random_outside_test_mode(monkeypatch) -> None:
