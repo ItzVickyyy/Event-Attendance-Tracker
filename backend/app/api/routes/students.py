@@ -25,7 +25,10 @@ router = APIRouter(prefix="/students", tags=["students"])
 
 
 def _ensure_class_rep_student_access(
-    session: SessionDep, current_user: CurrentUser, student_id: uuid.UUID
+    session: SessionDep,
+    current_user: CurrentUser,
+    student_id: uuid.UUID,
+    academic_year_id: uuid.UUID | None = None,
 ) -> None:
     if current_user.is_superuser or current_user.role in (
         UserRole.super_admin,
@@ -37,7 +40,7 @@ def _ensure_class_rep_student_access(
             status_code=403,
             detail="Administrator or assigned Class Representative access is required",
         )
-    assignment = class_rep_assignment(session, current_user)
+    assignment = class_rep_assignment(session, current_user, academic_year_id)
     if not assignment:
         raise HTTPException(
             status_code=403, detail="No Class Representative assignment found"
@@ -302,15 +305,22 @@ def update_student(
 
 @router.delete("/{student_id}")
 def delete_student(
-    session: SessionDep, _current_user: CurrentUser, student_id: uuid.UUID
+    session: SessionDep,
+    _current_user: CurrentUser,
+    student_id: uuid.UUID,
+    academic_year_id: uuid.UUID | None = None,
 ) -> dict[str, str]:
-    _ensure_class_rep_student_access(session, _current_user, student_id)
+    _ensure_class_rep_student_access(
+        session, _current_user, student_id, academic_year_id
+    )
     student = session.get(Student, student_id)
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
     if _current_user.role == UserRole.class_representative:
-        assignment = class_rep_assignment(session, _current_user)
+        assignment = class_rep_assignment(
+            session, _current_user, academic_year_id
+        )
         if not assignment:
             raise HTTPException(
                 status_code=403, detail="No Class Representative assignment found"
