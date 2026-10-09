@@ -626,10 +626,7 @@ def test_section_roster_uses_historical_enrollment_not_legacy_section(
         params={"section_id": section["id"]},
     )
     assert historical_roster.status_code == 200
-    assert any(
-        row["id"] == student["id"]
-        for row in historical_roster.json()["data"]
-    )
+    assert any(row["id"] == student["id"] for row in historical_roster.json()["data"])
 
     historical_export = client.get(
         _api(f"/academic-sections/{section['id']}/export/xlsx"),
