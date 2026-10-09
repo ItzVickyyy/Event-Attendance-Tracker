@@ -23,6 +23,7 @@ test("Generic account creation does not offer Class Representative role", async 
   await expect(
     page.getByRole("option", { name: "class representative", exact: true }),
   ).toHaveCount(0)
+  await page.keyboard.press("Escape")
   await page.getByRole("button", { name: "Cancel" }).click()
 })
 
