@@ -272,6 +272,31 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 test.describe("Scanner sync status UI", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
+  test("exports legacy pending scans for administrator recovery", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    await page.goto("/login")
+    await setToken(page)
+    await page.goto("/scanner")
+    await seedRecords(page, [
+      record({ id: "rec-legacy", account_id: undefined }),
+    ])
+    await notifyQueueChanged(page)
+
+    const card = await getTrackerCard(page)
+    await expect(card.getByRole("alert")).toContainText(
+      "no saved account owner",
+    )
+    const downloadPromise = page.waitForEvent("download")
+    await card.getByRole("button", { name: "Export legacy scans" }).click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toMatch(
+      /^legacy-attendance-scans-\d{4}-\d{2}-\d{2}\.json$/,
+    )
+  })
+
   test("shows all synced with an empty queue", async ({ page, mockHttp }) => {
     await mockHttp(page)
     await page.goto("/login")
