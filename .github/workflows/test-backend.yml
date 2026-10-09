@@ -48,6 +48,13 @@ jobs:
       - run: docker compose up -d --wait db mailpit
       - name: Create test database
         run: docker compose exec -T db psql -U postgres -d app -c 'CREATE DATABASE app_test;'
+      - name: Create migration rehearsal database
+        run: docker compose exec -T db psql -U postgres -d app -c 'CREATE DATABASE migration_rehearsal;'
+      - name: Test legacy normalization data preservation
+        env:
+          MIGRATION_REHEARSAL_DATABASE_URL: postgresql+psycopg://postgres:qa-postgres-password@localhost:5433/migration_rehearsal
+        run: uv run bash scripts/test-legacy-normalization-migration.sh
+        working-directory: backend
       - name: Migrate test DB
         run: |
           set -a
