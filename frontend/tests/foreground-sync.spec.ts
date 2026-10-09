@@ -349,6 +349,25 @@ test.describe("Foreground sync fallback (no service worker)", () => {
     }
   })
 
+  test("does not sync another account's queued scans", async ({
+    page,
+    mockScan,
+  }) => {
+    const scan = await mockScan(page, () => ({ status: 201, json: { ok: true } }))
+    await gotoApp(page)
+    await setToken(page, "account-one-token", "user-1")
+    await seedRecords(page, [record({ id: "rec-other-account", account_id: "user-2" })])
+
+    const result = await runForegroundSync(page)
+
+    expect(result.processedCount).toBe(0)
+    expect(result.syncedCount).toBe(0)
+    expect(scan.count()).toBe(0)
+    const [queued] = await readQueue(page)
+    expect(queued.synced).toBe(false)
+    expect(queued.account_id).toBe("user-2")
+  })
+
   test("success marks the record synced and decreases the pending count", async ({
     page,
     mockScan,
