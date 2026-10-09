@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { Html5Qrcode } from "html5-qrcode"
+import type { Html5Qrcode } from "html5-qrcode"
 import {
   Camera,
   CameraOff,
@@ -742,7 +742,7 @@ function Scanner() {
   }, [])
 
   const checkQrSupport = useCallback(() => {
-    const supported = typeof Html5Qrcode !== "undefined"
+    const supported = Boolean(navigator.mediaDevices?.getUserMedia)
     setQrSupported(supported)
     return supported
   }, [])
@@ -757,6 +757,7 @@ function Scanner() {
 
     try {
       setQrScanning(true)
+      const { Html5Qrcode } = await import("html5-qrcode")
       const html5Qrcode = new Html5Qrcode("qr-reader")
       html5QrcodeRef.current = html5Qrcode
 
