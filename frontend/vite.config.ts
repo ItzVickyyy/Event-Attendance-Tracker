@@ -28,6 +28,12 @@ const qrChunkDiagnostics = {
               renderedBytes: output.modules[id]?.renderedLength,
             })),
             bytes: output.code.length,
+            indexHtmlReferencesChunk: Object.values(bundle).some(
+              (asset) =>
+                asset.type === "asset" &&
+                asset.fileName === "index.html" &&
+                String(asset.source).includes(output.fileName),
+            ),
           }),
         )
       }
