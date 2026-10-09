@@ -422,15 +422,39 @@ def test_class_representative_cannot_modify_enrollment_outside_assigned_year(
         _api("/academic-registry/sections"), headers=superuser_token_headers
     )
     assert sections.status_code == 200
-    other_section = next(
-        (
-            section
-            for section in sections.json()["data"]
-            if section["academic_year_id"] != year["id"]
-        ),
-        None,
+    current_section = next(
+        section
+        for section in sections.json()["data"]
+        if section["program_code"] == "BSIT"
+        and section["academic_year_id"] == year["id"]
     )
-    assert other_section is not None
+    other_start_year = 2300 + uuid4().int % 500
+    other_year_response = client.post(
+        _api("/academic-registry/academic-years"),
+        headers=superuser_token_headers,
+        json={
+            "label": f"{other_start_year}-{other_start_year + 1}",
+            "start_year": other_start_year,
+            "end_year": other_start_year + 1,
+        },
+    )
+    assert other_year_response.status_code == 200
+    other_year = other_year_response.json()
+    other_section_response = client.post(
+        _api("/academic-registry/sections"),
+        headers=superuser_token_headers,
+        json={
+            "program_id": current_section["program_id"],
+            "academic_year_id": other_year["id"],
+            "year_level": "1st Year",
+            "section_code": f"SCOPE-{uuid4().hex[:8].upper()}",
+        },
+    )
+    assert other_section_response.status_code == 200
+    other_section = {
+        "id": other_section_response.json()["id"],
+        "academic_year_id": other_year["id"],
+    }
 
     other_enrollment = client.post(
         _api("/academic-registry/enrollments"),
