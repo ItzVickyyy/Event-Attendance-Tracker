@@ -550,3 +550,31 @@ def test_academic_registry_rejects_enrollment_section_year_mismatch(
         json={"academic_year": other_section["academic_year"]},
     )
     assert legacy_moved_section.status_code == 409
+
+
+def test_academic_section_with_enrollment_cannot_be_deleted(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    year, section = _current_year_and_program(client, headers)
+    created = client.post(
+        _api("/academic-registry/students"),
+        headers=headers,
+        json={
+            "student_number": f"KEEP-{random_lower_string()[:10].upper()}",
+            "first_name": "Keep",
+            "last_name": "History",
+            "section_id": section["id"],
+            "academic_year_id": year["id"],
+        },
+    )
+    assert created.status_code == 200
+
+    deleted = client.delete(
+        _api(f"/academic-sections/{section['id']}"), headers=headers
+    )
+    assert deleted.status_code == 409
+
+    sections = client.get(_api("/academic-registry/sections"), headers=headers)
+    assert sections.status_code == 200
+    assert any(row["id"] == section["id"] for row in sections.json()["data"])
