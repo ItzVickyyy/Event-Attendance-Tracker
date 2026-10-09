@@ -175,23 +175,23 @@ export function getDB(): Promise<IDBPDatabase<OfflineDB>> {
             keyPath: "id",
           })
           const legacyRosters = transaction.objectStore("rosters")
-          const cursorRequest = legacyRosters.openCursor()
-          cursorRequest.onsuccess = () => {
-            const cursor = cursorRequest.result
-            if (!cursor) return
-            const roster = cursor.value as RosterRecord
-            if (roster.account_id) {
-              scopedRosters.put({
-                ...roster,
-                id: rosterCacheId(roster.account_id, roster.event_id),
-              })
+          void (async () => {
+            let cursor = await legacyRosters.openCursor()
+            while (cursor) {
+              const roster = cursor.value as RosterRecord
+              if (roster.account_id) {
+                await scopedRosters.put({
+                  ...roster,
+                  id: rosterCacheId(roster.account_id, roster.event_id),
+                })
+              }
+              // Legacy rows without a verified owner cannot be used safely.
+              // Rosters are a cache and can be downloaded again. This migration
+              // does not touch the attendance queue or its unsynced records.
+              await cursor.delete()
+              cursor = await cursor.continue()
             }
-            // Legacy rows without a verified owner cannot be used safely.
-            // Rosters are a cache and can be downloaded again. This migration
-            // does not touch the attendance queue or its unsynced records.
-            cursor.delete()
-            cursor.continue()
-          }
+          })()
         }
       },
     })
