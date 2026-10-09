@@ -154,6 +154,15 @@ def test_super_admin_can_manage_class_representative_assignment_and_students(
     assert duplicate.status_code == 409
 
     student_id = students.json()["data"][0]["id"]
+    student_details = client.get(
+        _api(f"/academic-registry/students/{student_id}"),
+        headers=headers,
+        params={"section_id": section_id, "academic_year_id": str(year["id"])},
+    )
+    assert student_details.status_code == 200
+    assert student_details.json()["qr_registered"] is True
+    assert student_details.json()["qr_credential_value"]
+
     archived = client.delete(
         _api(f"/students/{student_id}"),
         headers=headers,
