@@ -325,6 +325,33 @@ function useSyncStatus(eventId?: string) {
   }
 }
 
+async function exportLegacyAttendanceScans(): Promise<void> {
+  const records = (await getAllQueuedScans()).filter(
+    (record) => !record.synced && !record.account_id,
+  )
+  if (records.length === 0) {
+    toast.info("No unassigned pending scans to export")
+    return
+  }
+
+  const payload = {
+    export_type: "legacy-attendance-scans",
+    exported_at: new Date().toISOString(),
+    record_count: records.length,
+    records,
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `legacy-attendance-scans-${new Date().toISOString().slice(0, 10)}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+  toast.success("Legacy scans exported. Keep the file private and give it to the system administrator.")
+}
+
 function SyncStatusCard({
   online,
   pendingScans,
@@ -388,8 +415,22 @@ function SyncStatusCard({
             {unassignedPendingCount === 1 ? " has" : "s have"} no saved account
             owner. They are preserved but will not sync automatically because
             doing so could record attendance under the wrong account. Do not
-            clear this browser's site data. Contact the system administrator for
-            recovery.
+            clear this browser's site data. Export the records for administrator
+            recovery before closing this browser.
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void exportLegacyAttendanceScans()}
+              >
+                <Download className="mr-1 h-3 w-3" />
+                Export legacy scans
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              The export contains attendance and credential data. Keep it
+              private and share it only with the system administrator.
+            </p>
           </div>
         )}
         {activeSession ? (
