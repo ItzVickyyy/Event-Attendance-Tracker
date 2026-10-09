@@ -42,6 +42,8 @@ const useAuth = () => {
     const response = await LoginService.loginAccessToken({
       body: data,
     })
+    // Cached API responses belong to the previous session, not the new user.
+    queryClient.removeQueries()
     localStorage.setItem("access_token", response.data.access_token)
   }
 
@@ -55,6 +57,8 @@ const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem("access_token")
+    // Do not leave another user's data in the in-memory query cache.
+    queryClient.removeQueries()
     navigate({ to: "/login" })
   }
 
