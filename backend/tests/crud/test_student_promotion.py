@@ -367,7 +367,9 @@ def test_existing_student_number_reused_across_batches(db_session: Session):
     assert set(enrollments_by_year) == {"2025-2026", "2026-2027"}
 
     historical_enrollment = enrollments_by_year["2025-2026"]
-    historical_section = db_session.get(AcademicSection, historical_enrollment.section_id)
+    historical_section = db_session.get(
+        AcademicSection, historical_enrollment.section_id
+    )
     assert historical_section is not None
     assert historical_section.academic_year == "2025-2026"
     assert historical_section.section_name == "A"
