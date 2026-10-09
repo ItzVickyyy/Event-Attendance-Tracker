@@ -44,7 +44,7 @@ def main() -> None:
         expired_count = session.exec(
             select(func.count())
             .select_from(AuditLog)
-            .where(AuditLog.occurred_at < cutoff)
+            .where(AuditLog.__table__.c.occurred_at < cutoff)
         ).one()
         logger.info("Retention cutoff: %s", cutoff.isoformat())
         logger.info("Expired audit entries: %s", expired_count)
