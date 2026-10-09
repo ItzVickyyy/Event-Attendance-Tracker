@@ -349,7 +349,9 @@ async function exportLegacyAttendanceScans(): Promise<void> {
   link.download = `legacy-attendance-scans-${new Date().toISOString().slice(0, 10)}.json`
   link.click()
   URL.revokeObjectURL(url)
-  toast.success("Legacy scans exported. Keep the file private and give it to the system administrator.")
+  toast.success(
+    "Legacy scans exported. Keep the file private and give it to the system administrator.",
+  )
 }
 
 function SyncStatusCard({
