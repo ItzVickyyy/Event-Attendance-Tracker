@@ -32,6 +32,22 @@ export function StudentDetailsPage({
       StudentsService.readStudent({ path: { student_id: studentId } }),
   })
   const student = studentQuery.data?.data
+  const sectionEnrollmentQuery = useQuery({
+    queryKey: ["studentEnrollmentInSection", studentId, sectionId],
+    queryFn: async () => {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(
+        `/api/v1/academic-registry/students/${encodeURIComponent(studentId)}?section_id=${encodeURIComponent(sectionId)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+      )
+      const body = await response.json().catch(() => null)
+      if (response.status === 404) return null
+      if (!response.ok)
+        throw new Error(body?.detail ?? "Unable to verify section enrollment")
+      return body
+    },
+    enabled: Boolean(studentId && sectionId),
+  })
   const personQuery = useQuery({
     queryKey: ["person", student?.person_id],
     queryFn: () =>
@@ -39,12 +55,12 @@ export function StudentDetailsPage({
     enabled: Boolean(student?.person_id),
   })
   const sectionQuery = useQuery({
-    queryKey: ["academicSection", student?.section_id],
+    queryKey: ["academicSection", sectionId],
     queryFn: () =>
       AcademicSectionsService.sectionsReadAcademicSection({
-        path: { section_id: student!.section_id! },
+        path: { section_id: sectionId },
       }),
-    enabled: Boolean(student?.section_id),
+    enabled: Boolean(sectionId),
   })
   const programsQuery = useQuery({
     queryKey: ["academicPrograms", "student-detail"],
@@ -159,13 +175,22 @@ export function StudentDetailsPage({
         </CardContent>
       </Card>
     )
-  if (student.section_id !== sectionId)
+  if (sectionEnrollmentQuery.isLoading)
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          Verifying section enrollment…
+        </CardContent>
+      </Card>
+    )
+  if (sectionEnrollmentQuery.isError || sectionEnrollmentQuery.data === null)
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="font-medium">Student is not part of this section.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            This route does not expose students outside the selected section.
+          <p className="font-medium">
+            {sectionEnrollmentQuery.isError
+              ? "Unable to verify section enrollment."
+              : "Student is not part of this section."}
           </p>
           <Button className="mt-4" variant="outline" asChild>
             <Link to="/sections/$sectionId" params={{ sectionId }}>
@@ -229,7 +254,8 @@ export function StudentDetailsPage({
           <Info
             label="Academic status"
             value={
-              student.academic_status ? String(student.academic_status) : "—"
+              sectionEnrollmentQuery.data?.student_status ??
+                (student.academic_status ? String(student.academic_status) : "—")
             }
           />
           <Info label="Contact number" value={person?.contact_number ?? "—"} />
