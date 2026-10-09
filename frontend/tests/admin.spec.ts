@@ -26,14 +26,15 @@ test("Generic account creation does not offer Class Representative role", async 
   await page.getByRole("button", { name: "Cancel" }).click()
 })
 
-
 test("Create a class representative account with an assigned section", async ({
   page,
 }) => {
   await page.goto("/administration/class-representatives")
   const email = randomEmail()
 
-  await page.getByRole("button", { name: "Create Class Representative" }).click()
+  await page
+    .getByRole("button", { name: "Create Class Representative" })
+    .click()
   await page.getByLabel("First Name").fill("Test")
   await page.getByLabel("Middle Initial").fill("A")
   await page.getByLabel("Last Name").fill("Representative")
@@ -45,7 +46,9 @@ test("Create a class representative account with an assigned section", async ({
   await page.getByRole("option", { name: /BSIT WMAD 3A/ }).click()
   await page.getByRole("button", { name: "Create account" }).click()
 
-  await expect(page.getByText("Class Representative account created")).toBeVisible()
+  await expect(
+    page.getByText("Class Representative account created"),
+  ).toBeVisible()
   await expect(page.getByRole("dialog")).not.toBeVisible()
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
