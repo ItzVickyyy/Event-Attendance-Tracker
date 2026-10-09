@@ -19,7 +19,20 @@
 const SYNC_TAG = "sync-attendance"
 const QUEUE_DB_NAME = "attendance-offline"
 const QUEUE_DB_VERSION = 3
+
 const TOKEN_TIMEOUT_MS = 3000
+
+// Remove API response caches created by older service-worker versions. These
+// caches were shared across accounts and could retain role-specific data.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    Promise.all([
+      caches.delete("events-cache"),
+      caches.delete("students-cache"),
+      caches.delete("credentials-cache"),
+    ]),
+  )
+})
 
 let syncRunning = false
 const inFlightRecords = new Set()
