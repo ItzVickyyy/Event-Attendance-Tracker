@@ -17,17 +17,17 @@ This is a grouped route-module guide, not an exhaustive endpoint-by-endpoint con
 | `organizations` | `/organizations` | Organization records |
 | `academic_programs` | `/academic-programs` | Academic program records |
 | `academic_sections` | `/academic-sections` | Academic section records |
-| `academic_catalog` | Academic catalog | Academic catalog and year-related operations |
-| `academic_registry` | Academic registry | Academic registry operations |
+| `academic_catalog` | `/academic-catalog` | Major catalog and section-major assignments |
+| `academic_registry` | `/academic-registry` | Academic years, section registry, and student enrollments |
 | `people` | `/people` | Person records |
 | `students` | `/students` | Student masterlist operations |
 | `attendees` | `/attendees` | Event attendee records |
 | `attendee_credentials` | Attendee credentials | QR/NFC credential operations |
 | `attendee_relationships` | Attendee relationships | Links between attendees, such as guardians and students |
 | `events` | `/events` | Event CRUD and event lifecycle |
-| `roster` | Roster | Event roster operations |
+| `roster` | `/events/{event_id}/roster` | Event roster data for scanner-permitted users |
 | `event_registrations` | Event registrations | Attendee registration for events |
-| `attendance` | `/attendance` | Attendance queries, scanning, correction-related workflows, and CSV export |
+| `attendance` | `/attendance` | Attendance queries, scan recording, and CSV export |
 | `attendance_sessions` | `/attendance-sessions` | Attendance-session lifecycle and active-session selection |
 | `attendance_corrections` | Attendance corrections | Audited attendance correction workflow |
 | `class_representatives` | `/class-representatives` | Representative assignments and assigned-section student operations |
