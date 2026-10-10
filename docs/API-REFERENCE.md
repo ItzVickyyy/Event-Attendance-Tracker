@@ -71,6 +71,8 @@ These examples describe the inspected source and should be backed by authorizati
 | `POST /api/v1/academic-registry/academic-years/{id}/set-current` | Clears the current flag on all years and marks the selected year current. | Super Admin only. |
 | `GET /api/v1/academic-registry/sections` | Lists section registry data, optionally filtered by academic year. | Admin/Super Admin or assigned Class Representative; representative result is limited to their assignment. |
 | `GET /api/v1/academic-registry/sections/{section_id}/students` | Lists students enrolled in the section's academic year. Archived students/enrollments are excluded unless requested. | Representative must match the assigned section. |
+| `GET /api/v1/academic-sections/{section_id}/export/xlsx` | Downloads an academic section's student roster as XLSX. | Admin or higher. This is a section-roster export, not an attendance-report export. |
+| `GET /api/v1/academic-sections/{section_id}/export/docx` | Downloads an academic section's student roster as DOCX. | Admin or higher. This is a section-roster export, not an attendance-report export. |
 | `POST /api/v1/students/` | Creates a student. | Admin or higher. |
 | `PATCH /api/v1/students/{student_id}` | Updates a student after checking access and validating related records and duplicate identifiers. | Admin/Super Admin or Class Representative assigned to the student's active enrollment; representatives cannot move students between sections. |
 | `DELETE /api/v1/students/{student_id}` | Archives a representative's enrollment in their assigned year, or archives the student record for Admin/Super Admin. | Not a hard-delete contract. Verify UI copy matches the role-dependent behavior. |
