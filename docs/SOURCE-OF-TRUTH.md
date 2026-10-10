@@ -1922,9 +1922,11 @@ The system should:
     to identifying who they're scanning (name, year/section), not
     unrelated personal data
 -   Keep attendance data separate from unrelated student information
--   Log administrative actions (UID reassignment, manual attendance
-    correction) with who/what/when. The earlier reference to Section 6
-    remains unresolved because that section is missing from this document.
+-   Log administrative actions (credential reassignment and manual
+    attendance correction) with who/what/when. Section 6 now documents the
+    current credential-management behavior and the gap around a dedicated
+    replacement workflow with retained retired-credential history. Treat
+    that workflow as unresolved until implemented and covered by tests.
 -   Treat officer accounts and passwords with the same care as any other
     user accounts — the template's JWT auth and password hashing give a
     reasonable baseline, but role assignment (who gets Admin vs. Super
