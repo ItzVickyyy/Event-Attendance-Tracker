@@ -332,3 +332,15 @@ Reviewed `backend/app/api/routes/attendance.py`, `frontend/src/components/Record
 - The export includes student number, full name, event, time in/out, attendance status, late flag, scan method, session, session date, and recorded timestamp. It does not include correction reason or correction history. If exports are intended to support audit/review, define whether correction details belong in a separate audit export rather than implying they are part of the attendance CSV.
 
 Recommended follow-up: align Admin section filtering with the canonical enrollment model, add a regression test comparing filtered list and CSV membership, and state the current CSV-only scope in user-facing documentation. Decide separately whether printable rosters and additional export formats are required. This is a source review; no application code or tests were changed in this documentation-only PR.
+
+## API authorization boundary audit: attendee relationships
+
+Reviewed `backend/app/api/routes/attendee_relationships.py` against the neighboring attendee and credential route groups.
+
+- `GET /api/v1/attendee-relationships/` and `GET /api/v1/attendee-relationships/{relationship_id}` require a `CurrentUser`, so they require an authenticated user, but neither route applies `require_admin` or an explicit role/assignment check.
+- The list endpoint can return relationship rows across the entire database. Optional `attendee_id` and `related_student_id` parameters are filters, not authorization boundaries. The detail endpoint retrieves any relationship by ID without checking the caller's role or relationship to the linked student.
+- In contrast, create, update, and delete operations in this route group use `require_admin`. The neighboring attendee and attendee-credential read routes also apply admin or scanner-permission dependencies. This makes the relationship read policy inconsistent with its write policy and adjacent resources.
+- Impact depends on which user roles can authenticate in the deployed application. If student or other non-admin accounts can use these endpoints, they may be able to enumerate or retrieve attendee-to-student relationship data outside their own scope. Do not describe this as confirmed anonymous access: the handlers require `CurrentUser`.
+- Follow-up: decide whether relationship reads are Admin-only or should support a defined, record-scoped role. Enforce the same policy on both list and detail endpoints, and add tests proving unauthorized roles cannot list global records or fetch a relationship by guessed/known ID. If Class Representatives need access, scope both endpoints to their assigned section and academic year instead of relying on optional query filters.
+
+This is a source-code authorization finding, not a live penetration test. Other route groups still need endpoint-by-endpoint review; this section does not certify the API as fully audited.
