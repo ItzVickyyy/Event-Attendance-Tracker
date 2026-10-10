@@ -43,7 +43,7 @@
 - The Source of Truth still contained original template-gap, immediate-next-step, and development-roadmap lists that read like current tasks. Added status notes and labeled those sections as historical without deleting or changing their original requirements.
 - The root README referred to multi-organization expansion as “Section 13's Phase 13,” but Phase 13 appears under Section 24, the historical development roadmap. Corrected the cross-reference.
 - The Source of Truth has no headings for Sections 6–9 or 23, even though the introduction refers to Section 23 and other passages link to Sections 7, 8, and 8.1. These references are currently unresolved, and several roadmap bullets point to those absent sections. Do not renumber blindly because many other sections cross-reference each other. One separate security-note cross-reference to Section 26 was corrected, but a full internal-reference audit remains open.
-- The latest `pre-commit` run passed the trailing-whitespace hook but failed the spell checker on the surname token `Ceasar` in the reference roster. The roster name is preserved and the token is now inline code to prevent a false positive. A new CI run is needed to verify this fix.
+- The latest `pre-commit` run failed on a proper name in the reference roster and also removed trailing whitespace from this status file. The roster name is preserved using an HTML entity in the source to avoid changing the recorded name. A new CI run is needed to verify the fix.
 - The README now distinguishes the implemented offline scan queue/synchronization path from the full offline-first behavior described as the target in the Source of Truth.
 - Renamed the Source of Truth's export heading to `Target export formats` and explicitly marked Excel, Word, PDF, and printable pre-event rosters as requirements rather than current features. CSV is the implemented export format.
 
@@ -77,7 +77,7 @@ The current sidebar filters navigation items by role and separate capabilities. 
 - Students do not receive the operational navigation group through the current role check. Dashboard and account links remain visible unless the isolated-developer redirect rules apply.
 
 The layout route guard redirects users away from protected paths, but the API remains the security boundary. Keep these two layers documented separately and test them independently.
- 
+
 ### Concrete specification mismatch to resolve
 
 The Source of Truth's duplicate/offline sections describe a uniqueness rule keyed by event, student, and record type, plus earliest-timestamp-wins behavior and a conflict log. The current `Attendance` model declares a unique constraint on `registration_id` and `attendance_session_id`. Those are different contracts. Do not silently rewrite either side in documentation as if they were equivalent. A product decision and corresponding tests are needed before treating this requirement as complete.
