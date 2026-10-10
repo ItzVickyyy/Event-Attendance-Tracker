@@ -121,7 +121,7 @@ bunx playwright test
 bunx playwright test --ui
 ```
 
-Playwright tests expect the Docker Compose backend stack to be running (see `.github/workflows/playwright.yml` for the exact CI sequence, which also expects a `playwright` Compose service — see the Known Gaps note below).
+Playwright tests need a reachable backend and test data. The CI workflow in `.github/workflows/playwright.yml` prepares the Compose database, applies migrations, and starts the backend before running Playwright from the workflow runner. It does not require a separate `playwright` Compose service. For local runs, start the backend and database using the setup steps above, then run the Playwright command from the project root.
 
 ## Lint and Format
 
