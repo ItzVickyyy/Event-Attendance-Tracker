@@ -2,7 +2,7 @@
 
 **Audit started:** 2026-10-10
 **Scope:** Documentation accuracy against the repository's current configuration and implementation.
-**Status:** Initial pass. This is a working checklist, not a claim that every file or feature has been fully verified.
+**Status:** Focused audit in progress. This is a working checklist, not a claim that every file or feature has been fully verified.
 
 ## Documentation map
 
@@ -51,6 +51,8 @@ This is a focused first pass against route implementations, selected frontend pa
 |---|---|---|
 | Event attendance by NFC, QR, and manual selection | Backend scan and manual-scan routes resolve credentials/attendees, require an open event and registration, and call the shared attendance-recording service. Frontend scanner routes and manual-scan tests exist. Web NFC remains browser/device dependent. | Implemented, with platform limits |
 | Student masterlist and section-scoped Class Representative access | Student/academic registry routes, section/student pages, and Class Representative-specific workspaces exist. Backend checks assignment scope for representative student access. | Implemented; continue role-specific test review |
+| Academic year selection and default | `AcademicYearContext` loads academic years, persists the selected ID in local storage, and falls back to the current year. Super Admin-only API routes create a year and set the current year; tests cover switching and event defaulting. | Implemented at API/context level; continue checking selector and role-specific UI behavior |
+| Event and attendance-session lifecycle | Event CRUD is Admin-gated and new events default to the configured current academic year. Attendance-session reads require scanner permission, while lifecycle mutations require Admin. Route tests exist for both areas. | Implemented at API level; UI workflow coverage still needs review |
 | CSV attendance export | `GET /api/v1/attendance/export` exists. | Implemented |
 | XLSX, DOCX, PDF, and printable blank roster | No corresponding export formats were confirmed in the inspected attendance export route. | Planned / not confirmed implemented |
 | Student import staging | Import-batch routes support CSV/XLSX templates, upload, row validation/reconciliation, and a promotion endpoint. | Implemented at API level; verify the complete UI and promotion tests separately |
@@ -74,7 +76,7 @@ The Source of Truth's duplicate/offline sections describe a uniqueness rule keye
 - [x] Correct the root README's export status to acknowledge CSV export while keeping advanced formats marked as not implemented.
 - [ ] Verify every root README feature claim against current routes, models, tests, and frontend pages. The first focused feature/spec snapshot is now recorded above.
 - [ ] Expand the API reference to an endpoint-by-endpoint contract only after validating route decorators, response schemas, and authorization tests.
-- [ ] Inventory API routes and permissions from the actual FastAPI route registrations and dependencies.
+- [x] Inventory registered API route groups and document the initial authorization model from the actual FastAPI route registrations and dependencies. Endpoint-by-endpoint coverage remains deferred.
 - [ ] Keep database schema and migration-head documentation outside this pass; do not add a separate guide for the development database or application source.
 - [ ] Extend the focused feature/spec snapshot into a complete requirement-by-requirement reconciliation, labeling each requirement implemented, partial, planned, or blocked.
 - [x] Correct the development guide's stale Compose port, Mailpit, and Playwright workflow claims against the current files.
@@ -89,6 +91,8 @@ The Source of Truth's duplicate/offline sections describe a uniqueness rule keye
 - Confirmed the `UserRole` enum contains `super_admin`, `admin`, `class_representative`, and `student`. Developer access is a separate `is_developer` capability, and scanner access also has a separate `can_scan` permission.
 - Confirmed that `GET /api/v1/attendance/export` implements CSV export and applies route-level filters. This does not establish that Excel, Word, PDF, or printable roster formats exist.
 - Confirmed academic year, enrollment, and class-representative assignment models are defined in `backend/app/student_academics.py`; major catalog models are in `backend/app/academic_catalog.py`.
+- Confirmed that the current academic-year context persists the selected academic-year ID and falls back to the year marked current. The backend restricts creating and switching the current year to Super Admin and tests cover year switching and default event-year assignment.
+- Confirmed that event routes are Admin-gated and event creation defaults to the current academic year when none is provided. Attendance-session routes separate scanner-permitted reads from Admin-only lifecycle mutations, with route tests for both areas.
 
 ## Verification standard
 
