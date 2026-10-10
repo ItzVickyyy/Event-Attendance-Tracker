@@ -492,3 +492,15 @@ Reviewed `backend/app/api/routes/academic_sections.py` and `backend/tests/api/ro
 - Follow-up: confirm that email and contact number are required in downloadable class lists and limit fields to the documented purpose. Confirm whether bulk export actions should be audit-logged given that the files contain student contact data. Keep route authorization tests for non-admin roles and export-field assertions aligned with the approved policy.
 
 This is a source-and-test review, not a live deployment test. No application code or tests were changed in this documentation-only PR.
+
+## Academic-year current-state integrity and authorization
+
+Reviewed `backend/app/api/routes/academic_registry.py`, `backend/app/student_academics.py`, and `backend/tests/api/routes/test_academic_registry.py`.
+
+- Listing academic years requires Admin-level access. Creating an academic year and setting the current year require Super Admin access. Creation validates that the end year is exactly one after the start year, the label matches the year range, and a duplicate label returns HTTP 409.
+- Setting the current year first updates all rows to `is_current = false`, then marks the selected row current in the same request transaction. The model defines uniqueness for the academic-year label, but the reviewed model does not define a database constraint limiting `is_current = true` to one row.
+- The integration test confirms that a normal sequential set-current request leaves exactly one current year. It does not establish the invariant under concurrent requests. Two overlapping transactions can each clear the rows they see and mark different years current; without a database-level invariant or serialization strategy, application-level sequencing alone may not guarantee exactly one current year under concurrency.
+- The code also permits a Super Admin to select any existing year as current, including an older year. That may be intentional for correcting the active academic year, but the operational implications for Class Representative assignment resolution and default academic-year behavior should be explicit.
+- Follow-up: enforce the single-current-year invariant at the database or transaction/locking layer, and add a concurrency-oriented regression test if concurrent administrative requests are in scope. Document whether switching to a historical year is allowed and ensure year-dependent routes use the same canonical current-year rule.
+
+This is a source-and-test review, not a concurrency test or live deployment test. No application code or tests were changed in this documentation-only PR.
