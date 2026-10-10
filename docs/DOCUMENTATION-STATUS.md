@@ -504,3 +504,15 @@ Reviewed `backend/app/api/routes/academic_registry.py`, `backend/app/student_aca
 - Follow-up: enforce the single-current-year invariant at the database or transaction/locking layer, and add a concurrency-oriented regression test if concurrent administrative requests are in scope. Document whether switching to a historical year is allowed and ensure year-dependent routes use the same canonical current-year rule.
 
 This is a source-and-test review, not a concurrency test or live deployment test. No application code or tests were changed in this documentation-only PR.
+
+## Scanner permission scope across attendance sessions
+
+Reviewed `backend/app/api/deps.py`, `backend/app/api/routes/attendance_sessions.py`, `backend/app/api/routes/roster.py`, and attendance-session tests.
+
+- `require_scanner_permission` allows Super Admins, Admins, platform superusers, and any active account with `can_scan = true`. The dependency checks the capability, not an assignment to a particular event, session, or scanner station.
+- The attendance-session list endpoint accepts an optional `event_id`. A scanner-capable account can omit it and list sessions across events. The session detail endpoint accepts a session ID and returns that session after the same capability check; it does not verify a session assignment for the caller.
+- The active-session lookup and event-roster routes similarly use scanner permission and a caller-supplied event ID. The roster route verifies that the event exists and, when supplied, that the session belongs to that event, but the reviewed code does not verify the caller is assigned to that event.
+- This may be the intended operator model if scanner permission is deliberately global. If scanner accounts should be restricted to assigned events, the current dependency alone does not provide that boundary. A guessed or otherwise obtained event/session ID is not an assignment check.
+- Follow-up: explicitly choose and document whether `can_scan` is global or event-scoped. If scoped, add an event/session assignment model and enforce it consistently on roster reads, session list/detail/active reads, and scan submissions. Add tests proving a scanner can access only authorized events and sessions, including requests that omit `event_id`.
+
+This is a route and dependency review, not a live exploit test. No application code or tests were changed in this documentation-only PR.
