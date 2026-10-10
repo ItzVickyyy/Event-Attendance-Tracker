@@ -1,7 +1,7 @@
 # Documentation Status and Audit
 
-**Audit started:** 2026-10-10  
-**Scope:** Documentation accuracy against the repository's current configuration and implementation.  
+**Audit started:** 2026-10-10
+**Scope:** Documentation accuracy against the repository's current configuration and implementation.
 **Status:** Initial pass. This is a working checklist, not a claim that every file or feature has been fully verified.
 
 ## Documentation map
@@ -15,7 +15,7 @@
 | [Backend README](../backend/README.md) | Backend architecture and contributor workflow | Replaced with a concise contributor guide based on current route/model structure and linked to the central guides. |
 | [Frontend README](../frontend/README.md) | Frontend setup and contributor workflow | Previously instructed users to open the dev server over HTTP despite the HTTPS certificate configuration. Updated in this pass. |
 | [Source of Truth](./SOURCE-OF-TRUTH.md) | Intended behavior, architecture, and roadmap | Treat as the product specification, not proof that a feature is implemented. Reconcile it with the current code as a separate task. |
-| Student field-mapping guide | Import mapping details | The root README links to `docs/Phase-3-Student-Data-Field-Mapping.md`, but that exact path was not found on the default branch during this audit. Locate the authoritative version or correct/remove the link. |
+| Student field-mapping guide | Import mapping details | The previously documented path was not found on the default branch. The broken README link was removed pending confirmation of an authoritative replacement. |
 
 ## Documentation rules
 
@@ -33,7 +33,7 @@
 - The root README incorrectly stated that no export endpoints exist. The current `GET /api/v1/attendance/export` route implements CSV export. Excel, Word, PDF, and printable roster export remain unverified/not implemented.
 - The previous backend README referenced stale Mailpit/HTTP setup details and destructive volume cleanup. It has been replaced with a concise contributor guide; avoid restoring those unsafe or outdated instructions.
 - The frontend README's quick start pointed to plain HTTP, while the current Vite configuration requires local TLS certificates for its HTTPS dev server.
-- The root README previously linked to a student field-mapping document that was not found at the documented path. That broken link was removed pending confirmation of the authoritative document.
+- The root README previously linked to a student field-mapping document that was not found at the documented path. That broken link has been removed. Locate the authoritative replacement before restoring a link.
 - The development guide incorrectly stated that the base Compose file had no host port mappings and that Mailpit was absent. The current Compose file publishes PostgreSQL on host port 5433, Mailpit on 1025/8026, and the backend on 8000/8001. It also incorrectly claimed the Playwright workflow depended on a separate Compose service named `playwright`; the current workflow starts the backend service and runs Playwright from the workflow runner.
 - The Source of Truth still contained original template-gap, immediate-next-step, and development-roadmap lists that read like current tasks. Added status notes and labeled those sections as historical without deleting or changing their original requirements.
 - The README now distinguishes the implemented offline scan queue/synchronization path from the full offline-first behavior described as the target in the Source of Truth.
