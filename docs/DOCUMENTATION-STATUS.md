@@ -425,3 +425,24 @@ This is an implementation planning aid based on the source reviews above, not a 
 5. Review public credential lookup exposure, reverse-proxy trust, and rate-limiting behavior against the actual deployment topology.
 
 Before closing the audit, complete the endpoint-by-endpoint authorization pass, connect findings to existing or missing tests, and distinguish verified behavior from open product decisions. Do not treat this provisional order as a substitute for reproducing the findings or reviewing production retention and privacy requirements.
+
+## API authorization audit: user management and role transitions
+
+Reviewed `backend/app/api/routes/users.py`, `backend/app/api/deps.py`, and the related tests in `backend/tests/api/routes/test_users.py`.
+
+- User listing and account creation require Admin-level access. Creating Class Representative accounts is rejected in the general user route, and assigning privileged roles or Developer/scanner capabilities is restricted to Super Admins. Public signup uses the narrower `UserRegister` schema rather than accepting the full administrative user model.
+- Reading `GET /api/v1/users/{user_id}` requires authentication. A user may read their own record; only Admin, Super Admin, or a platform superuser may read another user's record. Tests cover the normal user's self-read and denial for another user's ID.
+- General user updates and deletion require Admin-level access. Admins are prevented from modifying or deleting Admin/Super Admin/Developer accounts, and privilege fields are Super Admin-only. Tests cover some role-promotion and Developer-isolation cases, but this review did not establish exhaustive coverage of every role/field combination.
+- The dedicated Class Representative assignment workflow is enforced when a non-representative account is changed to the Class Representative role. However, the guard only rejects transitions *into* that role. An existing Class Representative account can submit a different role through `PATCH /api/v1/users/{user_id}`; this path does not visibly require the dedicated assignment workflow or reconcile that user's assignment rows. That may leave account role and assignment records inconsistent, depending on the update service and database constraints.
+- Follow-up: decide whether Class Representative role changes in either direction must go through the assignment workflow. If so, reject demotion through the general user-update route or make that route explicitly revoke/reconcile assignments transactionally. Add tests for demoting an assigned representative, ensuring assignment rows are handled as intended, and verifying that Admins cannot bypass the dedicated workflow. Also add a role/privilege matrix for account update and deletion tests.
+
+## API authorization audit: technical Developer endpoints
+
+Reviewed `backend/app/api/routes/developer.py`, `backend/app/api/deps.py`, and `backend/tests/api/routes/test_developer.py`.
+
+- System health and diagnostics require the independent Developer capability. The diagnostics response returns aggregate counts and database/runtime information rather than user or student rows.
+- Audit-log reads use a separate dependency that permits Admin, Super Admin, platform superuser, or Developer capability. Results are paginated with a maximum page size of 100 and support filters; the response omits request payload contents.
+- Tests establish that a student-role account with Developer capability can access technical diagnostics and audit logs but is denied operational event, student, academic-registry, and other Admin APIs. They also cover Admin access to audit logs, an ordinary user's denial, audit correlation for a failed mutation, and invalid audit-filter ranges.
+- This route group appears intentionally separated from operational permissions in the inspected code. This is not a complete authorization certification: continue checking all registered routers and role/assignment combinations, including whether any other route accidentally grants technical Developer capability operational access.
+
+This section is a source-and-test review. No application code or tests were changed in this documentation-only PR.
