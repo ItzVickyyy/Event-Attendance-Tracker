@@ -42,15 +42,23 @@
 - [x] Correct the backend README's high-risk stale claims and point contributors to the central setup guide.
 - [x] Correct the frontend README's HTTPS setup guidance.
 - [x] Add an initial API route-group and authorization reference from the registered routers and inspected dependencies.
+- [x] Correct the root README's role list: Developer is a separate capability, not a fifth `UserRole` enum value.
 - [x] Correct the root README's export status to acknowledge CSV export while keeping advanced formats marked as not implemented.
 - [ ] Verify every root README feature claim against current routes, models, tests, and frontend pages.
 - [ ] Expand the API reference to an endpoint-by-endpoint contract only after validating route decorators, response schemas, and authorization tests.
 - [ ] Inventory API routes and permissions from the actual FastAPI route registrations and dependencies.
-- [ ] Document the actual database schema and migration head without assuming table names.
+- [ ] Document the actual database schema and migration head without assuming table names. The model inventory has been checked, but a dedicated data-model guide and migration-head verification remain outstanding.
 - [ ] Reconcile the Source of Truth with current behavior and label each requirement as implemented, partial, planned, or blocked.
 - [ ] Verify local development and CI instructions against the workflow files and Compose configuration.
 - [ ] Verify both deployment guides against the current deployment workflows.
 - [ ] Fix broken links and remove duplicated or generic template documentation only after checking whether it contains project-specific details.
+
+## Additional implementation checks completed in this pass
+
+- Confirmed that `backend/app/api/main.py` registers route groups for academic catalog/registry, students, attendees and credentials, events/registrations, attendance/sessions/corrections, class representatives, imports, login/users, and developer operations.
+- Confirmed the `UserRole` enum contains `super_admin`, `admin`, `class_representative`, and `student`. Developer access is a separate `is_developer` capability, and scanner access also has a separate `can_scan` permission.
+- Confirmed that `GET /api/v1/attendance/export` implements CSV export and applies route-level filters. This does not establish that Excel, Word, PDF, or printable roster formats exist.
+- Confirmed academic year, enrollment, and class-representative assignment models are defined in `backend/app/student_academics.py`; major catalog models are in `backend/app/academic_catalog.py`.
 
 ## Verification standard
 
