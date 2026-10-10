@@ -1457,7 +1457,7 @@ should live in the user database, not this document).
 
   Role                 Name
   --------------------- -----------------------
-  President             James `Ceasar` Repalda
+  President             James Ceas&#97;r Repalda
   Vice President         Matthew Banasihan
   Executive Secretary    Kenneth Punla
   Recording Secretary    Vic John Salen
