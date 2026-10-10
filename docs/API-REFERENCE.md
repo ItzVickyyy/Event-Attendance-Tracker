@@ -61,6 +61,23 @@ Users with `must_change_password=true` are blocked from ordinary authenticated A
 
 These examples describe the inspected source and should be backed by authorization tests when behavior changes. Do not infer that every endpoint in a route module shares the same permission.
 
+### Selected endpoint behavior
+
+| Endpoint | Verified behavior | Access control / caveat |
+|---|---|---|
+| `GET /api/v1/academic-registry/academic-years` | Lists academic years. | Admin or higher. |
+| `POST /api/v1/academic-registry/academic-years` | Creates an academic year after validating consecutive years and the `YYYY-YYYY` label. | Super Admin only. |
+| `POST /api/v1/academic-registry/academic-years/{id}/set-current` | Clears the current flag on all years and marks the selected year current. | Super Admin only. |
+| `GET /api/v1/academic-registry/sections` | Lists section registry data, optionally filtered by academic year. | Admin/Super Admin or assigned Class Representative; representative result is limited to their assignment. |
+| `GET /api/v1/academic-registry/sections/{section_id}/students` | Lists students enrolled in the section's academic year. Archived students/enrollments are excluded unless requested. | Representative must match the assigned section. |
+| `POST /api/v1/students/` | Creates a student. | Admin or higher. |
+| `PATCH /api/v1/students/{student_id}` | Updates a student after checking access and validating related records and duplicate identifiers. | Admin/Super Admin or Class Representative assigned to the student's active enrollment; representatives cannot move students between sections. |
+| `DELETE /api/v1/students/{student_id}` | Archives a representative's enrollment in their assigned year, or archives the student record for Admin/Super Admin. | Not a hard-delete contract. Verify UI copy matches the role-dependent behavior. |
+| `POST /api/v1/import-batches/{batch_id}/promote` | Promotes a validated import batch through `StudentPromotionService`. | Admin or higher; blocked if the batch is not validated, contains invalid/conflict rows, or its summary reconciliation is not matched. |
+| `POST /api/v1/attendance-corrections/` | Records an audited correction for an existing attendance record. | Admin or higher. See route schema and tests for exact fields. |
+
+These are selected behaviors verified in route code and tests, not a complete endpoint list. Confirm the active router prefix and trailing-slash conventions against OpenAPI before copying a path into a client.
+
 ## Attendance export
 
 The current `GET /api/v1/attendance/export` route returns **CSV**. It supports filters for event, academic year, status, attendance session, scan method, session date, attendee type, section, and late status. Class Representative exports are scoped to their assigned section/year in the route implementation.
