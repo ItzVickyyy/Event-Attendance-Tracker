@@ -1586,7 +1586,14 @@ with NFC- or attendance-specific functionality. At the time, the project needed:
 
 ------------------------------------------------------------------------
 
-## 24. Development Roadmap
+## 24. Original Development Roadmap (Historical Sequence)
+
+This section preserves the original planned order of work. Some phases have
+since been implemented in whole or in part, and the offline/concurrency
+requirements still need reconciliation with the current code. Do not treat
+the phase lists below as the live task queue or as proof that a phase is
+unfinished. Use the root README for the current feature snapshot and
+`docs/DOCUMENTATION-STATUS.md` for the focused implementation/spec audit.
 
 ### Phase 1 — Repo Setup and Environment
 
