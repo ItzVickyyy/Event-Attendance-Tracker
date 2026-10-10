@@ -182,6 +182,6 @@ Reviewed the current README feature and technology summaries against selected ro
 
 ## Latest CI verification
 
-- Head `86a48a6dabb9c33c164ef5784c10460f07cb4bba` completed all 14 reported check runs successfully: backend tests, Docker Compose, all four Playwright shards and report aggregation, pre-commit, Zizmor, and aggregate workflow checks. This verifies CI at that commit only. No local manual test or live deployment was performed. Any later commit needs its own CI verification.
+- Head `d324d32564a73f11a995ae386510577dd44de7b9` completed all 14 reported check runs successfully: backend tests, Docker Compose, all four Playwright shards and report aggregation, pre-commit, Zizmor, and aggregate workflow checks. This verifies CI at the current documentation branch head. No local manual test or live deployment was performed. Any later commit needs its own CI verification.
 
 - Restored the missing Source of Truth sections 6–9 and 23 as concise, current-aware specification text. The NFC registration, unknown-card fallback, manual attendance, and time-in/time-out sections clearly distinguish target behavior from implementation gaps. Section 23 now reflects the configured stack and correct Workbox/IndexedDB offline model. The original September 10 text remains linked in Git history for traceability.
