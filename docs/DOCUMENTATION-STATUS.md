@@ -12,7 +12,7 @@
 | [Development guide](../development.md) | Local setup, tests, generated client, common workflow | Detailed and candid about configuration gaps. Re-check commands against current scripts and CI workflows before simplifying it. |
 | [FastAPI Cloud deployment](../deployment.md) | Managed deployment | Verify workflow triggers, required variables/secrets, and deployment steps. |
 | [Docker Compose deployment](../deployment-docker-compose.md) | Self-hosted deployment | Verify against the current Compose files and deployment workflow. |
-| [Backend README](../backend/README.md) | Backend architecture and contributor workflow | Previously included potentially stale API, export, role, and setup claims. Updated in this documentation pass to defer to the central guides and avoid claiming unverified features. |
+| [Backend README](../backend/README.md) | Backend architecture and contributor workflow | Replaced with a concise contributor guide based on current route/model structure and linked to the central guides. |
 | [Frontend README](../frontend/README.md) | Frontend setup and contributor workflow | Previously instructed users to open the dev server over HTTP despite the HTTPS certificate configuration. Updated in this pass. |
 | [Source of Truth](./SOURCE-OF-TRUTH.md) | Intended behavior, architecture, and roadmap | Treat as the product specification, not proof that a feature is implemented. Reconcile it with the current code as a separate task. |
 | Student field-mapping guide | Import mapping details | The root README links to `docs/Phase-3-Student-Data-Field-Mapping.md`, but that exact path was not found on the default branch during this audit. Locate the authoritative version or correct/remove the link. |
@@ -30,7 +30,7 @@
 ## Initial findings
 
 - The root README already separates implemented features from planned functionality. Preserve that distinction and verify it as features change.
-- The backend README contained an export endpoint claim that conflicts with the root README's explicit statement that export functionality is not implemented.
+- The root README incorrectly stated that no export endpoints exist. The current `GET /api/v1/attendance/export` route implements CSV export. Excel, Word, PDF, and printable roster export remain unverified/not implemented.
 - The backend README's local setup referenced a Mailpit service, HTTP URLs, and destructive volume cleanup that do not match the development guide's description of the current repository configuration.
 - The frontend README's quick start pointed to plain HTTP, while the current Vite configuration requires local TLS certificates for its HTTPS dev server.
 - The root README's student field-mapping link did not resolve at the documented path.
@@ -41,7 +41,10 @@
 - [x] Create this audit and establish documentation accuracy rules.
 - [x] Correct the backend README's high-risk stale claims and point contributors to the central setup guide.
 - [x] Correct the frontend README's HTTPS setup guidance.
+- [x] Add an initial API route-group and authorization reference from the registered routers and inspected dependencies.
+- [x] Correct the root README's export status to acknowledge CSV export while keeping advanced formats marked as not implemented.
 - [ ] Verify every root README feature claim against current routes, models, tests, and frontend pages.
+- [ ] Expand the API reference to an endpoint-by-endpoint contract only after validating route decorators, response schemas, and authorization tests.
 - [ ] Inventory API routes and permissions from the actual FastAPI route registrations and dependencies.
 - [ ] Document the actual database schema and migration head without assuming table names.
 - [ ] Reconcile the Source of Truth with current behavior and label each requirement as implemented, partial, planned, or blocked.
