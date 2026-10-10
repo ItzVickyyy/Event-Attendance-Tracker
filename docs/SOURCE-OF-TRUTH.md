@@ -1213,8 +1213,8 @@ happened if numbers look off.
 
 ## 14. No NFC ID — cross-reference
 
-See Section 8 above; the manual entry path also serves as the fallback
-whenever a device simply cannot run Web NFC at all (Section 8.1).
+See Section 2.3, Manual Search. This path also serves as the fallback
+whenever a device cannot run Web NFC (see Section 3.1 for browser and device limitations).
 
 ------------------------------------------------------------------------
 
@@ -1662,7 +1662,7 @@ Implement:
 -   NFC scanning (reusing the Phase 2 proof of concept)
 -   QR identifier generation and registration for attendees who need it
 -   Multi-method identification resolution to the same attendee
--   Manual fallback entry (Section 8)
+-   Manual fallback entry (Section 2.3, Manual Search)
 -   Credential-to-attendee association
 -   Credential registration status
 -   Reassignment/deactivation of an existing credential when authorized
@@ -1701,7 +1701,7 @@ Implement:
 -   Duplicate/already-completed prevention (database-level uniqueness
     constraint, Section 12)
 -   Ready-to-scan screen
--   Unknown/unregistered ID handling (Section 7)
+-   Unknown or unregistered credential handling
 -   Manual/no-ID entry path (Section 8)
 
 ------------------------------------------------------------------------
