@@ -344,3 +344,18 @@ Reviewed `backend/app/api/routes/attendee_relationships.py` against the neighbor
 - Follow-up: decide whether relationship reads are Admin-only or should support a defined, record-scoped role. Enforce the same policy on both list and detail endpoints, and add tests proving unauthorized roles cannot list global records or fetch a relationship by guessed/known ID. If Class Representatives need access, scope both endpoints to their assigned section and academic year instead of relying on optional query filters.
 
 This is a source-code authorization finding, not a live penetration test. Other route groups still need endpoint-by-endpoint review; this section does not certify the API as fully audited.
+
+## API authorization boundary audit: Class Representative assignment resolution
+
+Reviewed `backend/app/api/deps.py`, `backend/app/api/routes/academic_registry.py`, and `backend/app/api/routes/students.py`.
+
+- `class_rep_assignment()` filters by academic year only when the caller supplies `academic_year_id`; otherwise it orders assignments by `created_at DESC` and returns one row. This selects the most recently created assignment, not necessarily the current academic year.
+- Several Class Representative reads use that helper when the year is omitted, including the section registry and student-detail/list paths. Other routes explicitly require or derive the year from an assignment. As a result, requests without an academic-year parameter can resolve to a future or historical assignment if that assignment was created most recently.
+- The selected assignment still constrains section access in the reviewed routes, so this finding does not by itself establish cross-section data exposure. It is an academic-year correctness and predictable-scope issue that can make the representative see the wrong roster or receive confusing access denials.
+- Follow-up: define the canonical default year for Class Representative requests, preferably the explicitly configured current academic year, and require an unambiguous assignment for that year. If historical-year access is supported, make it explicit in the request and verify the user's assignment for that year. Add tests with assignments in multiple years created out of chronological academic order and with no assignment for the current year.
+
+## API authorization boundary audit: archived roster visibility
+
+- `GET /api/v1/academic-registry/sections/{section_id}/students` checks a Class Representative's assigned section, then accepts `include_archived=true` without restricting that option to Admin roles. That flag removes both the student archive filter and the enrollment archive filter.
+- This remains limited to the assigned section, but it lets a Class Representative request archived student and enrollment rows that the default roster excludes. Confirm whether representatives should have access to historical/archived roster entries. If not, reject or ignore `include_archived` for that role and test the restriction.
+- Source review only. The audit has not yet verified every endpoint, dependency, and role combination through integration tests or live deployment testing.
