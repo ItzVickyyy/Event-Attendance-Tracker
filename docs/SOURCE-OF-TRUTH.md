@@ -28,13 +28,13 @@ this specification unless they are deliberately revised.
 > have been updated accordingly; anything still referencing "the app" in
 > a native-app sense should be read as "the web app."
 
-> **Editorial note:** This document has unresolved numbering gaps. Headings for
-> Sections 6–9 and 23 are absent from the September 11, 2026 revision. An earlier
-> [September 10 revision in Git history](https://github.com/ItzVickyyy/Event-Attendance-Tracker/blob/42bcf2ee94730cbdca93218a58ced936e1a599f4/docs/SOURCE-OF-TRUTH.md)
-> contains those sections, but their old requirements have not been copied back
-> because some statements may conflict with the current implementation and later
-> specification. Review and reconcile that historical content before deciding
-> whether to restore, rewrite, or retire it. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+> **Editorial note:** The September 11, 2026 revision had missing headings for
+> Sections 6–9 and 23. Those sections have now been rewritten as concise,
+> implementation-aware summaries rather than copied verbatim, because some
+> historical requirements conflict with current behavior or remain unverified.
+> The [September 10 revision in Git history](https://github.com/ItzVickyyy/Event-Attendance-Tracker/blob/42bcf2ee94730cbdca93218a58ced936e1a599f4/docs/SOURCE-OF-TRUTH.md)
+> remains available for the original wording. The restored sections distinguish
+> intended behavior from known implementation gaps. See the [documentation audit](./DOCUMENTATION-STATUS.md).
 
 ------------------------------------------------------------------------
 
