@@ -28,7 +28,7 @@ From the `backend` directory:
 ```bash
 uv sync
 uv run bash scripts/prestart.sh
-uv run fastapi dev
+uv run fastapi dev --port 8001
 ```
 
 `scripts/prestart.sh` runs Alembic migrations (`alembic upgrade head`) and then seeds initial data (`python app/initial_data.py`), which creates the first superuser as a `super_admin` with scanning permission enabled.
@@ -150,7 +150,7 @@ Automatically, from the project root (backend must be able to import cleanly; th
 bash ./scripts/generate-client.sh
 ```
 
-Or manually, with the backend running, by downloading `http://localhost:8000/api/v1/openapi.json` into `frontend/openapi.json` and running `bun run generate-client` from `frontend`.
+Or manually, with the backend running, by downloading `http://localhost:8001/api/v1/openapi.json` into `frontend/openapi.json` and running `bun run generate-client` from `frontend`.
 
 Regenerate and commit the client whenever backend routes or schemas change — this is also enforced by the pre-commit hook above.
 
