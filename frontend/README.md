@@ -1,95 +1,61 @@
-# Event Attendance Tracker — Frontend
+# Frontend
 
-The frontend is built with [Vite](https://vitejs.dev/), [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [TanStack Query](https://tanstack.com/query), [TanStack Router](https://tanstack.com/router), [Tailwind CSS](https://tailwindcss.com/), and [shadcn/ui](https://ui.shadcn.com/).
+The frontend is a React and TypeScript application built with Vite. It uses TanStack Router, TanStack Query, Tailwind CSS, shadcn/ui, and a generated typed client based on the backend's OpenAPI schema.
 
 ## Requirements
 
-- [Bun](https://bun.sh/) for package management
+- [Bun](https://bun.sh/)
+- A running backend and reachable PostgreSQL database for features that require API access
+- A locally trusted TLS certificate for the development server
 
-## Quick Start
+## Local development
 
-From the project root, install the dependencies and start the frontend development server:
+From the repository root:
 
 ```bash
 bun install
 bun run dev
 ```
 
-Then open <http://localhost:5173/> in your browser.
+The dev server is configured for **HTTPS**, not plain HTTP. The Vite configuration expects these files:
 
-Run `uv run bash scripts/prestart.sh` and `uv run fastapi dev` from the `backend` directory, with PostgreSQL running in Docker Compose. See [development.md](../development.md) for the complete setup.
+- `frontend/.certs/localhost+lan-key.pem`
+- `frontend/.certs/localhost+lan.pem`
 
-To serve the frontend with FastAPI, run `bun run build` from the `frontend` directory and open `http://localhost:8000`.
+The `.certs` directory is gitignored. Create a locally trusted certificate with a tool such as [mkcert](https://github.com/FiloSottile/mkcert), using the filenames and hostnames/IP addresses required by `frontend/vite.config.ts`. Open the HTTPS URL printed by Vite rather than assuming the server is available at `http://localhost:5173`.
 
-Check `frontend/package.json` to see the other available commands.
+The Vite dev server proxies `/api` requests to the backend. Start the backend separately and follow the root [Development Guide](../development.md) for database setup, startup commands, and troubleshooting.
 
-## Generate Client
+## Build
 
-### Automatically
+From the repository root, run:
 
-* From the project root, run the script:
+```bash
+bun run build
+```
+
+The production build is configured to output to `backend/app/frontend`, allowing FastAPI to serve the frontend from the same origin. Rebuild after frontend changes when testing the backend-served production build.
+
+## Generated API client
+
+The typed API client under `frontend/src/client` is generated from the backend's OpenAPI schema. When backend routes or schemas change, regenerate and commit the client using the repository-supported command:
 
 ```bash
 bash ./scripts/generate-client.sh
 ```
 
-* Commit the changes.
+See the [Development Guide](../development.md) for details and prerequisites.
 
-### Manually
+## Tests and code quality
 
-* Make sure the backend is running.
+Playwright end-to-end tests are under `frontend/tests`. Their environment requirements depend on the current CI and Compose configuration. Follow the [Development Guide](../development.md) and active workflow definitions before running them; do not assume older instructions about Compose services remain valid.
 
-* Download the OpenAPI JSON file from `http://localhost:8000/api/v1/openapi.json` and copy it to a new file `openapi.json` at the root of the `frontend` directory.
+Check `frontend/package.json` for the current package scripts, including linting and client generation.
 
-* To generate the frontend client, run:
+## Scanning and offline behavior
 
-```bash
-bun run generate-client
-```
+The app supports QR scanning and uses the browser Web NFC API where available. Web NFC requires a supported Chromium-based browser on Android and a secure context. Offline attendance behavior involves the service worker and browser-side storage, so changes to caching or sync logic should be checked against the current implementation and end-to-end tests.
 
-* Commit the changes.
+## Documentation maintenance
 
-Regenerate the client whenever backend changes affect the OpenAPI schema.
-
-## Code Structure
-
-The frontend code is structured as follows:
-
-* `frontend/src` - The main frontend code.
-* `frontend/public` - Static assets.
-* `frontend/src/client` - The generated OpenAPI client.
-* `frontend/src/components` - The components of the frontend, including the shadcn/ui components in `frontend/src/components/ui`.
-* `frontend/src/hooks` - Custom hooks.
-* `frontend/src/lib` - Shared frontend utilities.
-* `frontend/src/routes` - The frontend routes and pages.
-
-## End-to-End Testing with Playwright
-
-The frontend includes end-to-end tests using Playwright. To run the tests, you need to have the Docker Compose stack running. Start the stack with the following command:
-
-```bash
-docker compose run --rm backend bash scripts/prestart.sh
-docker compose up -d --wait backend
-```
-
-Then, you can run the tests with the following command:
-
-```bash
-bunx playwright test
-```
-
-You can also run your tests in UI mode to see the browser and interact with it running:
-
-```bash
-bunx playwright test --ui
-```
-
-To stop and remove the Docker Compose stack and clean the data created in tests, use:
-
-```bash
-docker compose down -v
-```
-
-To update the tests, navigate to the tests directory and modify the existing test files or add new ones as needed.
-
-For more information on writing and running Playwright tests, refer to the official [Playwright documentation](https://playwright.dev/docs/intro).
+Keep page and feature claims aligned with the actual route files and tests. Track broader documentation mismatches in [Documentation Status and Audit](../docs/DOCUMENTATION-STATUS.md).
