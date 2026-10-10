@@ -75,13 +75,22 @@ The build output goes to `backend/app/frontend` (configured in `vite.config.ts`)
 
 ## Database (PostgreSQL)
 
-`compose.yml` defines a `db` service (PostgreSQL 18), but **as currently committed, `compose.yml` does not publish any ports to the host** — `db`, `backend`, `adminer`, and `proxy` all rely on Traefik's internal Docker routing rather than host port mappings; only `compose.deploy.yml` adds host ports (`80`/`443`, for production). This means running `docker compose up -d db` starts Postgres in a container, but it will **not** be reachable at `localhost:5432` from your host machine as `.env.example`'s `DATABASE_URL` assumes.
+The base `compose.yml` publishes these local ports:
 
-Until this is resolved (see the audit findings for this repository), you have two practical options for local backend development:
-- Run PostgreSQL some other way that's reachable at `localhost:5432` (e.g., a local Postgres install, or a one-off `docker run -p 5432:5432 ...`), matching the credentials in your `.env`.
-- Add a local port mapping for the `db` service yourself (e.g., via a `compose.override.yml` you create) so `docker compose up -d db` publishes `5432:5432`.
+- PostgreSQL: host `localhost:5433` to container port `5432`. This matches the default `DATABASE_URL` and `TEST_DATABASE_URL` in `.env.example`.
+- Mailpit SMTP: `localhost:1025`.
+- Mailpit web UI: `http://localhost:8026`.
+- Backend container: `http://localhost:8000` and `http://localhost:8001`, both forwarded to container port `8000`.
 
-**Mailpit**, referenced in the original template docs for local email testing, is **not currently defined** in `compose.yml` — there is no `mailpit` service to start. Email sending is optional in development: if `SMTP_HOST` and `EMAILS_FROM_EMAIL` are left unset, the backend simply won't attempt to send email (`Settings.emails_enabled` is computed from those two values).
+For local backend development, start the database and Mailpit with:
+
+```bash
+docker compose up -d db mailpit
+```
+
+The backend can then connect to PostgreSQL using the `DATABASE_URL` in `.env`. When running the backend directly on your host, use `SMTP_HOST=localhost` and `SMTP_PORT=1025` if you want email flows to reach Mailpit. The Mailpit UI is available at `http://localhost:8026`.
+
+The base Compose file does not publish host ports for Traefik or Adminer. The backend's direct host port mappings still make the application available at `http://localhost:8000` when running in Compose. The production overlay `compose.deploy.yml` publishes Traefik on ports `80` and `443` and configures HTTPS; follow the deployment guide before using that overlay.
 
 ## Database Migrations
 
@@ -153,9 +162,11 @@ docker compose run --rm backend bash scripts/prestart.sh
 docker compose up -d
 ```
 
-This starts `proxy` (Traefik), `db`, `adminer`, and `backend` using `compose.yml` alone.
+This starts `proxy` (Traefik), `db`, `mailpit`, `adminer`, and `backend` using `compose.yml` alone.
 
-> **⚠️ Known gap:** with only `compose.yml` present, none of these services publish a host port (see "Database (PostgreSQL)" above), so nothing here is reachable at a `localhost` URL as previously documented. The earlier version of this guide described a `compose.override.yml` that added local port mappings, a `mailpit` service, and a `playwright` service for local Docker-based development and CI — **that file does not exist in the current repository.** CI workflows (`test-backend.yml` and `playwright.yml`) still reference `mailpit` and `playwright` Compose services respectively, and `test-docker-compose.yml` curls `http://localhost:8000` directly, all of which depend on configuration that isn't currently committed. If you're picking up this project, either restore an override file providing these, or update the affected workflows/docs to match whatever replaces it.
+The backend is available directly at `http://localhost:8000` (also forwarded through host port `8001`). PostgreSQL is available at `localhost:5433`; Mailpit SMTP and web UI are available at `localhost:1025` and `http://localhost:8026`. The base Compose file does not publish Traefik or Adminer host ports, so the proxy-hosted Adminer URL is not reachable through a browser without adding a local proxy port mapping or using the deployment overlay with its required domain and HTTPS configuration.
+
+The current Playwright workflow builds the Compose stack, runs the backend prestart command, and starts the backend service before running browser tests. It does not depend on a separate `playwright` Compose service.
 
 To deploy with the production HTTPS configuration locally for testing, combine both files:
 
@@ -169,7 +180,7 @@ This requires `DOMAIN` and the other variables `compose.deploy.yml` marks as req
 ## Common Development Workflow
 
 1. `cp .env.example .env` and fill in real values.
-2. Get PostgreSQL reachable at `localhost:5432` (see the Database section above).
+2. Start PostgreSQL and Mailpit with `docker compose up -d db mailpit`; PostgreSQL is reachable at `localhost:5433` (see the Database section above).
 3. From `backend`: `uv sync && uv run bash scripts/prestart.sh && uv run fastapi dev`.
 4. From the project root: `bun install && bun run dev` (after generating local HTTPS certs — see above).
 5. Make backend changes; if routes/schemas changed, run `bash ./scripts/generate-client.sh` (or let the pre-commit hook do it).
