@@ -1,22 +1,25 @@
 # Documentation Index
 
-This directory contains durable project documentation. Temporary QA notes and generated test artifacts should not be committed here.
+This index lists documentation files that currently exist in the repository. Treat the Source of Truth as intended behavior, not proof that every requirement is implemented.
 
 ## Core project documents
 
-- `SOURCE-OF-TRUTH.md` — authoritative system specification and architecture decisions.
-- `Major-Reconstruction-Guide.md` — reconstructed information architecture and implementation direction.
-- `Phase-3-Student-Data-Field-Mapping.md` — masterlist-to-database field mapping and import decisions.
+- [Source of Truth](./SOURCE-OF-TRUTH.md) — product specification, architecture decisions, and historical roadmap.
+- [Documentation status and audit](./DOCUMENTATION-STATUS.md) — verified findings, known discrepancies, and remaining audit work.
+- [API and authorization reference](./API-REFERENCE.md) — route-group inventory and selected authorization behavior.
 
-## QA
+## Setup and deployment
 
-- `R20-QA-Resolution.md` — consolidated runtime QA history and the verified baseline as of 2026-09-26.
+- [Development guide](../development.md) — local setup, tests, generated client, and contributor workflow.
+- [FastAPI Cloud deployment](../deployment.md) — managed deployment workflow.
+- [Docker Compose deployment](../deployment-docker-compose.md) — self-hosted deployment.
+- [Backend README](../backend/README.md) — backend-specific contributor notes.
+- [Frontend README](../frontend/README.md) — frontend setup and contributor notes.
+- [Root README](../README.md) — current project overview and feature status.
 
-## Workflow
+## Historical audit note
 
-- `WORKFLOW/CLAUDE-HANDOFF.md` — temporary worker handoff template. Replace stale task-specific content instead of accumulating history.
-- `WORKFLOW/CLAUDE-TASK-STATE.md` — current task-state template.
-- `WORKFLOW/CLAUDE-ACCOUNT-ROTATION.md` — account/workflow rotation guidance.
+- [Dashboard data-flow audit](../DASHBOARD_AUDIT.md) — an older read-only analysis. Its findings have not been fully revalidated against the current dashboard components, so verify each claim against current code and tests before relying on it.
 
 ## Documentation rule
 
