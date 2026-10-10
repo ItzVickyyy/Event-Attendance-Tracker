@@ -169,3 +169,7 @@ Reviewed the September 10 version linked above against the current NFC registrat
 
 - Continued the API reference audit against router declarations. Corrected the catalog/registry distinction: `academic_catalog` handles majors and section-major assignments, while `academic_registry` handles academic years, section registry, and student enrollments. Also recorded the actual nested event-roster prefix and separated attendance correction endpoints from the attendance route group's summary.
 - Updated the root README's credential terminology from “NFC UID / QR” to “NFC and QR identifiers.” The implementation has both NDEF-content and `event.serialNumber` paths, so “NFC UID” should not be used as a blanket label for every credential value until registration and scanning are aligned.
+
+## Latest CI verification
+
+- Head `3001f03f1a153192f68bae1899c0fffb6f4028f6` completed all 14 reported check runs successfully: backend tests, Docker Compose, all four Playwright shards and report aggregation, pre-commit, Zizmor, and aggregate workflow checks. This verifies CI at that commit only. No local manual test or live deployment was performed. Any later commit needs its own CI verification.
