@@ -66,7 +66,6 @@ These examples describe the inspected source and should be backed by authorizati
 | Endpoint | Verified behavior | Access control / caveat |
 |---|---|---|
 | `POST /api/v1/public/student-qr` | Returns the existing student QR credential after an exact student-number and normalized-name match. | Public self-service route; 12 attempts per 60 seconds per derived client key in the current process. Rate-limit state is in-memory and per-process. The endpoint uses the first `X-Forwarded-For` value when present, so deployment proxy trust must be verified. Unknown students and identity mismatches return the same 404 response. |
-
 | `GET /api/v1/academic-registry/academic-years` | Lists academic years. | Admin or higher. |
 | `POST /api/v1/academic-registry/academic-years` | Creates an academic year after validating consecutive years and the `YYYY-YYYY` label. | Super Admin only. |
 | `POST /api/v1/academic-registry/academic-years/{id}/set-current` | Clears the current flag on all years and marks the selected year current. | Super Admin only. |
