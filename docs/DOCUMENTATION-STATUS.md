@@ -43,7 +43,7 @@
 - The Source of Truth still contained original template-gap, immediate-next-step, and development-roadmap lists that read like current tasks. Added status notes and labeled those sections as historical without deleting or changing their original requirements.
 - The root README referred to multi-organization expansion as “Section 13's Phase 13,” but Phase 13 appears under Section 24, the historical development roadmap. Corrected the cross-reference.
 - The Source of Truth has no headings for Sections 6–9 or 23, even though the introduction refers to Section 23 and other passages link to Sections 7, 8, and 8.1. These references are currently unresolved, and several roadmap bullets point to those absent sections. Do not renumber blindly because many other sections cross-reference each other. One separate security-note cross-reference to Section 26 was corrected, but a full internal-reference audit remains open.
-- The latest `pre-commit` run failed on a proper name in the reference roster and also removed trailing whitespace from this status file. The roster name is preserved using an HTML entity in the source to avoid changing the recorded name. A new CI run is needed to verify the fix.
+- The first CI run after the navigation/offline-sync notes failed because the spell checker flagged a proper name in the reference roster and the whitespace hook normalized this file. The roster name is preserved using an HTML entity in the Markdown source. On commit `41bf96ae`, pre-commit passed, as did backend tests, Docker Compose tests, Playwright tests, and Zizmor.
 - The README now distinguishes the implemented offline scan queue/synchronization path from the full offline-first behavior described as the target in the Source of Truth.
 - Renamed the Source of Truth's export heading to `Target export formats` and explicitly marked Excel, Word, PDF, and printable pre-event rosters as requirements rather than current features. CSV is the implemented export format.
 
@@ -96,7 +96,7 @@ The Source of Truth's duplicate/offline sections describe a uniqueness rule keye
 - [ ] Keep database schema and migration-head documentation outside this pass; do not add a separate guide for the development database or application source.
 - [ ] Extend the focused feature/spec snapshot into a complete requirement-by-requirement reconciliation, labeling each requirement implemented, partial, planned, or blocked.
 - [x] Correct the development guide's stale Compose port, Mailpit, and Playwright workflow claims against the current files.
-- [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration.
+- [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration. The main Compose ports and Playwright workflow behavior are verified; continue with the remaining setup commands.
 - [x] Compare both deployment guides with their current workflow triggers and required variables/secrets. This verifies documented workflow wiring, not a live production deployment.
 - [x] Check local Markdown links in all current documentation indexes, root/backend/frontend READMEs, development/deployment guides, API reference, audit, and Source of Truth. No missing local Markdown targets were found in those files on this branch.
 - [ ] Recover or deliberately retire missing Source of Truth sections 6–9 and 23, then validate all internal cross-references before any renumbering.
