@@ -528,3 +528,15 @@ Reviewed `backend/app/api/routes/attendance_sessions.py` and the `AttendanceSess
 - Follow-up: confirm the institutional retention and privacy-erasure policy. If attendance history must be preserved, consider preventing deletion of sessions with attendance, archiving sessions, or using a deliberate retention workflow. Add tests that assert exactly which attendance and correction rows remain after session deletion.
 
 This is based on route and model inspection, not a live database deletion test. No application code or tests were changed in this documentation-only PR.
+
+## Direct event-registration deletion and attendance history
+
+Reviewed `backend/app/api/routes/event_registrations.py` and the `EventRegistration`, `Attendance`, and `AttendanceCorrection` model relationships in `backend/app/models.py`.
+
+- The Admin-only `DELETE /event-registrations/{registration_id}` route permanently deletes the registration without checking whether it has attendance records or correction history.
+- `EventRegistration.attendance` is configured with delete cascade, and `Attendance.registration_id` uses a cascading foreign key. Deleting a registration therefore deletes its attendance rows. Attendance corrections also cascade from their parent attendance row, so correction history is removed as well.
+- This is another direct deletion path that can erase historical attendance while the parent event and attendee remain. It is distinct from deleting the event, attendee, or attendance session.
+- The registration PATCH route also permits changing the event or attendee on an existing registration after confirming the replacement records exist. It does not reject the change when attendance already references that registration, so historical attendance associated through that registration may subsequently be presented under the new event or attendee. The route also does not reapply the create route's closed-event or duplicate-registration checks; those gaps are recorded in the event-registration update validation finding above.
+- Follow-up: define whether registrations with attendance can be deleted or reassigned. If attendance history must remain stable, block deletion/reassignment after attendance exists or use an explicit archive/retention workflow. Add tests for registration deletion with attendance and corrections, and for attempts to change event/attendee on a registration with existing attendance.
+
+This is based on route and model inspection, not a live database deletion test. No application code or tests were changed in this documentation-only PR.
