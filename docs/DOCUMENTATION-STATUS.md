@@ -196,3 +196,11 @@ Reviewed the current README feature and technology summaries against selected ro
 ## CI after the latest documentation edit
 
 - Commit 1a43ffd56760915738660458f0695efb934bf6db has 4 of 11 reported checks completed successfully at the latest check, with 7 still running or queued and no failures reported. Recheck the final result before treating this commit as CI-verified.
+
+
+## Attendance duplicate and offline-conflict contract
+
+- Compared Source of Truth Sections 11 and 13 against the attendance service, database uniqueness constraint, foreground sync, and service-worker sync.
+- Current database uniqueness is per `registration_id` and `attendance_session_id`, not a single event/student key. Legacy combined mode can fill `time_out` on a later scan in the same time-in session. Dedicated time-out sessions use a separate session-scoped record.
+- Foreground and service-worker sync classify HTTP 409 as a duplicate and mark the local queue item synced with duplicate status. The inspected path does not compare client timestamps to select the earliest scan or persist a separate conflict-review record. Duplicate prevention exists, but the specification's earliest-wins and reviewable-conflict contract is not satisfied by this path.
+- Updated Sections 11 and 13 to distinguish intended behavior from current implementation. Keep the gap open until product semantics are decided and code/tests establish the agreed behavior.
