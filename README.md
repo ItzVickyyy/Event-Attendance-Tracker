@@ -67,7 +67,7 @@ The following are described in the [Source of Truth](docs/SOURCE-OF-TRUTH.md) as
 - **School ID system API integration** (Section 17–19 of the spec) — this is explicitly scoped as a later phase, contingent on the school confirming an API exists.
 - **Multi-organization support beyond CCS** (Section 13's Phase 13) — the data model already has an `Organization` entity to support this later, but the product itself is scoped to CCS for now.
 
-If you're picking up work on this project, treat the Source of Truth's numbered phases as the roadmap, and this README's "Currently Implemented" section as the actual state of the code.
+If you're picking up work on this project, use the Source of Truth for intended behavior and its original implementation sequence, not as a live checklist. Use this README's "Currently Implemented" section for the high-level current snapshot and the [documentation audit](docs/DOCUMENTATION-STATUS.md) for verified gaps and requirements that still need reconciliation.
 
 ## Documentation
 
