@@ -297,3 +297,15 @@ Reviewed `backend/app/api/routes/attendance.py`, `backend/app/api/routes/attenda
 - Follow-up: define whether all manual attendance edits must use the correction endpoint, or route every mutation through a shared audited service. Add regression tests for direct PATCH audit bypass, late-status consistency, and the intended retention policy when an attendance record is deleted. If correction history must be durable, avoid cascading its deletion with the source attendance row and define how deleted records are represented.
 
 This was a source review only. No application code, tests, migrations, or CI workflows were changed in this documentation PR.
+
+## Destructive event and attendee deletion audit
+
+Reviewed the delete handlers in `backend/app/api/routes/events.py`, `backend/app/api/routes/event_registrations.py`, and `backend/app/api/routes/attendees.py`, alongside the model relationship and foreign-key cascade declarations.
+
+- Event deletion is a permanent DELETE operation. The `Event` model cascades deletion to its registrations and attendance sessions; registrations cascade to attendance records, and attendance records cascade to correction history. Deleting an event can therefore remove the roster, session records, attendance history, and correction audit rows together.
+- Attendee deletion is also permanent. The `Attendee` model cascades deletion to credentials, relationships, and registrations; registrations cascade to their attendance records and associated correction history. Removing an attendee can therefore erase records associated with previous events.
+- The reviewed delete handlers do not require an explicit confirmation token, retention reason, archival state, or export/retention check at the API boundary. UI confirmation alone would not protect the API from an accidental or scripted destructive request.
+- This may be intended for test data or full privacy erasure, but it conflicts with any expectation that attendance and correction history remain available for institutional reporting or audit. The repository review did not verify production retention requirements.
+- Follow-up: establish retention and privacy-erasure requirements with the system owner. If historical attendance must be retained, prefer archive/deactivate workflows or a deliberate anonymization process over cascading hard deletion. Add tests that assert exactly which records survive event and attendee deletion, and document the intended irreversible effects.
+
+This was a source review only. No application code, tests, migrations, or CI workflows were changed in this documentation PR.
