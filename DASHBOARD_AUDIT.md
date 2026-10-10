@@ -11,7 +11,7 @@ Based on a read-only inspection of the Dashboard (`frontend/src/routes/_layout/i
 - **Missing `student_id` / Unresolved Relationships**: The Recent Scans feed attempts to render `scan.student_id`. Under the normalized schema, `AttendancePublic` only contains a `registration_id`. It does not contain attendee or student information directly.
 - **Missing `nfc_registered` flag**: The summary metrics attempt to count `students.filter(s => s.nfc_registered)`. The `StudentPublic` model no longer has this flag since NFC credentials are moved to the `AttendeeCredentials` subsystem.
 - **Router Search Typos**: `router.location.search?.event_id` fails because `@tanstack/react-router` requires a `validateSearch` function to strictly type search params.
-- **`AddEvent`/`EditEvent` Select callbacks**: The build errors in Event forms are due to passing `form.setValue("...")` directly to `onValueChange` instead of a closure like `(val) => form.setValue("...", val)`. 
+- **`AddEvent`/`EditEvent` Select callbacks**: The build errors in Event forms are due to passing `form.setValue("...")` directly to `onValueChange` instead of a closure like `(val) => form.setValue("...", val)`.
 
 ## 2. Recommended Data Flow (Registration-Based Model)
 
