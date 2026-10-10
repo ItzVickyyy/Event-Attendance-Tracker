@@ -524,14 +524,14 @@ testing.
     that allow the UID to be rewritten. Since school IDs are presumably
     issued through the school (not self-purchased blanks), this risk is
     low but worth being aware of if IDs are ever lost/replaced informally.
--   A 4-byte UID (as observed: `8F:49:5B:74`) is standard for MIFARE
+-   A 4-byte UID (as observed: `redacted test UID`) is standard for MIFARE
     Classic 1K and is unique per card from the manufacturer, which is
     good enough for this use case — the system does not need to read
     protected sectors, only the UID broadcast during anti-collision.
 -   The UID is exposed at the ISO 14443-3A level before any sector-level
     authentication happens, which is why it's readable without keys or
     cracking anything — this keeps the project inside "authorized NFC
-    reading" (see Section 24). No keys, no bypassing, no writing.
+    reading" (see Section 26). No keys, no bypassing, no writing.
 -   UID collisions across the whole student population are astronomically
     unlikely (4-byte UID space), but the system should still enforce
     uniqueness of the NFC credential value at the database level and fail
@@ -546,7 +546,7 @@ news:
 
 **Good news:** Web NFC's reading event exposes a `serialNumber`
 property — the tag's UID, formatted exactly like what was observed in
-testing (e.g. `8F:49:5B:74`). So the core plan (scan → get UID → look up
+testing (e.g. `redacted test UID`). So the core plan (scan → get UID → look up
 student) works essentially unchanged, just from JavaScript in the
 browser instead of a native Android app.
 
