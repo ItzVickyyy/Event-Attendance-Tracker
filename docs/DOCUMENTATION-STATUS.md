@@ -217,3 +217,15 @@ Reviewed `backend/app/api/deps.py`, the login and user route modules, the Class 
 - The layout guard's role-based page checks and the backend dependency checks are separate layers. Continue validating both when changing permissions. Existing source checks support the role/capability descriptions in the API reference; this pass was a focused source review, not a complete endpoint-by-endpoint authorization test.
 
 No application code, migrations, or CI workflows were changed. Remaining authorization work is to expand endpoint-level coverage only where useful and continue comparing route dependencies with their tests; avoid claiming a complete authorization audit from this focused pass.
+
+## Deployment and proxy audit: follow-up pass
+
+Reviewed `compose.yml`, `compose.deploy.yml`, `.env.example`, `backend/app/core/config.py`, `backend/app/main.py`, the public student QR route, and both deployment guides.
+
+- The production Compose overlay adds HTTP-to-HTTPS redirection and Let's Encrypt TLS through Traefik. The shared Compose file also publishes PostgreSQL on host port 5433 and the backend on host ports 8000 and 8001. Those direct bindings can bypass Traefik's HTTPS entrypoint unless network/firewall policy restricts them. The Docker Compose deployment guide now calls this out and recommends restricting or removing unnecessary host exposure before production use.
+- The inspected Compose configuration does not declare explicit Traefik middleware to sanitize `X-Forwarded-For`. The public student QR route uses the first supplied value as its rate-limit key, so client identity can be spoofed unless the effective proxy chain overwrites or safely validates forwarded headers. The deployment guide now says to verify actual proxy behavior and not assume Traefik alone makes the limiter trustworthy.
+- The QR lookup's limiter remains in-memory and per process, with a dictionary entry per client key. It is not a shared, bounded production rate-limiting service. This limitation is documented in the API reference and remains an operational/security follow-up.
+- `.env.example` includes placeholder secret values and both SMTP and Mailpit variables. The inspected Compose service consumes `SMTP_HOST` and `SMTP_PORT`, while the Mailpit UI is published on host port 8026. These documented mismatches remain recorded above.
+- `backend/app/main.py` configures CORS using the single `FRONTEND_HOST` setting. The inspected configuration does not establish a separate application-level trusted-proxy middleware. Deployment-specific proxy and firewall behavior cannot be verified from repository files alone.
+
+This was a repository configuration review, not a live server audit. No application code, migrations, or workflow files were changed.
