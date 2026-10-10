@@ -285,3 +285,15 @@ Reviewed `backend/app/api/routes/events.py`, `backend/app/api/routes/attendance_
 - Follow-up: define the allowed event/session state transitions, ensure moving an event to draft deactivates or otherwise reconciles active sessions, and ensure reopening selects only an eligible session. Add tests for open-to-draft, closed-to-open with a cancelled first session, and the active-session endpoint when its parent event is not open.
 
 These are source-level findings from route/service review, not results from a live deployment. This documentation-only PR does not change the implementation or tests.
+
+## Attendance correction audit-trail consistency
+
+Reviewed `backend/app/api/routes/attendance.py`, `backend/app/api/routes/attendance_corrections.py`, the attendance correction models, and `backend/tests/api/routes/test_attendance_corrections.py`.
+
+- The dedicated `POST /attendance-corrections/` endpoint updates attendance values and writes an `AttendanceCorrection` row containing the actor, reason, and old/new time and status values. The general admin `PATCH /attendance/{record_id}` endpoint can directly change `time_in`, `time_out`, `status`, `scan_method`, and the attendance session without creating a correction row or requiring a reason. Therefore, the audit trail is bypassable through a second write path.
+- The correction endpoint recalculates `is_late` when a corrected time-in and session cutoff are present, but the general PATCH path accepts a changed `time_in` without the same recalculation. These paths can leave late status inconsistent with the recorded time.
+- The attendance model declares correction rows to cascade-delete with their attendance record, and the attendance DELETE route permanently deletes the record. Deleting attendance therefore removes the associated correction history instead of preserving a separate durable audit record.
+- The current correction test verifies the dedicated endpoint's basic update and audit row, but does not verify that every attendance mutation is audited, that late status stays consistent across mutation paths, or what history should survive attendance deletion.
+- Follow-up: define whether all manual attendance edits must use the correction endpoint, or route every mutation through a shared audited service. Add regression tests for direct PATCH audit bypass, late-status consistency, and the intended retention policy when an attendance record is deleted. If correction history must be durable, avoid cascading its deletion with the source attendance row and define how deleted records are represented.
+
+This was a source review only. No application code, tests, migrations, or CI workflows were changed in this documentation PR.
