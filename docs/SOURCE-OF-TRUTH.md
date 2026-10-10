@@ -24,7 +24,7 @@ this specification unless they are deliberately revised.
 > a **website** on top of an already-cloned FastAPI + React template.
 > This is a meaningful shift, not a cosmetic one — it changes how NFC
 > scanning works (Section 3.1), how offline mode has to be implemented
-> (Section 13), and the technology stack (Section 23). Sections below
+> (Section 13), and the technology stack documented in the root README. Sections below
 > have been updated accordingly; anything still referencing "the app" in
 > a native-app sense should be read as "the web app."
 
@@ -585,8 +585,8 @@ browser instead of a native Android app.
 -   **Experimental/unstable spec.** Web NFC is still marked experimental
     by browser vendors. Behavior should be verified directly on the
     actual target devices/Chrome versions officers will use, not assumed
-    from documentation alone, and a fallback path (Section 8.1) is not
-    optional — it's required.
+    from documentation alone, and a fallback path (see Section 2.3, Manual
+    Search) is not optional — it's required.
 
 **Practical device requirement to write down explicitly:** every officer
 who will scan attendance needs an NFC-capable **Android** phone running a
@@ -1702,7 +1702,7 @@ Implement:
     constraint, Section 12)
 -   Ready-to-scan screen
 -   Unknown or unregistered credential handling
--   Manual/no-ID entry path (Section 8)
+-   Manual/no-ID entry path (Section 2.3, Manual Search)
 
 ------------------------------------------------------------------------
 
