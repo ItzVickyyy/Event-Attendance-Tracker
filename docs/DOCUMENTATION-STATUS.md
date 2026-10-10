@@ -252,3 +252,14 @@ Reviewed `backend/app/api/routes/academic_registry.py`, `backend/app/student_aca
 - Follow-up should establish one canonical rule for synchronizing legacy fields or retire their use in favor of year-scoped enrollment queries. Add tests for create, restore, and update enrollment operations that verify roster details and credential lookup agree. Also decide whether archived students may receive new enrollments, then enforce and test that rule.
 
 This was a source review only. No application code or tests were changed in this documentation PR.
+
+## Student credential lifecycle and deactivation audit
+
+Reviewed `backend/app/api/routes/attendee_credentials.py`, `backend/app/services/student_credentials.py`, and the attendance scan handler in `backend/app/api/routes/attendance.py`.
+
+- Attendance scanning explicitly rejects credentials with `is_active=False`, and the public credential lookup also filters for active credentials. The scanner-only `GET /attendee-credentials/lookup/{credential_value}` endpoint does not filter inactive credentials, so it can return a credential that the scan endpoint will reject. This may be intentional for troubleshooting, but the API reference should distinguish lookup from scan eligibility.
+- The admin credential DELETE endpoint permanently deletes the credential row. The current student provisioning service instead treats an inactive QR credential as reusable and reactivates it, preserving its existing value. These are different lifecycle paths: deactivation can be reversed with the same credential, while hard deletion removes that record and a later provisioning operation can create a new value.
+- The repository's current route/service behavior does not establish a retired-credential history or reason-for-deactivation workflow. Before describing credential retirement as auditable, decide whether deletion should remain a supported admin action or whether deactivation with retained history should be the canonical lifecycle.
+- Add focused tests for inactive credential lookup versus scan rejection, reactivation of an inactive student QR credential, and the expected behavior after a credential is deleted and provisioning runs again. Document the intended administrative use of inactive credential lookup if it remains available.
+
+This was a source review only. No application code, tests, migrations, or CI workflows were changed in this documentation PR.
