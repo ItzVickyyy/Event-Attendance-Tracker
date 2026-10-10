@@ -31,7 +31,7 @@
 
 ## Initial findings
 
-- The root README already separates implemented features from planned functionality. Preserve that distinction and verify it as features change.
+- The root README separates implemented features from planned functionality. During this pass, qualified the phrase “full CRUD API routes” because route modules contain different operations and endpoint-specific permissions; do not imply every resource supports every CRUD operation.
 - Verified both deployment guides against their current GitHub Actions workflows. FastAPI Cloud deployment triggers on pushes to `master` or manual dispatch but is gated by `ENABLE_FASTAPI_CLOUD_DEPLOY == 'true'`; the Docker Compose deployment is manual-only and runs on a self-hosted runner. This verifies workflow wiring and documented configuration, not a live deployment.
 - The root README incorrectly stated that no export endpoints exist. The current `GET /api/v1/attendance/export` route implements CSV attendance export. Academic sections separately support XLSX/DOCX student-roster downloads. XLSX/DOCX/PDF attendance reports and printable pre-event rosters remain unimplemented or unconfirmed.
 - The previous backend README referenced stale Mailpit/HTTP setup details and destructive volume cleanup. It has been replaced with a concise contributor guide; avoid restoring those unsafe or outdated instructions.
@@ -97,7 +97,7 @@ The Source of Truth's duplicate/offline sections describe a uniqueness rule keye
 - [x] Add an initial API route-group and authorization reference from the registered routers and inspected dependencies.
 - [x] Correct the root README's role list: Developer is a separate capability, not a fifth `UserRole` enum value.
 - [x] Correct the root README's export status to acknowledge CSV export while keeping advanced formats marked as not implemented.
-- [ ] Verify every root README feature claim against current routes, models, tests, and frontend pages. The first focused feature/spec snapshot is now recorded above.
+- [ ] Finish verifying every root README feature claim against current routes, models, tests, and frontend pages. The first focused feature/spec snapshot is recorded above; this pass also qualified the overbroad “full CRUD API routes” wording.
 - [ ] Expand the API reference to an endpoint-by-endpoint contract only after validating route decorators, response schemas, and authorization tests.
 - [x] Inventory registered API route groups and document the initial authorization model from the actual FastAPI route registrations and dependencies. Endpoint-by-endpoint coverage remains deferred.
 - [ ] Keep database schema and migration-head documentation outside this pass; do not add a separate guide for the development database or application source.
