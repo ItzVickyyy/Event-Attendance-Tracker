@@ -1854,7 +1854,8 @@ The system should:
     unrelated personal data
 -   Keep attendance data separate from unrelated student information
 -   Log administrative actions (UID reassignment, manual attendance
-    correction) with who/what/when, per Sections 6 and 11
+    correction) with who/what/when. The earlier reference to Section 6
+    remains unresolved because that section is missing from this document.
 -   Treat officer accounts and passwords with the same care as any other
     user accounts — the template's JWT auth and password hashing give a
     reasonable baseline, but role assignment (who gets Admin vs. Super
