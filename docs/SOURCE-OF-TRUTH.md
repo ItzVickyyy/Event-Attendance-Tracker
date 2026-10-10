@@ -1261,7 +1261,12 @@ actually use: spreadsheets for tallying, Word docs for reports that need
 letterheads/signatures, PDFs for printing/archiving, and quick printouts
 posted on a corkboard or handed to an adviser.
 
-### Supported export formats
+### Target export formats
+
+This is the desired export scope, not a list of formats currently available.
+The current implementation provides CSV export. Excel, Word, PDF, and a
+printable pre-event roster remain planned; see the root README for the current
+implementation snapshot.
 
 -   **Excel (.xlsx)** — primary format for further tallying/analysis.
     Columns: Student Number, Name, Year & Section, Time-In, Time-Out (if
