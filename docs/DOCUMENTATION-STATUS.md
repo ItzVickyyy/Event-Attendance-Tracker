@@ -42,6 +42,7 @@
 - The development guide incorrectly stated that the base Compose file had no host port mappings and that Mailpit was absent. The current Compose file publishes PostgreSQL on host port 5433, Mailpit on 1025/8026, and the backend on 8000/8001. It also incorrectly claimed the Playwright workflow depended on a separate Compose service named `playwright`; the current workflow starts the backend service and runs Playwright from the workflow runner.
 - The Source of Truth still contained original template-gap, immediate-next-step, and development-roadmap lists that read like current tasks. Added status notes and labeled those sections as historical without deleting or changing their original requirements.
 - The root README referred to multi-organization expansion as “Section 13's Phase 13,” but Phase 13 appears under Section 24, the historical development roadmap. Corrected the cross-reference.
+- The Source of Truth's numbered headings jump from Section 5 to Section 10. This may reflect removed sections or stale numbering. Do not renumber blindly because the document contains internal section references.
 - The README now distinguishes the implemented offline scan queue/synchronization path from the full offline-first behavior described as the target in the Source of Truth.
 - Renamed the Source of Truth's export heading to `Target export formats` and explicitly marked Excel, Word, PDF, and printable pre-event rosters as requirements rather than current features. CSV is the implemented export format.
 
@@ -85,6 +86,7 @@ The Source of Truth's duplicate/offline sections describe a uniqueness rule keye
 - [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration.
 - [x] Compare both deployment guides with their current workflow triggers and required variables/secrets. This verifies documented workflow wiring, not a live production deployment.
 - [x] Check local Markdown links in all current documentation indexes, root/backend/frontend READMEs, development/deployment guides, API reference, audit, and Source of Truth. No missing local Markdown targets were found in those files on this branch.
+- [ ] Reconcile the Source of Truth's missing numbered sections 6–9 and validate internal cross-references before any renumbering.
 - [ ] Remove duplicated or generic template documentation only after checking whether it contains project-specific details.
 
 ## Additional implementation checks completed in this pass
