@@ -2,13 +2,22 @@
 
 ## Source of Truth
 
-Status: Planning
+Status: Living specification; implementation is in progress
 Project type: **Web application** (browser-based, not a native mobile app)
 Repository: https://github.com/ItzVickyyy/Event-Attendance-Tracker
 Base template: Full Stack FastAPI Template (`fastapi/full-stack-fastapi-template`)
 Primary goal: Build a practical attendance tracker that uses school IDs
 through a phone's browser-based NFC reader, replacing manual paper
 sign-in sheets.
+
+**How to use this document:** This file records intended behavior, design
+constraints, and the original roadmap. Some planning sections below describe
+work that has since been implemented, while other requirements remain planned
+or partial. Do not use old checklist wording as a current implementation
+report. For the current feature snapshot, start with the root
+[README](../README.md). For documentation gaps and verified corrections, see
+[Documentation Status](./DOCUMENTATION-STATUS.md). Keep the requirements in
+this specification unless they are deliberately revised.
 
 > **Architecture change log:** the project was originally scoped as a
 > native Android application. As of this revision, it is being built as
@@ -1545,11 +1554,15 @@ should live in the user database, not this document).
 -   CI/CD via **GitHub Actions**; tests via **Pytest** (backend) and
     **Playwright** (end-to-end).
 
-### What still needs to be added on top of the template
+### Original Template-Gap Checklist (Historical Baseline)
 
-The template is a strong general-purpose starting point but doesn't ship
-with anything NFC- or attendance-specific. On top of it, this project
-still needs:
+This checklist records the project's original starting point. It is not a
+current implementation-status list. Some items below have since been built;
+check the root README and current implementation before treating an item as
+unfinished.
+
+The template was a general-purpose starting point and did not originally ship
+with NFC- or attendance-specific functionality. At the time, the project needed:
 
 -   Web NFC integration in the React frontend (`NDEFReader` usage,
     feature detection, permission flow — Section 3.1).
@@ -1871,7 +1884,11 @@ The first complete version should be able to:
 
 ------------------------------------------------------------------------
 
-## 28. Immediate Next Steps
+## 28. Original Immediate Next Steps (Historical Planning Sequence)
+
+The list below preserves the original implementation order. It is not the
+current task queue, and completed items should not be restarted merely because
+they remain in this historical section.
 
 Do not build the entire system immediately.
 
