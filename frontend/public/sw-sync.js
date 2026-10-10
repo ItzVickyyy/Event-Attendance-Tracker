@@ -18,7 +18,7 @@
 
 const SYNC_TAG = "sync-attendance"
 const QUEUE_DB_NAME = "attendance-offline"
-const QUEUE_DB_VERSION = 3
+const QUEUE_DB_VERSION = 4
 
 const TOKEN_TIMEOUT_MS = 3000
 
