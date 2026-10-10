@@ -17,7 +17,7 @@ The repository does not commit a `.env` file. Copy the example and fill in real 
 cp .env.example .env
 ```
 
-`.env.example` currently defines: `FASTAPI_ENV`, `PROJECT_NAME`, `SECRET_KEY`, `FIRST_SUPERUSER`, `FIRST_SUPERUSER_PASSWORD`, SMTP settings (`SMTP_HOST`, `EMAILS_FROM_EMAIL`, `SMTP_TLS`, `SMTP_PORT`), `POSTGRES_PASSWORD`, and `DATABASE_URL`.
+Key variables in `.env.example` include `FASTAPI_ENV`, `PROJECT_NAME`, `SECRET_KEY`, `FIRST_SUPERUSER`, `FIRST_SUPERUSER_PASSWORD`, `DATABASE_URL`, `TEST_DATABASE_URL`, `POSTGRES_PASSWORD`, and SMTP settings (`SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAILS_FROM_EMAIL`, and `EMAILS_FROM_NAME`). The sample also contains `MAILPIT_HOST` and `MAILPIT_PORT`, but the backend email sender uses `SMTP_HOST` and `SMTP_PORT`; those `MAILPIT_*` variables are not consumed by the inspected backend code. The sample's `MAILPIT_HOST` also points to port `8025`, while Compose exposes the Mailpit web UI at `localhost:8026`.
 
 Setting `FASTAPI_ENV=development` enables the `/private` API routes (a small set of test-only endpoints for creating users directly), which are only mounted when this variable is set.
 
