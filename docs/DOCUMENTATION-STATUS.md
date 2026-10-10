@@ -130,3 +130,5 @@ A statement should be considered verified only when supported by the relevant im
 - Deployment claims: workflow triggers, required variables/secrets, and deployment configuration.
 
 Record unresolved mismatches here rather than silently presenting assumptions as facts.
+
+- Audited the public student QR self-service endpoint. It requires an exact student number plus normalized first, middle, last name, and extension match, returns the existing QR credential, and has a 12-attempt/60-second rate limiter. The limiter state is held in a process-local in-memory dictionary, so it is not shared across multiple workers or instances and resets on process restart. The client key trusts the first `X-Forwarded-For` value when supplied; production proxy configuration should be verified to ensure clients cannot spoof that header. Document these as implementation limitations, not as a distributed or deployment-wide rate limit.
