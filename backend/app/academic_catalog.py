@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
+from sqlalchemy import DateTime, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from app.models import get_datetime_utc
@@ -16,9 +17,12 @@ class AcademicMajorCode(StrEnum):
 
 class AcademicMajorBase(SQLModel):
     program_id: uuid.UUID = Field(
-        foreign_key="academic_programs.id", nullable=False, ondelete="CASCADE"
+        foreign_key="academic_programs.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
     )
-    code: AcademicMajorCode = Field(max_length=20)
+    code: AcademicMajorCode = Field(max_length=20, index=True)
     name: str = Field(max_length=255)
     display_in_section_name: bool = True
 
@@ -36,10 +40,23 @@ class AcademicMajorUpdate(SQLModel):
 
 class AcademicMajor(AcademicMajorBase, table=True):
     __tablename__ = "academic_majors"
+    __table_args__ = (
+        UniqueConstraint(
+            "program_id",
+            "code",
+            name="uq_academic_major_program_code",
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime | None = Field(default_factory=get_datetime_utc)
-    updated_at: datetime | None = Field(default_factory=get_datetime_utc)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
 
 class AcademicMajorPublic(AcademicMajorBase):
@@ -61,7 +78,10 @@ class AcademicSectionMajorBase(SQLModel):
         unique=True,
     )
     major_id: uuid.UUID = Field(
-        foreign_key="academic_majors.id", nullable=False, ondelete="RESTRICT"
+        foreign_key="academic_majors.id",
+        nullable=False,
+        ondelete="RESTRICT",
+        index=True,
     )
 
 
@@ -77,8 +97,14 @@ class AcademicSectionMajor(AcademicSectionMajorBase, table=True):
     __tablename__ = "academic_section_majors"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    created_at: datetime | None = Field(default_factory=get_datetime_utc)
-    updated_at: datetime | None = Field(default_factory=get_datetime_utc)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
 
 class AcademicSectionMajorPublic(AcademicSectionMajorBase):

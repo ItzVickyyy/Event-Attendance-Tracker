@@ -385,7 +385,7 @@ export type AttendanceCorrectionPublic = {
     /**
      * Corrected By
      */
-    corrected_by?: string | null;
+    corrected_by: string;
     /**
      * Reason
      */

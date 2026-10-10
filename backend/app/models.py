@@ -93,11 +93,11 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name: 'user'
 class User(UserBase, table=True):
     __tablename__ = "user"
+    __table_args__ = (UniqueConstraint("reference_code", name="uq_usr_reference_code"),)
 
     reference_code: str | None = Field(
         default=None,
-        unique=True,
-        index=True,
+        nullable=False,
         max_length=20,
         sa_column_kwargs={
             "server_default": text(
@@ -262,11 +262,13 @@ class OrganizationUpdate(SQLModel):
 
 class Organization(OrganizationBase, table=True):
     __tablename__ = "organizations"
+    __table_args__ = (
+        UniqueConstraint("reference_code", name="uq_organizations_reference_code"),
+    )
 
     reference_code: str | None = Field(
         default=None,
-        unique=True,
-        index=True,
+        nullable=False,
         max_length=20,
         sa_column_kwargs={
             "server_default": text(
@@ -320,11 +322,13 @@ class AcademicProgramUpdate(SQLModel):
 
 class AcademicProgram(AcademicProgramBase, table=True):
     __tablename__ = "academic_programs"
+    __table_args__ = (
+        UniqueConstraint("reference_code", name="uq_academic_programs_reference_code"),
+    )
 
     reference_code: str | None = Field(
         default=None,
-        unique=True,
-        index=True,
+        nullable=False,
         max_length=20,
         sa_column_kwargs={
             "server_default": text(
@@ -375,10 +379,12 @@ class AcademicSectionBase(SQLModel):
         default=None,
         foreign_key="academic_years.id",
         index=True,
-        nullable=True,
+        nullable=False,
         ondelete="RESTRICT",
     )
-    section_code: str | None = Field(default=None, max_length=50)
+    section_code: str | None = Field(
+        default=None, max_length=50, index=True, nullable=False
+    )
 
 
 class AcademicSectionCreate(AcademicSectionBase):
@@ -402,12 +408,12 @@ class AcademicSection(AcademicSectionBase, table=True):
             "academic_year",
             name="uq_academic_section_program_year_name_ay",
         ),
+        UniqueConstraint("reference_code", name="uq_academic_sections_reference_code"),
     )
 
     reference_code: str | None = Field(
         default=None,
-        unique=True,
-        index=True,
+        nullable=False,
         max_length=20,
         sa_column_kwargs={
             "server_default": text(
@@ -558,11 +564,13 @@ class StudentUpdate(SQLModel):
 
 class Student(StudentBase, table=True):
     __tablename__ = "students"
+    __table_args__ = (
+        UniqueConstraint("reference_code", name="uq_students_reference_code"),
+    )
 
     reference_code: str | None = Field(
         default=None,
-        unique=True,
-        index=True,
+        nullable=False,
         max_length=20,
         sa_column_kwargs={
             "server_default": text(
@@ -579,7 +587,11 @@ class Student(StudentBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    archived_at: datetime | None = Field(default=None, sa_type=DateTime(timezone=True))  # type: ignore
+    archived_at: datetime | None = Field(
+        default=None,
+        index=True,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
     person: Person | None = Relationship(back_populates="student")
     section: AcademicSection | None = Relationship(back_populates="students")
@@ -692,7 +704,7 @@ class AttendeeCredential(AttendeeCredentialBase, table=True):
     __tablename__ = "attendee_credentials"
     __table_args__ = (
         Index(
-            "ix_attendee_credentials_credential_type_credential_value",
+            "ix_attendee_credentials_type_value",
             "credential_type",
             "credential_value",
         ),
@@ -829,7 +841,7 @@ class EventUpdate(SQLModel):
 
 class AttendanceSessionBase(SQLModel):
     event_id: uuid.UUID = Field(
-        foreign_key="events.id", nullable=False, ondelete="CASCADE"
+        foreign_key="events.id", index=True, nullable=False, ondelete="CASCADE"
     )
     session_date: str = Field(max_length=20)
     name: str = Field(max_length=255)
@@ -888,12 +900,14 @@ class AttendanceSession(AttendanceSessionBase, table=True):
             unique=True,
             postgresql_where=text("is_active = true"),
         ),
+        UniqueConstraint(
+            "reference_code", name="uq_attendance_sessions_reference_code"
+        ),
     )
 
     reference_code: str | None = Field(
         default=None,
-        unique=True,
-        index=True,
+        nullable=False,
         max_length=20,
         sa_column_kwargs={
             "server_default": text(
@@ -931,11 +945,13 @@ class AttendanceSessionsPublic(SQLModel):
 
 class Event(EventBase, table=True):
     __tablename__ = "events"
+    __table_args__ = (
+        UniqueConstraint("reference_code", name="uq_events_reference_code"),
+    )
 
     reference_code: str | None = Field(
         default=None,
-        unique=True,
-        index=True,
+        nullable=False,
         max_length=20,
         sa_column_kwargs={
             "server_default": text(
@@ -1082,7 +1098,6 @@ class AttendanceBase(SQLModel):
     )
     registration_id: uuid.UUID = Field(
         foreign_key="event_registrations.id",
-        index=True,
         nullable=False,
         ondelete="CASCADE",
     )
@@ -1211,10 +1226,9 @@ class AttendanceCorrectionBase(SQLModel):
     attendance_id: uuid.UUID = Field(
         foreign_key="attendance.id", nullable=False, ondelete="CASCADE"
     )
-    corrected_by: uuid.UUID | None = Field(
-        default=None,
+    corrected_by: uuid.UUID = Field(
         foreign_key="user.id",
-        nullable=True,
+        nullable=False,
         ondelete="RESTRICT",
     )
     reason: str = Field(max_length=500)
@@ -1464,7 +1478,10 @@ class AuditLog(SQLModel, table=True):
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     actor_user_id: uuid.UUID | None = Field(
-        default=None, index=True, foreign_key="user.id"
+        default=None,
+        index=True,
+        foreign_key="user.id",
+        ondelete="SET NULL",
     )
     action: str = Field(max_length=100, index=True)
     resource: str = Field(max_length=255, index=True)

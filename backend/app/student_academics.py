@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
+from sqlalchemy import DateTime, String, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from app.models import get_datetime_utc
@@ -18,14 +19,21 @@ class StudentStatus(StrEnum):
 
 class AcademicYear(SQLModel, table=True):
     __tablename__ = "academic_years"
+    __table_args__ = (UniqueConstraint("label", name="uq_academic_year_label"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     label: str = Field(unique=True, index=True, max_length=20)
     start_year: int
     end_year: int
     is_current: bool = False
-    created_at: datetime | None = Field(default_factory=get_datetime_utc)
-    updated_at: datetime | None = Field(default_factory=get_datetime_utc)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
 
 class AcademicYearPublic(SQLModel):
@@ -55,6 +63,13 @@ class AcademicYearsPublic(SQLModel):
 
 class StudentEnrollment(SQLModel, table=True):
     __tablename__ = "student_enrollments"
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id",
+            "academic_year_id",
+            name="uq_student_enrollment_student_year",
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     student_id: uuid.UUID = Field(
@@ -66,10 +81,24 @@ class StudentEnrollment(SQLModel, table=True):
     section_id: uuid.UUID = Field(
         foreign_key="academic_sections.id", index=True, ondelete="RESTRICT"
     )
-    student_status: StudentStatus = Field(default=StudentStatus.regular, max_length=50)
-    archived_at: datetime | None = Field(default=None, index=True)
-    created_at: datetime | None = Field(default_factory=get_datetime_utc)
-    updated_at: datetime | None = Field(default_factory=get_datetime_utc)
+    student_status: StudentStatus = Field(
+        default=StudentStatus.regular,
+        max_length=50,
+        sa_type=String(length=50),  # type: ignore
+    )
+    archived_at: datetime | None = Field(
+        default=None,
+        index=True,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
 
 class StudentEnrollmentPublic(SQLModel):
@@ -137,6 +166,13 @@ class StudentRosterPublic(SQLModel):
 
 class ClassRepresentativeAssignment(SQLModel, table=True):
     __tablename__ = "class_representative_assignments"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "academic_year_id",
+            name="uq_class_rep_assignment_user_year",
+        ),
+    )
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", index=True, ondelete="CASCADE")
@@ -146,8 +182,14 @@ class ClassRepresentativeAssignment(SQLModel, table=True):
     section_id: uuid.UUID = Field(
         foreign_key="academic_sections.id", index=True, ondelete="RESTRICT"
     )
-    created_at: datetime | None = Field(default_factory=get_datetime_utc)
-    updated_at: datetime | None = Field(default_factory=get_datetime_utc)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
 
 
 class ClassRepresentativeAssignmentPublic(SQLModel):
