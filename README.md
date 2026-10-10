@@ -63,7 +63,7 @@ The original template's demo **Items** feature (model, CRUD routes, and frontend
 
 The following are described in the [Source of Truth](docs/SOURCE-OF-TRUTH.md) as intended functionality but do **not** currently exist in the codebase — do not assume they work:
 
-- **Advanced attendance export/print formats**: PDF attendance exports and a printable pre-event roster are not implemented. The attendance API currently has a CSV export endpoint. Separate from attendance reports, academic sections also support XLSX and DOCX student-roster downloads. See the [API reference](docs/API-REFERENCE.md).
+- **Advanced attendance export/print formats**: XLSX, DOCX, and PDF attendance-report exports, plus a printable pre-event roster, are not implemented. The attendance API currently has a CSV export endpoint. Separately, academic sections support XLSX and DOCX student-roster downloads. See the [API reference](docs/API-REFERENCE.md).
 - **School ID system API integration** (Section 17–19 of the spec) — this is explicitly scoped as a later phase, contingent on the school confirming an API exists.
 - **Multi-organization support beyond CCS** (Section 24, Phase 13) — the data model already has an `Organization` entity to support this later, but the product itself is scoped to CCS for now.
 
