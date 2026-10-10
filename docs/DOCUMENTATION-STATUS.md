@@ -392,3 +392,36 @@ Reviewed `backend/app/api/routes/attendee_credentials.py`, specifically `GET /ap
 - Follow-up: document the endpoint's intended public use and threat model; minimize returned fields to what the workflow requires; consider an authenticated/scanner-only alternative for operational lookup; and add tests that lock down the intended response fields and authorization policy. Review rate limiting separately rather than assuming the public student QR limiter covers this route.
 
 This is a source-code privacy review, not a live exploit test. Application code and tests were not changed in this documentation-only PR.
+
+## Provisional remediation order
+
+This is an implementation planning aid based on the source reviews above, not a claim that every finding has been reproduced in a running deployment. Confirm intended product behavior and add regression tests before changing application code.
+
+### Priority 1: authorization and record integrity
+
+1. Define and test the authorization policy for attendee-relationship list/detail reads. These endpoints currently require authentication but lack the Admin or record-scoped checks used by neighboring routes.
+2. Make Class Representative academic-year resolution explicit. Avoid selecting the most recently created assignment when the intended scope is the current academic year.
+3. Decide whether the public credential lookup needs to return student number and section. Minimize public personal-data responses and test the intended access policy.
+4. Route all manual attendance corrections through one audited mutation path, or ensure every permitted mutation records the actor and reason. Keep late-status calculation consistent.
+5. Make event-registration updates enforce the same closed-event and duplicate-pair rules as creation.
+6. Make import-batch status and validation summaries server-owned workflow state. Define atomic re-upload behavior and enforce upload limits.
+7. Use validated request models and consistent conflict handling for Class Representative student quick-add and attendee-relationship reassignment.
+
+### Priority 2: academic and attendance consistency
+
+1. Establish one canonical enrollment source for current section/status and reconcile or retire legacy student fields.
+2. Align section-filtered attendance list results and CSV exports.
+3. Enforce event/session lifecycle invariants when events move between draft, open, and closed states. Never reactivate a cancelled session implicitly.
+4. Decide whether public student QR lookup is for currently enrolled students only or also former students, then enforce the chosen eligibility rule.
+5. Define credential deactivation, reactivation, and deletion behavior, including whether retired credential history must be retained.
+6. Set explicit request-size and row-count limits for student imports, and assess export bounds for expected dataset sizes.
+
+### Priority 3: owner decisions and operational hardening
+
+1. Confirm Class Representative access to archived roster records.
+2. Establish retention and privacy-erasure rules before changing event, attendee, attendance, or correction-history deletion behavior.
+3. Confirm whether historical correction details need a separate export or durable retention policy.
+4. Decide whether additional export formats or printable pre-event rosters are requirements; current reviewed attendance export is CSV.
+5. Review public credential lookup exposure, reverse-proxy trust, and rate-limiting behavior against the actual deployment topology.
+
+Before closing the audit, complete the endpoint-by-endpoint authorization pass, connect findings to existing or missing tests, and distinguish verified behavior from open product decisions. Do not treat this provisional order as a substitute for reproducing the findings or reviewing production retention and privacy requirements.
