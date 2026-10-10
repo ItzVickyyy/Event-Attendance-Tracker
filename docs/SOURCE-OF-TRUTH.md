@@ -134,7 +134,7 @@ The scanner should immediately return to a **Ready for Next Attendee** state aft
 
 ### Example
 
-Instead of: 
+Instead of:
 
 ```text
 Year 1 Line → Find Section 1A Paper → Write Name
@@ -508,7 +508,7 @@ The scan reported:
 -   ATQA: 0x0004
 -   SAK: 0x08
 -   Memory: 1 KB
--   Technologies: MifareClassic, NfcA, NdefFormatable
+-   Technologies: MifareClassic, NfcA, NDEF formatting
 
 This confirms that the phone can detect the school's NFC ID.
 
@@ -1457,7 +1457,7 @@ should live in the user database, not this document).
 
   Role                 Name
   --------------------- -----------------------
-  President             James Ceasar Repalda
+  President             James Ceasar Repalda <!-- typos:ignore -->
   Vice President         Matthew Banasihan
   Executive Secretary    Kenneth Punla
   Recording Secretary    Vic John Salen
