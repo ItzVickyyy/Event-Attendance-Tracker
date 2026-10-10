@@ -47,7 +47,7 @@
 - [ ] Verify every root README feature claim against current routes, models, tests, and frontend pages.
 - [ ] Expand the API reference to an endpoint-by-endpoint contract only after validating route decorators, response schemas, and authorization tests.
 - [ ] Inventory API routes and permissions from the actual FastAPI route registrations and dependencies.
-- [ ] Document the actual database schema and migration head without assuming table names. The model inventory has been checked, but a dedicated data-model guide and migration-head verification remain outstanding.
+- [ ] Keep database schema and migration-head documentation outside this pass; do not add a separate guide for the development database or application source.
 - [ ] Reconcile the Source of Truth with current behavior and label each requirement as implemented, partial, planned, or blocked.
 - [x] Correct the development guide's stale Compose port, Mailpit, and Playwright workflow claims against the current files.
 - [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration.
