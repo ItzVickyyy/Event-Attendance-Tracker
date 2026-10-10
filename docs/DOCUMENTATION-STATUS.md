@@ -39,6 +39,27 @@
 - The README now distinguishes the implemented offline scan queue/synchronization path from the full offline-first behavior described as the target in the Source of Truth.
 - Renamed the Source of Truth's export heading to `Target export formats` and explicitly marked Excel, Word, PDF, and printable pre-event rosters as requirements rather than current features. CSV is the implemented export format.
 
+## Feature/spec reconciliation snapshot
+
+This is a focused first pass against route implementations, selected frontend pages, models, and existing Playwright tests. It is not a full end-to-end verification of every workflow.
+
+| Requirement area | Current evidence | Status for documentation |
+|---|---|---|
+| Event attendance by NFC, QR, and manual selection | Backend scan and manual-scan routes resolve credentials/attendees, require an open event and registration, and call the shared attendance-recording service. Frontend scanner routes and manual-scan tests exist. Web NFC remains browser/device dependent. | Implemented, with platform limits |
+| Student masterlist and section-scoped Class Representative access | Student/academic registry routes, section/student pages, and Class Representative-specific workspaces exist. Backend checks assignment scope for representative student access. | Implemented; continue role-specific test review |
+| CSV attendance export | `GET /api/v1/attendance/export` exists. | Implemented |
+| XLSX, DOCX, PDF, and printable blank roster | No corresponding export formats were confirmed in the inspected attendance export route. | Planned / not confirmed implemented |
+| Student import staging | Import-batch routes support CSV/XLSX templates, upload, row validation/reconciliation, and a promotion endpoint. | Implemented at API level; verify the complete UI and promotion tests separately |
+| Attendance corrections and audit trail | Admin-only correction endpoints store the reason, actor, timestamp, and old/new attendance values. | Implemented at API level; verify frontend workflow and tests separately |
+| Offline roster and scan queue | Frontend IndexedDB stores roster data and queued scans; sync code includes service-worker and foreground fallback paths; Playwright tests cover background sync, roster, and sync status. | Partial against the full specification |
+| Offline conflict handling | Attendance uniqueness is defined by registration and attendance session. The Source of Truth instead describes event/student/type uniqueness and an earliest-timestamp-wins conflict log. The inspected sync path treats HTTP 409 as a duplicate/synced outcome, but a reviewable conflict log and earliest-timestamp arbitration were not established by this pass. | Specification and implementation need reconciliation |
+| School system API integration | The README and Source of Truth identify this as a later phase. No school API integration was confirmed in the inspected route inventory. | Planned |
+| Multi-organization product support | An Organization model and routes exist, but the README scopes the current product to CCS and labels expansion as later work. | Foundation exists; product-level expansion planned |
+
+### Concrete specification mismatch to resolve
+
+The Source of Truth's duplicate/offline sections describe a uniqueness rule keyed by event, student, and record type, plus earliest-timestamp-wins behavior and a conflict log. The current `Attendance` model declares a unique constraint on `registration_id` and `attendance_session_id`. Those are different contracts. Do not silently rewrite either side in documentation as if they were equivalent. A product decision and corresponding tests are needed before treating this requirement as complete.
+
 ## Recommended order
 
 - [x] Create this audit and establish documentation accuracy rules.
@@ -47,11 +68,11 @@
 - [x] Add an initial API route-group and authorization reference from the registered routers and inspected dependencies.
 - [x] Correct the root README's role list: Developer is a separate capability, not a fifth `UserRole` enum value.
 - [x] Correct the root README's export status to acknowledge CSV export while keeping advanced formats marked as not implemented.
-- [ ] Verify every root README feature claim against current routes, models, tests, and frontend pages.
+- [ ] Verify every root README feature claim against current routes, models, tests, and frontend pages. The first focused feature/spec snapshot is now recorded above.
 - [ ] Expand the API reference to an endpoint-by-endpoint contract only after validating route decorators, response schemas, and authorization tests.
 - [ ] Inventory API routes and permissions from the actual FastAPI route registrations and dependencies.
 - [ ] Keep database schema and migration-head documentation outside this pass; do not add a separate guide for the development database or application source.
-- [ ] Reconcile the Source of Truth with current behavior and label each requirement as implemented, partial, planned, or blocked.
+- [ ] Extend the focused feature/spec snapshot into a complete requirement-by-requirement reconciliation, labeling each requirement implemented, partial, planned, or blocked.
 - [x] Correct the development guide's stale Compose port, Mailpit, and Playwright workflow claims against the current files.
 - [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration.
 - [x] Compare both deployment guides with their current workflow triggers and required variables/secrets. This verifies documented workflow wiring, not a live production deployment.
