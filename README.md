@@ -65,7 +65,7 @@ The following are described in the [Source of Truth](docs/SOURCE-OF-TRUTH.md) as
 
 - **Advanced export/print formats**: Excel, Word, and PDF attendance exports, plus a printable pre-event roster, are not implemented. The attendance API currently has a CSV export endpoint. See the [API reference](docs/API-REFERENCE.md).
 - **School ID system API integration** (Section 17–19 of the spec) — this is explicitly scoped as a later phase, contingent on the school confirming an API exists.
-- **Multi-organization support beyond CCS** (Section 13's Phase 13) — the data model already has an `Organization` entity to support this later, but the product itself is scoped to CCS for now.
+- **Multi-organization support beyond CCS** (Section 24, Phase 13) — the data model already has an `Organization` entity to support this later, but the product itself is scoped to CCS for now.
 
 If you're picking up work on this project, use the Source of Truth for intended behavior and its original implementation sequence, not as a live checklist. Use this README's "Currently Implemented" section for the high-level current snapshot and the [documentation audit](docs/DOCUMENTATION-STATUS.md) for verified gaps and requirements that still need reconciliation.
 
