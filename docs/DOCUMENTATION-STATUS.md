@@ -143,3 +143,5 @@ Record unresolved mismatches here rather than silently presenting assumptions as
 - The `/get-my-qr` frontend route uses `https://api.qrserver.com/v1/create-qr-code/` to generate the downloadable QR image and passes the existing credential value in the request URL. This means QR generation is not fully local and exposes the credential to that third-party service. Review the privacy/security implications and consider generating QR images in-browser before describing this flow as self-contained.
 
 - Verified that academic section student rosters can be exported as XLSX and DOCX through `academic_sections.py`. These are separate from the attendance CSV endpoint; the documentation now distinguishes implemented section roster exports from the still-unimplemented advanced attendance-report formats.
+
+- A follow-up scan caught one cross-reference missed by the earlier singular `Section N` scan: the security/privacy section referred to `Sections 6 and 11`, although Section 6 has no heading. Reworded it to preserve the security requirement while explicitly leaving the missing Section 6 reference unresolved rather than guessing what the missing section contained.
