@@ -28,6 +28,13 @@ this specification unless they are deliberately revised.
 > have been updated accordingly; anything still referencing "the app" in
 > a native-app sense should be read as "the web app."
 
+> **Editorial note:** This document has unresolved numbering gaps. Headings for
+> Sections 6–9 and 23 are absent, while some older passages still refer to
+> Sections 7, 8, 8.1, and 23. These gaps were already present in the earlier
+> September 2026 revision. Their intended contents have not been reconstructed
+> here. Do not treat those section references as reliable until the gaps and
+> all cross-references are reconciled. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
 ------------------------------------------------------------------------
 
 ## 1. Project Goal
