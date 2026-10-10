@@ -321,3 +321,14 @@ Reviewed `backend/app/api/routes/import_batches.py`, `backend/app/services/stude
 - Existing route tests cover authentication and Admin permissions, malformed/empty/unsupported files, row validation, and promotion guards. The inspected tests do not establish a file-size limit, repeated-upload behavior, or rejection of client edits to derived status/summary fields.
 
 Recommended follow-up: define batch lifecycle rules, make upload/re-upload behavior atomic and explicit, enforce upload size and row limits, and add regression tests for those cases. This is a source review; no application code or tests were changed in this documentation-only PR.
+
+## Attendance export coverage and enrollment consistency
+
+Reviewed `backend/app/api/routes/attendance.py`, `frontend/src/components/Records/RecordsWorkspace.tsx`, and `frontend/src/components/ClassRepresentative/RecordsWorkspace.tsx`.
+
+- The implemented attendance export is CSV. The frontend's Export / Print workspace explicitly describes CSV as the supported export. XLSX, PDF, DOCX, and a dedicated printable pre-event roster were not found in this reviewed attendance-export path. Do not describe those formats or roster printouts as implemented unless another verified workflow is identified.
+- Attendance list filtering for a section joins year-scoped `StudentEnrollment` records. The CSV export uses a different rule for non-Class-Representative users: it filters by the legacy `Student.section_id`. Class Representatives instead filter through `StudentEnrollment` and the assigned academic year. Given that enrollment and legacy section fields can diverge, an Admin's section-filtered list and exported CSV may contain different students. Use the same year-scoped enrollment rule for both paths, or document and test an intentional distinction.
+- The export endpoint returns all matching rows in one CSV response and has no pagination parameter. Confirm expected roster/event sizes and add bounded or streamed export handling if large exports are expected.
+- The export includes student number, full name, event, time in/out, attendance status, late flag, scan method, session, session date, and recorded timestamp. It does not include correction reason or correction history. If exports are intended to support audit/review, define whether correction details belong in a separate audit export rather than implying they are part of the attendance CSV.
+
+Recommended follow-up: align Admin section filtering with the canonical enrollment model, add a regression test comparing filtered list and CSV membership, and state the current CSV-only scope in user-facing documentation. Decide separately whether printable rosters and additional export formats are required. This is a source review; no application code or tests were changed in this documentation-only PR.
