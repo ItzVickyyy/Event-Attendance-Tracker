@@ -1,4 +1,7 @@
-# Dashboard Data Flow Audit (Read-Only)
+# Dashboard Data Flow Audit (Historical, Read-Only)
+
+> Historical snapshot, not a current defect list. The dashboard has since been organized into separate operational and Class Representative components. Re-check every finding against the current frontend implementation and tests before treating it as unresolved.
+
 
 Based on a read-only inspection of the Dashboard (`frontend/src/routes/_layout/index.tsx`) and the generated SDK types, here is the architectural audit of the issues and the recommended data flow under the new Registration-based attendee model.
 
