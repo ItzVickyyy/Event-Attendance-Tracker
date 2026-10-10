@@ -1,6 +1,6 @@
 # Event Attendance Tracker — Development Guide
 
-This describes the development workflow as the repository is actually configured today. Where the current configuration has a gap (see the callout in "Full Stack with Docker Compose" below), that gap is called out explicitly rather than papered over.
+This describes the development workflow as the repository is actually configured today. Known limitations and workflow-specific requirements are stated in the relevant sections.
 
 ## Prerequisites
 
