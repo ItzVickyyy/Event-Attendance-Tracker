@@ -50,7 +50,7 @@ bun run dev
 
 `frontend/vite.config.ts` configures the Vite dev server to load a TLS key/cert pair from `frontend/.certs/localhost+lan-key.pem` and `frontend/.certs/localhost+lan.pem`. This directory is gitignored and **must be created locally** — `bun run dev` will fail to start without it. Generate a locally-trusted certificate covering `localhost` and your machine's LAN IP (a LAN-reachable address is needed if you want to test NFC/QR scanning from a phone on the same network) with a tool such as [`mkcert`](https://github.com/FiloSottile/mkcert), and place the resulting key and certificate at the paths above.
 
-Once running, the frontend dev server is served over **HTTPS** (not plain HTTP) — check your terminal output for the exact host/port Vite reports. The dev server proxies `/api` requests to `http://127.0.0.1:8001`, so the backend must be running separately (see "Backend Setup").
+When the certificate files are present, the frontend dev server is served over **HTTPS**. Without them, Vite falls back to HTTP. Check the terminal output for the actual protocol, host, and port. The dev server proxies `/api` requests to `http://127.0.0.1:8001`, so the backend must be running separately (see "Backend Setup").
 
 ### PWA / Service Worker in Development
 
