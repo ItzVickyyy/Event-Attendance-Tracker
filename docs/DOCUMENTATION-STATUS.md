@@ -446,3 +446,15 @@ Reviewed `backend/app/api/routes/developer.py`, `backend/app/api/deps.py`, and `
 - This route group appears intentionally separated from operational permissions in the inspected code. This is not a complete authorization certification: continue checking all registered routers and role/assignment combinations, including whether any other route accidentally grants technical Developer capability operational access.
 
 This section is a source-and-test review. No application code or tests were changed in this documentation-only PR.
+
+## Academic registry validation audit: student create and update payloads
+
+Reviewed `backend/app/api/routes/academic_registry.py` and `backend/tests/api/routes/test_academic_registry.py`.
+
+- The registry student-create and student-update handlers accept generic dictionaries rather than dedicated request models. Create validates required keys, verifies that the selected section belongs to the supplied academic year, rejects blank student numbers after trimming, and checks the student status enum. Existing tests cover missing fields, blank student number, invalid status, duplicate number, and section/year mismatch.
+- Create trims first and last names before storing them but does not explicitly reject values that become empty after trimming. A whitespace-only required name can therefore reach the persistence path unless another constraint rejects it. Add tests for blank first/last names and enforce a clear 422 response.
+- Update checks for a duplicate student number but compares and stores the raw submitted value. Unlike create, it does not normalize the updated student number before checking uniqueness or saving. A value with surrounding whitespace can produce inconsistent identifiers, and a normalized collision may reach the database constraint without a deliberate conflict response.
+- Update also accepts person and enrollment fields from an untyped dictionary and performs manual field handling. The route has Class Representative section/year checks, including validation of a supplied enrollment ID against the representative's assigned scope, but typed schemas would make field-level validation and normalization more consistent.
+- Follow-up: use dedicated create/update schemas or central validation helpers; trim and reject blank names; normalize student numbers before uniqueness checks and writes; translate uniqueness races into HTTP 409; and add regression tests for whitespace-padded updates, blank names, invalid status updates, and attempts to update an enrollment outside the representative's assignment.
+
+This is a source-and-test review, not evidence that malformed records exist in production. No application code or tests were changed in this documentation-only PR.
