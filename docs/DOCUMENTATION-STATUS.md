@@ -359,3 +359,26 @@ Reviewed `backend/app/api/deps.py`, `backend/app/api/routes/academic_registry.py
 - `GET /api/v1/academic-registry/sections/{section_id}/students` checks a Class Representative's assigned section, then accepts `include_archived=true` without restricting that option to Admin roles. That flag removes both the student archive filter and the enrollment archive filter.
 - This remains limited to the assigned section, but it lets a Class Representative request archived student and enrollment rows that the default roster excludes. Confirm whether representatives should have access to historical/archived roster entries. If not, reject or ignore `include_archived` for that role and test the restriction.
 - Source review only. The audit has not yet verified every endpoint, dependency, and role combination through integration tests or live deployment testing.
+
+## API validation audit: attendee relationship updates
+
+Reviewed `backend/app/api/routes/attendee_relationships.py` and the `AttendeeRelationship` model in `backend/app/models.py`.
+
+- Relationship creation checks whether the attendee/student pair already exists and returns HTTP 400 for a duplicate.
+- Relationship updates validate that replacement attendee and student IDs exist, but do not check whether the resulting pair already belongs to a different relationship row.
+- The database has a unique constraint on `(attendee_id, related_student_id)`, so a duplicate reassignment is rejected at the database layer. The route does not translate that constraint failure into a deliberate client error, which can turn an ordinary validation conflict into an unhandled server error.
+- Follow-up: validate the final pair before updating, handle concurrent uniqueness conflicts safely, and test reassignment to an existing pair as well as partial updates that change either ID.
+
+This is a source review; application code and tests were not changed in this documentation-only PR.
+
+## API validation audit: Class Representative student quick-add
+
+Reviewed `backend/app/api/routes/class_representatives.py`, especially `POST /api/v1/class-representatives/me/students`, and the `Student` model.
+
+- The quick-add endpoint accepts an untyped `dict[str, Any]` rather than a dedicated request model. It manually checks for three required keys but does not apply the same explicit field validation and normalization contract used by typed student-create schemas.
+- The duplicate check queries `student_number` using the untrimmed request value, while the new `Student` stores the value after trimming. A value with surrounding whitespace can therefore miss the pre-check even when its normalized value matches an existing student number. The database's unique constraint remains the final guard, but a collision may surface as a database error rather than a clear HTTP 409 response.
+- Required values containing only whitespace can pass the key-presence check and then be stored as empty strings after trimming, unless another database constraint rejects them. This route also converts several fields to strings manually instead of relying on schema validation.
+- Follow-up: introduce a dedicated validated request schema, normalize the student number before duplicate checks, reject blank required fields, and translate uniqueness conflicts into a consistent HTTP 409. Add tests for whitespace-normalized duplicates, blank names/student numbers, and malformed optional fields.
+
+This is a source review, not proof that invalid records already exist in production. Application code and tests were not changed in this documentation-only PR.
+
