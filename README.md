@@ -44,7 +44,7 @@ The goal is any attendee, at any scanner station: tap an NFC ID, scan a QR code,
 
 ## What's Currently Implemented
 
-The backend has a normalized relational schema and full CRUD API routes for:
+The backend has a normalized relational schema and API routes for the following domain areas. Available operations and permissions vary by resource and endpoint:
 
 - **Organizations**, **Academic Programs**, and **Academic Sections**
 - **People** and **Students** (student masterlist)
