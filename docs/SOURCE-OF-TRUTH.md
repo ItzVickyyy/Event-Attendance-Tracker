@@ -29,11 +29,12 @@ this specification unless they are deliberately revised.
 > a native-app sense should be read as "the web app."
 
 > **Editorial note:** This document has unresolved numbering gaps. Headings for
-> Sections 6–9 and 23 are absent. These gaps were already present in the earlier
-> September 2026 revision. Clear stale cross-references to the manual-search
-> fallback and technology stack have been redirected to existing sections or
-> the root README, but the missing sections' intended contents have not been
-> reconstructed here. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+> Sections 6–9 and 23 are absent from the September 11, 2026 revision. An earlier
+> [September 10 revision in Git history](https://github.com/ItzVickyyy/Event-Attendance-Tracker/blob/42bcf2ee94730cbdca93218a58ced936e1a599f4/docs/SOURCE-OF-TRUTH.md)
+> contains those sections, but their old requirements have not been copied back
+> because some statements may conflict with the current implementation and later
+> specification. Review and reconcile that historical content before deciding
+> whether to restore, rewrite, or retire it. See the [documentation audit](./DOCUMENTATION-STATUS.md).
 
 ------------------------------------------------------------------------
 
