@@ -53,7 +53,7 @@ The backend has a normalized relational schema and full CRUD API routes for:
 - **Attendance** records, including NFC/QR/manual scan endpoints, duplicate-scan prevention, and an **Attendance Correction** audit trail
 - **Import Batches** and **Student Import Records** for masterlist import/staging
 
-Role-based access control is implemented with five roles — `developer`, `super_admin`, `admin`, `class_representative`, `student` — plus a separate `can_scan` permission so scanning access isn't tied only to a role name. Permissions are enforced server-side via FastAPI dependencies.
+Role-based access control uses four application roles — `super_admin`, `admin`, `class_representative`, and `student` — plus a separate `is_developer` technical capability and `can_scan` permission. Developer access is not a `UserRole` value. Permissions are enforced server-side via FastAPI dependencies.
 
 On the frontend, there are working pages for **Dashboard**, **Events**, **Students**, **Records**, **Scanner**, **Admin**, and **Settings**, plus the inherited auth flow (login, sign-up, password reset). The Scanner page supports NFC tap, QR scan, and manual attendee search. The app is configured as an installable PWA with a service worker, runtime caching for events/students/credentials data, and a background-sync script (`sw-sync.js`) for queuing attendance scans made while offline. Playwright tests cover login, sign-up, password reset, the admin area, roster loading, manual scanning, and background sync/sync-status behavior.
 
