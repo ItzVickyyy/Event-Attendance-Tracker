@@ -1151,6 +1151,8 @@ it — for example, a manual "correct this record" action performed by an
 Admin or higher (Section 21), which should be logged
 (who changed it, old value, new value, when).
 
+**Current implementation note (2026-10-10):** Attendance uniqueness is currently enforced per event registration and attendance session (`registration_id`, `attendance_session_id`), not simply once per event/student. Dedicated time-out sessions therefore have a separate session-scoped record, while legacy combined time-in/time-out events can fill `time_out` on a later scan in the same time-in session. Duplicate scans return HTTP 409; the API does not establish the specification's proposed earliest-timestamp-wins conflict log. Align this requirement with the session model and offline queue behavior before treating conflict resolution as complete. See the [documentation audit](DOCUMENTATION-STATUS.md).
+
 ------------------------------------------------------------------------
 
 ## 12. Multi-Scanner Support
@@ -1240,12 +1242,9 @@ for real-time scanning during the event itself. This means:
 
 ### Multi-device conflict handling
 
-Ties directly into Section 12 — the backend's uniqueness constraint on
-(event_id, student_id, record type) is what actually resolves conflicts
-when multiple officers' queued offline records sync at overlapping
-times. The **earliest timestamp wins**; the losing duplicate is kept in a
-conflict log rather than silently discarded, so officers can review what
-happened if numbers look off.
+This is the intended conflict-resolution contract for simultaneous or delayed offline scans: the earliest valid scan should win, and losing duplicates should remain reviewable rather than disappear silently.
+
+**Current implementation note (2026-10-10):** The database uniqueness constraint is on `(registration_id, attendance_session_id)`. The attendance service rejects an existing record with HTTP 409 and does not compare queued client timestamps to select the earliest scan or create the conflict log described above. Foreground and service-worker sync treat HTTP 409 as a duplicate outcome and mark that queue item synced, so a later duplicate is not retained in a dedicated conflict-review record by this path. The existing behavior prevents duplicate records but does not satisfy the full conflict-review requirement. Resolve the desired event/session and time-in/time-out semantics before changing code. See the [documentation audit](DOCUMENTATION-STATUS.md).
 
 ### What "offline" does NOT need to support
 
