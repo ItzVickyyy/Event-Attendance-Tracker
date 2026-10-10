@@ -7,7 +7,7 @@ This describes the development workflow as the repository is actually configured
 - [uv](https://docs.astral.sh/uv/) (Python 3.14, pinned via `.python-version`)
 - [Bun](https://bun.sh/)
 - [Docker](https://www.docker.com/) and Docker Compose, for PostgreSQL (and optionally the full stack)
-- A locally-trusted TLS certificate for the frontend dev server (see "Frontend HTTPS Requirement" below) — this project relies on the browser's Web NFC API, which only works in a secure context, so the Vite dev server is configured to serve over HTTPS even locally.
+- A locally trusted TLS certificate only if you want to test Web NFC from a phone over your LAN (optional for ordinary UI development).
 
 ## Environment Configuration
 
@@ -46,11 +46,11 @@ bun install
 bun run dev
 ```
 
-### Frontend HTTPS Requirement
+### Optional HTTPS for Web NFC
 
-`frontend/vite.config.ts` configures the Vite dev server to load a TLS key/cert pair from `frontend/.certs/localhost+lan-key.pem` and `frontend/.certs/localhost+lan.pem`. This directory is gitignored and **must be created locally** — `bun run dev` will fail to start without it. Generate a locally-trusted certificate covering `localhost` and your machine's LAN IP (a LAN-reachable address is needed if you want to test NFC/QR scanning from a phone on the same network) with a tool such as [`mkcert`](https://github.com/FiloSottile/mkcert), and place the resulting key and certificate at the paths above.
+`frontend/vite.config.ts` loads a TLS key/certificate pair from `frontend/.certs/localhost+lan-key.pem` and `frontend/.certs/localhost+lan.pem` only when both files exist. The `.certs` directory is gitignored. Without those files, Vite falls back to HTTP; `bun run dev` still starts, and HTTPS certificates are not required for ordinary UI development.
 
-When the certificate files are present, the frontend dev server is served over **HTTPS**. Without them, Vite falls back to HTTP. Check the terminal output for the actual protocol, host, and port. The dev server proxies `/api` requests to `http://127.0.0.1:8001`, so the backend must be running separately (see "Backend Setup").
+For Web NFC testing from a phone, use a locally trusted certificate that covers the hostname and LAN IP you will open on the phone. A tool such as [`mkcert`](https://github.com/FiloSottile/mkcert) can generate one. Follow the exact filenames and hostnames/IPs expected by `frontend/vite.config.ts`. Web NFC requires a secure context on a supported Android browser. QR scanning behavior should be tested separately on the target device and browser. Check the terminal output for the actual protocol, host, and port. The dev server proxies `/api` requests to `http://127.0.0.1:8001`, so the backend must be running separately (see "Backend Setup").
 
 ### PWA / Service Worker in Development
 
