@@ -290,9 +290,6 @@ async function _seedRecords(
           if (!db.objectStoreNames.contains("rostersByAccount")) {
             db.createObjectStore("rostersByAccount", { keyPath: "id" })
           }
-          if (!db.objectStoreNames.contains("rostersByAccount")) {
-            db.createObjectStore("rostersByAccount", { keyPath: "id" })
-          }
         }
         request.onsuccess = () => {
           const db = request.result
