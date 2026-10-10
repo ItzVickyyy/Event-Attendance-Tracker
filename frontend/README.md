@@ -6,7 +6,7 @@ The frontend is a React and TypeScript application built with Vite. It uses TanS
 
 - [Bun](https://bun.sh/)
 - A running backend and reachable PostgreSQL database for features that require API access
-- A locally trusted TLS certificate for the development server
+- A locally trusted TLS certificate for HTTPS/Web NFC testing from a phone on the LAN (optional for ordinary UI development)
 
 ## Local development
 
@@ -17,12 +17,12 @@ bun install
 bun run dev
 ```
 
-The dev server is configured for **HTTPS**, not plain HTTP. The Vite configuration expects these files:
+The dev server uses **HTTPS when the configured certificate files exist**. Without them, Vite falls back to HTTP. The configuration checks for these files:
 
 - `frontend/.certs/localhost+lan-key.pem`
 - `frontend/.certs/localhost+lan.pem`
 
-The `.certs` directory is gitignored. Create a locally trusted certificate with a tool such as [mkcert](https://github.com/FiloSottile/mkcert), using the filenames and hostnames/IP addresses required by `frontend/vite.config.ts`. Open the HTTPS URL printed by Vite rather than assuming the server is available at `http://localhost:5173`.
+The `.certs` directory is gitignored. For Web NFC testing from a phone, create a locally trusted certificate with a tool such as [mkcert](https://github.com/FiloSottile/mkcert), using the filenames and hostnames/IP addresses required by `frontend/vite.config.ts`. Without certificates, the UI can still run over HTTP, but a LAN address is not a trusted secure context for Web NFC. Open the protocol and URL printed by Vite.
 
 The Vite dev server proxies `/api` requests to the backend. Start the backend separately and follow the root [Development Guide](../development.md) for database setup, startup commands, and troubleshooting.
 
