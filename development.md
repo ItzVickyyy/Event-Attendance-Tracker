@@ -54,7 +54,7 @@ Once running, the frontend dev server is served over **HTTPS** (not plain HTTP) 
 
 ### PWA / Service Worker in Development
 
-`vite-plugin-pwa`'s `devOptions.enabled` is set to `false` in `frontend/vite.config.ts`, so `bun run dev` does not register a service worker. This is intentional: the production Workbox config uses `NetworkFirst` caching for `/api/v1/events`, `/api/v1/students`, and `/api/v1/attendee-credentials`, which — if active during development — can silently serve stale cached API responses and mask backend/proxy configuration changes (e.g. the Vite proxy target). Production builds are unaffected; `bun run build` still generates and registers the service worker with the existing runtime caching (including `NetworkOnly` for `/api/v1/attendance/scan`).
+`vite-plugin-pwa`'s `devOptions.enabled` is set to `false` in `frontend/vite.config.ts`, so `bun run dev` does not register a service worker. Production builds are unaffected: `bun run build` generates the service worker, caches the configured static assets, and imports `sw-sync.js` for queued attendance synchronization. The current Workbox runtime-caching rule uses `NetworkOnly` for all `/api/v1/` requests; offline roster and queued-scan data use the explicit IndexedDB implementation instead of shared Cache Storage API caches.
 
 If your browser already has a dev-mode service worker registered from before this change, it will keep intercepting requests at `localhost:5173` until removed:
 
