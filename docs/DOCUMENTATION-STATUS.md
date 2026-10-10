@@ -51,8 +51,9 @@
 - [ ] Reconcile the Source of Truth with current behavior and label each requirement as implemented, partial, planned, or blocked.
 - [x] Correct the development guide's stale Compose port, Mailpit, and Playwright workflow claims against the current files.
 - [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration.
-- [ ] Verify both deployment guides against the current deployment workflows.
-- [ ] Fix broken links and remove duplicated or generic template documentation only after checking whether it contains project-specific details.
+- [x] Compare both deployment guides with their current workflow triggers and required variables/secrets. This verifies documented workflow wiring, not a live production deployment.
+- [x] Check local Markdown links in the root README, development/deployment guides, backend/frontend READMEs, API reference, audit, and Source of Truth. No missing local Markdown targets were found in those files on this branch.
+- [ ] Remove duplicated or generic template documentation only after checking whether it contains project-specific details.
 
 ## Additional implementation checks completed in this pass
 
