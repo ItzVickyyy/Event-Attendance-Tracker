@@ -78,6 +78,8 @@ These examples describe the inspected source and should be backed by authorizati
 | `DELETE /api/v1/students/{student_id}` | Archives a representative's enrollment in their assigned year, or archives the student record for Admin/Super Admin. | Not a hard-delete contract. Verify UI copy matches the role-dependent behavior. |
 | `POST /api/v1/import-batches/{batch_id}/promote` | Promotes a validated import batch through `StudentPromotionService`. | Admin or higher; blocked if the batch is not validated, contains invalid/conflict rows, or its summary reconciliation is not matched. |
 | `POST /api/v1/attendance-corrections/` | Records an audited correction for an existing attendance record. | Admin or higher. See route schema and tests for exact fields. |
+| `PATCH /api/v1/event-registrations/{registration_id}` | Changes the event, attendee, or registration status after validating that replacement event/attendee records exist. | Admin only. The route does not reapply create-time closed-event or duplicate-pair checks, and does not block reassignment when attendance history already exists. See the documentation audit. |
+| `DELETE /api/v1/event-registrations/{registration_id}` | Permanently deletes the registration. | Admin only. Attendance rows cascade from the registration, and correction history cascades from attendance. Confirm retention requirements before treating this as a safe cleanup operation. See the documentation audit. |
 
 These are selected behaviors verified in route code and tests, not a complete endpoint list. Confirm the active router prefix and trailing-slash conventions against OpenAPI before copying a path into a client.
 
