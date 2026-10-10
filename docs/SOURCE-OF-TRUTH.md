@@ -765,6 +765,56 @@ NFC registration is handled separately from the student masterlist.
 
 ------------------------------------------------------------------------
 
+## 6. NFC Registration
+
+### Intended behavior
+
+- An officer finds a student in the masterlist, confirms the student's identity, then scans the school ID to associate an NFC credential with the correct attendee.
+- Registration should be available as a dedicated, deliberate flow. The product may later support first-scan registration during attendance, but that must not be assumed to exist.
+- Replacing a lost or renewed card should require explicit confirmation. The desired long-term behavior is to retire the previous credential while preserving an audit history, rather than silently overwriting it.
+
+### Current implementation status
+
+The frontend has a dedicated NFC registration dialog and manual credential entry. The credential API supports Admin-gated updates and deletion and rejects duplicate credential values. The reviewed code does not establish a complete replacement workflow that retains retired credential values in an audit history. The registration dialog also does not use the same `event.serialNumber` fallback as the main attendance scanner. Treat parity across those flows and retired-credential history as unresolved requirements, not implemented features. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
+------------------------------------------------------------------------
+
+## 7. Unregistered NFC IDs
+
+### Intended behavior
+
+When a scanned NFC credential is not registered, the system should guide the officer to find and confirm the matching student, associate the credential, and then record attendance if the event and registration state allow it.
+
+### Current implementation status
+
+The reviewed flow does not establish this complete unknown-credential-to-registration-to-attendance sequence. Manual attendance is a separate supported path. Do not claim that an unknown card is automatically registered during a normal attendance scan until this workflow is implemented and tested. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
+------------------------------------------------------------------------
+
+## 8. No NFC ID — Manual Fallback
+
+### Intended behavior
+
+Manual lookup must remain a first-class attendance method when a student has no usable card or the officer's device cannot use Web NFC. The officer should find and confirm the attendee, then record attendance without silently creating or changing an NFC credential.
+
+### Current implementation status
+
+The scanner has a manual attendance route and browser tests for the manual scan request path. The NFC registration dialog displays an unsupported-browser message; it is not itself the manual attendance interface. Verify the exact visibility and prominence of the manual option in the scanner UI before claiming that unsupported devices automatically open a primary manual-entry interface. Web NFC support remains browser/device dependent. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
+------------------------------------------------------------------------
+
+## 9. Attendance Flow — Time-In and Time-Out
+
+### Intended behavior
+
+Events may use either time-in-only attendance or time-in plus time-out. The system should clearly communicate the selected mode and prevent duplicate scans from creating unintended attendance records. For time-in/time-out events, the product must define whether the second scan fills the existing record or is recorded in a separate attendance session.
+
+### Current implementation status
+
+Both event attendance modes and attendance sessions exist. A legacy compatibility path can fill `time_out` on a second scan in an existing time-in session, while dedicated time-out sessions use a separate session-scoped record path. The database uniqueness rule is based on registration and attendance session, and duplicate records return a conflict that foreground sync treats as a duplicate. The older “one record per event/student, earliest timestamp wins, with a reviewable conflict log” requirement does not match the reviewed implementation. Resolve the intended data and offline-sync contract before changing behavior. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
+------------------------------------------------------------------------
+
 ## 10. Attendance Database
 
 The attendance database must use a **normalized relational structure**. The
@@ -1593,6 +1643,22 @@ with NFC- or attendance-specific functionality. At the time, the project needed:
 -   Export generation (`openpyxl`, `python-docx`, a PDF library) — Section
     16.
 -   Masterlist import tooling (Section 5).
+
+------------------------------------------------------------------------
+
+## 23. Technology Stack
+
+The current application is a web application based on the Full Stack FastAPI Template, extended for event attendance.
+
+- **Frontend:** React and TypeScript, Vite, TanStack Router and Query, Tailwind CSS, shadcn/ui, generated typed API client, and Playwright.
+- **Scanning and offline support:** browser Web NFC where supported, QR scanning with `html5-qrcode`, Vite PWA/Workbox, and IndexedDB for offline roster and queued-scan data.
+- **Backend:** FastAPI, SQLModel, Pydantic, Alembic, and PostgreSQL via psycopg.
+- **Email:** backend email templates and React Email templates under `packages/react-email`; local SMTP testing uses Mailpit through Compose.
+- **Development and delivery:** uv, Bun, Docker Compose, GitHub Actions, and the repository's backend and browser-test suites.
+
+Vite builds the frontend into `backend/app/frontend`, where the FastAPI application serves it. Workbox uses `NetworkOnly` for API requests; offline roster and queued-scan behavior relies on explicit IndexedDB storage rather than cached API responses.
+
+This section describes the configured stack, not proof that every intended feature is complete. For current implemented features and remaining gaps, use the [root README](../README.md) and [documentation audit](./DOCUMENTATION-STATUS.md). The earlier September 10 revision in Git history retains the longer original technology-stack discussion.
 
 ------------------------------------------------------------------------
 
