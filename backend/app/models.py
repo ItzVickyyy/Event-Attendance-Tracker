@@ -93,9 +93,7 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name: 'user'
 class User(UserBase, table=True):
     __tablename__ = "user"
-    __table_args__ = (
-        UniqueConstraint("reference_code", name="uq_usr_reference_code"),
-    )
+    __table_args__ = (UniqueConstraint("reference_code", name="uq_usr_reference_code"),)
 
     reference_code: str | None = Field(
         default=None,
@@ -590,7 +588,9 @@ class Student(StudentBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
     archived_at: datetime | None = Field(
-        default=None, index=True, sa_type=DateTime(timezone=True)  # type: ignore
+        default=None,
+        index=True,
+        sa_type=DateTime(timezone=True),  # type: ignore
     )
 
     person: Person | None = Relationship(back_populates="student")

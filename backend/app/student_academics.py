@@ -19,9 +19,7 @@ class StudentStatus(StrEnum):
 
 class AcademicYear(SQLModel, table=True):
     __tablename__ = "academic_years"
-    __table_args__ = (
-        UniqueConstraint("label", name="uq_academic_year_label"),
-    )
+    __table_args__ = (UniqueConstraint("label", name="uq_academic_year_label"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     label: str = Field(unique=True, index=True, max_length=20)
