@@ -481,3 +481,14 @@ Reviewed `backend/app/api/routes/roster.py`, `backend/app/api/routes/attendance.
 - Follow-up: decide whether raw credential values are required in the roster response. Prefer returning only the minimum roster fields and resolving a scanned credential server-side, or provide a narrowly scoped roster payload only where offline scanning requires it. If bulk values are required, document the threat model, limit which events a scanner can access, and add tests for event scoping and the exact fields visible to scanner-only accounts.
 
 This is a source-and-test review, not a live exploit or deployment test. No application code or tests were changed in this documentation-only PR.
+
+## Academic section exports and bulk student contact data
+
+Reviewed `backend/app/api/routes/academic_sections.py` and `backend/tests/api/routes/test_academic_registry.py`.
+
+- The academic-section API has separate `GET /api/v1/academic-sections/{section_id}/export/xlsx` and `GET /api/v1/academic-sections/{section_id}/export/docx` routes. Both require Admin-level access and build their rows from non-archived students with non-archived enrollments in the section's academic year.
+- The XLSX export includes student number, full name components, email, contact number, and legacy `Student.academic_status`. The DOCX export is a class list and uses the same enrollment-based row selection. These are separate from the attendance export, which is CSV-only in the reviewed attendance route; do not generalize that CSV limitation to all exports in the system.
+- The academic registry test verifies that XLSX export uses the historical enrollment even when the legacy `Student.section_id` points elsewhere. The reviewed tests do not establish an explicit field-level privacy contract for exported contact information or an audit trail for each bulk export.
+- Follow-up: confirm that email and contact number are required in downloadable class lists and limit fields to the documented purpose. Confirm whether bulk export actions should be audit-logged given that the files contain student contact data. Keep route authorization tests for non-admin roles and export-field assertions aligned with the approved policy.
+
+This is a source-and-test review, not a live deployment test. No application code or tests were changed in this documentation-only PR.
