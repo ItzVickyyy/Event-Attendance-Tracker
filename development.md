@@ -111,7 +111,7 @@ uv run alembic upgrade head
 bash scripts/test.sh
 ```
 
-This builds and runs the Docker Compose stack, runs `prestart.sh`, and executes the backend test suite with coverage. CI (`test-backend.yml`) enforces a minimum of 90% coverage.
+This runs the backend Pytest suite with coverage and writes a coverage HTML report. It does not build or start Docker Compose, run database migrations, or prepare a database; set up the test database and environment first. CI prepares PostgreSQL and migrates its dedicated test database before running this script. The backend CI workflow enforces a minimum of 90% coverage.
 
 **Frontend end-to-end** (Playwright): tests live in `frontend/tests` and cover login, sign-up, password reset, the admin area, items, roster loading, manual scanning, sync status, background sync, and user settings.
 
