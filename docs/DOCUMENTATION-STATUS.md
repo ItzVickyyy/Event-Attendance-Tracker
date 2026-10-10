@@ -470,3 +470,14 @@ Reviewed `backend/app/api/routes/organizations.py`, `people.py`, `academic_progr
 - The health-check route is public and returns only a boolean. The test-email utility requires the active-superuser dependency and returns a fixed success message; its test verifies the email send call is mocked, not actual SMTP delivery.
 
 Recommended follow-up: extend the role matrix tests for people-data access, document the intended visibility of academic catalog metadata, and add an explicit production-route-registration check for development-only endpoints. These findings are based on route registration and source/test review, not live deployment inspection. No application code or tests were changed in this documentation-only PR.
+
+## Scanner permission and event-roster credential disclosure
+
+Reviewed `backend/app/api/routes/roster.py`, `backend/app/api/routes/attendance.py`, `backend/app/api/deps.py`, and `backend/tests/api/routes/test_roster.py`.
+
+- The event roster endpoint is protected by `require_scanner_permission`. Its response includes each registered attendee's name, student number when applicable, attendance fields for a requested session, and every active credential's raw `credential_value`. The roster test explicitly asserts that active NFC and QR values are returned, and that a Class Representative account with `can_scan=True` can read the roster.
+- This makes the scanner capability a bulk credential-read permission, not only permission to submit scans. A scanner-enabled account can retrieve all active credential values for every registered attendee in an event, including credentials unrelated to the immediate scan. The endpoint excludes inactive credentials and does not return email/contact number, but those controls do not reduce exposure of active bearer-like identifiers.
+- Whether this is a defect depends on the credential model and operational needs. If scanners must preload identifiers for offline or local matching, the behavior may be intentional; however, the current roster endpoint is a normal API response and the inspected code does not establish an additional event assignment or scanner-station scope check.
+- Follow-up: decide whether raw credential values are required in the roster response. Prefer returning only the minimum roster fields and resolving a scanned credential server-side, or provide a narrowly scoped roster payload only where offline scanning requires it. If bulk values are required, document the threat model, limit which events a scanner can access, and add tests for event scoping and the exact fields visible to scanner-only accounts.
+
+This is a source-and-test review, not a live exploit or deployment test. No application code or tests were changed in this documentation-only PR.
