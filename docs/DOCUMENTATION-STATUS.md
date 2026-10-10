@@ -516,3 +516,15 @@ Reviewed `backend/app/api/deps.py`, `backend/app/api/routes/attendance_sessions.
 - Follow-up: explicitly choose and document whether `can_scan` is global or event-scoped. If scoped, add an event/session assignment model and enforce it consistently on roster reads, session list/detail/active reads, and scan submissions. Add tests proving a scanner can access only authorized events and sessions, including requests that omit `event_id`.
 
 This is a route and dependency review, not a live exploit test. No application code or tests were changed in this documentation-only PR.
+
+## Direct attendance-session deletion and historical records
+
+Reviewed `backend/app/api/routes/attendance_sessions.py` and the `AttendanceSession`, `Attendance`, and `AttendanceCorrection` model relationships in `backend/app/models.py`.
+
+- Admin-level users can delete an attendance session after it is no longer active. The route returns a success message after deleting the session; it does not require a retention check, reason, archival step, or explicit API-level confirmation.
+- The `AttendanceSession.attendance_records` relationship uses delete cascade. Each attendance record's `corrections` relationship also uses delete cascade, and the correction model's attendance foreign key is configured with `ON DELETE CASCADE`.
+- Therefore, deleting a closed session can permanently remove its attendance records and the correction history attached to those records. The route's active-session guard prevents deletion while active, but does not protect historical records.
+- This is a separate deletion path from deleting an event or attendee. The existing event/attendee deletion review already notes that their cascades can remove attendance history; direct session deletion creates the same retention concern even when the event and attendee remain.
+- Follow-up: confirm the institutional retention and privacy-erasure policy. If attendance history must be preserved, consider preventing deletion of sessions with attendance, archiving sessions, or using a deliberate retention workflow. Add tests that assert exactly which attendance and correction rows remain after session deletion.
+
+This is based on route and model inspection, not a live database deletion test. No application code or tests were changed in this documentation-only PR.
