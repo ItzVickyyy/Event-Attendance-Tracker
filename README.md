@@ -48,7 +48,7 @@ The backend has a normalized relational schema and full CRUD API routes for:
 
 - **Organizations**, **Academic Programs**, and **Academic Sections**
 - **People** and **Students** (student masterlist)
-- **Attendees** (Student, Faculty, Staff, Parent/Guardian, Guest) with **Attendee Credentials** (NFC UID / QR, tracked separately from the person record) and **Attendee Relationships** (e.g. linking a Parent/Guardian to a Student)
+- **Attendees** (Student, Faculty, Staff, Parent/Guardian, Guest) with **Attendee Credentials** (NFC and QR identifiers, tracked separately from the person record) and **Attendee Relationships** (e.g. linking a Parent/Guardian to a Student)
 - **Events** and **Event Registrations** (time-in-only or time-in/time-out attendance modes)
 - **Attendance** records, including NFC/QR/manual scan endpoints, duplicate-scan prevention, and an **Attendance Correction** audit trail
 - **Import Batches** and **Student Import Records** for masterlist import/staging
