@@ -76,7 +76,7 @@ If you're picking up work on this project, treat the Source of Truth's numbered 
 - [`deployment-docker-compose.md`](deployment-docker-compose.md) — self-hosted deployment with Docker Compose
 - [`docs/SOURCE-OF-TRUTH.md`](docs/SOURCE-OF-TRUTH.md) — full system specification, data model, and phased roadmap
 - [`docs/Phase-3-Student-Data-Field-Mapping.md`](docs/Phase-3-Student-Data-Field-Mapping.md) — masterlist-to-database field mapping used for student import
-- [`backend/README.md`](backend/README.md) / [`frontend/README.md`](frontend/README.md) — per-package developer notes (still largely generic template content; see the repository audit for cleanup status)
+- [`backend/README.md`](backend/README.md) / [`frontend/README.md`](frontend/README.md) — backend and frontend contributor notes
 
 ## License
 
