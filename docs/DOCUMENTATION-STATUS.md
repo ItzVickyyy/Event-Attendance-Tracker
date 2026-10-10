@@ -15,6 +15,8 @@
 | [Backend README](../backend/README.md) | Backend architecture and contributor workflow | Replaced with a concise contributor guide based on current route/model structure and linked to the central guides. |
 | [Frontend README](../frontend/README.md) | Frontend setup and contributor workflow | Previously instructed users to open the dev server over HTTP despite the HTTPS certificate configuration. Updated in this pass. |
 | [Source of Truth](./SOURCE-OF-TRUTH.md) | Intended behavior, architecture, and roadmap | Treat as the product specification, not proof that a feature is implemented. Reconcile it with the current code as a separate task. |
+| [Documentation index](./README.md) | Links to current project documentation | Contained links to several files that do not exist in the current repository tree. Replaced with links to verified files and labeled the old dashboard audit as historical. |
+| [Dashboard data-flow audit](../DASHBOARD_AUDIT.md) | Historical dashboard implementation notes | The document's findings were not clearly labeled as historical. Added a warning because the current dashboard uses separate operational and Class Representative components; individual claims still require code/test verification. |
 | Student field-mapping guide | Import mapping details | The previously documented path was not found on the default branch. The broken README link was removed pending confirmation of an authoritative replacement. |
 
 ## Documentation rules
@@ -33,6 +35,8 @@
 - The root README incorrectly stated that no export endpoints exist. The current `GET /api/v1/attendance/export` route implements CSV export. Excel, Word, PDF, and printable roster export remain unverified/not implemented.
 - The previous backend README referenced stale Mailpit/HTTP setup details and destructive volume cleanup. It has been replaced with a concise contributor guide; avoid restoring those unsafe or outdated instructions.
 - The frontend README's quick start pointed to plain HTTP, while the current Vite configuration requires local TLS certificates for its HTTPS dev server.
+- `docs/README.md` referenced several documentation files absent from the current repository tree. Replaced those dead links with verified files and added the current API reference and audit.
+- `DASHBOARD_AUDIT.md` was presented as a read-only audit without a clear historical status. Labeled it as a historical snapshot because its findings have not been fully revalidated against the current dashboard components and tests.
 - The root README previously linked to a student field-mapping document that was not found at the documented path. That broken link has been removed. Locate the authoritative replacement before restoring a link.
 - The development guide incorrectly stated that the base Compose file had no host port mappings and that Mailpit was absent. The current Compose file publishes PostgreSQL on host port 5433, Mailpit on 1025/8026, and the backend on 8000/8001. It also incorrectly claimed the Playwright workflow depended on a separate Compose service named `playwright`; the current workflow starts the backend service and runs Playwright from the workflow runner.
 - The Source of Truth still contained original template-gap, immediate-next-step, and development-roadmap lists that read like current tasks. Added status notes and labeled those sections as historical without deleting or changing their original requirements.
@@ -76,7 +80,7 @@ The Source of Truth's duplicate/offline sections describe a uniqueness rule keye
 - [x] Correct the development guide's stale Compose port, Mailpit, and Playwright workflow claims against the current files.
 - [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration.
 - [x] Compare both deployment guides with their current workflow triggers and required variables/secrets. This verifies documented workflow wiring, not a live production deployment.
-- [x] Check local Markdown links in the root README, development/deployment guides, backend/frontend READMEs, API reference, audit, and Source of Truth. No missing local Markdown targets were found in those files on this branch.
+- [x] Check local Markdown links in all current documentation indexes, root/backend/frontend READMEs, development/deployment guides, API reference, audit, and Source of Truth. No missing local Markdown targets were found in those files on this branch.
 - [ ] Remove duplicated or generic template documentation only after checking whether it contains project-specific details.
 
 ## Additional implementation checks completed in this pass
