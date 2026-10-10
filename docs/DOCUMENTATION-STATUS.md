@@ -240,3 +240,15 @@ Reviewed `frontend/src/routes/get-my-qr.tsx`, `backend/app/api/routes/public_stu
 - The displayed QR image and download both request `https://api.qrserver.com` with the credential in the query string. This confirms that credential values leave the application's origin for image generation, including when the QR is displayed, not only when the user downloads it. Prefer local QR generation or document an explicit, reviewed decision to use the external service.
 
 This is a source-and-test review only. No application code or tests were changed in this documentation PR.
+
+## Student enrollment and legacy-field consistency audit
+
+Reviewed `backend/app/api/routes/academic_registry.py`, `backend/app/student_academics.py`, `backend/app/services/student_promotion.py`, and the credential lookup route.
+
+- Year-scoped `StudentEnrollment` rows are the roster's source for section and student status, but the legacy `Student.section_id` and `Student.academic_status` fields still exist and are read by some older paths.
+- The dedicated enrollment creation route updates the legacy `Student.section_id` when restoring an archived enrollment, but does not update `Student.academic_status`. Creating a brand-new enrollment does not synchronize either legacy field. The enrollment PATCH route updates only the enrollment row. By contrast, the import-promotion service updates the legacy student fields as well as the year-scoped enrollment.
+- The public credential lookup in `backend/app/api/routes/attendee_credentials.py` derives a student's displayed section from `Student.section_id`, not from the selected/current `StudentEnrollment`. This means the section shown by that older public lookup can diverge from the section shown in the academic registry after enrollment changes. Do not describe every student-facing or credential lookup as enrollment-aware until those paths are reconciled.
+- The enrollment creation route checks that the student, section, and academic year exist and that the section belongs to the selected year, but it does not reject a student whose `students.archived_at` is set. The route's intended behavior for archived students is therefore not enforced at this boundary.
+- Follow-up should establish one canonical rule for synchronizing legacy fields or retire their use in favor of year-scoped enrollment queries. Add tests for create, restore, and update enrollment operations that verify roster details and credential lookup agree. Also decide whether archived students may receive new enrollments, then enforce and test that rule.
+
+This was a source review only. No application code or tests were changed in this documentation PR.
