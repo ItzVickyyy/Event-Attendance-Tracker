@@ -182,6 +182,6 @@ This requires `DOMAIN` and the other variables `compose.deploy.yml` marks as req
 1. `cp .env.example .env` and fill in real values.
 2. Start PostgreSQL and Mailpit with `docker compose up -d db mailpit`; PostgreSQL is reachable at `localhost:5433` (see the Database section above).
 3. From `backend`: `uv sync && uv run bash scripts/prestart.sh && uv run fastapi dev --port 8001`.
-4. From the project root: `bun install && bun run dev` (after generating local HTTPS certs — see above).
+4. From the project root: `bun install && bun run dev`. Generate local HTTPS certificates first only if you need to test Web NFC from a phone over the LAN; see the optional HTTPS section above.
 5. Make backend changes; if routes/schemas changed, run `bash ./scripts/generate-client.sh` (or let the pre-commit hook do it).
 6. Run `uv run prek run --all-files` before committing, or rely on the installed Git hook.
