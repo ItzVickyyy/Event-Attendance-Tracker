@@ -166,4 +166,3 @@ Reviewed the September 10 version linked above against the current NFC registrat
 - The current NFC registration component reads NDEF message content. Do not describe that as guaranteed access to a physical card's hardware UID unless the supported card format and device behavior have been verified.
 - The old section 6 describes credential replacement and retaining retired IDs for audit. The reviewed registration component creates credentials and the API rejects duplicate values, but this review did not verify a complete replacement/retirement lifecycle.
 - No implementation changes were made as part of this documentation reconciliation. Product decisions that would change attendance semantics or credential lifecycle remain open.
-
