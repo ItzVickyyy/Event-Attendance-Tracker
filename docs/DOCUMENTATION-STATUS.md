@@ -274,3 +274,14 @@ Reviewed `backend/app/api/routes/event_registrations.py` and compared the create
 - Follow-up: add validation for the final event/attendee pair during PATCH, apply the same closed-event policy as creation unless an explicit administrative exception is intended, and add tests for closed-event reassignment, duplicate-pair reassignment, and updates to registrations with recorded attendance.
 
 This was a source review only. No application code, tests, migrations, or CI workflows were changed in this documentation PR.
+
+## Event and attendance-session lifecycle audit
+
+Reviewed `backend/app/api/routes/events.py`, `backend/app/api/routes/attendance_sessions.py`, and `backend/app/services/attendance_processing.py`.
+
+- Event PATCH synchronizes sessions when an event transitions to `open` or `closed`, but it does not update sessions when an event transitions from `open` to `draft`. The event-level scan guard rejects scans while the event is not open, but the former session can remain marked both active and open. The active-session lookup checks session state without also requiring the parent event to be open, so its response can disagree with scan eligibility.
+- When an event is reopened and has no session marked active, the event PATCH handler selects the first session by display order and marks it open and active without excluding sessions whose status is `cancelled`. A cancelled first session can therefore be reactivated by reopening the event.
+- Event creation maps the event's initial status to a default attendance-session state. The transition handler is a separate path, and the reviewed implementation does not establish a single invariant covering every event/session status combination.
+- Follow-up: define the allowed event/session state transitions, ensure moving an event to draft deactivates or otherwise reconciles active sessions, and ensure reopening selects only an eligible session. Add tests for open-to-draft, closed-to-open with a cancelled first session, and the active-session endpoint when its parent event is not open.
+
+These are source-level findings from route/service review, not results from a live deployment. This documentation-only PR does not change the implementation or tests.
