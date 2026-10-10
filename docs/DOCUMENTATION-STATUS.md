@@ -229,3 +229,14 @@ Reviewed `compose.yml`, `compose.deploy.yml`, `.env.example`, `backend/app/core/
 - `backend/app/main.py` configures CORS using the single `FRONTEND_HOST` setting. The inspected configuration does not establish a separate application-level trusted-proxy middleware. Deployment-specific proxy and firewall behavior cannot be verified from repository files alone.
 
 This was a repository configuration review, not a live server audit. No application code, migrations, or workflow files were changed.
+
+## Public student QR eligibility audit
+
+Reviewed `frontend/src/routes/get-my-qr.tsx`, `backend/app/api/routes/public_student_qr.py`, `backend/app/student_academics.py`, and `backend/tests/api/routes/test_public_student_qr.py`.
+
+- The public lookup requires an exact student number and a normalized match for first, middle, and last name plus name extension. Unknown students and identity mismatches return the same 404 response. The current test suite covers normalized matching, unknown records, oversized input, and the process-local attempt limit.
+- The SQL lookup excludes students with `students.archived_at` set and requires a non-null enrollment status, then chooses the most recently created enrollment. It does not restrict `student_status` to `regular` or `irregular`, and it does not check the enrollment's `archived_at`. Since the status enum also includes `inactive`, `graduated`, `transferred`, and `archived`, a non-archived student can potentially retrieve a QR credential using an inactive or historical enrollment. The intended eligibility rule is not established by the current route or tests.
+- Decide whether QR self-service is limited to currently enrolled students or should remain available to former students. Then encode that rule explicitly in the query and add tests for each relevant status and archived enrollment before treating eligibility as settled.
+- The displayed QR image and download both request `https://api.qrserver.com` with the credential in the query string. This confirms that credential values leave the application's origin for image generation, including when the QR is displayed, not only when the user downloads it. Prefer local QR generation or document an explicit, reviewed decision to use the external service.
+
+This is a source-and-test review only. No application code or tests were changed in this documentation PR.
