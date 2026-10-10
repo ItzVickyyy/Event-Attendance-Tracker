@@ -504,7 +504,7 @@ The scan reported:
 
 -   Tag type: ISO 14443-3A
 -   Chip: NXP MIFARE Classic 1K
--   UID observed during testing: 8F:49:5B:74
+-   UID observed during testing: redacted for privacy
 -   ATQA: 0x0004
 -   SAK: 0x08
 -   Memory: 1 KB
