@@ -74,8 +74,8 @@ If you're picking up work on this project, treat the Source of Truth's numbered 
 - [`development.md`](development.md) — local development setup and day-to-day workflow
 - [`deployment.md`](deployment.md) — FastAPI Cloud deployment
 - [`deployment-docker-compose.md`](deployment-docker-compose.md) — self-hosted deployment with Docker Compose
-- [`docs/SOURCE-OF-TRUTH.md`](docs/SOURCE-OF-TRUTH.md) — full system specification, data model, and phased roadmap
-- [`docs/Phase-3-Student-Data-Field-Mapping.md`](docs/Phase-3-Student-Data-Field-Mapping.md) — masterlist-to-database field mapping used for student import
+- [`docs/SOURCE-OF-TRUTH.md`](docs/SOURCE-OF-TRUTH.md) — intended system behavior, data model, and phased roadmap
+- [`docs/DOCUMENTATION-STATUS.md`](docs/DOCUMENTATION-STATUS.md) — documentation audit, known mismatches, and update checklist
 - [`backend/README.md`](backend/README.md) / [`frontend/README.md`](frontend/README.md) — backend and frontend contributor notes
 
 ## License
