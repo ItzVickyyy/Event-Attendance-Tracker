@@ -263,3 +263,14 @@ Reviewed `backend/app/api/routes/attendee_credentials.py`, `backend/app/services
 - Add focused tests for inactive credential lookup versus scan rejection, reactivation of an inactive student QR credential, and the expected behavior after a credential is deleted and provisioning runs again. Document the intended administrative use of inactive credential lookup if it remains available.
 
 This was a source review only. No application code, tests, migrations, or CI workflows were changed in this documentation PR.
+
+## Event-registration update validation audit
+
+Reviewed `backend/app/api/routes/event_registrations.py` and compared the create and update handlers.
+
+- Registration creation rejects closed events and checks whether the attendee is already registered for that event. The update handler validates that a replacement event or attendee exists, but it does not repeat the closed-event check and does not check whether the resulting event/attendee pair already has another registration.
+- As a result, updating an existing registration can bypass the creation rules: an administrator can move a registration to a closed event or change its event/attendee pair to one already represented by another registration. This is a source-level validation gap; the repository review did not exercise it against a live database.
+- The update path also permits changing the registration's event or attendee independently of any existing attendance rows. Confirm the intended policy for registrations that already have attendance records before allowing those identity fields to change.
+- Follow-up: add validation for the final event/attendee pair during PATCH, apply the same closed-event policy as creation unless an explicit administrative exception is intended, and add tests for closed-event reassignment, duplicate-pair reassignment, and updates to registrations with recorded attendance.
+
+This was a source review only. No application code, tests, migrations, or CI workflows were changed in this documentation PR.
