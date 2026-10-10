@@ -558,6 +558,8 @@ testing (e.g. `redacted test UID`). So the core plan (scan → get UID → look 
 student) works essentially unchanged, just from JavaScript in the
 browser instead of a native Android app.
 
+**Current implementation note (2026-10-10):** The intended UID-based flow above is not yet verified end to end. The main attendance scanner first reads an NDEF text credential and falls back to Web NFC's `event.serialNumber`; the separate student NFC registration component currently reads NDEF message content but does not use that serial-number fallback. Registration and scanning can therefore produce different credential values for the same physical card. Treat this as an unresolved implementation discrepancy, not as proof that every school ID can be registered and scanned consistently. See the [documentation audit](DOCUMENTATION-STATUS.md) for the code-level finding and follow-up.
+
 **Bad news — real constraints to design around:**
 
 -   **Chromium-on-Android only.** Web NFC ships only in Chromium-based
