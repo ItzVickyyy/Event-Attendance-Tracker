@@ -34,7 +34,7 @@
 - The backend README's local setup referenced a Mailpit service, HTTP URLs, and destructive volume cleanup that do not match the development guide's description of the current repository configuration.
 - The frontend README's quick start pointed to plain HTTP, while the current Vite configuration requires local TLS certificates for its HTTPS dev server.
 - The root README's student field-mapping link did not resolve at the documented path.
-- The development guide itself describes known mismatches between Compose services and CI workflows. These are repository/configuration issues to track, not gaps to conceal with documentation wording.
+- The development guide incorrectly stated that the base Compose file had no host port mappings and that Mailpit was absent. The current Compose file publishes PostgreSQL on host port 5433, Mailpit on 1025/8026, and the backend on 8000/8001. It also incorrectly claimed the Playwright workflow depended on a separate Compose service named `playwright`; the current workflow starts the backend service and runs Playwright from the workflow runner.
 
 ## Recommended order
 
@@ -49,7 +49,8 @@
 - [ ] Inventory API routes and permissions from the actual FastAPI route registrations and dependencies.
 - [ ] Document the actual database schema and migration head without assuming table names. The model inventory has been checked, but a dedicated data-model guide and migration-head verification remain outstanding.
 - [ ] Reconcile the Source of Truth with current behavior and label each requirement as implemented, partial, planned, or blocked.
-- [ ] Verify local development and CI instructions against the workflow files and Compose configuration.
+- [x] Correct the development guide's stale Compose port, Mailpit, and Playwright workflow claims against the current files.
+- [ ] Finish checking all development commands and CI workflow prerequisites against scripts and configuration.
 - [ ] Verify both deployment guides against the current deployment workflows.
 - [ ] Fix broken links and remove duplicated or generic template documentation only after checking whether it contains project-specific details.
 
