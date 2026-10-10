@@ -382,3 +382,13 @@ Reviewed `backend/app/api/routes/class_representatives.py`, especially `POST /ap
 
 This is a source review, not proof that invalid records already exist in production. Application code and tests were not changed in this documentation-only PR.
 
+## Public credential lookup: personal-data exposure review
+
+Reviewed `backend/app/api/routes/attendee_credentials.py`, specifically `GET /api/v1/attendee-credentials/public/{credential_value}`.
+
+- The endpoint has no authentication dependency. Anyone who knows an active credential value can receive the linked attendee's full name and attendee type, plus student number and section name when the attendee is linked to a student.
+- The credential value acts as the lookup secret, but the endpoint does not establish that the requester is the credential owner or an authorized operator. A QR code or credential value that is photographed, forwarded, or otherwise exposed can therefore also expose the returned identity details.
+- This is not evidence that credentials can be enumerated without knowing a value, and the endpoint may be intentionally public for a user-facing workflow. The remaining question is whether returning student number and section is necessary for that workflow and whether the credential should be treated as a bearer secret.
+- Follow-up: document the endpoint's intended public use and threat model; minimize returned fields to what the workflow requires; consider an authenticated/scanner-only alternative for operational lookup; and add tests that lock down the intended response fields and authorization policy. Review rate limiting separately rather than assuming the public student QR limiter covers this route.
+
+This is a source-code privacy review, not a live exploit test. Application code and tests were not changed in this documentation-only PR.
