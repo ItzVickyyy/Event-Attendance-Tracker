@@ -1,28 +1,26 @@
 import { useQuery } from "@tanstack/react-query"
 import { BookOpen, CalendarDays, UsersRound } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAcademicYear } from "@/context/AcademicYearContext"
 
 export function ClassRepresentativeDashboard() {
-  const { activeAcademicYear } = useAcademicYear()
   const token = localStorage.getItem("access_token")
   const query = useQuery({
-    queryKey: ["class-representative-assignment", activeAcademicYear?.id],
+    queryKey: ["class-representative-assignment"],
     queryFn: async () => {
       const headers: Record<string, string> = {}
       if (token) headers.Authorization = `Bearer ${token}`
-      const response = await fetch(
-        "/api/v1/class-representatives/me?academic_year_id=" +
-          encodeURIComponent(activeAcademicYear!.id),
-        { headers },
-      )
+      // The API selects the representative's most recent assignment when no
+      // academic year is supplied. Class representatives cannot read the
+      // admin-only global academic-year registry.
+      const response = await fetch("/api/v1/class-representatives/me", {
+        headers,
+      })
       if (!response.ok) throw new Error("No section assignment found")
       return response.json()
     },
-    enabled: Boolean(activeAcademicYear),
   })
 
-  if (!activeAcademicYear || query.isPending) {
+  if (query.isPending) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
         Loading your section…
@@ -36,8 +34,8 @@ export function ClassRepresentativeDashboard() {
         <CardContent className="py-12 text-center">
           <p className="font-medium">No section assigned</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            You do not have a Class Representative assignment for{" "}
-            {activeAcademicYear.label}.
+            No Class Representative assignment was found for your account.
+            Please contact a Super Admin if you believe this is a mistake.
           </p>
         </CardContent>
       </Card>
