@@ -93,6 +93,19 @@ def create_user(
                 "the dedicated assignment workflow"
             ),
         )
+    if any(
+        (
+            user_in.student_number,
+            user_in.organization,
+            user_in.position_id,
+            user_in.academic_year_id,
+            user_in.section_id,
+        )
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Officer account details must use the dedicated officer workflow",
+        )
 
     is_super_admin = (
         current_user.is_superuser or current_user.role == UserRole.super_admin
