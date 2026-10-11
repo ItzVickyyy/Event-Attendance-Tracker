@@ -9,11 +9,19 @@ from app.api.deps import (
     CurrentUser,
     SessionDep,
     require_admin,
+    require_super_admin,
 )
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
+    AcademicSection,
     Message,
+    OfficerAccountCreate,
+    OfficerPosition,
+    OfficerPositionCreate,
+    OfficerPositionPublic,
+    OfficerPositionsPublic,
+    OfficerPositionUpdate,
     UpdatePassword,
     User,
     UserCreate,
@@ -24,6 +32,8 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
 )
+from app.services.account_provisioning import generate_temporary_password
+from app.student_academics import AcademicYear
 from app.utils import generate_new_account_email, send_email
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -222,6 +232,214 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     return user
 
 
+@router.get(
+    "/officer-positions",
+    response_model=OfficerPositionsPublic,
+    dependencies=[Depends(require_super_admin)],
+)
+def list_officer_positions(session: SessionDep, _current_user: CurrentUser) -> Any:
+    positions = session.exec(select(OfficerPosition).order_by(OfficerPosition.name)).all()
+    return OfficerPositionsPublic(
+        data=[OfficerPositionPublic.model_validate(position) for position in positions],
+        count=len(positions),
+    )
+
+
+@router.post(
+    "/officer-positions",
+    response_model=OfficerPositionPublic,
+    dependencies=[Depends(require_super_admin)],
+)
+def create_officer_position(
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    payload: OfficerPositionCreate,
+) -> OfficerPosition:
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Position name is required")
+    existing = session.exec(
+        select(OfficerPosition).where(func.lower(OfficerPosition.name) == name.lower())
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="This officer position already exists")
+    position = OfficerPosition(name=name, is_active=payload.is_active)
+    session.add(position)
+    session.commit()
+    session.refresh(position)
+    return position
+
+
+@router.patch(
+    "/officer-positions/{position_id}",
+    response_model=OfficerPositionPublic,
+    dependencies=[Depends(require_super_admin)],
+)
+def update_officer_position(
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    position_id: uuid.UUID,
+    payload: OfficerPositionUpdate,
+) -> OfficerPosition:
+    position = session.get(OfficerPosition, position_id)
+    if not position:
+        raise HTTPException(status_code=404, detail="Officer position not found")
+    values = payload.model_dump(exclude_unset=True)
+    if "name" in values and values["name"] is not None:
+        name = values["name"].strip()
+        if not name:
+            raise HTTPException(status_code=422, detail="Position name is required")
+        existing = session.exec(
+            select(OfficerPosition).where(
+                func.lower(OfficerPosition.name) == name.lower(),
+                OfficerPosition.id != position_id,
+            )
+        ).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="This officer position already exists")
+        values["name"] = name
+    position.sqlmodel_update(values)
+    session.add(position)
+    session.commit()
+    session.refresh(position)
+    return position
+
+
+@router.delete(
+    "/officer-positions/{position_id}",
+    dependencies=[Depends(require_super_admin)],
+)
+def delete_officer_position(
+    *, session: SessionDep, _current_user: CurrentUser, position_id: uuid.UUID
+) -> Message:
+    position = session.get(OfficerPosition, position_id)
+    if not position:
+        raise HTTPException(status_code=404, detail="Officer position not found")
+    assigned = session.exec(
+        select(User).where(User.position_id == position_id)
+    ).first()
+    if assigned:
+        raise HTTPException(
+            status_code=409,
+            detail="This position is assigned to an account. Deactivate it instead.",
+        )
+    session.delete(position)
+    session.commit()
+    return Message(message="Officer position deleted successfully")
+
+
+@router.post(
+    "/officers",
+    response_model=UserPublic,
+    dependencies=[Depends(require_super_admin)],
+)
+def create_officer_account(
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    payload: OfficerAccountCreate,
+) -> User:
+    if not settings.emails_enabled and settings.FASTAPI_ENV != "test":
+        raise HTTPException(
+            status_code=503,
+            detail="Email delivery must be configured before creating officer accounts",
+        )
+    email = str(payload.email).strip().lower()
+    if crud.get_user_by_email(session=session, email=email):
+        raise HTTPException(status_code=409, detail="A user with this email already exists")
+    student_number = payload.student_number.strip()
+    if session.exec(
+        select(User).where(User.student_number == student_number)
+    ).first():
+        raise HTTPException(
+            status_code=409, detail="An account already exists for this Student ID"
+        )
+    year = session.get(AcademicYear, payload.academic_year_id)
+    section = session.get(AcademicSection, payload.section_id)
+    position = session.get(OfficerPosition, payload.position_id)
+    if not year or not section:
+        raise HTTPException(status_code=404, detail="Academic year or section not found")
+    if section.academic_year_id != year.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Section does not belong to the selected academic year",
+        )
+    if not position or not position.is_active:
+        raise HTTPException(status_code=400, detail="Select an active officer position")
+    if payload.role not in (UserRole.super_admin, UserRole.admin):
+        raise HTTPException(
+            status_code=422,
+            detail="Officer accounts must use the Super Admin or Admin system role",
+        )
+
+    first_name = payload.first_name.strip()
+    middle_initial = (payload.middle_initial or "").strip().rstrip(".")
+    last_name = payload.last_name.strip()
+    extension = (payload.extension or "").strip()
+    full_name = " ".join(
+        part
+        for part in (
+            first_name,
+            f"{middle_initial}." if middle_initial else "",
+            last_name,
+            extension,
+        )
+        if part
+    )
+    temporary_password = generate_temporary_password()
+    user = crud.create_user(
+        session=session,
+        user_create=UserCreate(
+            email=email,
+            password=temporary_password,
+            role=payload.role,
+            is_superuser=payload.role == UserRole.super_admin,
+            can_scan=payload.role in (UserRole.super_admin, UserRole.admin),
+            full_name=full_name,
+            first_name=first_name,
+            middle_name=middle_initial or None,
+            last_name=last_name,
+            name_extension=extension or None,
+            student_number=student_number,
+            organization=payload.organization.strip(),
+            position_id=position.id,
+            academic_year_id=year.id,
+            section_id=section.id,
+            must_change_password=True,
+        ),
+        commit=False,
+    )
+    user.must_change_password = True
+    session.add(user)
+    session.flush()
+    if settings.emails_enabled:
+        try:
+            email_data = generate_new_account_email(
+                email_to=user.email,
+                username=user.email,
+                password=temporary_password,
+            )
+            send_email(
+                email_to=user.email,
+                subject=email_data.subject,
+                html_content=email_data.html_content,
+            )
+        except Exception as exc:
+            session.rollback()
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "Officer account was not created because credentials could not "
+                    "be delivered. Check email delivery and retry."
+                ),
+            ) from exc
+    session.commit()
+    session.refresh(user)
+    return user
+
+
 @router.get("/{user_id}", response_model=UserPublic)
 def read_user_by_id(
     user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
@@ -276,6 +494,11 @@ def update_user(
             ),
         )
     if db_user.id == current_user.id and is_super_admin:
+        if submitted_fields.get("is_active") is False:
+            raise HTTPException(
+                status_code=403,
+                detail="You cannot deactivate your own Super Admin account",
+            )
         requested_role = submitted_fields.get("role", db_user.role)
         requested_superuser = submitted_fields.get("is_superuser", db_user.is_superuser)
         if (
