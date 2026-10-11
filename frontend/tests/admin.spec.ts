@@ -54,6 +54,21 @@ test("Create a class representative account with an assigned section", async ({
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
   await expect(row).toContainText("WMAD 3A")
+
+  await page.goto("/administration/users")
+  await page.getByPlaceholder("Search by name, email, or position").fill(email)
+  const accountRow = page.getByRole("row").filter({ hasText: email })
+  await accountRow.getByRole("button", { name: "Edit" }).click()
+  const dialog = page.getByRole("dialog")
+  const systemRole = dialog.getByRole("combobox").nth(2)
+  await expect(systemRole).toContainText("Class Representative")
+  await systemRole.click()
+  await expect(
+    page.getByRole("option", {
+      name: "Class Representative",
+      exact: true,
+    }),
+  ).toBeVisible()
 })
 
 test("Super admin can create an officer account with a position", async ({

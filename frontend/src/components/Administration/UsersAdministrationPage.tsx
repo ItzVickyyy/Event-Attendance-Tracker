@@ -958,6 +958,10 @@ function UserRow({
     : user.role === "class_representative"
       ? ["student", "class_representative"]
       : ["student"]
+  const editAccountRoles: UserRole[] =
+    user.role === "class_representative"
+      ? [...superAdminAccountRoles, "class_representative"]
+      : superAdminAccountRoles
   const yearsQuery = useQuery({
     queryKey: ["edit-officer-account-years"],
     queryFn: () =>
@@ -1245,7 +1249,7 @@ function UserRow({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {superAdminAccountRoles.map((item) => (
+                          {editAccountRoles.map((item) => (
                             <SelectItem key={item} value={item}>
                               {roleLabel(item)}
                             </SelectItem>
