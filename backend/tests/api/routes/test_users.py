@@ -584,3 +584,94 @@ def test_delete_user_without_privileges(
     )
     assert r.status_code == 403
     assert r.json()["detail"] == "The user doesn't have enough privileges"
+
+
+def test_super_admin_cannot_deactivate_own_account(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    super_user = crud.get_user_by_email(session=db, email=settings.FIRST_SUPERUSER)
+    assert super_user
+    response = client.patch(
+        f"{settings.API_V1_STR}/users/{super_user.id}",
+        headers=superuser_token_headers,
+        json={"is_active": False},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "You cannot deactivate your own Super Admin account"
+    db.refresh(super_user)
+    assert super_user.is_active is True
+
+
+def test_super_admin_can_create_officer_position_and_account(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    years = client.get(
+        f"{settings.API_V1_STR}/academic-registry/academic-years",
+        headers=superuser_token_headers,
+    )
+    assert years.status_code == 200
+    year = next(
+        item for item in years.json()["data"] if item["label"] == "2026-2027"
+    )
+    sections = client.get(
+        f"{settings.API_V1_STR}/academic-registry/sections",
+        headers=superuser_token_headers,
+        params={"academic_year_id": year["id"]},
+    )
+    assert sections.status_code == 200
+    section = next(
+        item
+        for item in sections.json()["data"]
+        if item["program_code"] == "BSIT"
+        and item["section_name"] == "WMAD 3A"
+    )
+    position = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": f"Recording Secretary {uuid.uuid4().hex[:6]}"},
+    )
+    assert position.status_code == 200
+    payload = {
+        "email": random_email(),
+        "student_number": f"OFFICER-{uuid.uuid4().hex[:10].upper()}",
+        "first_name": "Juan",
+        "middle_initial": "D",
+        "last_name": "Dela Cruz",
+        "extension": "Jr.",
+        "organization": "CCS Student Council",
+        "academic_year_id": year["id"],
+        "section_id": section["id"],
+        "role": "super_admin",
+        "position_id": position.json()["id"],
+    }
+    response = client.post(
+        f"{settings.API_V1_STR}/users/officers",
+        headers=superuser_token_headers,
+        json=payload,
+    )
+    assert response.status_code == 200
+    account = response.json()
+    assert account["full_name"] == "Juan D. Dela Cruz Jr."
+    assert account["student_number"] == payload["student_number"]
+    assert account["organization"] == "CCS Student Council"
+    assert account["position_id"] == position.json()["id"]
+    assert account["role"] == "super_admin"
+    assert account["must_change_password"] is True
+
+
+def test_officer_position_names_are_case_insensitively_unique(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    name = f"Treasurer {uuid.uuid4().hex[:6]}"
+    first = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": name},
+    )
+    assert first.status_code == 200
+    duplicate = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": name.swapcase()},
+    )
+    assert duplicate.status_code == 409
