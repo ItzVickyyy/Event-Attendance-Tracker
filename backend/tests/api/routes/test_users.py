@@ -791,14 +791,19 @@ def test_admin_cannot_edit_officer_academic_details(
     db: Session,
 ) -> None:
     target = create_random_user(db)
-    admin_headers = get_token_headers_for_role(client=client, db=db, role=UserRole.admin)
+    admin_headers = get_token_headers_for_role(
+        client=client, db=db, role=UserRole.admin
+    )
     response = client.patch(
         f"{settings.API_V1_STR}/users/{target.id}",
         headers=admin_headers,
         json={"student_number": "NOT-ALLOWED"},
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == "Only a Super Admin can edit officer account details"
+    assert (
+        response.json()["detail"]
+        == "Only a Super Admin can edit officer account details"
+    )
 
 
 def test_super_admin_can_download_officer_import_templates(
