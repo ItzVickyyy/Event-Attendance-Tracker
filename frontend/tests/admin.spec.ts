@@ -250,9 +250,7 @@ test("Super admin can validate and import officer accounts from CSV", async ({
     .click()
   await expect(page.getByText("Imported 1 officer account(s)")).toBeVisible()
 
-  await page
-    .getByPlaceholder("Search by name, email, or position")
-    .fill(email)
+  await page.getByPlaceholder("Search by name, email, or position").fill(email)
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
   await expect(row).toContainText(position)
