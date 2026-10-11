@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus } from "lucide-react"
+import { Download, FileUp, Plus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -30,6 +31,8 @@ const headers = (json = false) => ({
 export function ClassRepresentativesAdmin() {
   const client = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
   const [form, setForm] = useState({
     email: "",
     first_name: "",
@@ -66,6 +69,60 @@ export function ClassRepresentativesAdmin() {
         await fetch(`${api}/class-representatives/`, { headers: headers() })
       ).json(),
   })
+  const downloadTemplate = () => {
+    const csv =
+      "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section" +
+      String.fromCharCode(10)
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+    )
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "Class_Representative_Import_Template.csv"
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const importRepresentatives = async () => {
+    if (!importFile) return
+    setImporting(true)
+    try {
+      const body = new FormData()
+      body.append("file", importFile)
+      const response = await fetch(`${api}/class-representatives/import`, {
+        method: "POST",
+        headers: headers(),
+        body,
+      })
+      const result = await response.json().catch(() => null)
+      if (!response.ok) {
+        const detail = Array.isArray(result?.detail)
+          ? result.detail.join("; ")
+          : result?.detail
+        throw new Error(detail ?? "Import failed")
+      }
+      if (
+        Array.isArray(result.delivery_failures) &&
+        result.delivery_failures.length
+      ) {
+        toast.warning(
+          `Created ${result.created_count} account(s), but email delivery failed for: ${result.delivery_failures.join(", ")}`,
+        )
+      } else {
+        toast.success(
+          `Imported ${result.created_count} Class Representative account(s)`,
+        )
+      }
+      setImportFile(null)
+      await client.invalidateQueries({ queryKey: ["class-representatives"] })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Import failed")
+    } finally {
+      setImporting(false)
+    }
+  }
   const create = async () => {
     const response = await fetch(`${api}/class-representatives/`, {
       method: "POST",
@@ -101,11 +158,46 @@ export function ClassRepresentativesAdmin() {
             Create and review section representative accounts.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus />
-          Create Class Representative
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={downloadTemplate}>
+            <Download className="mr-2 size-4" />
+            CSV Template
+          </Button>
+          <Button onClick={() => setOpen(true)}>
+            <Plus />
+            Create Class Representative
+          </Button>
+        </div>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Import Class Representatives</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Upload a CSV using the template. Every row is validated before
+            accounts are created.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="class-rep-import-file">CSV file</Label>
+            <Input
+              id="class-rep-import-file"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) =>
+                setImportFile(event.target.files?.[0] ?? null)
+              }
+            />
+          </div>
+          <Button
+            onClick={() => void importRepresentatives()}
+            disabled={!importFile || importing}
+          >
+            <FileUp className="mr-2 size-4" />
+            {importing ? "Importing…" : "Import representatives"}
+          </Button>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Accounts</CardTitle>
@@ -147,88 +239,115 @@ export function ClassRepresentativesAdmin() {
         </CardContent>
       </Card>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create Class Representative</DialogTitle>
+            <DialogDescription>
+              Create a login account and assign it to one section for the
+              selected academic year. The representative must change the
+              temporary password on first login.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            {(
-              [
-                ["first_name", "First Name"],
-                ["middle_initial", "Middle Initial"],
-                ["last_name", "Last Name"],
-                ["extension", "Extension"],
-                ["email", "Email"],
-              ] as const
-            ).map(([field, label]) => (
-              <div className="space-y-2" key={field}>
-                <Label htmlFor={field}>
-                  {label}
-                  {["first_name", "last_name", "email"].includes(field)
-                    ? " *"
-                    : ""}
-                </Label>
-                <Input
-                  id={field}
-                  value={form[field]}
-                  onChange={(e) =>
-                    setForm({ ...form, [field]: e.target.value })
+          <div className="space-y-5">
+            <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
+              {(
+                [
+                  ["first_name", "First Name"],
+                  ["middle_initial", "Middle Initial"],
+                  ["last_name", "Last Name"],
+                  ["extension", "Extension"],
+                  ["email", "Email"],
+                ] as const
+              ).map(([field, label]) => (
+                <div className="space-y-2" key={field}>
+                  <Label htmlFor={field}>
+                    {label}
+                    {["first_name", "last_name", "email"].includes(field)
+                      ? " *"
+                      : ""}
+                  </Label>
+                  <Input
+                    id={field}
+                    value={form[field]}
+                    required={["first_name", "last_name", "email"].includes(
+                      field,
+                    )}
+                    onChange={(event) =>
+                      setForm({ ...form, [field]: event.target.value })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Academic Year *</Label>
+                <Select
+                  value={form.academic_year_id}
+                  onValueChange={(value) =>
+                    setForm({
+                      ...form,
+                      academic_year_id: value,
+                      section_id: "",
+                    })
                   }
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select academic year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(years.data?.data ?? []).map((year: any) => (
+                      <SelectItem key={year.id} value={year.id}>
+                        {year.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ))}
-            <div className="space-y-2">
-              <Label>Academic Year</Label>
-              <Select
-                value={form.academic_year_id}
-                onValueChange={(value) =>
-                  setForm({ ...form, academic_year_id: value, section_id: "" })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select academic year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(years.data?.data ?? []).map((year: any) => (
-                    <SelectItem key={year.id} value={year.id}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Section *</Label>
+                <Select
+                  value={form.section_id}
+                  onValueChange={(value) =>
+                    setForm({ ...form, section_id: value })
+                  }
+                  disabled={!form.academic_year_id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(sections.data?.data ?? []).map((section: any) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.program_code} {section.section_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground sm:col-span-2">
+                The system generates a temporary password. The account must
+                change it after first login. If email delivery is enabled, the
+                credentials are sent automatically.
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label>Section</Label>
-              <Select
-                value={form.section_id}
-                onValueChange={(value) =>
-                  setForm({ ...form, section_id: value })
-                }
-                disabled={!form.academic_year_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(sections.data?.data ?? []).map((section: any) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.program_code} {section.section_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              The initial password is {"Change" + "ThisPassword"}. The account
-              is required to change it after first login. If email delivery is
-              enabled, the credentials are sent automatically.
-            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void create()}>Create account</Button>
+            <Button
+              onClick={() => void create()}
+              disabled={
+                !form.first_name.trim() ||
+                !form.last_name.trim() ||
+                !form.email.trim() ||
+                !form.academic_year_id ||
+                !form.section_id
+              }
+            >
+              Create account
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

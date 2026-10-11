@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus, Settings2 } from "lucide-react"
+import { Pencil, Plus, Settings2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { type UserPublic, type UserRole, UsersService } from "@/client"
@@ -60,6 +60,36 @@ const roles: UserRole[] = ["super_admin", "admin", "student"]
 const superAdminAccountRoles: UserRole[] = ["super_admin", "admin"]
 const adminAccountRoles: UserRole[] = ["student"]
 const api = "/api/v1"
+const positionHierarchy = [
+  "President",
+  "Vice President",
+  "Executive Secretary",
+  "Recording Secretary",
+  "Treasurer",
+  "Auditor",
+  "Business Manager",
+  "Event Coordinator",
+  "PIO for Publication",
+  "PIO for Documentation",
+  "Creative Designer",
+  "BSCS 1st Year Representative",
+  "BSCS 2nd Year Representative",
+  "BSCS 3rd Year Representative",
+  "BSCS 4th Year Representative",
+  "BSIT 1st Year Representative",
+  "BSIT 2nd Year Representative",
+  "BSIT 3rd Year Representative",
+  "BSIT 4th Year Representative",
+  "SSC CSS Representative",
+]
+const comparePositions = (a: OfficerPosition, b: OfficerPosition) => {
+  const ai = positionHierarchy.indexOf(a.name)
+  const bi = positionHierarchy.indexOf(b.name)
+  if (ai < 0 && bi < 0) return a.name.localeCompare(b.name)
+  if (ai < 0) return 1
+  if (bi < 0) return -1
+  return ai - bi
+}
 
 async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem("access_token")
@@ -320,7 +350,9 @@ export function UsersAdministrationPage() {
     setSectionId("")
   }
 
-  const positions = positionsQuery.data?.data ?? []
+  const positions = [...(positionsQuery.data?.data ?? [])].sort(
+    comparePositions,
+  )
   const positionName = (id?: string | null) =>
     positions.find((position) => position.id === id)?.name ?? "—"
   const users = ((query.data?.data.data ?? []) as OfficerUser[])
@@ -421,7 +453,7 @@ export function UsersAdministrationPage() {
       </Card>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>
               {isSuperAdmin ? "Add Student Council Officer" : "Add account"}
@@ -886,6 +918,9 @@ function UserRow({
   const [role, setRole] = useState<UserRole>(user.role ?? "student")
   const [active, setActive] = useState(Boolean(user.is_active))
   const [scan, setScan] = useState(Boolean(user.can_scan))
+  const [editOpen, setEditOpen] = useState(false)
+  const [editName, setEditName] = useState(user.full_name ?? "")
+  const [editEmail, setEditEmail] = useState(user.email)
   const isProtectedAccount =
     user.role === "admin" || user.role === "super_admin"
   const canEdit =
@@ -960,9 +995,76 @@ function UserRow({
         </td>
       )}
       <td className="p-3">
-        <Button size="sm" onClick={save} disabled={saving || !canEdit}>
-          Save
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={save} disabled={saving || !canEdit}>
+            Save access
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!canEdit}
+            onClick={() => {
+              setEditName(user.full_name ?? "")
+              setEditEmail(user.email)
+              setEditOpen(true)
+            }}
+          >
+            <Pencil className="mr-1 size-3.5" />
+            Edit
+          </Button>
+        </div>
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit User Account</DialogTitle>
+              <DialogDescription>
+                Update the account name and email address.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor={`${user.id}-edit-name`}>Full Name</Label>
+                <Input
+                  id={`${user.id}-edit-name`}
+                  value={editName}
+                  onChange={(event) => setEditName(event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`${user.id}-edit-email`}>Email</Label>
+                <Input
+                  id={`${user.id}-edit-email`}
+                  type="email"
+                  value={editEmail}
+                  onChange={(event) => setEditEmail(event.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                disabled={saving || !editEmail.trim()}
+                onClick={() => {
+                  onSave({
+                    full_name: editName.trim(),
+                    email: editEmail.trim(),
+                    role,
+                    is_active: active,
+                    ...(isSuperAdmin
+                      ? { can_scan: scan, is_superuser: role === "super_admin" }
+                      : {}),
+                  })
+                  setEditOpen(false)
+                }}
+              >
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </td>
     </tr>
   )
