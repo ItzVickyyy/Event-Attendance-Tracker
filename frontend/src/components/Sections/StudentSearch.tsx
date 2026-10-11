@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Search } from "lucide-react"
 import { useState } from "react"
 import { StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -30,12 +29,6 @@ export function StudentSearch() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Search className="size-4" />
-          Global Student Search
-        </CardTitle>
-      </CardHeader>
       <CardContent className="space-y-4">
         <form
           className="flex flex-col gap-2 sm:flex-row"
@@ -47,7 +40,7 @@ export function StudentSearch() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Student number or name"
+            placeholder="Search students by number or name"
             aria-label="Search students"
           />
           <Button type="submit" disabled={!search.trim()}>
