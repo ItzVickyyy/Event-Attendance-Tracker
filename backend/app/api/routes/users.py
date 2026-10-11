@@ -40,11 +40,20 @@ def read_users(
     Retrieve users.
     """
 
-    count_statement = select(func.count()).select_from(User)
+    # Developer accounts are isolated from ordinary account administration.
+    count_statement = (
+        select(func.count())
+        .select_from(User)
+        .where(col(User.is_developer).is_(False))
+    )
     count = session.exec(count_statement).one()
 
     statement = (
-        select(User).order_by(col(User.created_at).desc()).offset(skip).limit(limit)
+        select(User)
+        .where(col(User.is_developer).is_(False))
+        .order_by(col(User.created_at).desc())
+        .offset(skip)
+        .limit(limit)
     )
     users = session.exec(statement).all()
 
