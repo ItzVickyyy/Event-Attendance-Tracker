@@ -1,13 +1,13 @@
 # Event Attendance Tracker — Development Guide
 
-This describes the development workflow as the repository is actually configured today. Where the current configuration has a gap (see the callout in "Full Stack with Docker Compose" below), that gap is called out explicitly rather than papered over.
+This describes the development workflow as the repository is actually configured today. Known limitations and workflow-specific requirements are stated in the relevant sections.
 
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/) (Python 3.14, pinned via `.python-version`)
 - [Bun](https://bun.sh/)
 - [Docker](https://www.docker.com/) and Docker Compose, for PostgreSQL (and optionally the full stack)
-- A locally-trusted TLS certificate for the frontend dev server (see "Frontend HTTPS Requirement" below) — this project relies on the browser's Web NFC API, which only works in a secure context, so the Vite dev server is configured to serve over HTTPS even locally.
+- A locally trusted TLS certificate only if you want to test Web NFC from a phone over your LAN (optional for ordinary UI development).
 
 ## Environment Configuration
 
@@ -17,7 +17,7 @@ The repository does not commit a `.env` file. Copy the example and fill in real 
 cp .env.example .env
 ```
 
-`.env.example` currently defines: `FASTAPI_ENV`, `PROJECT_NAME`, `SECRET_KEY`, `FIRST_SUPERUSER`, `FIRST_SUPERUSER_PASSWORD`, SMTP settings (`SMTP_HOST`, `EMAILS_FROM_EMAIL`, `SMTP_TLS`, `SMTP_PORT`), `POSTGRES_PASSWORD`, and `DATABASE_URL`.
+Key variables in `.env.example` include `FASTAPI_ENV`, `PROJECT_NAME`, `SECRET_KEY`, `FIRST_SUPERUSER`, `FIRST_SUPERUSER_PASSWORD`, `DATABASE_URL`, `TEST_DATABASE_URL`, `POSTGRES_PASSWORD`, and SMTP settings (`SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAILS_FROM_EMAIL`, and `EMAILS_FROM_NAME`). The sample also contains `MAILPIT_HOST` and `MAILPIT_PORT`, but the backend email sender uses `SMTP_HOST` and `SMTP_PORT`; those `MAILPIT_*` variables are not consumed by the inspected backend code. The sample's `MAILPIT_HOST` also points to port `8025`, while Compose exposes the Mailpit web UI at `localhost:8026`.
 
 Setting `FASTAPI_ENV=development` enables the `/private` API routes (a small set of test-only endpoints for creating users directly), which are only mounted when this variable is set.
 
@@ -28,7 +28,7 @@ From the `backend` directory:
 ```bash
 uv sync
 uv run bash scripts/prestart.sh
-uv run fastapi dev
+uv run fastapi dev --port 8001
 ```
 
 `scripts/prestart.sh` runs Alembic migrations (`alembic upgrade head`) and then seeds initial data (`python app/initial_data.py`), which creates the first superuser as a `super_admin` with scanning permission enabled.
@@ -46,15 +46,15 @@ bun install
 bun run dev
 ```
 
-### Frontend HTTPS Requirement
+### Optional HTTPS for Web NFC
 
-`frontend/vite.config.ts` configures the Vite dev server to load a TLS key/cert pair from `frontend/.certs/localhost+lan-key.pem` and `frontend/.certs/localhost+lan.pem`. This directory is gitignored and **must be created locally** — `bun run dev` will fail to start without it. Generate a locally-trusted certificate covering `localhost` and your machine's LAN IP (a LAN-reachable address is needed if you want to test NFC/QR scanning from a phone on the same network) with a tool such as [`mkcert`](https://github.com/FiloSottile/mkcert), and place the resulting key and certificate at the paths above.
+`frontend/vite.config.ts` loads a TLS key/certificate pair from `frontend/.certs/localhost+lan-key.pem` and `frontend/.certs/localhost+lan.pem` only when both files exist. The `.certs` directory is gitignored. Without those files, Vite falls back to HTTP; `bun run dev` still starts, and HTTPS certificates are not required for ordinary UI development.
 
-Once running, the frontend dev server is served over **HTTPS** (not plain HTTP) — check your terminal output for the exact host/port Vite reports. The dev server proxies `/api` requests to `http://127.0.0.1:8001`, so the backend must be running separately (see "Backend Setup").
+For Web NFC testing from a phone, use a locally trusted certificate that covers the hostname and LAN IP you will open on the phone. A tool such as [`mkcert`](https://github.com/FiloSottile/mkcert) can generate one. Follow the exact filenames and hostnames/IPs expected by `frontend/vite.config.ts`. Web NFC requires a secure context on a supported Android browser. QR scanning behavior should be tested separately on the target device and browser. Check the terminal output for the actual protocol, host, and port. The dev server proxies `/api` requests to `http://127.0.0.1:8001`, so the backend must be running separately (see "Backend Setup").
 
 ### PWA / Service Worker in Development
 
-`vite-plugin-pwa`'s `devOptions.enabled` is set to `false` in `frontend/vite.config.ts`, so `bun run dev` does not register a service worker. This is intentional: the production Workbox config uses `NetworkFirst` caching for `/api/v1/events`, `/api/v1/students`, and `/api/v1/attendee-credentials`, which — if active during development — can silently serve stale cached API responses and mask backend/proxy configuration changes (e.g. the Vite proxy target). Production builds are unaffected; `bun run build` still generates and registers the service worker with the existing runtime caching (including `NetworkOnly` for `/api/v1/attendance/scan`).
+`vite-plugin-pwa`'s `devOptions.enabled` is set to `false` in `frontend/vite.config.ts`, so `bun run dev` does not register a service worker. Production builds are unaffected: `bun run build` generates the service worker, caches the configured static assets, and imports `sw-sync.js` for queued attendance synchronization. The current Workbox runtime-caching rule uses `NetworkOnly` for all `/api/v1/` requests; offline roster and queued-scan data use the explicit IndexedDB implementation instead of shared Cache Storage API caches.
 
 If your browser already has a dev-mode service worker registered from before this change, it will keep intercepting requests at `localhost:5173` until removed:
 
@@ -75,13 +75,22 @@ The build output goes to `backend/app/frontend` (configured in `vite.config.ts`)
 
 ## Database (PostgreSQL)
 
-`compose.yml` defines a `db` service (PostgreSQL 18), but **as currently committed, `compose.yml` does not publish any ports to the host** — `db`, `backend`, `adminer`, and `proxy` all rely on Traefik's internal Docker routing rather than host port mappings; only `compose.deploy.yml` adds host ports (`80`/`443`, for production). This means running `docker compose up -d db` starts Postgres in a container, but it will **not** be reachable at `localhost:5432` from your host machine as `.env.example`'s `DATABASE_URL` assumes.
+The base `compose.yml` publishes these local ports:
 
-Until this is resolved (see the audit findings for this repository), you have two practical options for local backend development:
-- Run PostgreSQL some other way that's reachable at `localhost:5432` (e.g., a local Postgres install, or a one-off `docker run -p 5432:5432 ...`), matching the credentials in your `.env`.
-- Add a local port mapping for the `db` service yourself (e.g., via a `compose.override.yml` you create) so `docker compose up -d db` publishes `5432:5432`.
+- PostgreSQL: host `localhost:5433` to container port `5432`. This matches the default `DATABASE_URL` and `TEST_DATABASE_URL` in `.env.example`.
+- Mailpit SMTP: `localhost:1025`.
+- Mailpit web UI: `http://localhost:8026`.
+- Backend container: `http://localhost:8000` and `http://localhost:8001`, both forwarded to container port `8000`.
 
-**Mailpit**, referenced in the original template docs for local email testing, is **not currently defined** in `compose.yml` — there is no `mailpit` service to start. Email sending is optional in development: if `SMTP_HOST` and `EMAILS_FROM_EMAIL` are left unset, the backend simply won't attempt to send email (`Settings.emails_enabled` is computed from those two values).
+For local backend development, start the database and Mailpit with:
+
+```bash
+docker compose up -d db mailpit
+```
+
+The backend can then connect to PostgreSQL using the `DATABASE_URL` in `.env`. When running the backend directly on your host, use `SMTP_HOST=localhost` and `SMTP_PORT=1025` if you want email flows to reach Mailpit. The Mailpit UI is available at `http://localhost:8026`.
+
+The base Compose file does not publish host ports for Traefik or Adminer. The backend's direct host port mappings still make the application available at `http://localhost:8000` when running in Compose. The production overlay `compose.deploy.yml` publishes Traefik on ports `80` and `443` and configures HTTPS; follow the deployment guide before using that overlay.
 
 ## Database Migrations
 
@@ -102,7 +111,7 @@ uv run alembic upgrade head
 bash scripts/test.sh
 ```
 
-This builds and runs the Docker Compose stack, runs `prestart.sh`, and executes the backend test suite with coverage. CI (`test-backend.yml`) enforces a minimum of 90% coverage.
+This runs the backend Pytest suite with coverage and writes a coverage HTML report. It does not build or start Docker Compose, run database migrations, or prepare a database; set up the test database and environment first. CI prepares PostgreSQL and migrates its dedicated test database before running this script. The backend CI workflow enforces a minimum of 90% coverage.
 
 **Frontend end-to-end** (Playwright): tests live in `frontend/tests` and cover login, sign-up, password reset, the admin area, items, roster loading, manual scanning, sync status, background sync, and user settings.
 
@@ -112,7 +121,7 @@ bunx playwright test
 bunx playwright test --ui
 ```
 
-Playwright tests expect the Docker Compose backend stack to be running (see `.github/workflows/playwright.yml` for the exact CI sequence, which also expects a `playwright` Compose service — see the Known Gaps note below).
+Playwright tests need a reachable backend and test data. The CI workflow in `.github/workflows/playwright.yml` prepares the Compose database, applies migrations, and starts the backend before running Playwright from the workflow runner. It does not require a separate `playwright` Compose service. For local runs, start the backend and database using the setup steps above, then run the Playwright command from the project root.
 
 ## Lint and Format
 
@@ -141,7 +150,7 @@ Automatically, from the project root (backend must be able to import cleanly; th
 bash ./scripts/generate-client.sh
 ```
 
-Or manually, with the backend running, by downloading `http://localhost:8000/api/v1/openapi.json` into `frontend/openapi.json` and running `bun run generate-client` from `frontend`.
+Or manually, with the backend running, by downloading `http://localhost:8001/api/v1/openapi.json` into `frontend/openapi.json` and running `bun run generate-client` from `frontend`.
 
 Regenerate and commit the client whenever backend routes or schemas change — this is also enforced by the pre-commit hook above.
 
@@ -153,9 +162,11 @@ docker compose run --rm backend bash scripts/prestart.sh
 docker compose up -d
 ```
 
-This starts `proxy` (Traefik), `db`, `adminer`, and `backend` using `compose.yml` alone.
+This starts `proxy` (Traefik), `db`, `mailpit`, `adminer`, and `backend` using `compose.yml` alone.
 
-> **⚠️ Known gap:** with only `compose.yml` present, none of these services publish a host port (see "Database (PostgreSQL)" above), so nothing here is reachable at a `localhost` URL as previously documented. The earlier version of this guide described a `compose.override.yml` that added local port mappings, a `mailpit` service, and a `playwright` service for local Docker-based development and CI — **that file does not exist in the current repository.** CI workflows (`test-backend.yml` and `playwright.yml`) still reference `mailpit` and `playwright` Compose services respectively, and `test-docker-compose.yml` curls `http://localhost:8000` directly, all of which depend on configuration that isn't currently committed. If you're picking up this project, either restore an override file providing these, or update the affected workflows/docs to match whatever replaces it.
+The backend is available directly at `http://localhost:8000` (also forwarded through host port `8001`). PostgreSQL is available at `localhost:5433`; Mailpit SMTP and web UI are available at `localhost:1025` and `http://localhost:8026`. The base Compose file does not publish Traefik or Adminer host ports, so the proxy-hosted Adminer URL is not reachable through a browser without adding a local proxy port mapping or using the deployment overlay with its required domain and HTTPS configuration.
+
+The current Playwright workflow builds the Compose stack, runs the backend prestart command, and starts the backend service before running browser tests. It does not depend on a separate `playwright` Compose service.
 
 To deploy with the production HTTPS configuration locally for testing, combine both files:
 
@@ -169,8 +180,8 @@ This requires `DOMAIN` and the other variables `compose.deploy.yml` marks as req
 ## Common Development Workflow
 
 1. `cp .env.example .env` and fill in real values.
-2. Get PostgreSQL reachable at `localhost:5432` (see the Database section above).
-3. From `backend`: `uv sync && uv run bash scripts/prestart.sh && uv run fastapi dev`.
-4. From the project root: `bun install && bun run dev` (after generating local HTTPS certs — see above).
+2. Start PostgreSQL and Mailpit with `docker compose up -d db mailpit`; PostgreSQL is reachable at `localhost:5433` (see the Database section above).
+3. From `backend`: `uv sync && uv run bash scripts/prestart.sh && uv run fastapi dev --port 8001`.
+4. From the project root: `bun install && bun run dev`. Generate local HTTPS certificates first only if you need to test Web NFC from a phone over the LAN; see the optional HTTPS section above.
 5. Make backend changes; if routes/schemas changed, run `bash ./scripts/generate-client.sh` (or let the pre-commit hook do it).
 6. Run `uv run prek run --all-files` before committing, or rely on the installed Git hook.
