@@ -149,9 +149,7 @@ test("Search filters officer accounts by email and position", async ({
   await expect(row).toBeVisible()
   await expect(row).toContainText("Admin")
   await expect(row).toContainText(position)
-  await page
-    .getByPlaceholder("Search by name, email, or position")
-    .fill("no-match-for-this-test")
+  await page.getByPlaceholder("Search by name, email, or position").fill("no-match-for-this-test")
   await expect(page.getByText("No users found.")).toBeVisible()
 })
 
