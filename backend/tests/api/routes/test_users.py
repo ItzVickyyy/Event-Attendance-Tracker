@@ -291,6 +291,14 @@ def test_super_admin_can_promote_and_demote_class_representative(
     ).all()
     assert remaining_assignments == []
 
+    # Keep the shared test database clean. User section references restrict
+    # deletion of the academic catalog during session teardown.
+    db.refresh(target)
+    target.academic_year_id = None
+    target.section_id = None
+    db.add(target)
+    db.commit()
+
 
 def test_retrieve_users(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
