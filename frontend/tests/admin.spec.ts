@@ -133,7 +133,6 @@ test.describe("Administration access control", () => {
   })
 })
 
-
 test("Scanner Permissions page is removed from administration", async ({
   page,
 }) => {
