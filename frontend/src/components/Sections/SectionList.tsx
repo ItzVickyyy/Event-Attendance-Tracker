@@ -990,7 +990,7 @@ function SectionList() {
                 {sections.map((section: any) => (
                   <SelectItem key={section.id} value={section.id}>
                     {section.program_code}
-                    {section.major_code ? " · " + section.major_code : ""}{" "}
+                    {section.major_code ? ` · ${section.major_code}` : ""}{" "}
                     {section.section_code} · {section.year_level} ·{" "}
                     {section.academic_year}
                   </SelectItem>
@@ -1035,7 +1035,9 @@ function SectionList() {
             <DialogTitle>Add Student</DialogTitle>
             <DialogDescription>
               Add a student to {studentsTarget?.program_code}
-              {studentsTarget?.major_code ? " · " + studentsTarget.major_code : ""}{" "}
+              {studentsTarget?.major_code
+                ? ` · ${studentsTarget.major_code}`
+                : ""}{" "}
               {studentsTarget?.section_code} for Academic Year{" "}
               {studentsTarget?.academic_year}.
             </DialogDescription>
@@ -1400,7 +1402,7 @@ function SectionList() {
               <DialogTitle>Print Preview</DialogTitle>
               <DialogDescription>
                 Formatted roster preview for {printTarget?.program_code}{" "}
-                {printTarget?.major_code ? "· " + printTarget.major_code : ""}{" "}
+                {printTarget?.major_code ? `· ${printTarget.major_code}` : ""}{" "}
                 {printTarget?.section_code}.
               </DialogDescription>
             </DialogHeader>
@@ -1412,7 +1414,9 @@ function SectionList() {
                 <p>College of Computer Studies</p>
                 <p className="font-semibold">
                   {printTarget?.program_code}
-                  {printTarget?.major_code ? " · " + printTarget.major_code : ""}{" "}
+                  {printTarget?.major_code
+                    ? ` · ${printTarget.major_code}`
+                    : ""}{" "}
                   {printTarget?.section_code}
                 </p>
                 <p>
