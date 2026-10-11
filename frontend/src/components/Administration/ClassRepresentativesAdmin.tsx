@@ -103,9 +103,15 @@ export function ClassRepresentativesAdmin() {
           : result?.detail
         throw new Error(detail ?? "Import failed")
       }
-      toast.success(
-        `Imported ${result.created_count} Class Representative account(s)`,
-      )
+      if (Array.isArray(result.delivery_failures) && result.delivery_failures.length) {
+        toast.warning(
+          `Created ${result.created_count} account(s), but email delivery failed for: ${result.delivery_failures.join(", ")}`,
+        )
+      } else {
+        toast.success(
+          `Imported ${result.created_count} Class Representative account(s)`,
+        )
+      }
       setImportFile(null)
       await client.invalidateQueries({ queryKey: ["class-representatives"] })
     } catch (error) {
