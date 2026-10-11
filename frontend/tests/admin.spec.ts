@@ -65,13 +65,13 @@ test("Super admin can create an admin account", async ({ page }) => {
   await page.getByPlaceholder("name@example.com").fill(email)
   await page.getByPlaceholder("At least 8 characters").fill(password)
   await page.getByRole("combobox").click()
-  await page.getByRole("option", { name: "admin", exact: true }).click()
+  await page.getByRole("option", { name: "Admin", exact: true }).click()
   await page.getByRole("button", { name: "Create account" }).click()
 
   await expect(page.getByText("Account created")).toBeVisible()
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
-  await expect(row).toContainText("admin")
+  await expect(row).toContainText("Admin")
 })
 
 test("Cancel account creation closes the dialog", async ({ page }) => {
@@ -104,7 +104,9 @@ test("Search filters user accounts", async ({ page }) => {
   await expect(page.getByText("Account created")).toBeVisible()
 
   await page.getByPlaceholder("Search users…").fill(email)
-  await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible()
+  const row = page.getByRole("row").filter({ hasText: email })
+  await expect(row).toBeVisible()
+  await expect(row).toContainText("Student")
   await page.getByPlaceholder("Search users…").fill("no-match-for-this-test")
   await expect(page.getByText("No users found.")).toBeVisible()
 })
@@ -156,4 +158,16 @@ test("Event details route renders when opened directly", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Events", exact: true }),
   ).toHaveCount(0)
+})
+
+test("Academic year selector stays open after changing the selected year", async ({
+  page,
+}) => {
+  await page.goto("/dashboard")
+  await page.getByRole("button", { name: /Academic Year:/ }).click()
+  const years = page.getByRole("menuitemradio")
+  const count = await years.count()
+  test.skip(count < 2, "At least two academic years are required")
+  await years.nth(1).click()
+  await expect(years.nth(1)).toBeVisible()
 })

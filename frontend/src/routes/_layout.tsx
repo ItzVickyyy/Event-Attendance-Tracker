@@ -183,7 +183,11 @@ function AcademicYearSelector() {
             }
           >
             {academicYears.map((year) => (
-              <DropdownMenuRadioItem key={year.id} value={year.id}>
+              <DropdownMenuRadioItem
+                key={year.id}
+                value={year.id}
+                onSelect={(event) => event.preventDefault()}
+              >
                 {year.label}
                 {year.id === currentAcademicYear?.id && (
                   <span className="ml-auto text-xs text-muted-foreground">

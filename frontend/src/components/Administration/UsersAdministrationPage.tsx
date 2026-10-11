@@ -317,5 +317,14 @@ function UserRow({
 }
 
 function roleLabel(role: UserRole) {
-  return role === "student" ? "Basic User" : role
+  switch (role) {
+    case "super_admin":
+      return "Super Admin"
+    case "admin":
+      return "Admin"
+    case "class_representative":
+      return "Class Representative"
+    case "student":
+      return "Student"
+  }
 }
