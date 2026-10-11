@@ -951,17 +951,25 @@ def update_user(
         and requested_role in (None, UserRole.class_representative)
         and bool(officer_assignment_fields.intersection(submitted_fields))
     )
+    assignment_fields_submitted = bool(
+        officer_assignment_fields.intersection(submitted_fields)
+    )
     assignment_update: tuple[AcademicYear, AcademicSection] | None = None
-    if promoting_to_class_rep or updating_class_rep_assignment:
+    if promoting_to_class_rep or assignment_fields_submitted:
         year_id = submitted_fields.get("academic_year_id", db_user.academic_year_id)
         section_id = submitted_fields.get("section_id", db_user.section_id)
         if not year_id or not section_id:
+            if promoting_to_class_rep:
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        "Class Representative role changes require an academic year "
+                        "and section assignment"
+                    ),
+                )
             raise HTTPException(
-                status_code=403,
-                detail=(
-                    "Class Representative role changes require an academic year "
-                    "and section assignment"
-                ),
+                status_code=422,
+                detail="Academic year and section must both be selected",
             )
         year = session.get(AcademicYear, year_id)
         section = session.get(AcademicSection, section_id)
@@ -976,7 +984,8 @@ def update_user(
             )
         submitted_fields["academic_year_id"] = year.id
         submitted_fields["section_id"] = section.id
-        assignment_update = (year, section)
+        if promoting_to_class_rep or updating_class_rep_assignment:
+            assignment_update = (year, section)
 
     if requested_role == UserRole.class_representative:
         submitted_fields["can_scan"] = False

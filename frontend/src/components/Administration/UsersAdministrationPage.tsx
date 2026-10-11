@@ -1125,7 +1125,13 @@ function UserRow({
             <Pencil className="mr-1 size-3.5" /> Edit
           </Button>
         </div>
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <Dialog
+          open={editOpen}
+          onOpenChange={(open) => {
+            setEditOpen(open)
+            if (!open) setRole(user.role ?? "student")
+          }}
+        >
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
             <DialogHeader>
               <DialogTitle>
