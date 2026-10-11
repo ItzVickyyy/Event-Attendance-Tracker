@@ -575,3 +575,14 @@ Reviewed `backend/app/api/routes/login.py`, `backend/app/utils.py`, `backend/app
 - Follow-up: add application-level throttling or cooldown for recovery requests and consider abuse monitoring. Decide whether reset links must be single-use; if so, store and invalidate a token identifier or use a server-side reset record, then test that reuse is rejected. Verify that any edge-level limits and email-provider protections are configured in each deployment rather than assuming they exist.
 
 This is a route/helper/configuration/test inspection, not a live email-abuse test or a deployed-proxy verification. No application code or tests were changed in this documentation-only PR.
+
+## Class Representative student-update scope
+
+Reviewed `backend/app/api/routes/students.py`, `backend/app/models.py`, and `backend/tests/api/routes/test_students.py`.
+
+- The student detail and PATCH routes call `_ensure_class_rep_student_access`, which checks that a Class Representative's assigned section/year has a non-archived enrollment for the target student. The PATCH handler prevents representatives from changing `section_id` to a different value.
+- After that access check, the handler accepts the full `StudentUpdate` model: `person_id`, `student_number`, `section_id`, and `academic_status`. The only explicit role-specific field restriction in this handler is the section-move check. A representative can therefore change the student's number or academic status, and can attempt to relink the student record to any existing person ID, even though those changes are broader than maintaining a roster entry.
+- The inspected student lifecycle tests exercise PATCH with an Admin/superuser token. They do not establish a least-privilege field policy for Class Representative updates.
+- Follow-up: define the fields representatives are allowed to edit. Prefer a dedicated Class Representative update schema or explicit field allowlist, likely limited to the intended roster-maintenance fields. Keep person linkage, student-number changes, and academic-status changes Admin-only unless there is an approved workflow. Add positive and negative role tests for every allowed and denied field.
+
+This is a route/schema/test inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
