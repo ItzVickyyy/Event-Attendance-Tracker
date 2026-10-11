@@ -233,90 +233,110 @@ export function ClassRepresentativesAdmin() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create Class Representative</DialogTitle>
-            <DialogDescription>Create a login account and assign it to one section for the selected academic year. The representative must change the temporary password on first login.</DialogDescription>
+            <DialogDescription>
+              Create a login account and assign it to one section for the
+              selected academic year. The representative must change the
+              temporary password on first login.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-5">
             <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
-            {(
-              [
-                ["first_name", "First Name"],
-                ["middle_initial", "Middle Initial"],
-                ["last_name", "Last Name"],
-                ["extension", "Extension"],
-                ["email", "Email"],
-              ] as const
-            ).map(([field, label]) => (
-              <div className="space-y-2" key={field}>
-                <Label htmlFor={field}>
-                  {label}
-                  {["first_name", "last_name", "email"].includes(field)
-                    ? " *"
-                    : ""}
-                </Label>
-                <Input
-                  id={field}
-                  value={form[field]}
-                  onChange={(e) =>
-                    setForm({ ...form, [field]: e.target.value })
-                  }
-                />
-              </div>
-            ))}
+              {(
+                [
+                  ["first_name", "First Name"],
+                  ["middle_initial", "Middle Initial"],
+                  ["last_name", "Last Name"],
+                  ["extension", "Extension"],
+                  ["email", "Email"],
+                ] as const
+              ).map(([field, label]) => (
+                <div className="space-y-2" key={field}>
+                  <Label htmlFor={field}>
+                    {label}
+                    {["first_name", "last_name", "email"].includes(field)
+                      ? " *"
+                      : ""}
+                  </Label>
+                  <Input
+                    id={field}
+                    value={form[field]}
+                    required={["first_name", "last_name", "email"].includes(field)}
+                    onChange={(event) =>
+                      setForm({ ...form, [field]: event.target.value })
+                    }
+                  />
+                </div>
+              ))}
             </div>
             <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Academic Year *</Label>
-              <Select
-                value={form.academic_year_id}
-                onValueChange={(value) =>
-                  setForm({ ...form, academic_year_id: value, section_id: "" })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select academic year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(years.data?.data ?? []).map((year: any) => (
-                    <SelectItem key={year.id} value={year.id}>
-                      {year.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Section *</Label>
-              <Select
-                value={form.section_id}
-                onValueChange={(value) =>
-                  setForm({ ...form, section_id: value })
-                }
-                disabled={!form.academic_year_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select section" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(sections.data?.data ?? []).map((section: any) => (
-                    <SelectItem key={section.id} value={section.id}>
-                      {section.program_code} {section.section_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-              The initial password is {"Change" + "ThisPassword"}. The account
-              is required to change it after first login. If email delivery is
-              enabled, the credentials are sent automatically.
-            </p>
+              <div className="space-y-2">
+                <Label>Academic Year *</Label>
+                <Select
+                  value={form.academic_year_id}
+                  onValueChange={(value) =>
+                    setForm({
+                      ...form,
+                      academic_year_id: value,
+                      section_id: "",
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select academic year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(years.data?.data ?? []).map((year: any) => (
+                      <SelectItem key={year.id} value={year.id}>
+                        {year.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Section *</Label>
+                <Select
+                  value={form.section_id}
+                  onValueChange={(value) =>
+                    setForm({ ...form, section_id: value })
+                  }
+                  disabled={!form.academic_year_id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(sections.data?.data ?? []).map((section: any) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.program_code} {section.section_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground sm:col-span-2">
+                The system generates a temporary password. The account must
+                change it after first login. If email delivery is enabled, the
+                credentials are sent automatically.
+              </p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void create()}>Create account</Button>
+            <Button
+              onClick={() => void create()}
+              disabled={
+                !form.first_name.trim() ||
+                !form.last_name.trim() ||
+                !form.email.trim() ||
+                !form.academic_year_id ||
+                !form.section_id
+              }
+            >
+              Create account
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
