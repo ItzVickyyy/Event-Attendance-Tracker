@@ -316,8 +316,9 @@ function UserRow({
   )
 }
 
-
 function roleLabel(role: UserRole) {
   if (role === "student") return "Basic User"
-  return role.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  return role
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
