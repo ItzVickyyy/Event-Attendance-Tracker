@@ -996,23 +996,49 @@ function UserRow({
       )}
       <td className="p-3">
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={save} disabled={saving || !canEdit}>Save access</Button>
-          <Button size="sm" variant="outline" disabled={!canEdit} onClick={() => { setEditName(user.full_name ?? ""); setEditEmail(user.email); setEditOpen(true) }}><Pencil className="mr-1 size-3.5" />Edit</Button>
+          <Button size="sm" onClick={save} disabled={saving || !canEdit}>
+            Save access
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!canEdit}
+            onClick={() => {
+              setEditName(user.full_name ?? "")
+              setEditEmail(user.email)
+              setEditOpen(true)
+            }}
+          >
+            <Pencil className="mr-1 size-3.5" />
+            Edit
+          </Button>
         </div>
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Edit User Account</DialogTitle>
-              <DialogDescription>Update the account name and email address.</DialogDescription>
+              <DialogDescription>
+                Update the account name and email address.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor={"edit-name-" + user.id}>Full Name</Label>
-                <Input id={"edit-name-" + user.id} value={editName} onChange={(event) => setEditName(event.target.value)} />
+                <Label htmlFor={user.id + "-edit-name"}>Full Name</Label>
+                <Input
+                  id={user.id + "-edit-name"}
+                  value={editName}
+                  onChange={(event) => setEditName(event.target.value)}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor={"edit-email-" + user.id}>Email</Label>
-                <Input id={"edit-email-" + user.id} type="email" value={editEmail} onChange={(event) => setEditEmail(event.target.value)} required />
+                <Label htmlFor={user.id + "-edit-email"}>Email</Label>
+                <Input
+                  id={user.id + "-edit-email"}
+                  type="email"
+                  value={editEmail}
+                  onChange={(event) => setEditEmail(event.target.value)}
+                  required
+                />
               </div>
             </div>
             <DialogFooter>
