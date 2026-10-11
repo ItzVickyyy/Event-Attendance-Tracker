@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus } from "lucide-react"
+import { Download, FileUp, Plus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -30,6 +31,8 @@ const headers = (json = false) => ({
 export function ClassRepresentativesAdmin() {
   const client = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
   const [form, setForm] = useState({
     email: "",
     first_name: "",
@@ -66,6 +69,35 @@ export function ClassRepresentativesAdmin() {
         await fetch(`${api}/class-representatives/`, { headers: headers() })
       ).json(),
   })
+  const downloadTemplate = () => {
+    const csv = "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\\n"
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "Class_Representative_Import_Template.csv"
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+  const importRepresentatives = async () => {
+    if (!importFile) return
+    setImporting(true)
+    try {
+      const body = new FormData()
+      body.append("file", importFile)
+      const response = await fetch("/api/v1/class-representatives/import", { method: "POST", headers: headers(), body })
+      const result = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(result?.detail ?? "Import failed")
+      toast.success(`Imported ${result.created_count} Class Representative account(s)`)
+      setImportFile(null)
+      await client.invalidateQueries({ queryKey: ["class-representatives"] })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Import failed")
+    } finally {
+      setImporting(false)
+    }
+  }
   const create = async () => {
     const response = await fetch(`${api}/class-representatives/`, {
       method: "POST",
@@ -101,11 +133,33 @@ export function ClassRepresentativesAdmin() {
             Create and review section representative accounts.
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus />
-          Create Class Representative
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={downloadTemplate}>
+            <Download className="mr-2 size-4" />
+            CSV Template
+          </Button>
+          <Button onClick={() => setOpen(true)}>
+            <Plus />
+            Create Class Representative
+          </Button>
+        </div>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Import Class Representatives</CardTitle>
+          <p className="text-sm text-muted-foreground">Upload a CSV using the template. Every row is validated before accounts are created.</p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="class-rep-import-file">CSV file</Label>
+            <Input id="class-rep-import-file" type="file" accept=".csv,text/csv" onChange={(event) => setImportFile(event.target.files?.[0] ?? null)} />
+          </div>
+          <Button onClick={() => void importRepresentatives()} disabled={!importFile || importing}>
+            <FileUp className="mr-2 size-4" />
+            {importing ? "Importing…" : "Import representatives"}
+          </Button>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Accounts</CardTitle>
