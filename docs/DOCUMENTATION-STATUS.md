@@ -622,3 +622,14 @@ Reviewed `backend/app/api/routes/academic_sections.py`, `backend/app/api/routes/
 - Follow-up: decide whether program reassignment is allowed for populated sections. Prefer blocking it when enrollments or representative assignments exist unless a dedicated migration/reclassification workflow updates and validates the related records. Revalidate the section-major assignment and add tests for populated sections, incompatible major assignments, and duplicate section combinations.
 
 This is a route/model inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
+
+## Academic program deletion and dependent sections
+
+Reviewed `backend/app/api/routes/academic_programs.py`, the `AcademicProgram.sections` relationship in `backend/app/models.py`, and the section foreign keys in `backend/app/student_academics.py`.
+
+- The Super Admin-only `DELETE /academic-programs/{program_id}` handler deletes the program and commits without checking for dependent sections, enrollments, or Class Representative assignments.
+- The `AcademicProgram.sections` relationship uses ORM delete cascade, so deleting a program attempts to delete its academic sections as well. Student enrollment and Class Representative assignment rows reference sections with `ON DELETE RESTRICT`; populated sections can therefore cause the database commit to fail rather than returning a deliberate, explanatory conflict response.
+- This differs from `DELETE /academic-sections/{section_id}`, which explicitly checks for students, enrollments, and Class Representative assignments and returns HTTP 409 when dependencies exist. The program-level delete route does not reuse that preflight policy.
+- Follow-up: decide whether programs with dependent sections should be deletable. Prefer an explicit dependency check and a stable HTTP 409 response, or a dedicated archival/migration workflow. Add tests for deleting an empty program, a program with empty sections, and a program whose sections have enrollments or representative assignments.
+
+This is a route/model inspection, not a live database deletion test. The database error behavior has not been exercised in this documentation-only PR; no application code or tests were changed.
