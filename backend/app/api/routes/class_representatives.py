@@ -327,28 +327,41 @@ async def import_class_representatives(
     _current_user: CurrentUser,
     file: UploadFile = File(...),
 ) -> dict[str, Any]:
-    """Import class representatives from a CSV file, validating all rows before writing."""
+    """Import representatives from CSV after validating every row."""
     filename = (file.filename or "").lower()
     if not filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Upload a CSV file")
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
     try:
-        text_content = content.decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(text_content))
+        reader = csv.DictReader(io.StringIO(content.decode("utf-8-sig")))
         required_headers = {
-            "email", "first name", "last name", "academic year", "section"
+            "email",
+            "first name",
+            "last name",
+            "academic year",
+            "section",
         }
-        headers = {str(header or "").strip().lower() for header in (reader.fieldnames or [])}
+        headers = {
+            str(header or "").strip().lower()
+            for header in (reader.fieldnames or [])
+        }
         if not required_headers.issubset(headers):
             raise HTTPException(
                 status_code=422,
-                detail="CSV headers must include Email, First Name, Last Name, Academic Year, and Section",
+                detail=(
+                    "CSV headers must include Email, First Name, Last Name, "
+                    "Academic Year, and Section"
+                ),
             )
         rows = list(reader)
     except UnicodeDecodeError as exc:
-        raise HTTPException(status_code=400, detail="CSV must use UTF-8 encoding") from exc
+        raise HTTPException(
+            status_code=400, detail="CSV must use UTF-8 encoding"
+        ) from exc
+
     if not rows:
         raise HTTPException(status_code=400, detail="CSV contains no data rows")
     if len(rows) > 500:
@@ -358,7 +371,10 @@ async def import_class_representatives(
     seen_emails: set[str] = set()
     errors: list[str] = []
     for index, row in enumerate(rows, start=2):
-        values = {str(key or "").strip().lower(): str(value or "").strip() for key, value in row.items()}
+        values = {
+            str(key or "").strip().lower(): str(value or "").strip()
+            for key, value in row.items()
+        }
         email = values.get("email", "").lower()
         first_name = values.get("first name", "")
         middle_initial = values.get("middle initial", "")
@@ -367,29 +383,49 @@ async def import_class_representatives(
         year_label = values.get("academic year", "")
         section_label = values.get("section", "")
         row_errors: list[str] = []
+
         if not email or "@" not in email:
             row_errors.append("valid email is required")
         if not first_name or not last_name:
             row_errors.append("first and last name are required")
         if not year_label or not section_label:
             row_errors.append("academic year and section are required")
-        if email and (email in seen_emails or crud.get_user_by_email(session=session, email=email)):
+        if email and (
+            email in seen_emails
+            or crud.get_user_by_email(session=session, email=email)
+        ):
             row_errors.append("email is duplicated or already registered")
-        year = session.exec(select(AcademicYear).where(AcademicYear.label == year_label)).first() if year_label else None
+
+        year = (
+            session.exec(
+                select(AcademicYear).where(AcademicYear.label == year_label)
+            ).first()
+            if year_label
+            else None
+        )
         section_row = None
         if year and section_label:
-            section_row = session.connection().execute(
-                text("""
-                    SELECT s.id, s.academic_year_id
-                    FROM academic_sections s
-                    JOIN academic_programs p ON p.id = s.program_id
-                    WHERE s.academic_year_id = :year_id
-                      AND (s.section_name = :section OR s.section_code = :section
-                           OR p.program_code || ' ' || s.section_name = :section)
-                    LIMIT 1
-                """),
-                {"year_id": year.id, "section": section_label},
-            ).mappings().first()
+            section_row = (
+                session.connection()
+                .execute(
+                    text("""
+                        SELECT s.id, s.academic_year_id
+                        FROM academic_sections s
+                        JOIN academic_programs p ON p.id = s.program_id
+                        WHERE s.academic_year_id = :year_id
+                          AND (
+                            s.section_name = :section
+                            OR s.section_code = :section
+                            OR p.program_code || ' ' || s.section_name = :section
+                          )
+                        LIMIT 1
+                    """),
+                    {"year_id": year.id, "section": section_label},
+                )
+                .mappings()
+                .first()
+            )
+
         if year_label and not year:
             row_errors.append("academic year not found")
         if section_label and not section_row:
@@ -400,64 +436,95 @@ async def import_class_representatives(
         if year is None or section_row is None:
             errors.append(f"Row {index}: academic year or section could not be resolved")
             continue
+
         seen_emails.add(email)
-        normalized.append({
-            "email": email, "first_name": first_name,
-            "middle_initial": middle_initial, "last_name": last_name,
-            "extension": extension, "year": year, "section_id": section_row["id"],
-        })
+        normalized.append(
+            {
+                "email": email,
+                "first_name": first_name,
+                "middle_initial": middle_initial,
+                "last_name": last_name,
+                "extension": extension,
+                "year": year,
+                "section_id": section_row["id"],
+            }
+        )
+
     if errors:
         raise HTTPException(status_code=422, detail=errors)
     if not settings.emails_enabled and settings.FASTAPI_ENV != "test":
         raise HTTPException(
             status_code=503,
-            detail="Email delivery must be configured before importing Class Representative accounts",
+            detail=(
+                "Email delivery must be configured before importing "
+                "Class Representative accounts"
+            ),
         )
 
     created: list[tuple[User, str]] = []
     try:
         for row in normalized:
             middle = row["middle_initial"].rstrip(".")
-            full_name = " ".join(part for part in (
-                row["first_name"], f"{middle}." if middle else "",
-                row["last_name"], row["extension"],
-            ) if part)
+            full_name = " ".join(
+                part
+                for part in (
+                    row["first_name"],
+                    f"{middle}." if middle else "",
+                    row["last_name"],
+                    row["extension"],
+                )
+                if part
+            )
             temporary_password = _generate_temporary_password()
             user = crud.create_user(
                 session=session,
                 user_create=UserCreate(
-                    email=row["email"], password=temporary_password,
-                    role=UserRole.class_representative, full_name=full_name,
-                    first_name=row["first_name"], middle_name=middle or None,
-                    last_name=row["last_name"], name_extension=row["extension"] or None,
+                    email=row["email"],
+                    password=temporary_password,
+                    role=UserRole.class_representative,
+                    full_name=full_name,
+                    first_name=row["first_name"],
+                    middle_name=middle or None,
+                    last_name=row["last_name"],
+                    name_extension=row["extension"] or None,
                     can_scan=False,
                 ),
                 commit=False,
             )
             user.must_change_password = True
             session.add(user)
-            session.add(ClassRepresentativeAssignment(
-                user_id=user.id, academic_year_id=row["year"].id,
-                section_id=row["section_id"],
-            ))
+            session.add(
+                ClassRepresentativeAssignment(
+                    user_id=user.id,
+                    academic_year_id=row["year"].id,
+                    section_id=row["section_id"],
+                )
+            )
             session.flush()
             created.append((user, temporary_password))
+
         if settings.emails_enabled:
             for user, temporary_password in created:
                 email_data = generate_new_account_email(
-                    email_to=user.email, username=user.email, password=temporary_password
+                    email_to=user.email,
+                    username=user.email,
+                    password=temporary_password,
                 )
                 send_email(
-                    email_to=user.email, subject=email_data.subject,
+                    email_to=user.email,
+                    subject=email_data.subject,
                     html_content=email_data.html_content,
                 )
         session.commit()
     except Exception as exc:
         session.rollback()
-        if isinstance(exc, HTTPException):
-            raise
         raise HTTPException(
             status_code=503,
-            detail="Import was rolled back because account credentials could not be delivered. Check email delivery and retry.",
+            detail=(
+                "Import was rolled back because account credentials could not be "
+                "delivered. Check email delivery and retry."
+            ),
         ) from exc
+
     return {"created_count": len(created), "count": len(created)}
+
