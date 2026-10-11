@@ -523,7 +523,7 @@ def test_import_class_representatives_rejects_all_rows_if_one_is_invalid(
     csv_content = (
         "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\n"
         f"{valid_email},Taylor,M,Imported,,2026-2027,WMAD 3A\n"
-        f"{invalid_email,},Alex,,Invalid,,2026-2027,Missing Section\n"
+        f"{invalid_email},Alex,,Invalid,,2026-2027,Missing Section\n"
     )
     response = client.post(
         _api("/class-representatives/import"),
