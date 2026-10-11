@@ -316,7 +316,11 @@ def create_class_representative(
     return user
 
 
-@router.post("/import", dependencies=[Depends(require_super_admin)])
+@router.post(
+    "/import",
+    dependencies=[Depends(require_super_admin)],
+    include_in_schema=False,
+)
 async def import_class_representatives(
     *,
     session: SessionDep,
@@ -392,6 +396,9 @@ async def import_class_representatives(
             row_errors.append("section not found for the selected academic year")
         if row_errors:
             errors.append(f"Row {index}: {', '.join(row_errors)}")
+            continue
+        if year is None or section_row is None:
+            errors.append(f"Row {index}: academic year or section could not be resolved")
             continue
         seen_emails.add(email)
         normalized.append({
