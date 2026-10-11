@@ -411,6 +411,18 @@ async def preview_officer_import(
 
         preview_rows.append({
             "row_number": row["source_row"],
+            "student_number": student_number,
+            "full_name": " ".join(
+                part
+                for part in (
+                    str(row.get("first_name", "")).strip(),
+                    str(row.get("middle_initial", "")).strip(),
+                    str(row.get("last_name", "")).strip(),
+                    str(row.get("extension", "")).strip(),
+                )
+                if part
+            ),
+            "position_name": position.name if position else position_name,
             "payload": payload_data if not errors else None,
             "errors": errors,
         })
