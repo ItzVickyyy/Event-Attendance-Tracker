@@ -235,7 +235,8 @@ export function UsersAdministrationPage() {
         },
       )
       const body = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(body?.detail ?? "Unable to validate import file")
+      if (!response.ok)
+        throw new Error(body?.detail ?? "Unable to validate import file")
       return body as OfficerImportPreview
     },
     onSuccess: (preview) => {
@@ -287,20 +288,24 @@ export function UsersAdministrationPage() {
           },
         },
       )
-      if (!response.ok) throw new Error("Unable to download the import template")
+      if (!response.ok)
+        throw new Error("Unable to download the import template")
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.download = format === "csv"
-        ? "CCS_Officer_Import_Template.csv"
-        : "CCS_Officer_Import_Template.xlsx"
+      link.download =
+        format === "csv"
+          ? "CCS_Officer_Import_Template.csv"
+          : "CCS_Officer_Import_Template.xlsx"
       document.body.appendChild(link)
       link.click()
       link.remove()
       URL.revokeObjectURL(url)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to download template")
+      toast.error(
+        error instanceof Error ? error.message : "Unable to download template",
+      )
     }
   }
 
