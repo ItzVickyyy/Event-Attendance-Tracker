@@ -144,9 +144,7 @@ test("Search filters officer accounts by email and position", async ({
   await page.getByRole("button", { name: "Create account" }).click()
   await expect(page.getByText("Account created")).toBeVisible()
 
-  await page
-    .getByPlaceholder("Search by name, email, or position")
-    .fill(email)
+  await page.getByPlaceholder("Search by name, email, or position").fill(email)
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
   await expect(row).toContainText("Admin")
