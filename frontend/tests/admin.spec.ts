@@ -145,14 +145,14 @@ test("Search filters officer accounts by email and position", async ({
   await expect(page.getByText("Account created")).toBeVisible()
 
   await page
-    .getByPlaceholder("Search by name, Student ID, email, or position")
+    .getByPlaceholder("Search by name, email, or position")
     .fill(email)
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
   await expect(row).toContainText("Admin")
   await expect(row).toContainText(position)
   await page
-    .getByPlaceholder("Search by name, Student ID, email, or position")
+    .getByPlaceholder("Search by name, email, or position")
     .fill("no-match-for-this-test")
   await expect(page.getByText("No users found.")).toBeVisible()
 })
@@ -253,7 +253,7 @@ test("Super admin can validate and import officer accounts from CSV", async ({
   await expect(page.getByText("Imported 1 officer account(s)")).toBeVisible()
 
   await page
-    .getByPlaceholder("Search by name, Student ID, email, or position")
+    .getByPlaceholder("Search by name, email, or position")
     .fill(email)
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
