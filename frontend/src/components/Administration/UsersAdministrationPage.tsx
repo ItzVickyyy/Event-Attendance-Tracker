@@ -79,9 +79,11 @@ export function UsersAdministrationPage() {
     },
     onError: () => toast.error("Unable to create account"),
   })
-  const users = (query.data?.data.data ?? []).filter((u: UserPublic) =>
-    `${u.full_name ?? ""} ${u.email}`.toLowerCase().includes(q.toLowerCase()),
-  )
+  const users = (query.data?.data.data ?? [])
+    .filter((u: UserPublic) => !u.is_developer)
+    .filter((u: UserPublic) =>
+      `${u.full_name ?? ""} ${u.email}`.toLowerCase().includes(q.toLowerCase()),
+    )
 
   return (
     <div className="space-y-6">
@@ -196,7 +198,7 @@ export function UsersAdministrationPage() {
                 <SelectContent>
                   {accountRoles.map((item) => (
                     <SelectItem key={item} value={item}>
-                      {item.replace(/_/g, " ")}
+                      {roleLabel(item)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -277,7 +279,7 @@ function UserRow({
           <SelectContent>
             {editableRoles.map((r) => (
               <SelectItem key={r} value={r}>
-                {r.replace(/_/g, " ")}
+                {roleLabel(r)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -312,4 +314,8 @@ function UserRow({
       </td>
     </tr>
   )
+}
+
+function roleLabel(role: UserRole) {
+  return role === "student" ? "Basic User" : role
 }

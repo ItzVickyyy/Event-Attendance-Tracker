@@ -47,10 +47,14 @@ def test_event_crud(
     update_res = client.patch(
         f"{settings.API_V1_STR}/events/{event_id}",
         headers=superuser_token_headers,
-        json={"status": "open"},
+        json={
+            "status": "open",
+            "academic_year_id": r.json()["academic_year_id"],
+        },
     )
     assert update_res.status_code == 200
     assert update_res.json()["status"] == "open"
+    assert update_res.json()["academic_year_id"] == r.json()["academic_year_id"]
 
     # 5. Delete Event
     del_res = client.delete(

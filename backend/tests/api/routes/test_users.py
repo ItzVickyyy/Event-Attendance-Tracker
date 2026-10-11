@@ -243,11 +243,22 @@ def test_retrieve_users(
     user_in2 = UserCreate(email=username2, password=password2)
     crud.create_user(session=db, user_create=user_in2)
 
+    developer_email = random_email()
+    crud.create_user(
+        session=db,
+        user_create=UserCreate(
+            email=developer_email,
+            password=random_lower_string(),
+            is_developer=True,
+        ),
+    )
+
     r = client.get(f"{settings.API_V1_STR}/users/", headers=superuser_token_headers)
     all_users = r.json()
 
     assert len(all_users["data"]) > 1
-    assert "count" in all_users
+    assert all_users["count"] == len(all_users["data"])
+    assert all(item["email"] != developer_email for item in all_users["data"])
     for item in all_users["data"]:
         assert "email" in item
 

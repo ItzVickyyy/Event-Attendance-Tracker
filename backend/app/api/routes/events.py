@@ -147,6 +147,12 @@ def update_event(
         raise HTTPException(status_code=404, detail="Event not found")
 
     update_dict = event_in.model_dump(exclude_unset=True)
+    if "academic_year_id" in update_dict:
+        academic_year_id = update_dict["academic_year_id"]
+        if academic_year_id is None:
+            raise HTTPException(status_code=422, detail="Academic year is required")
+        if not session.get(AcademicYear, academic_year_id):
+            raise HTTPException(status_code=404, detail="Academic year not found")
     if "organization_id" in update_dict and update_dict["organization_id"] is not None:
         org = session.get(Organization, update_dict["organization_id"])
         if not org:
