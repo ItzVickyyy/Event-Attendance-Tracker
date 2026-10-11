@@ -64,7 +64,7 @@ test("Create a class representative account with an assigned section", async ({
   await expect(systemRole).toContainText("Class Representative")
   await systemRole.click()
   await expect(
-    dialog.getByRole("option", {
+    page.getByRole("option", {
       name: "Class Representative",
       exact: true,
     }),
