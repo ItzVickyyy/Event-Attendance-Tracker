@@ -830,6 +830,7 @@ class EventCreate(EventBase):
 
 class EventUpdate(SQLModel):
     event_name: str | None = Field(default=None, max_length=255)
+    academic_year_id: uuid.UUID | None = None
     description: str | None = Field(default=None, max_length=1000)
     event_date: str | None = Field(default=None, max_length=20)
     start_time: str | None = Field(default=None, max_length=10)
