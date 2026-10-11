@@ -25,9 +25,6 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", name="uq_officer_positions_name"),
     )
-    op.create_index(
-        "ix_officer_positions_name", "officer_positions", ["name"], unique=True
-    )
     op.add_column("user", sa.Column("student_number", sa.String(length=50), nullable=True))
     op.add_column("user", sa.Column("organization", sa.String(length=255), nullable=True))
     op.add_column("user", sa.Column("position_id", sa.Uuid(), nullable=True))
@@ -78,5 +75,4 @@ def downgrade() -> None:
     op.drop_column("user", "position_id")
     op.drop_column("user", "organization")
     op.drop_column("user", "student_number")
-    op.drop_index("ix_officer_positions_name", table_name="officer_positions")
     op.drop_table("officer_positions")
