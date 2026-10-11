@@ -598,4 +598,3 @@ Reviewed `backend/app/api/routes/attendee_credentials.py`, credential models, an
 - Follow-up: decide whether credential reassignment and value replacement require an audit trail. If they do, route changes through a dedicated service that records actor, timestamp, old/new association, old/new value or a safe fingerprint, and reason. Avoid storing raw bearer-like credential values in general audit logs unless there is a clear need. Add tests for reassignment, replacement, duplicate-value conflicts, and history retention.
 
 This is a route/model inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
-
