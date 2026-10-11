@@ -5,7 +5,6 @@ from openpyxl import Workbook
 
 from app.services.officer_import import parse_officer_import_file
 
-
 HEADERS = [
     "Student ID",
     "First Name",
@@ -72,7 +71,9 @@ def test_parse_officer_import_rejects_empty_file() -> None:
 
 def test_parse_officer_import_rejects_missing_columns() -> None:
     with pytest.raises(ValueError, match="Missing required columns"):
-        parse_officer_import_file(b"First Name,Last Name\nJamie,Example\n", "officers.csv")
+        parse_officer_import_file(
+            b"First Name,Last Name\nJamie,Example\n", "officers.csv"
+        )
 
 
 def test_parse_officer_import_rejects_invalid_xlsx() -> None:
