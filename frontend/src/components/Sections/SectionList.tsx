@@ -1149,7 +1149,13 @@ function SectionList() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddStudentOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddStudentOpen(false)
+                setStudentsTarget(null)
+              }}
+            >
               Cancel
             </Button>
             <Button
