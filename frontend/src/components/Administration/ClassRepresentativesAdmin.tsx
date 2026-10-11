@@ -91,7 +91,7 @@ export function ClassRepresentativesAdmin() {
     try {
       const body = new FormData()
       body.append("file", importFile)
-      const response = await fetch(api + "/class-representatives/import", {
+      const response = await fetch(`${api}/class-representatives/import`, {
         method: "POST",
         headers: headers(),
         body,
@@ -104,7 +104,7 @@ export function ClassRepresentativesAdmin() {
         throw new Error(detail ?? "Import failed")
       }
       toast.success(
-        "Imported " + result.created_count + " Class Representative account(s)",
+        `Imported ${result.created_count} Class Representative account(s)`,
       )
       setImportFile(null)
       await client.invalidateQueries({ queryKey: ["class-representatives"] })
@@ -260,7 +260,9 @@ export function ClassRepresentativesAdmin() {
                   <Input
                     id={field}
                     value={form[field]}
-                    required={["first_name", "last_name", "email"].includes(field)}
+                    required={["first_name", "last_name", "email"].includes(
+                      field,
+                    )}
                     onChange={(event) =>
                       setForm({ ...form, [field]: event.target.value })
                     }
