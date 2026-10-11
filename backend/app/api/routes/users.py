@@ -986,6 +986,15 @@ def update_user(
         submitted_fields["section_id"] = section.id
         if promoting_to_class_rep or updating_class_rep_assignment:
             assignment_update = (year, section)
+            if promoting_to_class_rep and not (
+                db_user.student_number
+                or db_user.position_id
+                or db_user.organization
+            ):
+                # Keep assignment data in the assignment table for ordinary
+                # accounts instead of duplicating it on the user profile.
+                submitted_fields["academic_year_id"] = None
+                submitted_fields["section_id"] = None
 
     if requested_role == UserRole.class_representative:
         submitted_fields["can_scan"] = False
