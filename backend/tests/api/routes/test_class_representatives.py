@@ -560,9 +560,9 @@ def test_import_keeps_created_accounts_when_email_delivery_fails(
 
     monkeypatch.setattr(class_representatives_routes, "send_email", send_email)
     csv_content = (
-        "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\\n"
-        f"{first_email},Taylor,,First,,2026-2027,WMAD 3A\\n"
-        f"{second_email},Alex,,Second,,2026-2027,WMAD 3A\\n"
+        "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\n"
+        f"{first_email},Taylor,,First,,2026-2027,WMAD 3A\n"
+        f"{second_email},Alex,,Second,,2026-2027,WMAD 3A\n"
     )
     response = client.post(
         _api("/class-representatives/import"),
