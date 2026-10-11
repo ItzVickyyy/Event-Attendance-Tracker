@@ -474,9 +474,10 @@ def commit_officer_import(
     for row in payload.rows:
         email = str(row.email).strip().lower()
         student_number = row.student_number.strip()
-        if email in seen_emails or session.exec(
-            select(User).where(func.lower(User.email) == email)
-        ).first():
+        if (
+            email in seen_emails
+            or session.exec(select(User).where(func.lower(User.email) == email)).first()
+        ):
             raise HTTPException(status_code=409, detail=f"Duplicate email: {email}")
         if (
             student_number in seen_student_numbers
