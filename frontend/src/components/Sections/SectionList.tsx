@@ -399,7 +399,8 @@ function SectionList() {
   const exportFile = async (section: any, format: "xlsx" | "docx") => {
     try {
       const response = await fetch(
-        apiUrl(`/academic-sections/${section.id}/export/${format}`),        { headers: authHeaders() },
+        apiUrl(`/academic-sections/${section.id}/export/${format}`),
+        { headers: authHeaders() },
       )
       if (!response.ok) throw new Error()
       const disposition = response.headers.get("content-disposition")
@@ -511,7 +512,7 @@ function SectionList() {
             <Plus />
             Add Student
           </Button>
-          <Button onClick={openCreate}>
+          <Button onClick={openCreate>
             <Plus />
             Add section
           </Button>
@@ -809,7 +810,8 @@ function SectionList() {
                     <UsersRound className="size-7 text-muted-foreground" />
                   </div>
                   <h3 className="text-lg font-semibold">No students yet</h3>
-                  <p className="mt-1 max-w-md text-sm text-muted-foreground">                    This section has no active students for Academic Year{" "}
+                  <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                    This section has no active students for Academic Year{" "}
                     {studentsTarget?.academic_year}.
                   </p>
                   <Button
@@ -988,7 +990,7 @@ function SectionList() {
                 {sections.map((section: any) => (
                   <SelectItem key={section.id} value={section.id}>
                     {section.program_code}
-                    {section.major_code ? ` · ${section.major_code}` : ""}{" "}
+                    {section.major_code ? " · " + section.major_code : ""}{" "}
                     {section.section_code} · {section.year_level} ·{" "}
                     {section.academic_year}
                   </SelectItem>
@@ -1029,7 +1031,7 @@ function SectionList() {
             <DialogTitle>Add Student</DialogTitle>
             <DialogDescription>
               Add a student to {studentsTarget?.program_code}
-              {studentsTarget?.major_code ? ` · ${studentsTarget.major_code}` : ""}{" "}
+              {studentsTarget?.major_code ? " · " + studentsTarget.major_code : ""}{" "}
               {studentsTarget?.section_code} for Academic Year{" "}
               {studentsTarget?.academic_year}.
             </DialogDescription>
@@ -1268,7 +1270,8 @@ function SectionList() {
             >
               {saveStudent.isPending ? "Saving…" : "Save student"}
             </Button>
-          </DialogFooter>        </DialogContent>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <Dialog
@@ -1393,7 +1396,7 @@ function SectionList() {
               <DialogTitle>Print Preview</DialogTitle>
               <DialogDescription>
                 Formatted roster preview for {printTarget?.program_code}{" "}
-                {printTarget?.major_code ? `· ${printTarget.major_code}` : ""}{" "}
+                {printTarget?.major_code ? "· " + printTarget.major_code : ""}{" "}
                 {printTarget?.section_code}.
               </DialogDescription>
             </DialogHeader>
@@ -1405,7 +1408,7 @@ function SectionList() {
                 <p>College of Computer Studies</p>
                 <p className="font-semibold">
                   {printTarget?.program_code}
-                  {printTarget?.major_code ? ` · ${printTarget.major_code}` : ""}{" "}
+                  {printTarget?.major_code ? " · " + printTarget.major_code : ""}{" "}
                   {printTarget?.section_code}
                 </p>
                 <p>
