@@ -485,3 +485,57 @@ def test_class_representative_cannot_modify_enrollment_outside_assigned_year(
     assert roster.status_code == 200
     student_row = next(row for row in roster.json()["data"] if row["id"] == student_id)
     assert student_row["student_status"] == "regular"
+
+
+def test_import_class_representatives_from_csv(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    email = random_email()
+    csv_content = (
+        "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\n"
+        f"{email},Taylor,M,Imported,,2026-2027,WMAD 3A\n"
+    )
+    response = client.post(
+        _api("/class-representatives/import"),
+        headers=superuser_token_headers,
+        files={"file": ("representatives.csv", csv_content, "text/csv")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["created_count"] == 1
+
+    login = client.post(
+        _api("/login/access-token"),
+        data={"username": email, "password": TEMPORARY_PASSWORD},
+    )
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    blocked = client.get(_api("/class-representatives/me"), headers=headers)
+    assert blocked.status_code == 403
+    assert blocked.json()["detail"]["code"] == "password_change_required"
+
+
+def test_import_class_representatives_rejects_all_rows_if_one_is_invalid(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    valid_email = random_email()
+    invalid_email = random_email()
+    csv_content = (
+        "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\n"
+        f"{valid_email},Taylor,M,Imported,,2026-2027,WMAD 3A\n"
+        f"{invalid_email,},Alex,,Invalid,,2026-2027,Missing Section\n"
+    )
+    response = client.post(
+        _api("/class-representatives/import"),
+        headers=superuser_token_headers,
+        files={"file": ("representatives.csv", csv_content, "text/csv")},
+    )
+
+    assert response.status_code == 422
+    assert "section not found" in str(response.json()["detail"])
+
+    login = client.post(
+        _api("/login/access-token"),
+        data={"username": valid_email, "password": TEMPORARY_PASSWORD},
+    )
+    assert login.status_code != 200
