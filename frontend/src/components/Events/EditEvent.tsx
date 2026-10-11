@@ -5,9 +5,8 @@ import { Edit } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
-import type { EventPublic } from "@/client"
+import { type EventPublic, EventsService } from "@/client"
 import { useAcademicYear } from "@/context/AcademicYearContext"
-import { EventsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
