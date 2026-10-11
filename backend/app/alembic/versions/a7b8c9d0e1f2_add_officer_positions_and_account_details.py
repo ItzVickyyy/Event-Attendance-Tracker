@@ -1,7 +1,7 @@
 """Add Student Council officer positions and account academic details.
 
 Revision ID: a7b8c9d0e1f2
-Revises: z6a7b8c9d0e1
+Revises: b2c3d4e5f6a7
 """
 
 from alembic import op
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 
 revision = "a7b8c9d0e1f2"
-down_revision = "z6a7b8c9d0e1"
+down_revision = "b2c3d4e5f6a7"
 branch_labels = None
 depends_on = None
 
