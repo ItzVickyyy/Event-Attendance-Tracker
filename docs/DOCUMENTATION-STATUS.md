@@ -610,4 +610,3 @@ Reviewed `backend/app/api/routes/people.py` and the `Person`, `Student`, `Attend
 - Follow-up: treat person deletion as a high-impact destructive operation. Confirm the retention and privacy-erasure policy, show linked-record impact before deletion, and consider archival or a deliberate erasure workflow. Add tests covering a person linked to student and attendee records, including expected credential, registration, attendance, and correction retention.
 
 This is a route/model inspection, not a live database deletion test. No application code or tests were changed in this documentation-only PR.
-
