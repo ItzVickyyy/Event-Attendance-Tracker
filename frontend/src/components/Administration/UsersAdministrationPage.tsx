@@ -1042,8 +1042,29 @@ function UserRow({
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-              <Button disabled={saving || !editEmail.trim()} onClick={() => { onSave({ full_name: editName.trim(), email: editEmail.trim(), role, is_active: active, ...(isSuperAdmin ? { can_scan: scan, is_superuser: role === "super_admin" } : {}) }); setEditOpen(false) }}>Save Changes</Button>
+              <Button
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={saving || !editEmail.trim()}
+                onClick={() => {
+                  onSave({
+                    full_name: editName.trim(),
+                    email: editEmail.trim(),
+                    role,
+                    is_active: active,
+                    ...(isSuperAdmin
+                      ? { can_scan: scan, is_superuser: role === "super_admin" }
+                      : {}),
+                  })
+                  setEditOpen(false)
+                }}
+              >
+                Save Changes
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
