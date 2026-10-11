@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, Calendar, Clock, ScanLine } from "lucide-react"
-import { EventsService } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
