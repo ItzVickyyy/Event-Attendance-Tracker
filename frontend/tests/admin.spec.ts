@@ -117,10 +117,18 @@ test("Super admin can create an officer account with a position", async ({
   await expect(row).toContainText("Admin")
   await expect(row).toContainText(position)
   await row.getByRole("combobox").click()
-  await expect(page.getByRole("option", { name: "Admin", exact: true })).toBeVisible()
-  await expect(page.getByRole("option", { name: "Super Admin", exact: true })).toBeVisible()
-  await expect(page.getByRole("option", { name: "Student", exact: true })).toHaveCount(0)
-  await expect(page.getByRole("option", { name: "Class Representative", exact: true })).toHaveCount(0)
+  await expect(
+    page.getByRole("option", { name: "Admin", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("option", { name: "Super Admin", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("option", { name: "Student", exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole("option", { name: "Class Representative", exact: true }),
+  ).toHaveCount(0)
   await page.keyboard.press("Escape")
 })
 
