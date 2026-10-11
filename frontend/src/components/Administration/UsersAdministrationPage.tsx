@@ -950,17 +950,22 @@ function UserRow({
     user.role === "admin" || user.role === "super_admin"
   const canEdit =
     isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
+  const hasOfficerProfile = Boolean(
+    user.student_number ||
+      user.first_name ||
+      user.last_name ||
+      user.position_id ||
+      user.organization,
+  )
   const editableRoles: UserRole[] = isSuperAdmin
-    ? user.role === "class_representative"
-      ? [...superAdminAccountRoles, "class_representative"]
-      : superAdminAccountRoles
+    ? [...superAdminAccountRoles, "class_representative"]
     : user.role === "class_representative"
       ? ["student", "class_representative"]
       : ["student"]
-  const editAccountRoles: UserRole[] =
-    user.role === "class_representative"
-      ? [...superAdminAccountRoles, "class_representative"]
-      : superAdminAccountRoles
+  const editAccountRoles: UserRole[] = [
+    ...superAdminAccountRoles,
+    "class_representative",
+  ]
   const yearsQuery = useQuery({
     queryKey: ["edit-officer-account-years"],
     queryFn: () =>
@@ -976,17 +981,22 @@ function UserRow({
     enabled: isSuperAdmin && editOpen && Boolean(editAcademicYearId),
   })
   const save = () => {
+    if (isSuperAdmin && role === "class_representative" && user.role !== "class_representative") {
+      openEdit("class_representative")
+      toast.info("Choose an academic year and section to assign this account as a Class Representative.")
+      return
+    }
     const body: Parameters<typeof UsersService.updateUser>[0]["body"] = {
       role,
       is_active: active,
     }
     if (isSuperAdmin) {
-      body.can_scan = scan
+      body.can_scan = role === "class_representative" ? false : scan
       body.is_superuser = role === "super_admin"
     }
     onSave(body)
   }
-  const openEdit = () => {
+  const openEdit = (initialRole: UserRole = user.role ?? "student") => {
     setEditName(user.full_name ?? "")
     setEditEmail(user.email)
     setEditStudentNumber(user.student_number ?? "")
@@ -998,35 +1008,44 @@ function UserRow({
     setEditAcademicYearId(user.academic_year_id ?? "")
     setEditSectionId(user.section_id ?? "")
     setEditPositionId(user.position_id ?? "")
-    setEditRole(user.role ?? "student")
+    setEditRole(initialRole)
     setEditOpen(true)
   }
   const saveDetails = async () => {
     setSavingDetails(true)
     try {
-      const payload: Record<string, unknown> = isSuperAdmin
-        ? {
-            email: editEmail.trim(),
+      const payload: Record<string, unknown> = {
+        email: editEmail.trim(),
+        role: editRole,
+        is_active: active,
+      }
+      if (isSuperAdmin) {
+        payload.can_scan = editRole === "class_representative" ? false : scan
+        payload.is_superuser = editRole === "super_admin"
+        if (hasOfficerProfile) {
+          Object.assign(payload, {
             student_number: editStudentNumber.trim(),
             first_name: editFirstName.trim(),
             middle_name: editMiddleInitial.trim() || null,
             last_name: editLastName.trim(),
             name_extension: editExtension.trim() || null,
-            academic_year_id: editAcademicYearId,
-            section_id: editSectionId,
             organization: editOrganization.trim(),
-            role: editRole,
             position_id: editPositionId,
-            is_active: active,
-            can_scan: scan,
-            is_superuser: editRole === "super_admin",
-          }
-        : {
-            full_name: editName.trim(),
-            email: editEmail.trim(),
-            role: editRole,
-            is_active: active,
-          }
+          })
+        }
+        if (
+          editRole === "class_representative" &&
+          user.role !== "class_representative"
+        ) {
+          payload.academic_year_id = editAcademicYearId
+          payload.section_id = editSectionId
+        } else if (hasOfficerProfile && editAcademicYearId && editSectionId) {
+          payload.academic_year_id = editAcademicYearId
+          payload.section_id = editSectionId
+        }
+      } else {
+        payload.full_name = editName.trim()
+      }
       await apiRequest<OfficerUser>(`/users/${user.id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
@@ -1330,13 +1349,16 @@ function UserRow({
                   savingDetails ||
                   !editEmail.trim() ||
                   (isSuperAdmin &&
+                    hasOfficerProfile &&
                     (!editStudentNumber.trim() ||
                       !editFirstName.trim() ||
                       !editLastName.trim() ||
-                      !editAcademicYearId ||
-                      !editSectionId ||
                       !editPositionId ||
-                      !editOrganization.trim()))
+                      !editOrganization.trim())) ||
+                  (isSuperAdmin &&
+                    editRole === "class_representative" &&
+                    user.role !== "class_representative" &&
+                    (!editAcademicYearId || !editSectionId))
                 }
                 onClick={() => void saveDetails()}
               >

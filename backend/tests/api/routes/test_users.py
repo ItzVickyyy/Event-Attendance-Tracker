@@ -7,7 +7,8 @@ from sqlmodel import Session, select
 from app import crud
 from app.core.config import settings
 from app.core.security import verify_password
-from app.models import User, UserCreate, UserRole
+from app.models import AcademicSection, User, UserCreate, UserRole
+from app.student_academics import AcademicYear, ClassRepresentativeAssignment
 from tests.utils.user import create_random_user, get_token_headers_for_role
 from tests.utils.utils import random_email, random_lower_string
 
@@ -228,6 +229,67 @@ def test_user_cannot_be_promoted_to_class_representative_without_assignment(
         assert response.status_code == 403
         db.refresh(target)
         assert target.role != UserRole.class_representative
+
+
+def test_super_admin_can_promote_and_demote_class_representative(
+    client: TestClient,
+    db: Session,
+) -> None:
+    target = create_random_user(db)
+    headers = get_token_headers_for_role(
+        client=client,
+        db=db,
+        role=UserRole.super_admin,
+        is_superuser=True,
+    )
+    year = db.exec(
+        select(AcademicYear).where(AcademicYear.label == "2026-2027")
+    ).first()
+    assert year is not None
+    section = db.exec(
+        select(AcademicSection).where(
+            AcademicSection.academic_year_id == year.id,
+            AcademicSection.section_name == "WMAD 3A",
+        )
+    ).first()
+    assert section is not None
+
+    promoted = client.patch(
+        f"{settings.API_V1_STR}/users/{target.id}",
+        headers=headers,
+        json={
+            "role": UserRole.class_representative.value,
+            "academic_year_id": str(year.id),
+            "section_id": str(section.id),
+        },
+    )
+    assert promoted.status_code == 200, promoted.text
+    assert promoted.json()["role"] == UserRole.class_representative.value
+    assert promoted.json()["can_scan"] is False
+    assert promoted.json()["is_superuser"] is False
+
+    assignment = db.exec(
+        select(ClassRepresentativeAssignment).where(
+            ClassRepresentativeAssignment.user_id == target.id,
+            ClassRepresentativeAssignment.academic_year_id == year.id,
+        )
+    ).first()
+    assert assignment is not None
+    assert assignment.section_id == section.id
+
+    demoted = client.patch(
+        f"{settings.API_V1_STR}/users/{target.id}",
+        headers=headers,
+        json={"role": UserRole.admin.value, "is_superuser": False},
+    )
+    assert demoted.status_code == 200, demoted.text
+    assert demoted.json()["role"] == UserRole.admin.value
+    remaining_assignments = db.exec(
+        select(ClassRepresentativeAssignment).where(
+            ClassRepresentativeAssignment.user_id == target.id
+        )
+    ).all()
+    assert remaining_assignments == []
 
 
 def test_retrieve_users(
