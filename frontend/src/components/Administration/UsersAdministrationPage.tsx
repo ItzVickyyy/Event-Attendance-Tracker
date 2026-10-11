@@ -126,7 +126,7 @@ export function UsersAdministrationPage() {
   const positionsQuery = useQuery({
     queryKey: ["officer-positions"],
     queryFn: () => apiRequest<{ data: OfficerPosition[] }>("/users/officer-positions"),
-    enabled: isSuperAdmin,
+    enabled: true,
   })
 
   useEffect(() => {
