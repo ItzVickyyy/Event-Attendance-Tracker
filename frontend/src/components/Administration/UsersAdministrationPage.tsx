@@ -940,6 +940,7 @@ function UserRow({
   const [editRole, setEditRole] = useState<UserRole>(user.role ?? "student")
   const isProtectedAccount = user.role === "admin" || user.role === "super_admin"
   const canEdit = isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
+  const isOfficerAccount = isSuperAdmin && Boolean(user.student_number || user.position_id || user.academic_year_id || user.section_id)
   const editableRoles: UserRole[] = isSuperAdmin
     ? user.role === "class_representative" ? [...roles, "class_representative"] : roles
     : user.role === "class_representative" ? ["student", "class_representative"] : ["student"]
@@ -982,7 +983,7 @@ function UserRow({
   const saveDetails = async () => {
     setSavingDetails(true)
     try {
-      const payload: Record<string, unknown> = isSuperAdmin
+      const payload: Record<string, unknown> = isOfficerAccount
         ? {
             email: editEmail.trim(),
             student_number: editStudentNumber.trim(),
@@ -1051,7 +1052,7 @@ function UserRow({
               <DialogDescription>Update the same account details available when creating this account.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              {isSuperAdmin ? (
+              {isOfficerAccount ? (
                 <>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2"><Label>Student ID *</Label><Input value={editStudentNumber} onChange={(event) => setEditStudentNumber(event.target.value)} required /></div>
@@ -1109,11 +1110,11 @@ function UserRow({
                   </div>
                 </>
               )}
-              {isSuperAdmin && <div className="space-y-2"><Label>New Password</Label><Input type="password" value={editPassword} onChange={(event) => setEditPassword(event.target.value)} placeholder="Leave blank to keep current password" /></div>}
+              {isOfficerAccount && <div className="space-y-2"><Label>New Password</Label><Input type="password" value={editPassword} onChange={(event) => setEditPassword(event.target.value)} placeholder="Leave blank to keep current password" /></div>}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditOpen(false)} disabled={savingDetails}>Cancel</Button>
-              <Button disabled={savingDetails || !editEmail.trim() || (isSuperAdmin && (!editStudentNumber.trim() || !editFirstName.trim() || !editLastName.trim() || !editAcademicYearId || !editSectionId || !editPositionId || !editOrganization.trim()))} onClick={() => void saveDetails()}>
+              <Button disabled={savingDetails || !editEmail.trim() || (isOfficerAccount && (!editStudentNumber.trim() || !editFirstName.trim() || !editLastName.trim() || !editAcademicYearId || !editSectionId || !editPositionId || !editOrganization.trim()))} onClick={() => void saveDetails()}>
                 {savingDetails ? "Saving…" : "Save Changes"}
               </Button>
             </DialogFooter>
