@@ -1,7 +1,8 @@
 from io import BytesIO
 
-import pytest
 from openpyxl import Workbook
+
+import pytest
 
 from app.services.officer_import import parse_officer_import_file
 
