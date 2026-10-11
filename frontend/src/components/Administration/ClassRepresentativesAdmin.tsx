@@ -70,8 +70,12 @@ export function ClassRepresentativesAdmin() {
       ).json(),
   })
   const downloadTemplate = () => {
-    const csv = "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section" + String.fromCharCode(10)
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }))
+    const csv =
+      "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section" +
+      String.fromCharCode(10)
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8;" }),
+    )
     const link = document.createElement("a")
     link.href = url
     link.download = "Class_Representative_Import_Template.csv"
@@ -80,16 +84,28 @@ export function ClassRepresentativesAdmin() {
     link.remove()
     URL.revokeObjectURL(url)
   }
+
   const importRepresentatives = async () => {
     if (!importFile) return
     setImporting(true)
     try {
       const body = new FormData()
       body.append("file", importFile)
-      const response = await fetch("/api/v1/class-representatives/import", { method: "POST", headers: headers(), body })
+      const response = await fetch(api + "/class-representatives/import", {
+        method: "POST",
+        headers: headers(),
+        body,
+      })
       const result = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(result?.detail ?? "Import failed")
-      toast.success(`Imported ${result.created_count} Class Representative account(s)`)
+      if (!response.ok) {
+        const detail = Array.isArray(result?.detail)
+          ? result.detail.join("; ")
+          : result?.detail
+        throw new Error(detail ?? "Import failed")
+      }
+      toast.success(
+        "Imported " + result.created_count + " Class Representative account(s)",
+      )
       setImportFile(null)
       await client.invalidateQueries({ queryKey: ["class-representatives"] })
     } catch (error) {
@@ -147,14 +163,27 @@ export function ClassRepresentativesAdmin() {
       <Card>
         <CardHeader>
           <CardTitle>Import Class Representatives</CardTitle>
-          <p className="text-sm text-muted-foreground">Upload a CSV using the template. Every row is validated before accounts are created.</p>
+          <p className="text-sm text-muted-foreground">
+            Upload a CSV using the template. Every row is validated before
+            accounts are created.
+          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1 space-y-2">
             <Label htmlFor="class-rep-import-file">CSV file</Label>
-            <Input id="class-rep-import-file" type="file" accept=".csv,text/csv" onChange={(event) => setImportFile(event.target.files?.[0] ?? null)} />
+            <Input
+              id="class-rep-import-file"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) =>
+                setImportFile(event.target.files?.[0] ?? null)
+              }
+            />
           </div>
-          <Button onClick={() => void importRepresentatives()} disabled={!importFile || importing}>
+          <Button
+            onClick={() => void importRepresentatives()}
+            disabled={!importFile || importing}
+          >
             <FileUp className="mr-2 size-4" />
             {importing ? "Importing…" : "Import representatives"}
           </Button>
