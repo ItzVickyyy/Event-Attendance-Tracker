@@ -15,7 +15,7 @@ export function ScannerPermissionsPage() {
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["scanner-permissions"] }),
   })
-  const users = q.data?.data.data ?? []
+  const users = (q.data?.data.data ?? []).filter((user: UserPublic) => !user.is_developer)
 
   return (
     <div className="space-y-6">
