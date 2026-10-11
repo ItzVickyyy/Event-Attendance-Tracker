@@ -157,6 +157,7 @@ class OfficerPositionUpdate(SQLModel):
 
 class OfficerPosition(OfficerPositionBase, table=True):
     __tablename__ = "officer_positions"
+    __table_args__ = (UniqueConstraint("name", name="uq_officer_positions_name"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     created_at: datetime | None = Field(
