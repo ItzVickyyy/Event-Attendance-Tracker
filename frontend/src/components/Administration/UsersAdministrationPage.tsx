@@ -951,11 +951,7 @@ function UserRow({
   const canEdit =
     isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
   const hasOfficerProfile = Boolean(
-    user.student_number ||
-      user.first_name ||
-      user.last_name ||
-      user.position_id ||
-      user.organization,
+    user.student_number || user.position_id || user.organization,
   )
   const editableRoles: UserRole[] = isSuperAdmin
     ? [...superAdminAccountRoles, "class_representative"]
@@ -1120,7 +1116,7 @@ function UserRow({
             size="sm"
             variant="outline"
             disabled={!canEdit}
-            onClick={openEdit}
+            onClick={() => openEdit()}
           >
             <Pencil className="mr-1 size-3.5" /> Edit
           </Button>

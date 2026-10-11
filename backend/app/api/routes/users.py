@@ -1039,15 +1039,15 @@ def update_user(
     ):
         session.exec(
             delete(ClassRepresentativeAssignment).where(
-                ClassRepresentativeAssignment.user_id == db_user.id
+                col(ClassRepresentativeAssignment.user_id) == db_user.id
             )
         )
     if assignment_update:
         year, section = assignment_update
         assignment = session.exec(
             select(ClassRepresentativeAssignment).where(
-                ClassRepresentativeAssignment.user_id == db_user.id,
-                ClassRepresentativeAssignment.academic_year_id == year.id,
+                col(ClassRepresentativeAssignment.user_id) == db_user.id,
+                col(ClassRepresentativeAssignment.academic_year_id) == year.id,
             )
         ).first()
         if assignment:
