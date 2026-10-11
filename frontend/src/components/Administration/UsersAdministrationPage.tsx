@@ -40,6 +40,18 @@ type OfficerUser = UserPublic & {
   academic_year_id?: string | null
   section_id?: string | null
 }
+type OfficerImportRow = {
+  row_number: number
+  payload: Record<string, string> | null
+  errors: string[]
+}
+type OfficerImportPreview = {
+  total_rows: number
+  valid_rows: number
+  invalid_rows: number
+  can_import: boolean
+  rows: OfficerImportRow[]
+}
 
 const roles: UserRole[] = ["super_admin", "admin", "student"]
 const superAdminAccountRoles: UserRole[] = ["super_admin", "admin"]
@@ -73,6 +85,9 @@ export function UsersAdministrationPage() {
   const [q, setQ] = useState("")
   const [createOpen, setCreateOpen] = useState(false)
   const [managePositionsOpen, setManagePositionsOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importPreview, setImportPreview] = useState<OfficerImportPreview | null>(null)
   const [studentNumber, setStudentNumber] = useState("")
   const [firstName, setFirstName] = useState("")
   const [middleInitial, setMiddleInitial] = useState("")
@@ -195,6 +210,76 @@ export function UsersAdministrationPage() {
       toast.error(error.message || "Unable to add officer position"),
   })
 
+  const previewImportMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData()
+      form.append("file", file)
+      const response = await fetch(`${api}/users/officers/import/preview`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+        body: form,
+      })
+      const body = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(body?.detail ?? "Unable to validate import file")
+      return body as OfficerImportPreview
+    },
+    onSuccess: (preview) => {
+      setImportPreview(preview)
+      if (preview.can_import) {
+        toast.success(`Validated ${preview.valid_rows} officer rows`)
+      } else {
+        toast.error(`Found ${preview.invalid_rows} invalid row(s). Review the errors before importing.`)
+      }
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  const commitImportMutation = useMutation({
+    mutationFn: () =>
+      apiRequest<{ created_count: number; delivery_failures: string[] }>(
+        "/users/officers/import/commit",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            rows: (importPreview?.rows ?? []).map((row) => row.payload),
+          }),
+        },
+      ),
+    onSuccess: async (result) => {
+      toast.success(`Imported ${result.created_count} officer account(s)`)
+      if (result.delivery_failures.length) {
+        toast.error(`Email delivery failed for: ${result.delivery_failures.join(", ")}`)
+      }
+      setImportOpen(false)
+      setImportFile(null)
+      setImportPreview(null)
+      await qc.invalidateQueries({ queryKey: ["admin-users"] })
+    },
+    onError: (error: Error) => toast.error(error.message),
+  })
+
+  async function downloadImportTemplate(format: "csv" | "xlsx") {
+    try {
+      const response = await fetch(`${api}/users/officers/import/template/${format}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
+      })
+      if (!response.ok) throw new Error("Unable to download the import template")
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = format === "csv"
+        ? "CCS_Officer_Import_Template.csv"
+        : "CCS_Officer_Import_Template.xlsx"
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to download template")
+    }
+  }
+
   function resetForm() {
     setStudentNumber("")
     setFirstName("")
@@ -233,10 +318,15 @@ export function UsersAdministrationPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {isSuperAdmin && (
-            <Button variant="outline" onClick={() => setManagePositionsOpen(true)}>
-              <Settings2 />
-              Manage positions
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                Import accounts
+              </Button>
+              <Button variant="outline" onClick={() => setManagePositionsOpen(true)}>
+                <Settings2 />
+                Manage positions
+              </Button>
+            </>
           )}
           <Button
             onClick={() => {
@@ -440,6 +530,109 @@ export function UsersAdministrationPage() {
               }
             >
               {createMutation.isPending ? "Creating…" : "Create account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={importOpen}
+        onOpenChange={(open) => {
+          setImportOpen(open)
+          if (!open) {
+            setImportFile(null)
+            setImportPreview(null)
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Import Officer Accounts</DialogTitle>
+            <DialogDescription>
+              Upload a CSV or XLSX file. Review validation results before committing the import. Files can contain up to 500 accounts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={() => void downloadImportTemplate("xlsx")}>
+                Download XLSX template
+              </Button>
+              <Button type="button" variant="outline" onClick={() => void downloadImportTemplate("csv")}>
+                Download CSV template
+              </Button>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="officer-import-file">Officer file</Label>
+              <Input
+                id="officer-import-file"
+                type="file"
+                accept=".csv,.xlsx"
+                onChange={(event) => {
+                  setImportFile(event.target.files?.[0] ?? null)
+                  setImportPreview(null)
+                }}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => importFile && previewImportMutation.mutate(importFile)}
+              disabled={!importFile || previewImportMutation.isPending}
+            >
+              {previewImportMutation.isPending ? "Validating…" : "Validate file"}
+            </Button>
+            {importPreview && (
+              <div className="space-y-3">
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-md border p-3 text-sm">Total rows: <strong>{importPreview.total_rows}</strong></div>
+                  <div className="rounded-md border p-3 text-sm">Valid rows: <strong>{importPreview.valid_rows}</strong></div>
+                  <div className="rounded-md border p-3 text-sm">Invalid rows: <strong>{importPreview.invalid_rows}</strong></div>
+                </div>
+                <div className="max-h-72 overflow-auto rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="p-2">Row</th>
+                        <th className="p-2">Student ID</th>
+                        <th className="p-2">Account</th>
+                        <th className="p-2">Validation</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreview.rows.map((row) => (
+                        <tr key={row.row_number} className="border-b align-top">
+                          <td className="p-2">{row.row_number}</td>
+                          <td className="p-2">{row.payload?.student_number ?? "—"}</td>
+                          <td className="p-2">
+                            {row.payload
+                              ? `${row.payload.first_name} ${row.payload.last_name} · ${row.payload.position_id}`
+                              : "Invalid row"}
+                          </td>
+                          <td className="p-2">
+                            {row.errors.length
+                              ? <span className="text-destructive">{row.errors.join("; ")}</span>
+                              : <span className="text-muted-foreground">Ready</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {!importPreview.can_import && (
+                  <p className="text-sm text-destructive">
+                    Import is blocked until every row is valid. Fix the source file and validate it again.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => commitImportMutation.mutate()}
+              disabled={!importPreview?.can_import || commitImportMutation.isPending}
+            >
+              {commitImportMutation.isPending ? "Importing…" : "Import accounts"}
             </Button>
           </DialogFooter>
         </DialogContent>
