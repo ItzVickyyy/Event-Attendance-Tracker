@@ -579,4 +579,3 @@ def test_import_keeps_created_accounts_when_email_delivery_fails(
             data={"username": email, "password": TEMPORARY_PASSWORD},
         )
         assert login.status_code == 200
-
