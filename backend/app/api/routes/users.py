@@ -327,7 +327,7 @@ async def preview_officer_import(
     programs_by_id = {program.id: program for program in programs}
     positions_by_name = {position.name.casefold(): position for position in positions}
     existing_emails = {
-        str(user.email).casefold() for user in session.exec(select(User.email)).all()
+        str(email).casefold() for email in session.exec(select(User.email)).all()
     }
     existing_student_numbers = {
         number for number in session.exec(select(User.student_number)).all() if number
