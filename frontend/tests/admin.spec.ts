@@ -128,8 +128,18 @@ test("Super admin can create an officer account with a position", async ({
   ).toHaveCount(0)
   await expect(
     page.getByRole("option", { name: "Class Representative", exact: true }),
-  ).toHaveCount(0)
+  ).toBeVisible()
   await page.keyboard.press("Escape")
+
+  await row.getByRole("button", { name: "Edit" }).click()
+  const editDialog = page.getByRole("dialog")
+  const editRole = editDialog.getByRole("combobox").nth(2)
+  await editRole.click()
+  await expect(
+    page.getByRole("option", { name: "Class Representative", exact: true }),
+  ).toBeVisible()
+  await page.keyboard.press("Escape")
+  await editDialog.getByRole("button", { name: "Cancel" }).click()
 })
 
 test("Cancel account creation closes the dialog", async ({ page }) => {
