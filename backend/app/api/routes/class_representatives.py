@@ -502,9 +502,18 @@ async def import_class_representatives(
             )
             session.flush()
             created.append((user, temporary_password))
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(
+            status_code=503,
+            detail="Import failed while creating accounts. No accounts were created.",
+        ) from exc
 
-        if settings.emails_enabled:
-            for user, temporary_password in created:
+    delivery_failures: list[str] = []
+    if settings.emails_enabled:
+        for user, temporary_password in created:
+            try:
                 email_data = generate_new_account_email(
                     email_to=user.email,
                     username=user.email,
@@ -515,15 +524,11 @@ async def import_class_representatives(
                     subject=email_data.subject,
                     html_content=email_data.html_content,
                 )
-        session.commit()
-    except Exception as exc:
-        session.rollback()
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "Import was rolled back because account credentials could not be "
-                "delivered. Check email delivery and retry."
-            ),
-        ) from exc
+            except Exception:
+                delivery_failures.append(str(user.email))
 
-    return {"created_count": len(created), "count": len(created)}
+    return {
+        "created_count": len(created),
+        "count": len(created),
+        "delivery_failures": delivery_failures,
+    }
