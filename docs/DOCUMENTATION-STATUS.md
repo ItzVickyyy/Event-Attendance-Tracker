@@ -598,3 +598,16 @@ Reviewed `backend/app/api/routes/attendee_credentials.py`, credential models, an
 - Follow-up: decide whether credential reassignment and value replacement require an audit trail. If they do, route changes through a dedicated service that records actor, timestamp, old/new association, old/new value or a safe fingerprint, and reason. Avoid storing raw bearer-like credential values in general audit logs unless there is a clear need. Add tests for reassignment, replacement, duplicate-value conflicts, and history retention.
 
 This is a route/model inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
+
+## Direct person deletion and downstream attendance history
+
+Reviewed `backend/app/api/routes/people.py` and the `Person`, `Student`, `Attendee`, `AttendeeCredential`, `EventRegistration`, `Attendance`, and `AttendanceCorrection` model relationships in `backend/app/models.py`.
+
+- The Admin-only `DELETE /people/{person_id}` route permanently deletes the person without checking for linked student or attendee records, attendance history, or correction records.
+- The `Person.student` and `Person.attendee` relationships use delete cascade. The student and attendee foreign keys to `people.id` also specify `ON DELETE CASCADE`. When the person has both records, deleting the person can therefore remove both branches.
+- The student branch can remove guardian/attendee relationships. The attendee branch can remove credentials, relationships, event registrations, and attendance. Attendance corrections cascade from attendance. As a result, deleting a person may erase attendance and correction history even when the operator did not directly choose the event, registration, or session deletion endpoints.
+- This is a separate entry point from the previously documented attendee deletion cascade. The current route does not present a dependency summary or require an API-level confirmation, reason, or retention check.
+- Follow-up: treat person deletion as a high-impact destructive operation. Confirm the retention and privacy-erasure policy, show linked-record impact before deletion, and consider archival or a deliberate erasure workflow. Add tests covering a person linked to student and attendee records, including expected credential, registration, attendance, and correction retention.
+
+This is a route/model inspection, not a live database deletion test. No application code or tests were changed in this documentation-only PR.
+
