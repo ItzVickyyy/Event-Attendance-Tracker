@@ -70,7 +70,7 @@ export function ClassRepresentativesAdmin() {
       ).json(),
   })
   const downloadTemplate = () => {
-    const csv = "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\\n"
+    const csv = "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section" + String.fromCharCode(10)
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }))
     const link = document.createElement("a")
     link.href = url
@@ -281,6 +281,7 @@ export function ClassRepresentativesAdmin() {
               is required to change it after first login. If email delivery is
               enabled, the credentials are sent automatically.
             </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
