@@ -9,9 +9,10 @@ from app import crud
 from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.core.config import settings
 from app.models import Person, Student, User, UserCreate, UserPublic, UserRole
-from app.services.account_provisioning import (
-    generate_temporary_password as _generate_temporary_password,
-)
+from app.services import account_provisioning
+
+TEMPORARY_PASSWORD = account_provisioning.TEMPORARY_PASSWORD
+_generate_temporary_password = account_provisioning.generate_temporary_password
 from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
     AcademicYear,
