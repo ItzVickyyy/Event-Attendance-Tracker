@@ -633,3 +633,15 @@ Reviewed `backend/app/api/routes/academic_programs.py`, the `AcademicProgram.sec
 - Follow-up: decide whether programs with dependent sections should be deletable. Prefer an explicit dependency check and a stable HTTP 409 response, or a dedicated archival/migration workflow. Add tests for deleting an empty program, a program with empty sections, and a program whose sections have enrollments or representative assignments.
 
 This is a route/model inspection, not a live database deletion test. The database error behavior has not been exercised in this documentation-only PR; no application code or tests were changed.
+
+## Event schedule edits versus attendance-session schedule
+
+Reviewed `backend/app/api/routes/events.py`, the `EventUpdate` and `AttendanceSession` schemas in `backend/app/models.py`, and `backend/tests/api/routes/test_events.py`.
+
+- Event creation creates a default attendance session using the event's initial date, start time, and end time.
+- The event PATCH handler updates event fields and reconciles attendance-session status only when the event transitions to open or closed. It does not synchronize existing sessions when `event_date`, `start_time`, or `end_time` changes.
+- The default session can therefore retain the old schedule while the event record displays the new schedule. Because sessions have their own dates and times, scanner/session views and event details can disagree after an edit.
+- The inspected event route tests cover basic event creation and do not establish that changing an event's schedule updates its default session or intentionally preserves independently scheduled sessions.
+- Follow-up: define whether event schedule edits should update only the generated default session or all sessions. If the default session is derived from event fields, synchronize it when appropriate, while preserving intentionally customized sessions. Add regression tests for changing the date, start time, and end time, including events with multiple sessions.
+
+This is a route/schema/test inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
