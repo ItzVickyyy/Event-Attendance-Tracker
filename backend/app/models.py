@@ -204,6 +204,10 @@ class OfficerAccountCreate(SQLModel):
     position_id: uuid.UUID
 
 
+class OfficerAccountImportCommit(SQLModel):
+    rows: list[OfficerAccountCreate] = Field(min_length=1, max_length=500)
+
+
 # Generic message
 class Message(SQLModel):
     message: str
