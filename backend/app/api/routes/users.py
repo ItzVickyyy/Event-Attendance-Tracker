@@ -474,7 +474,9 @@ def commit_officer_import(
     for row in payload.rows:
         email = str(row.email).strip().lower()
         student_number = row.student_number.strip()
-        if email in seen_emails or crud.get_user_by_email(session=session, email=email):
+        if email in seen_emails or session.exec(
+            select(User).where(func.lower(User.email) == email)
+        ).first():
             raise HTTPException(status_code=409, detail=f"Duplicate email: {email}")
         if (
             student_number in seen_student_numbers
@@ -708,11 +710,18 @@ def create_officer_account(
             detail="Email delivery must be configured before creating officer accounts",
         )
     email = str(payload.email).strip().lower()
-    if crud.get_user_by_email(session=session, email=email):
+    student_number = payload.student_number.strip()
+    first_name = payload.first_name.strip()
+    last_name = payload.last_name.strip()
+    if not student_number or not first_name or not last_name:
+        raise HTTPException(
+            status_code=422,
+            detail="Student ID, first name, and last name are required",
+        )
+    if session.exec(select(User).where(func.lower(User.email) == email)).first():
         raise HTTPException(
             status_code=409, detail="A user with this email already exists"
         )
-    student_number = payload.student_number.strip()
     if session.exec(select(User).where(User.student_number == student_number)).first():
         raise HTTPException(
             status_code=409, detail="An account already exists for this Student ID"
@@ -737,9 +746,7 @@ def create_officer_account(
             detail="Officer accounts must use the Super Admin or Admin system role",
         )
 
-    first_name = payload.first_name.strip()
     middle_initial = (payload.middle_initial or "").strip().rstrip(".")
-    last_name = payload.last_name.strip()
     extension = (payload.extension or "").strip()
     full_name = " ".join(
         part
