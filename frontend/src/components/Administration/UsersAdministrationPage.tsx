@@ -60,7 +60,28 @@ const roles: UserRole[] = ["super_admin", "admin", "student"]
 const superAdminAccountRoles: UserRole[] = ["super_admin", "admin"]
 const adminAccountRoles: UserRole[] = ["student"]
 const api = "/api/v1"
-const positionHierarchy = ["President", "Vice President", "Executive Secretary", "Recording Secretary", "Treasurer", "Auditor", "Business Manager", "Event Coordinator", "PIO for Publication", "PIO for Documentation", "Creative Designer", "BSCS 1st Year Representative", "BSCS 2nd Year Representative", "BSCS 3rd Year Representative", "BSCS 4th Year Representative", "BSIT 1st Year Representative", "BSIT 2nd Year Representative", "BSIT 3rd Year Representative", "BSIT 4th Year Representative", "SSC CSS Representative"]
+const positionHierarchy = [
+  "President",
+  "Vice President",
+  "Executive Secretary",
+  "Recording Secretary",
+  "Treasurer",
+  "Auditor",
+  "Business Manager",
+  "Event Coordinator",
+  "PIO for Publication",
+  "PIO for Documentation",
+  "Creative Designer",
+  "BSCS 1st Year Representative",
+  "BSCS 2nd Year Representative",
+  "BSCS 3rd Year Representative",
+  "BSCS 4th Year Representative",
+  "BSIT 1st Year Representative",
+  "BSIT 2nd Year Representative",
+  "BSIT 3rd Year Representative",
+  "BSIT 4th Year Representative",
+  "SSC CSS Representative",
+]
 const comparePositions = (a: OfficerPosition, b: OfficerPosition) => {
   const ai = positionHierarchy.indexOf(a.name)
   const bi = positionHierarchy.indexOf(b.name)
@@ -329,7 +350,9 @@ export function UsersAdministrationPage() {
     setSectionId("")
   }
 
-  const positions = [...(positionsQuery.data?.data ?? [])].sort(comparePositions)
+  const positions = [...(positionsQuery.data?.data ?? [])].sort(
+    comparePositions,
+  )
   const positionName = (id?: string | null) =>
     positions.find((position) => position.id === id)?.name ?? "—"
   const users = ((query.data?.data.data ?? []) as OfficerUser[])
