@@ -1006,6 +1006,8 @@ def update_user(
                 status_code=409, detail="User with this email already exists"
             )
 
+    if officer_fields.intersection(submitted_fields):
+        user_in = user_in.model_copy(update=submitted_fields)
     db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
     return db_user
 
