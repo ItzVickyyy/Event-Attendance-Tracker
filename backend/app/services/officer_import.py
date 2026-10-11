@@ -6,7 +6,6 @@ from typing import Any
 
 from openpyxl import load_workbook  # type: ignore[import-untyped]
 
-
 ALIASES = {
     "student id": "student_number",
     "student number": "student_number",
