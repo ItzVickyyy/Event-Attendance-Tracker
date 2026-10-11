@@ -132,3 +132,20 @@ test.describe("Administration access control", () => {
     ).toBeVisible()
   })
 })
+
+test("Scanner Permissions page is removed from administration", async ({
+  page,
+}) => {
+  await page.goto("/administration")
+  await expect(
+    page.getByRole("heading", { name: "Administration" }).first(),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: /Scanner Permissions/ }),
+  ).toHaveCount(0)
+
+  await page.goto("/administration/scanner-permissions")
+  await expect(
+    page.getByRole("heading", { name: "Scanner Permissions" }),
+  ).toHaveCount(0)
+})
