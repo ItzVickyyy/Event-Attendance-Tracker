@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   ScanLine,
   ShieldCheck,
-  UserRound,
   UserRoundCheck,
   Users,
   UsersRound,
@@ -84,10 +83,6 @@ const navigationGroups: NavigationGroup[] = [
         superAdminOrDeveloper: true,
       },
     ],
-  },
-  {
-    title: "Account",
-    items: [{ title: "My Account", path: "/account", icon: UserRound }],
   },
 ]
 
