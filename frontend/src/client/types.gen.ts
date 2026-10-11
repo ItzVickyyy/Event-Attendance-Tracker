@@ -1339,6 +1339,10 @@ export type EventUpdate = {
      */
     event_name?: string | null;
     /**
+     * Academic Year Id
+     */
+    academic_year_id?: string | null;
+    /**
      * Description
      */
     description?: string | null;
