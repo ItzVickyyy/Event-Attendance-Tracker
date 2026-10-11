@@ -1040,6 +1040,16 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * Body_users-preview_officer_import
+ */
+export type Body_users_preview_officer_import = {
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
  * ClassRepresentativeCreate
  */
 export type ClassRepresentativeCreate = {
@@ -1582,6 +1592,131 @@ export type NewPassword = {
      * New Password
      */
     new_password: string;
+};
+
+/**
+ * OfficerAccountCreate
+ */
+export type OfficerAccountCreate = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Student Number
+     */
+    student_number: string;
+    /**
+     * First Name
+     */
+    first_name: string;
+    /**
+     * Middle Initial
+     */
+    middle_initial?: string | null;
+    /**
+     * Last Name
+     */
+    last_name: string;
+    /**
+     * Extension
+     */
+    extension?: string | null;
+    /**
+     * Organization
+     */
+    organization?: string;
+    /**
+     * Academic Year Id
+     */
+    academic_year_id: string;
+    /**
+     * Section Id
+     */
+    section_id: string;
+    role: UserRole;
+    /**
+     * Position Id
+     */
+    position_id: string;
+};
+
+/**
+ * OfficerAccountImportCommit
+ */
+export type OfficerAccountImportCommit = {
+    /**
+     * Rows
+     */
+    rows: Array<OfficerAccountCreate>;
+};
+
+/**
+ * OfficerPositionCreate
+ */
+export type OfficerPositionCreate = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+};
+
+/**
+ * OfficerPositionPublic
+ */
+export type OfficerPositionPublic = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Is Active
+     */
+    is_active?: boolean;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Updated At
+     */
+    updated_at?: string | null;
+};
+
+/**
+ * OfficerPositionUpdate
+ */
+export type OfficerPositionUpdate = {
+    /**
+     * Name
+     */
+    name?: string | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
+};
+
+/**
+ * OfficerPositionsPublic
+ */
+export type OfficerPositionsPublic = {
+    /**
+     * Data
+     */
+    data: Array<OfficerPositionPublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 /**
@@ -2464,6 +2599,26 @@ export type UserCreate = {
      */
     name_extension?: string | null;
     /**
+     * Student Number
+     */
+    student_number?: string | null;
+    /**
+     * Organization
+     */
+    organization?: string | null;
+    /**
+     * Position Id
+     */
+    position_id?: string | null;
+    /**
+     * Academic Year Id
+     */
+    academic_year_id?: string | null;
+    /**
+     * Section Id
+     */
+    section_id?: string | null;
+    /**
      * Must Change Password
      */
     must_change_password?: boolean;
@@ -2525,6 +2680,26 @@ export type UserPublic = {
      * Name Extension
      */
     name_extension?: string | null;
+    /**
+     * Student Number
+     */
+    student_number?: string | null;
+    /**
+     * Organization
+     */
+    organization?: string | null;
+    /**
+     * Position Id
+     */
+    position_id?: string | null;
+    /**
+     * Academic Year Id
+     */
+    academic_year_id?: string | null;
+    /**
+     * Section Id
+     */
+    section_id?: string | null;
     /**
      * Must Change Password
      */
@@ -2595,6 +2770,42 @@ export type UserUpdate = {
      * Full Name
      */
     full_name?: string | null;
+    /**
+     * First Name
+     */
+    first_name?: string | null;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Last Name
+     */
+    last_name?: string | null;
+    /**
+     * Name Extension
+     */
+    name_extension?: string | null;
+    /**
+     * Student Number
+     */
+    student_number?: string | null;
+    /**
+     * Organization
+     */
+    organization?: string | null;
+    /**
+     * Position Id
+     */
+    position_id?: string | null;
+    /**
+     * Academic Year Id
+     */
+    academic_year_id?: string | null;
+    /**
+     * Section Id
+     */
+    section_id?: string | null;
     /**
      * Password
      */
@@ -3062,6 +3273,218 @@ export type usersRegisterUserResponses = {
 };
 
 export type usersRegisterUserResponse = usersRegisterUserResponses[keyof usersRegisterUserResponses];
+
+export type usersDownloadOfficerImportCsvTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/officers/import/template/csv';
+};
+
+export type usersDownloadOfficerImportCsvTemplateResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type usersDownloadOfficerImportXlsxTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/officers/import/template/xlsx';
+};
+
+export type usersDownloadOfficerImportXlsxTemplateResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type usersPreviewOfficerImportData = {
+    body: Body_users_preview_officer_import;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/officers/import/preview';
+};
+
+export type usersPreviewOfficerImportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersPreviewOfficerImportError = usersPreviewOfficerImportErrors[keyof usersPreviewOfficerImportErrors];
+
+export type usersPreviewOfficerImportResponses = {
+    /**
+     * Response Users-Preview Officer Import
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type usersPreviewOfficerImportResponse = usersPreviewOfficerImportResponses[keyof usersPreviewOfficerImportResponses];
+
+export type usersCommitOfficerImportData = {
+    body: OfficerAccountImportCommit;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/officers/import/commit';
+};
+
+export type usersCommitOfficerImportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersCommitOfficerImportError = usersCommitOfficerImportErrors[keyof usersCommitOfficerImportErrors];
+
+export type usersCommitOfficerImportResponses = {
+    /**
+     * Response Users-Commit Officer Import
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type usersCommitOfficerImportResponse = usersCommitOfficerImportResponses[keyof usersCommitOfficerImportResponses];
+
+export type usersListOfficerPositionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/officer-positions';
+};
+
+export type usersListOfficerPositionsResponses = {
+    /**
+     * Successful Response
+     */
+    200: OfficerPositionsPublic;
+};
+
+export type usersListOfficerPositionsResponse = usersListOfficerPositionsResponses[keyof usersListOfficerPositionsResponses];
+
+export type usersCreateOfficerPositionData = {
+    body: OfficerPositionCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/officer-positions';
+};
+
+export type usersCreateOfficerPositionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersCreateOfficerPositionError = usersCreateOfficerPositionErrors[keyof usersCreateOfficerPositionErrors];
+
+export type usersCreateOfficerPositionResponses = {
+    /**
+     * Successful Response
+     */
+    200: OfficerPositionPublic;
+};
+
+export type usersCreateOfficerPositionResponse = usersCreateOfficerPositionResponses[keyof usersCreateOfficerPositionResponses];
+
+export type usersDeleteOfficerPositionData = {
+    body?: never;
+    path: {
+        /**
+         * Position Id
+         */
+        position_id: string;
+    };
+    query?: never;
+    url: '/api/v1/users/officer-positions/{position_id}';
+};
+
+export type usersDeleteOfficerPositionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersDeleteOfficerPositionError = usersDeleteOfficerPositionErrors[keyof usersDeleteOfficerPositionErrors];
+
+export type usersDeleteOfficerPositionResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type usersDeleteOfficerPositionResponse = usersDeleteOfficerPositionResponses[keyof usersDeleteOfficerPositionResponses];
+
+export type usersUpdateOfficerPositionData = {
+    body: OfficerPositionUpdate;
+    path: {
+        /**
+         * Position Id
+         */
+        position_id: string;
+    };
+    query?: never;
+    url: '/api/v1/users/officer-positions/{position_id}';
+};
+
+export type usersUpdateOfficerPositionErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersUpdateOfficerPositionError = usersUpdateOfficerPositionErrors[keyof usersUpdateOfficerPositionErrors];
+
+export type usersUpdateOfficerPositionResponses = {
+    /**
+     * Successful Response
+     */
+    200: OfficerPositionPublic;
+};
+
+export type usersUpdateOfficerPositionResponse = usersUpdateOfficerPositionResponses[keyof usersUpdateOfficerPositionResponses];
+
+export type usersCreateOfficerAccountData = {
+    body: OfficerAccountCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/officers';
+};
+
+export type usersCreateOfficerAccountErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersCreateOfficerAccountError = usersCreateOfficerAccountErrors[keyof usersCreateOfficerAccountErrors];
+
+export type usersCreateOfficerAccountResponses = {
+    /**
+     * Successful Response
+     */
+    200: UserPublic;
+};
+
+export type usersCreateOfficerAccountResponse = usersCreateOfficerAccountResponses[keyof usersCreateOfficerAccountResponses];
 
 export type usersDeleteUserData = {
     body?: never;
