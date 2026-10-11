@@ -1389,69 +1389,69 @@ function SectionList() {
       >
         <DialogContent className="!w-[calc(100vw-48px)] !max-w-[1440px] !h-[calc(100vh-64px)] !max-h-[900px] overflow-hidden p-0 gap-0">
           <div className="flex h-full min-h-0 flex-col">
-          <DialogHeader className="shrink-0 border-b px-7 py-5 pr-16">
-            <DialogTitle>Print Preview</DialogTitle>
-            <DialogDescription>
-              Formatted roster preview for {printTarget?.program_code}{" "}
-              {printTarget?.major_code ? `· ${printTarget.major_code}` : ""}{" "}
-              {printTarget?.section_code}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="min-h-0 flex-1 overflow-auto bg-white px-7 py-6 text-black">
-            <div className="mb-6 text-center">
-              <h2 className="text-lg font-bold">
-                Laguna State Polytechnic University
-              </h2>
-              <p>College of Computer Studies</p>
-              <p className="font-semibold">
-                {printTarget?.program_code}
-                {printTarget?.major_code ? ` · ${printTarget.major_code}` : ""}{" "}
-                {printTarget?.section_code}
-              </p>
-              <p>
-                {printTarget?.year_level} · Academic Year{" "}
-                {printTarget?.academic_year}
-              </p>
-            </div>
-            {printRosterQuery.isLoading ? (
-              <p className="py-8 text-center">Loading preview…</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Student Number</TableHead>
-                    <TableHead>Last Name</TableHead>
-                    <TableHead>First Name</TableHead>
-                    <TableHead>Middle Name</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {printPreview.map((student: any, index: number) => (
-                    <TableRow key={student.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{student.student_number}</TableCell>
-                      <TableCell>{student.last_name}</TableCell>
-                      <TableCell>{student.first_name}</TableCell>
-                      <TableCell>{student.middle_name ?? ""}</TableCell>
+            <DialogHeader className="shrink-0 border-b px-7 py-5 pr-16">
+              <DialogTitle>Print Preview</DialogTitle>
+              <DialogDescription>
+                Formatted roster preview for {printTarget?.program_code}{" "}
+                {printTarget?.major_code ? `· ${printTarget.major_code}` : ""}{" "}
+                {printTarget?.section_code}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-auto bg-white px-7 py-6 text-black">
+              <div className="mb-6 text-center">
+                <h2 className="text-lg font-bold">
+                  Laguna State Polytechnic University
+                </h2>
+                <p>College of Computer Studies</p>
+                <p className="font-semibold">
+                  {printTarget?.program_code}
+                  {printTarget?.major_code ? ` · ${printTarget.major_code}` : ""}{" "}
+                  {printTarget?.section_code}
+                </p>
+                <p>
+                  {printTarget?.year_level} · Academic Year{" "}
+                  {printTarget?.academic_year}
+                </p>
+              </div>
+              {printRosterQuery.isLoading ? (
+                <p className="py-8 text-center">Loading preview…</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Student Number</TableHead>
+                      <TableHead>Last Name</TableHead>
+                      <TableHead>First Name</TableHead>
+                      <TableHead>Middle Name</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
-          <DialogFooter className="shrink-0 border-t px-7 py-3">
-            <Button variant="outline" onClick={() => setPrintTarget(null)}>
-              Close
-            </Button>
-            <Button
-              onClick={printRoster}
-              disabled={printRosterQuery.isLoading || !printPreview.length}
-            >
-              <Printer />
-              Print
-            </Button>
-          </DialogFooter>
+                  </TableHeader>
+                  <TableBody>
+                    {printPreview.map((student: any, index: number) => (
+                      <TableRow key={student.id}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{student.student_number}</TableCell>
+                        <TableCell>{student.last_name}</TableCell>
+                        <TableCell>{student.first_name}</TableCell>
+                        <TableCell>{student.middle_name ?? ""}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            <DialogFooter className="shrink-0 border-t px-7 py-3">
+              <Button variant="outline" onClick={() => setPrintTarget(null)}>
+                Close
+              </Button>
+              <Button
+                onClick={printRoster}
+                disabled={printRosterQuery.isLoading || !printPreview.length}
+              >
+                <Printer />
+                Print
+              </Button>
+            </DialogFooter>
           </div>
         </DialogContent>
       </Dialog>
