@@ -11,7 +11,9 @@ def test_reset_configured_superuser_password_repairs_existing_account(
     db_session: Session,
 ) -> None:
     user = db_session.exec(
-        select(User).where(func.lower(User.email) == str(settings.FIRST_SUPERUSER).lower())
+        select(User).where(
+            func.lower(User.email) == str(settings.FIRST_SUPERUSER).lower()
+        )
     ).one()
     user.email = str(settings.FIRST_SUPERUSER).swapcase()
     user.hashed_password = "invalid-old-password-hash"
