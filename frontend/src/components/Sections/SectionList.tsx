@@ -105,6 +105,8 @@ function SectionList() {
   const [studentSearch, setStudentSearch] = useState("")
   const [studentPage, setStudentPage] = useState(1)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
+  const [addStudentSectionOpen, setAddStudentSectionOpen] = useState(false)
+  const [addStudentSectionId, setAddStudentSectionId] = useState("")
   const [newStudentForm, setNewStudentForm] = useState<Record<string, string>>({
     student_number: "",
     first_name: "",
@@ -499,6 +501,17 @@ function SectionList() {
             <FileUp />
             Import students
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setAddStudentSectionId(sections[0]?.id ?? "")
+              setAddStudentSectionOpen(true)
+            }}
+            disabled={sections.length === 0}
+          >
+            <Plus />
+            Add Student
+          </Button>
           <Button onClick={openCreate}>
             <Plus />
             Add section
@@ -715,7 +728,7 @@ function SectionList() {
       </Dialog>
 
       <Dialog
-        open={Boolean(studentsTarget)}
+        open={Boolean(studentsTarget) && !addStudentOpen}
         onOpenChange={(open) => {
           if (!open) {
             setStudentsTarget(null)
@@ -953,13 +966,79 @@ function SectionList() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={addStudentSectionOpen}
+        onOpenChange={setAddStudentSectionOpen}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Student</DialogTitle>
+            <DialogDescription>
+              Choose the section and academic year for this student.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <span className="text-sm font-medium">Section</span>
+            <Select
+              value={addStudentSectionId}
+              onValueChange={setAddStudentSectionId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a section" />
+              </SelectTrigger>
+              <SelectContent>
+                {sections.map((section: any) => (
+                  <SelectItem key={section.id} value={section.id}>
+                    {section.program_code}
+                    {section.major_code ? ` · ${section.major_code}` : ""}{" "}
+                    {section.section_code} · {section.year_level} ·{" "}
+                    {section.academic_year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAddStudentSectionOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                !sections.some(
+                  (section: any) => section.id === addStudentSectionId,
+                )
+              }
+              onClick={() => {
+                const section = sections.find(
+                  (item: any) => item.id === addStudentSectionId,
+                )
+                if (!section) return
+                setStudentsTarget(section)
+                setStudentSearch("")
+                setStudentPage(1)
+                setAddStudentSectionOpen(false)
+                setAddStudentOpen(true)
+              }}
+            >
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add Student</DialogTitle>
             <DialogDescription>
-              Add a student to \${studentsTarget?.program_code} \$
-              {studentsTarget?.section_code} for Academic Year \$
+              Add a student to {studentsTarget?.program_code}
+              {studentsTarget?.major_code
+                ? ` · ${studentsTarget.major_code}`
+                : ""}{" "}
+              {studentsTarget?.section_code} for Academic Year{" "}
               {studentsTarget?.academic_year}.
             </DialogDescription>
           </DialogHeader>
@@ -1317,70 +1396,74 @@ function SectionList() {
         open={Boolean(printTarget)}
         onOpenChange={(open) => !open && setPrintTarget(null)}
       >
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>Print Preview</DialogTitle>
-            <DialogDescription>
-              Formatted roster preview for {printTarget?.program_code}{" "}
-              {printTarget?.major_code ? `· ${printTarget.major_code}` : ""}{" "}
-              {printTarget?.section_code}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[65vh] overflow-auto rounded-md border bg-white p-8 text-black">
-            <div className="mb-6 text-center">
-              <h2 className="text-lg font-bold">
-                Laguna State Polytechnic University
-              </h2>
-              <p>College of Computer Studies</p>
-              <p className="font-semibold">
-                {printTarget?.program_code}
-                {printTarget?.major_code ? ` · ${printTarget.major_code}` : ""}{" "}
-                {printTarget?.section_code}
-              </p>
-              <p>
-                {printTarget?.year_level} · Academic Year{" "}
-                {printTarget?.academic_year}
-              </p>
-            </div>
-            {printRosterQuery.isLoading ? (
-              <p className="py-8 text-center">Loading preview…</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Student Number</TableHead>
-                    <TableHead>Last Name</TableHead>
-                    <TableHead>First Name</TableHead>
-                    <TableHead>Middle Name</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {printPreview.map((student: any, index: number) => (
-                    <TableRow key={student.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{student.student_number}</TableCell>
-                      <TableCell>{student.last_name}</TableCell>
-                      <TableCell>{student.first_name}</TableCell>
-                      <TableCell>{student.middle_name ?? ""}</TableCell>
+        <DialogContent className="!w-[calc(100vw-48px)] !max-w-[1440px] !h-[calc(100vh-64px)] !max-h-[900px] overflow-hidden p-0 gap-0">
+          <div className="flex h-full min-h-0 flex-col">
+            <DialogHeader className="shrink-0 border-b px-7 py-5 pr-16">
+              <DialogTitle>Print Preview</DialogTitle>
+              <DialogDescription>
+                Formatted roster preview for {printTarget?.program_code}{" "}
+                {printTarget?.major_code ? `· ${printTarget.major_code}` : ""}{" "}
+                {printTarget?.section_code}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-auto bg-white px-7 py-6 text-black">
+              <div className="mb-6 text-center">
+                <h2 className="text-lg font-bold">
+                  Laguna State Polytechnic University
+                </h2>
+                <p>College of Computer Studies</p>
+                <p className="font-semibold">
+                  {printTarget?.program_code}
+                  {printTarget?.major_code
+                    ? ` · ${printTarget.major_code}`
+                    : ""}{" "}
+                  {printTarget?.section_code}
+                </p>
+                <p>
+                  {printTarget?.year_level} · Academic Year{" "}
+                  {printTarget?.academic_year}
+                </p>
+              </div>
+              {printRosterQuery.isLoading ? (
+                <p className="py-8 text-center">Loading preview…</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Student Number</TableHead>
+                      <TableHead>Last Name</TableHead>
+                      <TableHead>First Name</TableHead>
+                      <TableHead>Middle Name</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                  </TableHeader>
+                  <TableBody>
+                    {printPreview.map((student: any, index: number) => (
+                      <TableRow key={student.id}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{student.student_number}</TableCell>
+                        <TableCell>{student.last_name}</TableCell>
+                        <TableCell>{student.first_name}</TableCell>
+                        <TableCell>{student.middle_name ?? ""}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            <DialogFooter className="shrink-0 border-t px-7 py-3">
+              <Button variant="outline" onClick={() => setPrintTarget(null)}>
+                Close
+              </Button>
+              <Button
+                onClick={printRoster}
+                disabled={printRosterQuery.isLoading || !printPreview.length}
+              >
+                <Printer />
+                Print
+              </Button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPrintTarget(null)}>
-              Close
-            </Button>
-            <Button
-              onClick={printRoster}
-              disabled={printRosterQuery.isLoading || !printPreview.length}
-            >
-              <Printer />
-              Print
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

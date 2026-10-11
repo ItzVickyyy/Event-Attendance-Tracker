@@ -19,7 +19,7 @@ function Sections() {
         <p className="text-sm font-medium text-muted-foreground">Students</p>
         <h1 className="text-3xl font-semibold tracking-tight">Students</h1>
         <p className="max-w-2xl text-muted-foreground">
-          Browse academic sections and search for students across the selected
+          Browse sections and manage student enrollments for the selected
           academic year.
         </p>
       </header>
