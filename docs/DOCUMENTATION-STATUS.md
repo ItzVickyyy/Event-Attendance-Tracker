@@ -540,3 +540,15 @@ Reviewed `backend/app/api/routes/event_registrations.py` and the `EventRegistrat
 - Follow-up: define whether registrations with attendance can be deleted or reassigned. If attendance history must remain stable, block deletion/reassignment after attendance exists or use an explicit archive/retention workflow. Add tests for registration deletion with attendance and corrections, and for attempts to change event/attendee on a registration with existing attendance.
 
 This is based on route and model inspection, not a live database deletion test. No application code or tests were changed in this documentation-only PR.
+
+## Attendance-correction request contract
+
+Reviewed `backend/app/models.py`, `backend/app/api/routes/attendance_corrections.py`, and `backend/tests/api/routes/test_attendance_corrections.py`.
+
+- `AttendanceCorrectionCreate.reason` is required and capped at 500 characters, but has no minimum length or whitespace validation. An empty or whitespace-only reason can therefore satisfy the declared schema even though the endpoint is intended to preserve an explanation for the change.
+- The correction handler only applies `new_time_in`, `new_time_out`, and `new_status` when the submitted value is not `None`. As a result, this request model cannot express “clear the existing time-in/time-out value”; omitting a field and explicitly sending `null` both leave the existing value unchanged.
+- The route recalculates `is_late` when a non-null time-in exists and the session has a late cutoff. If the correction workflow later supports clearing time-in, it must also define how `is_late` should be reset.
+- The existing route test verifies a status correction and the persisted audit record, but does not establish validation for blank reasons or a contract for clearing nullable timestamps.
+- Follow-up: require a trimmed, non-empty correction reason. Decide whether clearing timestamps is a supported operation; if it is, use an explicit field-presence strategy or dedicated action so “unchanged” and “clear” are distinguishable. Add tests for blank reasons, null/omitted timestamp semantics, and late-flag consistency.
+
+This is a schema/route/test inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
