@@ -539,3 +539,44 @@ def test_import_class_representatives_rejects_all_rows_if_one_is_invalid(
         data={"username": valid_email, "password": TEMPORARY_PASSWORD},
     )
     assert login.status_code != 200
+
+
+def test_import_keeps_created_accounts_when_email_delivery_fails(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    monkeypatch,
+) -> None:
+    first_email = random_email()
+    second_email = random_email()
+    monkeypatch.setattr(
+        class_representatives_routes,
+        "settings",
+        SimpleNamespace(emails_enabled=True, FASTAPI_ENV="test"),
+    )
+
+    def send_email(*, email_to: str, **_kwargs) -> None:
+        if email_to == second_email:
+            raise RuntimeError("simulated SMTP failure")
+
+    monkeypatch.setattr(class_representatives_routes, "send_email", send_email)
+    csv_content = (
+        "Email,First Name,Middle Initial,Last Name,Extension,Academic Year,Section\\n"
+        f"{first_email},Taylor,,First,,2026-2027,WMAD 3A\\n"
+        f"{second_email},Alex,,Second,,2026-2027,WMAD 3A\\n"
+    )
+    response = client.post(
+        _api("/class-representatives/import"),
+        headers=superuser_token_headers,
+        files={"file": ("representatives.csv", csv_content, "text/csv")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["created_count"] == 2
+    assert response.json()["delivery_failures"] == [second_email]
+    for email in (first_email, second_email):
+        login = client.post(
+            _api("/login/access-token"),
+            data={"username": email, "password": TEMPORARY_PASSWORD},
+        )
+        assert login.status_code == 200
+
