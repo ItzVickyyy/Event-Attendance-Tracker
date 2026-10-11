@@ -187,12 +187,16 @@ export function ReconstructionNavigation() {
                     ? pathname === item.path
                     : pathname === item.path ||
                       pathname.startsWith(`${item.path}/`)
+                const title =
+                  item.path === "/sections" && !classRep
+                    ? "Sections & Students"
+                    : item.title
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      tooltip={item.title}
+                      tooltip={title}
                       className="min-h-10"
                     >
                       <RouterLink
@@ -201,7 +205,7 @@ export function ReconstructionNavigation() {
                         aria-current={isActive ? "page" : undefined}
                       >
                         <item.icon aria-hidden="true" />
-                        <span>{item.title}</span>
+                        <span>{title}</span>
                       </RouterLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
