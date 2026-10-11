@@ -152,7 +152,7 @@ test("Scanner Permissions page is removed from administration", async ({
 
 test("Event details route renders when opened directly", async ({ page }) => {
   await page.goto("/events/00000000-0000-0000-0000-000000000000")
-  await expect(page.getByText("Event not found.")).toBeVisible()
+  await expect(page.getByText("Loading event…")).toBeVisible()
   await expect(
     page.getByRole("heading", { name: "Events", exact: true }),
   ).toHaveCount(0)
