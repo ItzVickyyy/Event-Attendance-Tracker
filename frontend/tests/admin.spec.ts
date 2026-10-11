@@ -58,6 +58,14 @@ test("Create a class representative account with an assigned section", async ({
   await page.goto("/administration/users")
   await page.getByPlaceholder("Search by name, email, or position").fill(email)
   const accountRow = page.getByRole("row").filter({ hasText: email })
+  await accountRow.getByRole("combobox").click()
+  await expect(
+    page.getByRole("option", { name: "Class Representative", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("option", { name: "Student", exact: true }),
+  ).toHaveCount(0)
+  await page.keyboard.press("Escape")
   await accountRow.getByRole("button", { name: "Edit" }).click()
   const dialog = page.getByRole("dialog")
   const systemRole = dialog.getByRole("combobox").nth(2)
@@ -108,6 +116,20 @@ test("Super admin can create an officer account with a position", async ({
   await expect(row).toBeVisible()
   await expect(row).toContainText("Admin")
   await expect(row).toContainText(position)
+  await row.getByRole("combobox").click()
+  await expect(
+    page.getByRole("option", { name: "Admin", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("option", { name: "Super Admin", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("option", { name: "Student", exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole("option", { name: "Class Representative", exact: true }),
+  ).toHaveCount(0)
+  await page.keyboard.press("Escape")
 })
 
 test("Cancel account creation closes the dialog", async ({ page }) => {

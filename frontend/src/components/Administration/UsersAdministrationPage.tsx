@@ -56,7 +56,6 @@ type OfficerImportPreview = {
   rows: OfficerImportRow[]
 }
 
-const roles: UserRole[] = ["super_admin", "admin", "student"]
 const superAdminAccountRoles: UserRole[] = ["super_admin", "admin"]
 const adminAccountRoles: UserRole[] = ["student"]
 const api = "/api/v1"
@@ -953,8 +952,8 @@ function UserRow({
     isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
   const editableRoles: UserRole[] = isSuperAdmin
     ? user.role === "class_representative"
-      ? [...roles, "class_representative"]
-      : roles
+      ? [...superAdminAccountRoles, "class_representative"]
+      : superAdminAccountRoles
     : user.role === "class_representative"
       ? ["student", "class_representative"]
       : ["student"]
