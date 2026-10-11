@@ -60,7 +60,9 @@ def main() -> None:
         user = reset_configured_superuser_password(session)
 
     logger.info("Super Admin credentials repaired for %s.", user.email)
-    logger.info("Restart the backend if needed, then sign in with the configured credentials.")
+    logger.info(
+        "Restart the backend if needed, then sign in with the configured credentials."
+    )
 
 
 if __name__ == "__main__":
