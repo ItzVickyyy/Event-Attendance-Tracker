@@ -564,3 +564,14 @@ Reviewed `backend/app/api/routes/login.py`, `backend/app/api/routes/users.py`, `
 - Follow-up: decide whether a successful, token-verified password reset satisfies the forced-change requirement. If yes, clear the flag in the reset flow and test it; if no, document the intended extra step and ensure the recovery UI explains it. Keep the behavior consistent with the authenticated password-change path.
 
 This is a route/dependency/test inspection, not a live password-recovery test. No application code or tests were changed in this documentation-only PR.
+
+## Password-recovery abuse controls and reset-token reuse
+
+Reviewed `backend/app/api/routes/login.py`, `backend/app/utils.py`, `backend/app/core/config.py`, and `backend/tests/api/routes/test_login.py`.
+
+- `POST /password-recovery/{email}` is public. It returns the same message whether the email exists or not, but it sends a reset email whenever the account exists. The reviewed route has no application-level rate limit or cooldown, and the inspected app middleware does not implement one for this endpoint. A deployment proxy or email provider may apply separate controls, but those were not verified here.
+- Reset tokens are signed JWTs with an expiration configured by `EMAIL_RESET_TOKEN_EXPIRE_HOURS`, which defaults to 48 hours. The verification helper validates the token and returns its subject email. The reviewed flow does not persist token identifiers, mark a token as used, or otherwise invalidate a token after a successful reset. A still-valid token can therefore be submitted again to reset the same active account's password again until it expires or the signing configuration changes.
+- Existing tests cover a successful reset and an invalid token, but do not cover repeated use of the same valid token or recovery-request throttling.
+- Follow-up: add application-level throttling or cooldown for recovery requests and consider abuse monitoring. Decide whether reset links must be single-use; if so, store and invalidate a token identifier or use a server-side reset record, then test that reuse is rejected. Verify that any edge-level limits and email-provider protections are configured in each deployment rather than assuming they exist.
+
+This is a route/helper/configuration/test inspection, not a live email-abuse test or a deployed-proxy verification. No application code or tests were changed in this documentation-only PR.
