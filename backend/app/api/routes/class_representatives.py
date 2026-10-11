@@ -10,7 +10,6 @@ from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.core.config import settings
 from app.models import Person, Student, User, UserCreate, UserPublic, UserRole
 from app.services.account_provisioning import (
-    TEMPORARY_PASSWORD,
     generate_temporary_password as _generate_temporary_password,
 )
 from app.services.student_credentials import ensure_student_qr_credential
@@ -23,6 +22,7 @@ from app.student_academics import (
 from app.utils import generate_new_account_email, send_email
 
 router = APIRouter(prefix="/class-representatives", tags=["class-representatives"])
+
 
 def _assignment_row(
     session: SessionDep, user_id: uuid.UUID, academic_year_id: uuid.UUID | None = None
