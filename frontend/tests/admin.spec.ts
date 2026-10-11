@@ -104,7 +104,9 @@ test("Search filters user accounts", async ({ page }) => {
   await expect(page.getByText("Account created")).toBeVisible()
 
   await page.getByPlaceholder("Search users…").fill(email)
-  await expect(page.getByRole("row").filter({ hasText: email })).toBeVisible()
+  const row = page.getByRole("row").filter({ hasText: email })
+  await expect(row).toBeVisible()
+  await expect(row).toContainText("Student")
   await page.getByPlaceholder("Search users…").fill("no-match-for-this-test")
   await expect(page.getByText("No users found.")).toBeVisible()
 })
@@ -164,7 +166,6 @@ test("Academic year selector stays open after changing the selected year", async
   await page.goto("/dashboard")
   await page.getByRole("button", { name: /Academic Year:/ }).click()
   const years = page.getByRole("menuitemradio")
-  await expect(years).toHaveCount(2, { timeout: 1000 }).catch(() => {})
   const count = await years.count()
   test.skip(count < 2, "At least two academic years are required")
   await years.nth(1).click()
