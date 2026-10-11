@@ -898,7 +898,12 @@ def update_user(
                 )
         first_name = submitted_fields.get("first_name", db_user.first_name)
         last_name = submitted_fields.get("last_name", db_user.last_name)
-        if not first_name or not first_name.strip() or not last_name or not last_name.strip():
+        if (
+            not first_name
+            or not first_name.strip()
+            or not last_name
+            or not last_name.strip()
+        ):
             raise HTTPException(
                 status_code=422,
                 detail="First name and last name are required",
