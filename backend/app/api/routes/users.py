@@ -261,7 +261,9 @@ def download_officer_import_csv_template() -> Response:
     return Response(
         content=output.getvalue().encode("utf-8-sig"),
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": 'attachment; filename="CCS_Officer_Import_Template.csv"'},
+        headers={
+            "Content-Disposition": 'attachment; filename="CCS_Officer_Import_Template.csv"'
+        },
     )
 
 
@@ -273,25 +275,29 @@ def download_officer_import_xlsx_template() -> Response:
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Officers"
-    sheet.append([
-        "Student ID",
-        "First Name",
-        "Middle Initial",
-        "Last Name",
-        "Extension",
-        "Academic Year",
-        "Section",
-        "Email",
-        "Organization",
-        "Role",
-        "Position",
-    ])
+    sheet.append(
+        [
+            "Student ID",
+            "First Name",
+            "Middle Initial",
+            "Last Name",
+            "Extension",
+            "Academic Year",
+            "Section",
+            "Email",
+            "Organization",
+            "Role",
+            "Position",
+        ]
+    )
     output = io.BytesIO()
     workbook.save(output)
     return Response(
         content=output.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="CCS_Officer_Import_Template.xlsx"'},
+        headers={
+            "Content-Disposition": 'attachment; filename="CCS_Officer_Import_Template.xlsx"'
+        },
     )
 
 
@@ -321,13 +327,10 @@ async def preview_officer_import(
     programs_by_id = {program.id: program for program in programs}
     positions_by_name = {position.name.casefold(): position for position in positions}
     existing_emails = {
-        str(user.email).casefold()
-        for user in session.exec(select(User.email)).all()
+        str(user.email).casefold() for user in session.exec(select(User.email)).all()
     }
     existing_student_numbers = {
-        number
-        for number in session.exec(select(User.student_number)).all()
-        if number
+        number for number in session.exec(select(User.student_number)).all() if number
     }
     seen_emails: set[str] = set()
     seen_student_numbers: set[str] = set()
@@ -351,7 +354,9 @@ async def preview_officer_import(
                     candidate.section_code.casefold() if candidate.section_code else "",
                 }
                 if program:
-                    labels.add(f"{program.program_code} {candidate.section_name}".casefold())
+                    labels.add(
+                        f"{program.program_code} {candidate.section_name}".casefold()
+                    )
                     labels.add(
                         f"{program.program_code} {candidate.year_level} {candidate.section_name}".casefold()
                     )
@@ -368,7 +373,9 @@ async def preview_officer_import(
         if not position or not position.is_active:
             errors.append(f"Unknown or inactive position: {position_name}")
 
-        role_value = str(row.get("role", "")).strip().lower().replace(" ", "_").replace("-", "_")
+        role_value = (
+            str(row.get("role", "")).strip().lower().replace(" ", "_").replace("-", "_")
+        )
         if role_value in {"superadmin", "super_admin"}:
             role_value = UserRole.super_admin.value
         elif role_value == "admin":
@@ -392,42 +399,50 @@ async def preview_officer_import(
 
         payload_data = None
         try:
-            payload = OfficerAccountCreate.model_validate({
-                "email": email,
-                "student_number": student_number,
-                "first_name": str(row.get("first_name", "")).strip(),
-                "middle_initial": str(row.get("middle_initial", "")).strip() or None,
-                "last_name": str(row.get("last_name", "")).strip(),
-                "extension": str(row.get("extension", "")).strip() or None,
-                "organization": str(row.get("organization", "")).strip() or "CCS Student Council",
-                "academic_year_id": year.id if year else None,
-                "section_id": section.id if section else None,
-                "role": role_value,
-                "position_id": position.id if position else None,
-            })
+            payload = OfficerAccountCreate.model_validate(
+                {
+                    "email": email,
+                    "student_number": student_number,
+                    "first_name": str(row.get("first_name", "")).strip(),
+                    "middle_initial": str(row.get("middle_initial", "")).strip()
+                    or None,
+                    "last_name": str(row.get("last_name", "")).strip(),
+                    "extension": str(row.get("extension", "")).strip() or None,
+                    "organization": str(row.get("organization", "")).strip()
+                    or "CCS Student Council",
+                    "academic_year_id": year.id if year else None,
+                    "section_id": section.id if section else None,
+                    "role": role_value,
+                    "position_id": position.id if position else None,
+                }
+            )
             payload_data = payload.model_dump(mode="json")
         except Exception as exc:
             errors.append(f"Invalid row data: {exc}")
 
-        preview_rows.append({
-            "row_number": row["source_row"],
-            "student_number": student_number,
-            "full_name": " ".join(
-                part
-                for part in (
-                    str(row.get("first_name", "")).strip(),
-                    str(row.get("middle_initial", "")).strip(),
-                    str(row.get("last_name", "")).strip(),
-                    str(row.get("extension", "")).strip(),
-                )
-                if part
-            ),
-            "position_name": position.name if position else position_name,
-            "payload": payload_data if not errors else None,
-            "errors": errors,
-        })
+        preview_rows.append(
+            {
+                "row_number": row["source_row"],
+                "student_number": student_number,
+                "full_name": " ".join(
+                    part
+                    for part in (
+                        str(row.get("first_name", "")).strip(),
+                        str(row.get("middle_initial", "")).strip(),
+                        str(row.get("last_name", "")).strip(),
+                        str(row.get("extension", "")).strip(),
+                    )
+                    if part
+                ),
+                "position_name": position.name if position else position_name,
+                "payload": payload_data if not errors else None,
+                "errors": errors,
+            }
+        )
 
-    valid_rows = sum(1 for row in preview_rows if row["payload"] is not None and not row["errors"])
+    valid_rows = sum(
+        1 for row in preview_rows if row["payload"] is not None and not row["errors"]
+    )
     return {
         "total_rows": len(preview_rows),
         "valid_rows": valid_rows,
@@ -461,9 +476,12 @@ def commit_officer_import(
         student_number = row.student_number.strip()
         if email in seen_emails or crud.get_user_by_email(session=session, email=email):
             raise HTTPException(status_code=409, detail=f"Duplicate email: {email}")
-        if student_number in seen_student_numbers or session.exec(
-            select(User).where(User.student_number == student_number)
-        ).first():
+        if (
+            student_number in seen_student_numbers
+            or session.exec(
+                select(User).where(User.student_number == student_number)
+            ).first()
+        ):
             raise HTTPException(
                 status_code=409, detail=f"Duplicate Student ID: {student_number}"
             )
@@ -486,27 +504,35 @@ def commit_officer_import(
             raise HTTPException(
                 status_code=422, detail="Officer accounts must use Super Admin or Admin"
             )
-        normalized_rows.append(row.model_copy(update={
-            "email": email,
-            "student_number": student_number,
-            "first_name": row.first_name.strip(),
-            "middle_initial": row.middle_initial.strip().rstrip(".") if row.middle_initial else None,
-            "last_name": row.last_name.strip(),
-            "extension": row.extension.strip() if row.extension else None,
-            "organization": row.organization.strip(),
-        }))
+        normalized_rows.append(
+            row.model_copy(
+                update={
+                    "email": email,
+                    "student_number": student_number,
+                    "first_name": row.first_name.strip(),
+                    "middle_initial": row.middle_initial.strip().rstrip(".")
+                    if row.middle_initial
+                    else None,
+                    "last_name": row.last_name.strip(),
+                    "extension": row.extension.strip() if row.extension else None,
+                    "organization": row.organization.strip(),
+                }
+            )
+        )
 
     created: list[tuple[User, str]] = []
     for row in normalized_rows:
         middle_initial = (row.middle_initial or "").strip().rstrip(".")
         extension = (row.extension or "").strip()
         full_name = " ".join(
-            part for part in (
+            part
+            for part in (
                 row.first_name,
                 f"{middle_initial}." if middle_initial else "",
                 row.last_name,
                 extension,
-            ) if part
+            )
+            if part
         )
         temporary_password = generate_temporary_password()
         user = crud.create_user(
@@ -569,7 +595,9 @@ def commit_officer_import(
     dependencies=[Depends(require_admin)],
 )
 def list_officer_positions(session: SessionDep, _current_user: CurrentUser) -> Any:
-    positions = session.exec(select(OfficerPosition).order_by(OfficerPosition.name)).all()
+    positions = session.exec(
+        select(OfficerPosition).order_by(OfficerPosition.name)
+    ).all()
     return OfficerPositionsPublic(
         data=[OfficerPositionPublic.model_validate(position) for position in positions],
         count=len(positions),
@@ -594,7 +622,9 @@ def create_officer_position(
         select(OfficerPosition).where(func.lower(OfficerPosition.name) == name.lower())
     ).first()
     if existing:
-        raise HTTPException(status_code=409, detail="This officer position already exists")
+        raise HTTPException(
+            status_code=409, detail="This officer position already exists"
+        )
     position = OfficerPosition(name=name, is_active=payload.is_active)
     session.add(position)
     session.commit()
@@ -629,7 +659,9 @@ def update_officer_position(
             )
         ).first()
         if existing:
-            raise HTTPException(status_code=409, detail="This officer position already exists")
+            raise HTTPException(
+                status_code=409, detail="This officer position already exists"
+            )
         values["name"] = name
     position.sqlmodel_update(values)
     session.add(position)
@@ -648,9 +680,7 @@ def delete_officer_position(
     position = session.get(OfficerPosition, position_id)
     if not position:
         raise HTTPException(status_code=404, detail="Officer position not found")
-    assigned = session.exec(
-        select(User).where(User.position_id == position_id)
-    ).first()
+    assigned = session.exec(select(User).where(User.position_id == position_id)).first()
     if assigned:
         raise HTTPException(
             status_code=409,
@@ -679,11 +709,11 @@ def create_officer_account(
         )
     email = str(payload.email).strip().lower()
     if crud.get_user_by_email(session=session, email=email):
-        raise HTTPException(status_code=409, detail="A user with this email already exists")
+        raise HTTPException(
+            status_code=409, detail="A user with this email already exists"
+        )
     student_number = payload.student_number.strip()
-    if session.exec(
-        select(User).where(User.student_number == student_number)
-    ).first():
+    if session.exec(select(User).where(User.student_number == student_number)).first():
         raise HTTPException(
             status_code=409, detail="An account already exists for this Student ID"
         )
@@ -691,7 +721,9 @@ def create_officer_account(
     section = session.get(AcademicSection, payload.section_id)
     position = session.get(OfficerPosition, payload.position_id)
     if not year or not section:
-        raise HTTPException(status_code=404, detail="Academic year or section not found")
+        raise HTTPException(
+            status_code=404, detail="Academic year or section not found"
+        )
     if section.academic_year_id != year.id:
         raise HTTPException(
             status_code=400,
