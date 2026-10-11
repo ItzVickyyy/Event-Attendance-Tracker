@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 import type { EventPublic } from "@/client"
+import { useAcademicYear } from "@/context/AcademicYearContext"
 import { EventsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
@@ -27,6 +28,7 @@ import {
 
 const schema = z.object({
   event_name: z.string().min(1, "Event name is required"),
+  academic_year_id: z.string().min(1, "Academic year is required"),
   event_date: z.string().min(1, "Event date is required"),
   start_time: z.string().optional().or(z.literal("")),
   end_time: z.string().optional().or(z.literal("")),
@@ -42,10 +44,12 @@ interface EditEventProps {
 
 export function EditEvent({ event }: EditEventProps) {
   const router = useRouter()
+  const { academicYears, activeAcademicYear } = useAcademicYear()
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       event_name: event.event_name,
+      academic_year_id: event.academic_year_id ?? activeAcademicYear?.id ?? "",
       event_date: event.event_date,
       start_time: event.start_time || undefined,
       end_time: event.end_time || undefined,
@@ -60,6 +64,7 @@ export function EditEvent({ event }: EditEventProps) {
         path: { event_id: event.id },
         body: {
           event_name: data.event_name,
+          academic_year_id: data.academic_year_id,
           event_date: data.event_date,
           start_time: data.start_time || undefined,
           end_time: data.end_time || undefined,
@@ -103,6 +108,26 @@ export function EditEvent({ event }: EditEventProps) {
                 placeholder="CCS Week 2026"
                 {...form.register("event_name")}
               />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="academic_year_id" className="text-sm font-medium">
+                Academic Year
+              </label>
+              <Select
+                value={form.watch("academic_year_id")}
+                onValueChange={(value) => form.setValue("academic_year_id", value, { shouldValidate: true })}
+              >
+                <SelectTrigger id="academic_year_id">
+                  <SelectValue placeholder="Select academic year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {academicYears.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>
+                      {year.label}{year.is_current ? " (Current)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <label htmlFor="event_date" className="text-sm font-medium">
@@ -184,6 +209,7 @@ export function EditEvent({ event }: EditEventProps) {
                 onClick={() =>
                   form.reset({
                     event_name: event.event_name,
+                    academic_year_id: event.academic_year_id ?? activeAcademicYear?.id ?? "",
                     event_date: event.event_date,
                     start_time: event.start_time || undefined,
                     end_time: event.end_time || undefined,
