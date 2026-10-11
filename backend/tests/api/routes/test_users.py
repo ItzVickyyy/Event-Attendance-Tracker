@@ -713,6 +713,94 @@ def _officer_academic_context(
     return year, section
 
 
+def test_super_admin_can_edit_full_officer_account_details(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+) -> None:
+    year, section = _officer_academic_context(client, superuser_token_headers)
+    position = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": f"Edit Officer {uuid.uuid4().hex[:6]}"},
+    )
+    assert position.status_code == 200
+    original_student_number = f"EDIT-{uuid.uuid4().hex[:10].upper()}"
+    created = client.post(
+        f"{settings.API_V1_STR}/users/officers",
+        headers=superuser_token_headers,
+        json={
+            "email": random_email(),
+            "student_number": original_student_number,
+            "first_name": "Original",
+            "middle_initial": "A",
+            "last_name": "Officer",
+            "extension": None,
+            "organization": "CCS Student Council",
+            "academic_year_id": year["id"],
+            "section_id": section["id"],
+            "role": "admin",
+            "position_id": position.json()["id"],
+        },
+    )
+    assert created.status_code == 200
+    account = created.json()
+    new_student_number = f"UPDATED-{uuid.uuid4().hex[:10].upper()}"
+    response = client.patch(
+        f"{settings.API_V1_STR}/users/{account['id']}",
+        headers=superuser_token_headers,
+        json={
+            "email": random_email(),
+            "student_number": new_student_number,
+            "first_name": "Updated",
+            "middle_name": "B",
+            "last_name": "Officer",
+            "name_extension": "Jr.",
+            "organization": "Updated Council",
+            "academic_year_id": year["id"],
+            "section_id": section["id"],
+            "role": "super_admin",
+            "position_id": position.json()["id"],
+        },
+    )
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated["student_number"] == new_student_number
+    assert updated["first_name"] == "Updated"
+    assert updated["middle_name"] == "B"
+    assert updated["last_name"] == "Officer"
+    assert updated["name_extension"] == "Jr."
+    assert updated["full_name"] == "Updated B. Officer Jr."
+    assert updated["organization"] == "Updated Council"
+    assert updated["role"] == "super_admin"
+    assert updated["position_id"] == position.json()["id"]
+
+    deleted = client.delete(
+        f"{settings.API_V1_STR}/users/{account['id']}",
+        headers=superuser_token_headers,
+    )
+    assert deleted.status_code == 200
+    deleted_position = client.delete(
+        f"{settings.API_V1_STR}/users/officer-positions/{position.json()['id']}",
+        headers=superuser_token_headers,
+    )
+    assert deleted_position.status_code == 200
+
+
+def test_admin_cannot_edit_officer_academic_details(
+    client: TestClient,
+    db: Session,
+) -> None:
+    target = create_random_user(db)
+    admin_headers = get_token_headers_for_role(client=client, db=db, role=UserRole.admin)
+    response = client.patch(
+        f"{settings.API_V1_STR}/users/{target.id}",
+        headers=admin_headers,
+        json={"student_number": "NOT-ALLOWED"},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Only a Super Admin can edit officer account details"
+
+
 def test_super_admin_can_download_officer_import_templates(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
