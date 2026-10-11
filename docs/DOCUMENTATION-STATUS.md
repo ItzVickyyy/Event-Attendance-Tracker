@@ -610,3 +610,15 @@ Reviewed `backend/app/api/routes/people.py` and the `Person`, `Student`, `Attend
 - Follow-up: treat person deletion as a high-impact destructive operation. Confirm the retention and privacy-erasure policy, show linked-record impact before deletion, and consider archival or a deliberate erasure workflow. Add tests covering a person linked to student and attendee records, including expected credential, registration, attendance, and correction retention.
 
 This is a route/model inspection, not a live database deletion test. No application code or tests were changed in this documentation-only PR.
+
+## Academic section program reassignment and historical roster integrity
+
+Reviewed `backend/app/api/routes/academic_sections.py`, `backend/app/api/routes/academic_catalog.py`, the `AcademicSection` model, and `StudentEnrollment` / `ClassRepresentativeAssignment` models.
+
+- The Admin-only `PATCH /academic-sections/{section_id}` handler explicitly blocks changing a section's academic year when enrollments or Class Representative assignments exist. It does not apply the same dependency check when `program_id` changes.
+- A section with existing enrollments or representative assignments can therefore be reassigned to another academic program. Those enrollment and assignment rows still point to the same section ID, so the change can reinterpret historical roster membership under the new program.
+- The separate section-major endpoint validates that the assigned major belongs to the section's current program when the assignment is created or changed. The section PATCH handler does not revalidate or clear an existing major assignment when changing `program_id`, so the section can retain a major from its former program.
+- The inspected PATCH handler also does not pre-check the section's composite uniqueness key before commit. A conflicting program/year-level/section-name/academic-year update may reach the database unique constraint rather than return the route's explicit conflict response.
+- Follow-up: decide whether program reassignment is allowed for populated sections. Prefer blocking it when enrollments or representative assignments exist unless a dedicated migration/reclassification workflow updates and validates the related records. Revalidate the section-major assignment and add tests for populated sections, incompatible major assignments, and duplicate section combinations.
+
+This is a route/model inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
