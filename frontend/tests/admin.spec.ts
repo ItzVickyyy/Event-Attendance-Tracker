@@ -263,9 +263,7 @@ test("Edit account matches Add Account fields without a password field", async (
   await createUser({ email, password: randomPassword() })
 
   await page.goto("/administration/users")
-  await page
-    .getByPlaceholder("Search by name, email, or position")
-    .fill(email)
+  await page.getByPlaceholder("Search by name, email, or position").fill(email)
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
   await row.getByRole("button", { name: "Edit" }).click()
