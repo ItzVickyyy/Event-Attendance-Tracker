@@ -103,7 +103,10 @@ export function ClassRepresentativesAdmin() {
           : result?.detail
         throw new Error(detail ?? "Import failed")
       }
-      if (Array.isArray(result.delivery_failures) && result.delivery_failures.length) {
+      if (
+        Array.isArray(result.delivery_failures) &&
+        result.delivery_failures.length
+      ) {
         toast.warning(
           `Created ${result.created_count} account(s), but email delivery failed for: ${result.delivery_failures.join(", ")}`,
         )
