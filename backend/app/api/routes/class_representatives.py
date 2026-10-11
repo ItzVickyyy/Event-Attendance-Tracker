@@ -527,4 +527,3 @@ async def import_class_representatives(
         ) from exc
 
     return {"created_count": len(created), "count": len(created)}
-
