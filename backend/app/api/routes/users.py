@@ -326,7 +326,7 @@ async def preview_officer_import(
     }
     existing_student_numbers = {
         number
-        for (number,) in session.exec(select(User.student_number)).all()
+        for number in session.exec(select(User.student_number)).all()
         if number
     }
     seen_emails: set[str] = set()
