@@ -70,10 +70,10 @@ test("Super admin can create an officer account with a position", async ({
   await page.getByPlaceholder("e.g. Recording Secretary").fill(position)
   await page.getByRole("button", { name: "Add", exact: true }).click()
   await expect(page.getByText(position, { exact: true })).toBeVisible()
-  await page.getByRole("button", { name: "Close" }).click()
+  await page.getByRole("button", { name: "Close" }).last().click()
 
   await page.getByRole("button", { name: "Add account" }).click()
-  await page.getByPlaceholder("Student ID").fill(studentId)
+  await page.locator("#officer-student-number").fill(studentId)
   await page.locator("#officer-first-name").fill("Juan")
   await page.locator("#officer-middle-initial").fill("D")
   await page.locator("#officer-last-name").fill("Dela Cruz")
@@ -109,7 +109,7 @@ test("Officer account creation requires identity and academic details", async ({
   await page.goto("/administration/users")
   await page.getByRole("button", { name: "Add account" }).click()
   await page.getByPlaceholder("name@example.com").fill(randomEmail())
-  await page.getByPlaceholder("Student ID").fill("INCOMPLETE-OFFICER")
+  await page.locator("#officer-student-number").fill("INCOMPLETE-OFFICER")
   await expect(
     page.getByRole("button", { name: "Create account" }),
   ).toBeDisabled()
@@ -128,10 +128,10 @@ test("Search filters officer accounts by email and position", async ({
   await page.getByRole("button", { name: "Manage positions" }).click()
   await page.getByPlaceholder("e.g. Recording Secretary").fill(position)
   await page.getByRole("button", { name: "Add", exact: true }).click()
-  await page.getByRole("button", { name: "Close" }).click()
+  await page.getByRole("button", { name: "Close" }).last().click()
 
   await page.getByRole("button", { name: "Add account" }).click()
-  await page.getByPlaceholder("Student ID").fill(studentId)
+  await page.locator("#officer-student-number").fill(studentId)
   await page.locator("#officer-first-name").fill("Search")
   await page.locator("#officer-last-name").fill("Officer")
   await page.getByPlaceholder("name@example.com").fill(email)
@@ -231,7 +231,7 @@ test("Super admin can validate and import officer accounts from CSV", async ({
   await page.getByRole("button", { name: "Manage positions" }).click()
   await page.getByPlaceholder("e.g. Recording Secretary").fill(position)
   await page.getByRole("button", { name: "Add", exact: true }).click()
-  await page.getByRole("button", { name: "Close" }).click()
+  await page.getByRole("button", { name: "Close" }).last().click()
 
   await page.getByRole("button", { name: "Import accounts" }).click()
   const csv = [
