@@ -552,3 +552,15 @@ Reviewed `backend/app/models.py`, `backend/app/api/routes/attendance_corrections
 - Follow-up: require a trimmed, non-empty correction reason. Decide whether clearing timestamps is a supported operation; if it is, use an explicit field-presence strategy or dedicated action so “unchanged” and “clear” are distinguishable. Add tests for blank reasons, null/omitted timestamp semantics, and late-flag consistency.
 
 This is a schema/route/test inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
+
+## Password-reset and forced-password-change consistency
+
+Reviewed `backend/app/api/routes/login.py`, `backend/app/api/routes/users.py`, `backend/app/api/deps.py`, and `backend/tests/api/routes/test_login.py`.
+
+- The public `POST /reset-password/` flow validates the reset token, verifies that the user exists and is active, and updates the password through `crud.update_user`. It does not explicitly clear `User.must_change_password`.
+- The authenticated `PATCH /users/me/password` flow does clear `must_change_password` after the user supplies the current password and a different new password.
+- The current-user dependency blocks ordinary authenticated API access when `must_change_password` is true, except for the current-user and password-change paths needed to complete the forced change. Therefore, if an account requiring a forced change uses password recovery, the reset can succeed while the forced-change flag remains set. The user may still be required to change the newly reset password again before ordinary access.
+- The existing password-reset test verifies that the password hash changes, but does not cover a user whose `must_change_password` flag is true or establish whether reset should clear that flag.
+- Follow-up: decide whether a successful, token-verified password reset satisfies the forced-change requirement. If yes, clear the flag in the reset flow and test it; if no, document the intended extra step and ensure the recovery UI explains it. Keep the behavior consistent with the authenticated password-change path.
+
+This is a route/dependency/test inspection, not a live password-recovery test. No application code or tests were changed in this documentation-only PR.
