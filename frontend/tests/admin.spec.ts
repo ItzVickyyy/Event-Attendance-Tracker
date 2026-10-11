@@ -138,7 +138,7 @@ test("Scanner Permissions page is removed from administration", async ({
 }) => {
   await page.goto("/administration")
   await expect(
-    page.getByRole("heading", { name: "Administration" }),
+    page.getByRole("heading", { name: "Administration" }).first(),
   ).toBeVisible()
   await expect(
     page.getByRole("link", { name: /Scanner Permissions/ }),
