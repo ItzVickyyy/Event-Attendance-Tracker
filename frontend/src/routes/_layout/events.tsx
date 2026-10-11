@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import { Calendar, Search } from "lucide-react"
 import { Suspense, useState } from "react"
 import { DataTable } from "@/components/Common/DataTable"
@@ -68,7 +68,12 @@ function EventsTableContent({ search }: { search: string }) {
 }
 
 function Events() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const [search, setSearch] = useState("")
+
+  if (pathname !== "/events" && pathname !== "/events/") {
+    return <Outlet />
+  }
 
   return (
     <div className="flex flex-col gap-6">
