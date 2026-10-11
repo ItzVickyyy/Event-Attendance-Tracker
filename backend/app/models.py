@@ -91,6 +91,15 @@ class UserUpdate(SQLModel):
     can_scan: bool | None = None
     full_name: str | None = Field(default=None, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=128)
+    first_name: str | None = Field(default=None, max_length=255)
+    middle_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
+    name_extension: str | None = Field(default=None, max_length=50)
+    student_number: str | None = Field(default=None, max_length=50)
+    organization: str | None = Field(default=None, max_length=255)
+    position_id: uuid.UUID | None = None
+    academic_year_id: uuid.UUID | None = None
+    section_id: uuid.UUID | None = None
 
 
 class UserUpdateMe(SQLModel):
