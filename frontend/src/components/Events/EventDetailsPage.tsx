@@ -9,9 +9,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 export function EventDetailsPage({ eventId }: { eventId: string }) {
   const query = useQuery({
     queryKey: ["event", eventId],
-    queryFn: () => EventsService.readEvent({ path: { event_id: eventId } }),
+    queryFn: async () => {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL ?? ""}/api/v1/events/${encodeURIComponent(eventId)}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      )
+      if (!response.ok) {
+        if (response.status === 404) throw new Error("Event not found")
+        throw new Error("Unable to load event details")
+      }
+      return response.json()
+    },
   })
-  const event = query.data?.data
+  const event = query.data
   if (query.isLoading)
     return (
       <Card>
