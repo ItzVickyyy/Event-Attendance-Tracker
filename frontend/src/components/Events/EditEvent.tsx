@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 import { type EventPublic, EventsService } from "@/client"
-import { useAcademicYear } from "@/context/AcademicYearContext"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useAcademicYear } from "@/context/AcademicYearContext"
 
 const schema = z.object({
   event_name: z.string().min(1, "Event name is required"),
@@ -114,7 +114,11 @@ export function EditEvent({ event }: EditEventProps) {
               </label>
               <Select
                 value={form.watch("academic_year_id")}
-                onValueChange={(value) => form.setValue("academic_year_id", value, { shouldValidate: true })}
+                onValueChange={(value) =>
+                  form.setValue("academic_year_id", value, {
+                    shouldValidate: true,
+                  })
+                }
               >
                 <SelectTrigger id="academic_year_id">
                   <SelectValue placeholder="Select academic year" />
@@ -122,7 +126,8 @@ export function EditEvent({ event }: EditEventProps) {
                 <SelectContent>
                   {academicYears.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
-                      {year.label}{year.is_current ? " (Current)" : ""}
+                      {year.label}
+                      {year.is_current ? " (Current)" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -208,7 +213,8 @@ export function EditEvent({ event }: EditEventProps) {
                 onClick={() =>
                   form.reset({
                     event_name: event.event_name,
-                    academic_year_id: event.academic_year_id ?? activeAcademicYear?.id ?? "",
+                    academic_year_id:
+                      event.academic_year_id ?? activeAcademicYear?.id ?? "",
                     event_date: event.event_date,
                     start_time: event.start_time || undefined,
                     end_time: event.end_time || undefined,
