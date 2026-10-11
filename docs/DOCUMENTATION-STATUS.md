@@ -587,3 +587,15 @@ Reviewed `backend/app/api/routes/students.py`, `backend/app/models.py`, and `bac
 - Follow-up: define the fields representatives are allowed to edit. Prefer a dedicated Class Representative update schema or explicit field allowlist, likely limited to the intended roster-maintenance fields. Keep person linkage, student-number changes, and academic-status changes Admin-only unless there is an approved workflow. Add positive and negative role tests for every allowed and denied field.
 
 This is a route/schema/test inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
+
+## Credential reassignment and identifier-change auditability
+
+Reviewed `backend/app/api/routes/attendee_credentials.py`, credential models, and the existing credential-lifecycle findings.
+
+- The Admin-only `PATCH /attendee-credentials/{credential_id}` route permits changing `attendee_id` and `credential_value` in the same credential row. It checks that a replacement attendee exists and checks for a duplicate credential value before updating.
+- The route updates the row's `updated_at` timestamp, but the reviewed flow does not write a separate audit record containing the previous attendee, previous credential value, new values, actor, and reason. The old association/value is therefore not retained by this endpoint as a dedicated history entry.
+- This makes the route a direct reassignment or identifier-replacement path, distinct from the existing concerns about deactivation, hard deletion, and QR credential re-provisioning. If a card is lost, shared, or assigned incorrectly, the reviewed endpoint does not itself preserve a durable record of the transition.
+- Follow-up: decide whether credential reassignment and value replacement require an audit trail. If they do, route changes through a dedicated service that records actor, timestamp, old/new association, old/new value or a safe fingerprint, and reason. Avoid storing raw bearer-like credential values in general audit logs unless there is a clear need. Add tests for reassignment, replacement, duplicate-value conflicts, and history retention.
+
+This is a route/model inspection, not a live API experiment. No application code or tests were changed in this documentation-only PR.
+
