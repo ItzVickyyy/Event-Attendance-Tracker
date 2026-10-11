@@ -90,7 +90,8 @@ export function UsersAdministrationPage() {
   const [managePositionsOpen, setManagePositionsOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
-  const [importPreview, setImportPreview] = useState<OfficerImportPreview | null>(null)
+  const [importPreview, setImportPreview] =
+    useState<OfficerImportPreview | null>(null)
   const [studentNumber, setStudentNumber] = useState("")
   const [firstName, setFirstName] = useState("")
   const [middleInitial, setMiddleInitial] = useState("")
@@ -112,7 +113,8 @@ export function UsersAdministrationPage() {
   })
   const yearsQuery = useQuery({
     queryKey: ["officer-account-academic-years"],
-    queryFn: () => apiRequest<{ data: AcademicYear[] }>("/academic-registry/academic-years"),
+    queryFn: () =>
+      apiRequest<{ data: AcademicYear[] }>("/academic-registry/academic-years"),
     enabled: isSuperAdmin,
   })
   const sectionsQuery = useQuery({
@@ -125,7 +127,8 @@ export function UsersAdministrationPage() {
   })
   const positionsQuery = useQuery({
     queryKey: ["officer-positions"],
-    queryFn: () => apiRequest<{ data: OfficerPosition[] }>("/users/officer-positions"),
+    queryFn: () =>
+      apiRequest<{ data: OfficerPosition[] }>("/users/officer-positions"),
     enabled: true,
   })
 
@@ -139,7 +142,9 @@ export function UsersAdministrationPage() {
   }, [academicYearId, yearsQuery.data])
   useEffect(() => {
     if (!positionId && positionsQuery.data?.data.length) {
-      const preferred = positionsQuery.data.data.find((position) => position.is_active)
+      const preferred = positionsQuery.data.data.find(
+        (position) => position.is_active,
+      )
       if (preferred) setPositionId(preferred.id)
     }
   }, [positionId, positionsQuery.data])
@@ -156,7 +161,8 @@ export function UsersAdministrationPage() {
       toast.success("Account updated")
       void qc.invalidateQueries({ queryKey: ["admin-users"] })
     },
-    onError: (error: Error) => toast.error(error.message || "Unable to update account"),
+    onError: (error: Error) =>
+      toast.error(error.message || "Unable to update account"),
   })
 
   const createMutation = useMutation({
@@ -195,7 +201,8 @@ export function UsersAdministrationPage() {
       resetForm()
       void qc.invalidateQueries({ queryKey: ["admin-users"] })
     },
-    onError: (error: Error) => toast.error(error.message || "Unable to create account"),
+    onError: (error: Error) =>
+      toast.error(error.message || "Unable to create account"),
   })
 
   const positionMutation = useMutation({
@@ -217,11 +224,16 @@ export function UsersAdministrationPage() {
     mutationFn: async (file: File) => {
       const form = new FormData()
       form.append("file", file)
-      const response = await fetch(`${api}/users/officers/import/preview`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-        body: form,
-      })
+      const response = await fetch(
+        `${api}/users/officers/import/preview`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+          body: form,
+        },
+      )
       const body = await response.json().catch(() => null)
       if (!response.ok) throw new Error(body?.detail ?? "Unable to validate import file")
       return body as OfficerImportPreview
@@ -231,7 +243,9 @@ export function UsersAdministrationPage() {
       if (preview.can_import) {
         toast.success(`Validated ${preview.valid_rows} officer rows`)
       } else {
-        toast.error(`Found ${preview.invalid_rows} invalid row(s). Review the errors before importing.`)
+        toast.error(
+          `Found ${preview.invalid_rows} invalid row(s). Review the errors before importing.`,
+        )
       }
     },
     onError: (error: Error) => toast.error(error.message),
@@ -251,7 +265,9 @@ export function UsersAdministrationPage() {
     onSuccess: async (result) => {
       toast.success(`Imported ${result.created_count} officer account(s)`)
       if (result.delivery_failures.length) {
-        toast.error(`Email delivery failed for: ${result.delivery_failures.join(", ")}`)
+        toast.error(
+          `Email delivery failed for: ${result.delivery_failures.join(", ")}`,
+        )
       }
       setImportOpen(false)
       setImportFile(null)
@@ -263,9 +279,14 @@ export function UsersAdministrationPage() {
 
   async function downloadImportTemplate(format: "csv" | "xlsx") {
     try {
-      const response = await fetch(`${api}/users/officers/import/template/${format}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
-      })
+      const response = await fetch(
+        `${api}/users/officers/import/template/${format}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        },
+      )
       if (!response.ok) throw new Error("Unable to download the import template")
       const blob = await response.blob()
       const url = URL.createObjectURL(blob)
@@ -325,7 +346,10 @@ export function UsersAdministrationPage() {
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 Import accounts
               </Button>
-              <Button variant="outline" onClick={() => setManagePositionsOpen(true)}>
+              <Button
+                variant="outline"
+                onClick={() => setManagePositionsOpen(true)}
+              >
                 <Settings2 />
                 Manage positions
               </Button>
@@ -397,7 +421,9 @@ export function UsersAdministrationPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{isSuperAdmin ? "Add Student Council Officer" : "Add account"}</DialogTitle>
+            <DialogTitle>
+              {isSuperAdmin ? "Add Student Council Officer" : "Add account"}
+            </DialogTitle>
             <DialogDescription>
               {isSuperAdmin
                 ? "Create an officer account with academic details, a council position, and a system role."
@@ -410,41 +436,84 @@ export function UsersAdministrationPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="officer-student-number">Student ID *</Label>
-                    <Input id="officer-student-number" value={studentNumber} onChange={(e) => setStudentNumber(e.target.value)} placeholder="Student ID" />
+                    <Input
+                      id="officer-student-number"
+                      value={studentNumber}
+                      onChange={(e) => setStudentNumber(e.target.value)}
+                      placeholder="Student ID"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="officer-first-name">First Name *</Label>
-                    <Input id="officer-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                    <Input
+                      id="officer-first-name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="officer-middle-initial">Middle Initial</Label>
-                    <Input id="officer-middle-initial" value={middleInitial} onChange={(e) => setMiddleInitial(e.target.value)} maxLength={5} placeholder="Optional" />
+                    <Label htmlFor="officer-middle-initial">
+                      Middle Initial
+                    </Label>
+                    <Input
+                      id="officer-middle-initial"
+                      value={middleInitial}
+                      onChange={(e) => setMiddleInitial(e.target.value)}
+                      maxLength={5}
+                      placeholder="Optional"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="officer-last-name">Last Name *</Label>
-                    <Input id="officer-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                    <Input
+                      id="officer-last-name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="officer-extension">Extension</Label>
-                    <Input id="officer-extension" value={extension} onChange={(e) => setExtension(e.target.value)} placeholder="Jr., Sr., III (optional)" />
+                    <Input
+                      id="officer-extension"
+                      value={extension}
+                      onChange={(e) => setExtension(e.target.value)}
+                      placeholder="Jr., Sr., III (optional)"
+                    />
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Academic Year *</Label>
-                    <Select value={academicYearId} onValueChange={(value) => { setAcademicYearId(value); setSectionId("") }}>
-                      <SelectTrigger><SelectValue placeholder="Select academic year" /></SelectTrigger>
+                    <Select
+                      value={academicYearId}
+                      onValueChange={(value) => {
+                        setAcademicYearId(value)
+                        setSectionId("")
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select academic year" />
+                      </SelectTrigger>
                       <SelectContent>
                         {(yearsQuery.data?.data ?? []).map((year) => (
-                          <SelectItem key={year.id} value={year.id}>{year.label}{year.is_current ? " (Default)" : ""}</SelectItem>
+                          <SelectItem key={year.id} value={year.id}>
+                            {year.label}
+                            {year.is_current ? " (Default)" : ""}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Section *</Label>
-                    <Select value={sectionId} onValueChange={setSectionId} disabled={!academicYearId}>
-                      <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
+                    <Select
+                      value={sectionId}
+                      onValueChange={setSectionId}
+                      disabled={!academicYearId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select section" />
+                      </SelectTrigger>
                       <SelectContent>
                         {(sectionsQuery.data?.data ?? []).map((section) => (
                           <SelectItem key={section.id} value={section.id}>
@@ -459,26 +528,48 @@ export function UsersAdministrationPage() {
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="account-name">Full Name</Label>
-                <Input id="account-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Full name" />
+                <Input
+                  id="account-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Full name"
+                />
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="account-email">Email *</Label>
-              <Input id="account-email" value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="name@example.com" />
+              <Input
+                id="account-email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                type="email"
+                placeholder="name@example.com"
+              />
             </div>
             {isSuperAdmin ? (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="officer-organization">Organization *</Label>
-                  <Input id="officer-organization" value={organization} onChange={(event) => setOrganization(event.target.value)} />
+                  <Input
+                    id="officer-organization"
+                    value={organization}
+                    onChange={(event) => setOrganization(event.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>System Role *</Label>
-                  <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={role}
+                    onValueChange={(value) => setRole(value as UserRole)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {accountRoles.map((item) => (
-                        <SelectItem key={item} value={item}>{roleLabel(item)}</SelectItem>
+                        <SelectItem key={item} value={item}>
+                          {roleLabel(item)}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -486,33 +577,60 @@ export function UsersAdministrationPage() {
                 <div className="space-y-2">
                   <Label>Position *</Label>
                   <Select value={positionId} onValueChange={setPositionId}>
-                    <SelectTrigger><SelectValue placeholder="Select officer position" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select officer position" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {positions.filter((position) => position.is_active).map((position) => (
-                        <SelectItem key={position.id} value={position.id}>{position.name}</SelectItem>
-                      ))}
+                      {positions
+                        .filter((position) => position.is_active)
+                        .map((position) => (
+                          <SelectItem key={position.id} value={position.id}>
+                            {position.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   {positions.length === 0 && (
-                    <p className="text-xs text-muted-foreground">Add a position using Manage positions before creating an officer account.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add a position using Manage positions before creating an
+                      officer account.
+                    </p>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  The system generates a temporary password using the same procedure as Class Representative accounts. Credentials are emailed, and the officer must change the password after first login.
+                  The system generates a temporary password using the same
+                  procedure as Class Representative accounts. Credentials are
+                  emailed, and the officer must change the password after first
+                  login.
                 </p>
               </>
             ) : (
               <>
                 <div className="space-y-2">
                   <Label htmlFor="account-password">Password *</Label>
-                  <Input id="account-password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" placeholder="At least 8 characters" />
+                  <Input
+                    id="account-password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    type="password"
+                    placeholder="At least 8 characters"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Role</Label>
-                  <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={role}
+                    onValueChange={(value) => setRole(value as UserRole)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {accountRoles.map((item) => <SelectItem key={item} value={item}>{roleLabel(item)}</SelectItem>)}
+                      {accountRoles.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {roleLabel(item)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -520,15 +638,22 @@ export function UsersAdministrationPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={() => createMutation.mutate()}
               disabled={
                 createMutation.isPending ||
                 !email.trim() ||
                 (isSuperAdmin
-                  ? !studentNumber.trim() || !firstName.trim() || !lastName.trim() ||
-                    !academicYearId || !sectionId || !positionId || !organization.trim()
+                  ? !studentNumber.trim() ||
+                    !firstName.trim() ||
+                    !lastName.trim() ||
+                    !academicYearId ||
+                    !sectionId ||
+                    !positionId ||
+                    !organization.trim()
                   : password.length < 8)
               }
             >
@@ -552,15 +677,24 @@ export function UsersAdministrationPage() {
           <DialogHeader>
             <DialogTitle>Import Officer Accounts</DialogTitle>
             <DialogDescription>
-              Upload a CSV or XLSX file. Review validation results before committing the import. Files can contain up to 500 accounts.
+              Upload a CSV or XLSX file. Review validation results before
+              committing the import. Files can contain up to 500 accounts.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" onClick={() => void downloadImportTemplate("xlsx")}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void downloadImportTemplate("xlsx")}
+              >
                 Download XLSX template
               </Button>
-              <Button type="button" variant="outline" onClick={() => void downloadImportTemplate("csv")}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void downloadImportTemplate("csv")}
+              >
                 Download CSV template
               </Button>
             </div>
@@ -579,17 +713,27 @@ export function UsersAdministrationPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => importFile && previewImportMutation.mutate(importFile)}
+              onClick={() =>
+                importFile && previewImportMutation.mutate(importFile)
+              }
               disabled={!importFile || previewImportMutation.isPending}
             >
-              {previewImportMutation.isPending ? "Validating…" : "Validate file"}
+              {previewImportMutation.isPending
+                ? "Validating…"
+                : "Validate file"}
             </Button>
             {importPreview && (
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-md border p-3 text-sm">Total rows: <strong>{importPreview.total_rows}</strong></div>
-                  <div className="rounded-md border p-3 text-sm">Valid rows: <strong>{importPreview.valid_rows}</strong></div>
-                  <div className="rounded-md border p-3 text-sm">Invalid rows: <strong>{importPreview.invalid_rows}</strong></div>
+                  <div className="rounded-md border p-3 text-sm">
+                    Total rows: <strong>{importPreview.total_rows}</strong>
+                  </div>
+                  <div className="rounded-md border p-3 text-sm">
+                    Valid rows: <strong>{importPreview.valid_rows}</strong>
+                  </div>
+                  <div className="rounded-md border p-3 text-sm">
+                    Invalid rows: <strong>{importPreview.invalid_rows}</strong>
+                  </div>
                 </div>
                 <div className="max-h-72 overflow-auto rounded-md border">
                   <table className="w-full text-sm">
@@ -608,12 +752,20 @@ export function UsersAdministrationPage() {
                           <td className="p-2">{row.student_number || "—"}</td>
                           <td className="p-2">
                             {row.full_name || "Invalid row"}
-                            <div className="text-xs text-muted-foreground">{row.position_name || "No position"}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {row.position_name || "No position"}
+                            </div>
                           </td>
                           <td className="p-2">
-                            {row.errors.length
-                              ? <span className="text-destructive">{row.errors.join("; ")}</span>
-                              : <span className="text-muted-foreground">Ready</span>}
+                            {row.errors.length ? (
+                              <span className="text-destructive">
+                                {row.errors.join("; ")}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">
+                                Ready
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -622,19 +774,26 @@ export function UsersAdministrationPage() {
                 </div>
                 {!importPreview.can_import && (
                   <p className="text-sm text-destructive">
-                    Import is blocked until every row is valid. Fix the source file and validate it again.
+                    Import is blocked until every row is valid. Fix the source
+                    file and validate it again.
                   </p>
                 )}
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setImportOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>
+              Cancel
+            </Button>
             <Button
               onClick={() => commitImportMutation.mutate()}
-              disabled={!importPreview?.can_import || commitImportMutation.isPending}
+              disabled={
+                !importPreview?.can_import || commitImportMutation.isPending
+              }
             >
-              {commitImportMutation.isPending ? "Importing…" : "Import accounts"}
+              {commitImportMutation.isPending
+                ? "Importing…"
+                : "Import accounts"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -645,31 +804,61 @@ export function UsersAdministrationPage() {
           <DialogHeader>
             <DialogTitle>Manage Officer Positions</DialogTitle>
             <DialogDescription>
-              Add reusable council positions. A position is separate from a person's system role.
+              Add reusable council positions. A position is separate from a
+              person's system role.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="flex gap-2">
-              <Input value={newPositionName} onChange={(event) => setNewPositionName(event.target.value)} placeholder="e.g. Recording Secretary" />
-              <Button onClick={() => positionMutation.mutate()} disabled={!newPositionName.trim() || positionMutation.isPending}>
+              <Input
+                value={newPositionName}
+                onChange={(event) => setNewPositionName(event.target.value)}
+                placeholder="e.g. Recording Secretary"
+              />
+              <Button
+                onClick={() => positionMutation.mutate()}
+                disabled={!newPositionName.trim() || positionMutation.isPending}
+              >
                 Add
               </Button>
             </div>
-            {positionsQuery.isError && <p className="text-sm text-destructive">Unable to load officer positions.</p>}
+            {positionsQuery.isError && (
+              <p className="text-sm text-destructive">
+                Unable to load officer positions.
+              </p>
+            )}
             <div className="max-h-64 space-y-2 overflow-y-auto">
               {positions.map((position) => (
-                <div key={position.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                <div
+                  key={position.id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                >
                   <span>{position.name}</span>
-                  <span className={position.is_active ? "text-muted-foreground" : "text-destructive"}>
+                  <span
+                    className={
+                      position.is_active
+                        ? "text-muted-foreground"
+                        : "text-destructive"
+                    }
+                  >
                     {position.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
               ))}
-              {positions.length === 0 && <p className="text-sm text-muted-foreground">No positions have been added yet.</p>}
+              {positions.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No positions have been added yet.
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setManagePositionsOpen(false)}>Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => setManagePositionsOpen(false)}
+            >
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -695,8 +884,10 @@ function UserRow({
   const [role, setRole] = useState<UserRole>(user.role ?? "student")
   const [active, setActive] = useState(Boolean(user.is_active))
   const [scan, setScan] = useState(Boolean(user.can_scan))
-  const isProtectedAccount = user.role === "admin" || user.role === "super_admin"
-  const canEdit = isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
+  const isProtectedAccount =
+    user.role === "admin" || user.role === "super_admin"
+  const canEdit =
+    isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
   const editableRoles: UserRole[] = isSuperAdmin
     ? user.role === "class_representative"
       ? [...roles, "class_representative"]
@@ -721,10 +912,20 @@ function UserRow({
       <td className="p-3">{user.student_number || "—"}</td>
       <td className="p-3">{user.email}</td>
       <td className="p-3">
-        <Select value={role} onValueChange={(value) => setRole(value as UserRole)} disabled={!canEdit}>
-          <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
+        <Select
+          value={role}
+          onValueChange={(value) => setRole(value as UserRole)}
+          disabled={!canEdit}
+        >
+          <SelectTrigger className="w-[190px]">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
-            {editableRoles.map((item) => <SelectItem key={item} value={item}>{roleLabel(item)}</SelectItem>)}
+            {editableRoles.map((item) => (
+              <SelectItem key={item} value={item}>
+                {roleLabel(item)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </td>
@@ -735,20 +936,31 @@ function UserRow({
           variant={active ? "default" : "outline"}
           onClick={() => setActive(!active)}
           disabled={!canEdit || user.id === currentUserId}
-          title={user.id === currentUserId ? "You cannot deactivate your own account" : undefined}
+          title={
+            user.id === currentUserId
+              ? "You cannot deactivate your own account"
+              : undefined
+          }
         >
           {active ? "Active" : "Inactive"}
         </Button>
       </td>
       {isSuperAdmin && (
         <td className="p-3">
-          <Button size="sm" variant={scan ? "default" : "outline"} onClick={() => setScan(!scan)} disabled={!canEdit}>
+          <Button
+            size="sm"
+            variant={scan ? "default" : "outline"}
+            onClick={() => setScan(!scan)}
+            disabled={!canEdit}
+          >
             {scan ? "Allowed" : "Denied"}
           </Button>
         </td>
       )}
       <td className="p-3">
-        <Button size="sm" onClick={save} disabled={saving || !canEdit}>Save</Button>
+        <Button size="sm" onClick={save} disabled={saving || !canEdit}>
+          Save
+        </Button>
       </td>
     </tr>
   )
