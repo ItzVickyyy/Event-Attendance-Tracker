@@ -977,9 +977,15 @@ function UserRow({
     enabled: isSuperAdmin && editOpen && Boolean(editAcademicYearId),
   })
   const save = () => {
-    if (isSuperAdmin && role === "class_representative" && user.role !== "class_representative") {
+    if (
+      isSuperAdmin &&
+      role === "class_representative" &&
+      user.role !== "class_representative"
+    ) {
       openEdit("class_representative")
-      toast.info("Choose an academic year and section to assign this account as a Class Representative.")
+      toast.info(
+        "Choose an academic year and section to assign this account as a Class Representative.",
+      )
       return
     }
     const body: Parameters<typeof UsersService.updateUser>[0]["body"] = {
