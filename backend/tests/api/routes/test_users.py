@@ -658,6 +658,17 @@ def test_super_admin_can_create_officer_position_and_account(
     assert account["role"] == "super_admin"
     assert account["must_change_password"] is True
 
+    delete_account = client.delete(
+        f"{settings.API_V1_STR}/users/{account['id']}",
+        headers=superuser_token_headers,
+    )
+    assert delete_account.status_code == 200
+    delete_position = client.delete(
+        f"{settings.API_V1_STR}/users/officer-positions/{position.json()['id']}",
+        headers=superuser_token_headers,
+    )
+    assert delete_position.status_code == 200
+
 
 def test_officer_position_names_are_case_insensitively_unique(
     client: TestClient, superuser_token_headers: dict[str, str]
