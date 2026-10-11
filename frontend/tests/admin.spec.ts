@@ -203,3 +203,37 @@ test("Academic year selector stays open after changing the selected year", async
   await years.nth(1).click()
   await expect(years.nth(1)).toBeVisible()
 })
+
+
+test("Super admin can validate and import officer accounts from CSV", async ({ page }) => {
+  await page.goto("/administration/users")
+  const email = randomEmail()
+  const studentId = `IMPORT-${randomEmail().replace(/[^a-z0-9]/gi, "").slice(0, 10)}`
+  const position = `Auditor ${studentId.slice(-5)}`
+
+  await page.getByRole("button", { name: "Manage positions" }).click()
+  await page.getByPlaceholder("e.g. Recording Secretary").fill(position)
+  await page.getByRole("button", { name: "Add", exact: true }).click()
+  await page.getByRole("button", { name: "Close" }).click()
+
+  await page.getByRole("button", { name: "Import accounts" }).click()
+  const csv = [
+    "Student ID,First Name,Middle Initial,Last Name,Extension,Academic Year,Section,Email,Organization,Role,Position",
+    `${studentId},Jamie,Q,Importer,,2026-2027,BSIT WMAD 3A,${email},CCS Student Council,Admin,${position}`,
+  ].join("\n")
+  await page.locator("#officer-import-file").setInputFiles({
+    name: "officers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  })
+  await page.getByRole("button", { name: "Validate file" }).click()
+  await expect(page.getByText("Validated 1 officer rows")).toBeVisible()
+  await expect(page.getByText("Valid rows: 1")).toBeVisible()
+  await page.getByRole("button", { name: "Import accounts", exact: true }).last().click()
+  await expect(page.getByText("Imported 1 officer account(s)")).toBeVisible()
+
+  await page.getByPlaceholder("Search by name, Student ID, email, or position").fill(email)
+  const row = page.getByRole("row").filter({ hasText: email })
+  await expect(row).toBeVisible()
+  await expect(row).toContainText(position)
+})
