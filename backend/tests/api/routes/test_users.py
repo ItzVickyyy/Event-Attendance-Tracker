@@ -597,7 +597,10 @@ def test_super_admin_cannot_deactivate_own_account(
         json={"is_active": False},
     )
     assert response.status_code == 403
-    assert response.json()["detail"] == "You cannot deactivate your own Super Admin account"
+    assert (
+        response.json()["detail"]
+        == "You cannot deactivate your own Super Admin account"
+    )
     db.refresh(super_user)
     assert super_user.is_active is True
 
@@ -610,9 +613,7 @@ def test_super_admin_can_create_officer_position_and_account(
         headers=superuser_token_headers,
     )
     assert years.status_code == 200
-    year = next(
-        item for item in years.json()["data"] if item["label"] == "2026-2027"
-    )
+    year = next(item for item in years.json()["data"] if item["label"] == "2026-2027")
     sections = client.get(
         f"{settings.API_V1_STR}/academic-registry/sections",
         headers=superuser_token_headers,
@@ -622,8 +623,7 @@ def test_super_admin_can_create_officer_position_and_account(
     section = next(
         item
         for item in sections.json()["data"]
-        if item["program_code"] == "BSIT"
-        and item["section_name"] == "WMAD 3A"
+        if item["program_code"] == "BSIT" and item["section_name"] == "WMAD 3A"
     )
     position = client.post(
         f"{settings.API_V1_STR}/users/officer-positions",
