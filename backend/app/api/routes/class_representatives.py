@@ -345,8 +345,7 @@ async def import_class_representatives(
             "section",
         }
         headers = {
-            str(header or "").strip().lower()
-            for header in (reader.fieldnames or [])
+            str(header or "").strip().lower() for header in (reader.fieldnames or [])
         }
         if not required_headers.issubset(headers):
             raise HTTPException(
@@ -391,8 +390,7 @@ async def import_class_representatives(
         if not year_label or not section_label:
             row_errors.append("academic year and section are required")
         if email and (
-            email in seen_emails
-            or crud.get_user_by_email(session=session, email=email)
+            email in seen_emails or crud.get_user_by_email(session=session, email=email)
         ):
             row_errors.append("email is duplicated or already registered")
 
@@ -434,7 +432,9 @@ async def import_class_representatives(
             errors.append(f"Row {index}: {', '.join(row_errors)}")
             continue
         if year is None or section_row is None:
-            errors.append(f"Row {index}: academic year or section could not be resolved")
+            errors.append(
+                f"Row {index}: academic year or section could not be resolved"
+            )
             continue
 
         seen_emails.add(email)
