@@ -5,7 +5,6 @@ import {
   Activity,
   ArrowRight,
   ClipboardCheck,
-  KeyRound,
   UserRoundCheck,
   Users,
 } from "lucide-react"
@@ -52,14 +51,6 @@ const sections: AdministrationSection[] = [
     description: "Review attendance corrections and their recorded reasons.",
     detail: "Attendance oversight",
     icon: ClipboardCheck,
-  },
-  {
-    to: "/administration/scanner-permissions",
-    title: "Scanner Permissions",
-    description: "Review who is allowed to scan attendance.",
-    detail: "Scanner access",
-    icon: KeyRound,
-    superAdminOnly: true,
   },
   {
     to: "/administration/audit-logs",
