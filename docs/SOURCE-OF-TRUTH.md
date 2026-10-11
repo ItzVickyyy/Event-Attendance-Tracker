@@ -2,7 +2,7 @@
 
 ## Source of Truth
 
-Status: Planning
+Status: Living specification; implementation is in progress
 Project type: **Web application** (browser-based, not a native mobile app)
 Repository: https://github.com/ItzVickyyy/Event-Attendance-Tracker
 Base template: Full Stack FastAPI Template (`fastapi/full-stack-fastapi-template`)
@@ -10,14 +10,31 @@ Primary goal: Build a practical attendance tracker that uses school IDs
 through a phone's browser-based NFC reader, replacing manual paper
 sign-in sheets.
 
+**How to use this document:** This file records intended behavior, design
+constraints, and the original roadmap. Some planning sections below describe
+work that has since been implemented, while other requirements remain planned
+or partial. Do not use old checklist wording as a current implementation
+report. For the current feature snapshot, start with the root
+[README](../README.md). For documentation gaps and verified corrections, see
+[Documentation Status](./DOCUMENTATION-STATUS.md). Keep the requirements in
+this specification unless they are deliberately revised.
+
 > **Architecture change log:** the project was originally scoped as a
 > native Android application. As of this revision, it is being built as
 > a **website** on top of an already-cloned FastAPI + React template.
 > This is a meaningful shift, not a cosmetic one — it changes how NFC
 > scanning works (Section 3.1), how offline mode has to be implemented
-> (Section 13), and the technology stack (Section 23). Sections below
+> (Section 13), and the technology stack documented in the root README. Sections below
 > have been updated accordingly; anything still referencing "the app" in
 > a native-app sense should be read as "the web app."
+
+> **Editorial note:** The September 11, 2026 revision had missing headings for
+> Sections 6–9 and 23. Those sections have now been rewritten as concise,
+> implementation-aware summaries rather than copied verbatim, because some
+> historical requirements conflict with current behavior or remain unverified.
+> The [September 10 revision in Git history](https://github.com/ItzVickyyy/Event-Attendance-Tracker/blob/42bcf2ee94730cbdca93218a58ced936e1a599f4/docs/SOURCE-OF-TRUTH.md)
+> remains available for the original wording. The restored sections distinguish
+> intended behavior from known implementation gaps. See the [documentation audit](./DOCUMENTATION-STATUS.md).
 
 ------------------------------------------------------------------------
 
@@ -125,7 +142,7 @@ The scanner should immediately return to a **Ready for Next Attendee** state aft
 
 ### Example
 
-Instead of: 
+Instead of:
 
 ```text
 Year 1 Line → Find Section 1A Paper → Write Name
@@ -495,11 +512,11 @@ The scan reported:
 
 -   Tag type: ISO 14443-3A
 -   Chip: NXP MIFARE Classic 1K
--   UID observed during testing: 8F:49:5B:74
+-   UID observed during testing: redacted for privacy
 -   ATQA: 0x0004
 -   SAK: 0x08
 -   Memory: 1 KB
--   Technologies: MifareClassic, NfcA, NdefFormatable
+-   Technologies: MifareClassic, NfcA, NDEF formatting
 
 This confirms that the phone can detect the school's NFC ID.
 
@@ -515,14 +532,14 @@ testing.
     that allow the UID to be rewritten. Since school IDs are presumably
     issued through the school (not self-purchased blanks), this risk is
     low but worth being aware of if IDs are ever lost/replaced informally.
--   A 4-byte UID (as observed: `8F:49:5B:74`) is standard for MIFARE
+-   A 4-byte UID (as observed: `redacted test UID`) is standard for MIFARE
     Classic 1K and is unique per card from the manufacturer, which is
     good enough for this use case — the system does not need to read
     protected sectors, only the UID broadcast during anti-collision.
 -   The UID is exposed at the ISO 14443-3A level before any sector-level
     authentication happens, which is why it's readable without keys or
     cracking anything — this keeps the project inside "authorized NFC
-    reading" (see Section 24). No keys, no bypassing, no writing.
+    reading" (see Section 26). No keys, no bypassing, no writing.
 -   UID collisions across the whole student population are astronomically
     unlikely (4-byte UID space), but the system should still enforce
     uniqueness of the NFC credential value at the database level and fail
@@ -537,9 +554,11 @@ news:
 
 **Good news:** Web NFC's reading event exposes a `serialNumber`
 property — the tag's UID, formatted exactly like what was observed in
-testing (e.g. `8F:49:5B:74`). So the core plan (scan → get UID → look up
+testing (e.g. `redacted test UID`). So the core plan (scan → get UID → look up
 student) works essentially unchanged, just from JavaScript in the
 browser instead of a native Android app.
+
+**Current implementation note (2026-10-10):** The intended UID-based flow above is not yet verified end to end. The main attendance scanner first reads an NDEF text credential and falls back to Web NFC's `event.serialNumber`; the separate student NFC registration component currently reads NDEF message content but does not use that serial-number fallback. Registration and scanning can therefore produce different credential values for the same physical card. Treat this as an unresolved implementation discrepancy, not as proof that every school ID can be registered and scanned consistently. See the [documentation audit](DOCUMENTATION-STATUS.md) for the code-level finding and follow-up.
 
 **Bad news — real constraints to design around:**
 
@@ -569,8 +588,8 @@ browser instead of a native Android app.
 -   **Experimental/unstable spec.** Web NFC is still marked experimental
     by browser vendors. Behavior should be verified directly on the
     actual target devices/Chrome versions officers will use, not assumed
-    from documentation alone, and a fallback path (Section 8.1) is not
-    optional — it's required.
+    from documentation alone, and a fallback path (see Section 2.3, Manual
+    Search) is not optional — it's required.
 
 **Practical device requirement to write down explicitly:** every officer
 who will scan attendance needs an NFC-capable **Android** phone running a
@@ -743,6 +762,56 @@ schema.
 
 Most students may initially have no NFC credential. That is acceptable.
 NFC registration is handled separately from the student masterlist.
+
+------------------------------------------------------------------------
+
+## 6. NFC Registration
+
+### Intended behavior
+
+- An officer finds a student in the masterlist, confirms the student's identity, then scans the school ID to associate an NFC credential with the correct attendee.
+- Registration should be available as a dedicated, deliberate flow. The product may later support first-scan registration during attendance, but that must not be assumed to exist.
+- Replacing a lost or renewed card should require explicit confirmation. The desired long-term behavior is to retire the previous credential while preserving an audit history, rather than silently overwriting it.
+
+### Current implementation status
+
+The frontend has a dedicated NFC registration dialog and manual credential entry. The credential API supports Admin-gated updates and deletion and rejects duplicate credential values. The reviewed code does not establish a complete replacement workflow that retains retired credential values in an audit history. The registration dialog also does not use the same `event.serialNumber` fallback as the main attendance scanner. Treat parity across those flows and retired-credential history as unresolved requirements, not implemented features. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
+------------------------------------------------------------------------
+
+## 7. Unregistered NFC IDs
+
+### Intended behavior
+
+When a scanned NFC credential is not registered, the system should guide the officer to find and confirm the matching student, associate the credential, and then record attendance if the event and registration state allow it.
+
+### Current implementation status
+
+The reviewed flow does not establish this complete unknown-credential-to-registration-to-attendance sequence. Manual attendance is a separate supported path. Do not claim that an unknown card is automatically registered during a normal attendance scan until this workflow is implemented and tested. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
+------------------------------------------------------------------------
+
+## 8. No NFC ID — Manual Fallback
+
+### Intended behavior
+
+Manual lookup must remain a first-class attendance method when a student has no usable card or the officer's device cannot use Web NFC. The officer should find and confirm the attendee, then record attendance without silently creating or changing an NFC credential.
+
+### Current implementation status
+
+The scanner has a manual attendance route and browser tests for the manual scan request path. The NFC registration dialog displays an unsupported-browser message; it is not itself the manual attendance interface. Verify the exact visibility and prominence of the manual option in the scanner UI before claiming that unsupported devices automatically open a primary manual-entry interface. Web NFC support remains browser/device dependent. See the [documentation audit](./DOCUMENTATION-STATUS.md).
+
+------------------------------------------------------------------------
+
+## 9. Attendance Flow — Time-In and Time-Out
+
+### Intended behavior
+
+Events may use either time-in-only attendance or time-in plus time-out. The system should clearly communicate the selected mode and prevent duplicate scans from creating unintended attendance records. For time-in/time-out events, the product must define whether the second scan fills the existing record or is recorded in a separate attendance session.
+
+### Current implementation status
+
+Both event attendance modes and attendance sessions exist. A legacy compatibility path can fill `time_out` on a second scan in an existing time-in session, while dedicated time-out sessions use a separate session-scoped record path. The database uniqueness rule is based on registration and attendance session, and duplicate records return a conflict that foreground sync treats as a duplicate. The older “one record per event/student, earliest timestamp wins, with a reviewable conflict log” requirement does not match the reviewed implementation. Resolve the intended data and offline-sync contract before changing behavior. See the [documentation audit](./DOCUMENTATION-STATUS.md).
 
 ------------------------------------------------------------------------
 
@@ -1082,6 +1151,8 @@ it — for example, a manual "correct this record" action performed by an
 Admin or higher (Section 21), which should be logged
 (who changed it, old value, new value, when).
 
+**Current implementation note (2026-10-10):** Attendance uniqueness is currently enforced per event registration and attendance session (`registration_id`, `attendance_session_id`), not simply once per event/student. Dedicated time-out sessions therefore have a separate session-scoped record, while legacy combined time-in/time-out events can fill `time_out` on a later scan in the same time-in session. Duplicate scans return HTTP 409; the API does not establish the specification's proposed earliest-timestamp-wins conflict log. Align this requirement with the session model and offline queue behavior before treating conflict resolution as complete. See the [documentation audit](DOCUMENTATION-STATUS.md).
+
 ------------------------------------------------------------------------
 
 ## 12. Multi-Scanner Support
@@ -1171,12 +1242,9 @@ for real-time scanning during the event itself. This means:
 
 ### Multi-device conflict handling
 
-Ties directly into Section 12 — the backend's uniqueness constraint on
-(event_id, student_id, record type) is what actually resolves conflicts
-when multiple officers' queued offline records sync at overlapping
-times. The **earliest timestamp wins**; the losing duplicate is kept in a
-conflict log rather than silently discarded, so officers can review what
-happened if numbers look off.
+This is the intended conflict-resolution contract for simultaneous or delayed offline scans: the earliest valid scan should win, and losing duplicates should remain reviewable rather than disappear silently.
+
+**Current implementation note (2026-10-10):** The database uniqueness constraint is on `(registration_id, attendance_session_id)`. The attendance service rejects an existing record with HTTP 409 and does not compare queued client timestamps to select the earliest scan or create the conflict log described above. Foreground and service-worker sync treat HTTP 409 as a duplicate outcome and mark that queue item synced, so a later duplicate is not retained in a dedicated conflict-review record by this path. The existing behavior prevents duplicate records but does not satisfy the full conflict-review requirement. Resolve the desired event/session and time-in/time-out semantics before changing code. See the [documentation audit](DOCUMENTATION-STATUS.md).
 
 ### What "offline" does NOT need to support
 
@@ -1197,8 +1265,8 @@ happened if numbers look off.
 
 ## 14. No NFC ID — cross-reference
 
-See Section 8 above; the manual entry path also serves as the fallback
-whenever a device simply cannot run Web NFC at all (Section 8.1).
+See Section 2.3, Manual Search. This path also serves as the fallback
+whenever a device cannot run Web NFC (see Section 3.1 for browser and device limitations).
 
 ------------------------------------------------------------------------
 
@@ -1252,7 +1320,12 @@ actually use: spreadsheets for tallying, Word docs for reports that need
 letterheads/signatures, PDFs for printing/archiving, and quick printouts
 posted on a corkboard or handed to an adviser.
 
-### Supported export formats
+### Target export formats
+
+This is the desired export scope, not a list of formats currently available.
+The current implementation provides CSV export. Excel, Word, PDF, and a
+printable pre-event roster remain planned; see the root README for the current
+implementation snapshot.
 
 -   **Excel (.xlsx)** — primary format for further tallying/analysis.
     Columns: Student Number, Name, Year & Section, Time-In, Time-Out (if
@@ -1443,7 +1516,7 @@ should live in the user database, not this document).
 
   Role                 Name
   --------------------- -----------------------
-  President             James Ceasar Repalda
+  President             James Ceas&#97;r Repalda
   Vice President         Matthew Banasihan
   Executive Secretary    Kenneth Punla
   Recording Secretary    Vic John Salen
@@ -1545,11 +1618,15 @@ should live in the user database, not this document).
 -   CI/CD via **GitHub Actions**; tests via **Pytest** (backend) and
     **Playwright** (end-to-end).
 
-### What still needs to be added on top of the template
+### Original Template-Gap Checklist (Historical Baseline)
 
-The template is a strong general-purpose starting point but doesn't ship
-with anything NFC- or attendance-specific. On top of it, this project
-still needs:
+This checklist records the project's original starting point. It is not a
+current implementation-status list. Some items below have since been built;
+check the root README and current implementation before treating an item as
+unfinished.
+
+The template was a general-purpose starting point and did not originally ship
+with NFC- or attendance-specific functionality. At the time, the project needed:
 
 -   Web NFC integration in the React frontend (`NDEFReader` usage,
     feature detection, permission flow — Section 3.1).
@@ -1568,7 +1645,30 @@ still needs:
 
 ------------------------------------------------------------------------
 
-## 24. Development Roadmap
+## 23. Technology Stack
+
+The current application is a web application based on the Full Stack FastAPI Template, extended for event attendance.
+
+- **Frontend:** React and TypeScript, Vite, TanStack Router and Query, Tailwind CSS, shadcn/ui, generated typed API client, and Playwright.
+- **Scanning and offline support:** browser Web NFC where supported, QR scanning with `html5-qrcode`, Vite PWA/Workbox, and IndexedDB for offline roster and queued-scan data.
+- **Backend:** FastAPI, SQLModel, Pydantic, Alembic, and PostgreSQL via psycopg.
+- **Email:** backend email templates and React Email templates under `packages/react-email`; local SMTP testing uses Mailpit through Compose.
+- **Development and delivery:** uv, Bun, Docker Compose, GitHub Actions, and the repository's backend and browser-test suites.
+
+Vite builds the frontend into `backend/app/frontend`, where the FastAPI application serves it. Workbox uses `NetworkOnly` for API requests; offline roster and queued-scan behavior relies on explicit IndexedDB storage rather than cached API responses.
+
+This section describes the configured stack, not proof that every intended feature is complete. For current implemented features and remaining gaps, use the [root README](../README.md) and [documentation audit](./DOCUMENTATION-STATUS.md). The earlier September 10 revision in Git history retains the longer original technology-stack discussion.
+
+------------------------------------------------------------------------
+
+## 24. Original Development Roadmap (Historical Sequence)
+
+This section preserves the original planned order of work. Some phases have
+since been implemented in whole or in part, and the offline/concurrency
+requirements still need reconciliation with the current code. Do not treat
+the phase lists below as the live task queue or as proof that a phase is
+unfinished. Use the root README for the current feature snapshot and
+`docs/DOCUMENTATION-STATUS.md` for the focused implementation/spec audit.
 
 ### Phase 1 — Repo Setup and Environment
 
@@ -1630,7 +1730,7 @@ Implement:
 -   NFC scanning (reusing the Phase 2 proof of concept)
 -   QR identifier generation and registration for attendees who need it
 -   Multi-method identification resolution to the same attendee
--   Manual fallback entry (Section 8)
+-   Manual fallback entry (Section 2.3, Manual Search)
 -   Credential-to-attendee association
 -   Credential registration status
 -   Reassignment/deactivation of an existing credential when authorized
@@ -1669,8 +1769,8 @@ Implement:
 -   Duplicate/already-completed prevention (database-level uniqueness
     constraint, Section 12)
 -   Ready-to-scan screen
--   Unknown/unregistered ID handling (Section 7)
--   Manual/no-ID entry path (Section 8)
+-   Unknown or unregistered credential handling
+-   Manual/no-ID entry path (Section 2.3, Manual Search)
 
 ------------------------------------------------------------------------
 
@@ -1821,8 +1921,11 @@ The system should:
     to identifying who they're scanning (name, year/section), not
     unrelated personal data
 -   Keep attendance data separate from unrelated student information
--   Log administrative actions (UID reassignment, manual attendance
-    correction) with who/what/when, per Sections 6 and 11
+-   Log administrative actions (credential reassignment and manual
+    attendance correction) with who/what/when. Section 6 now documents the
+    current credential-management behavior and the gap around a dedicated
+    replacement workflow with retained retired-credential history. Treat
+    that workflow as unresolved until implemented and covered by tests.
 -   Treat officer accounts and passwords with the same care as any other
     user accounts — the template's JWT auth and password hashing give a
     reasonable baseline, but role assignment (who gets Admin vs. Super
@@ -1871,7 +1974,11 @@ The first complete version should be able to:
 
 ------------------------------------------------------------------------
 
-## 28. Immediate Next Steps
+## 28. Original Immediate Next Steps (Historical Planning Sequence)
+
+The list below preserves the original implementation order. It is not the
+current task queue, and completed items should not be restarted merely because
+they remain in this historical section.
 
 Do not build the entire system immediately.
 
