@@ -929,7 +929,6 @@ function UserRow({
   const [savingDetails, setSavingDetails] = useState(false)
   const [editName, setEditName] = useState(user.full_name ?? "")
   const [editEmail, setEditEmail] = useState(user.email)
-  const [editPassword, setEditPassword] = useState("")
   const [editStudentNumber, setEditStudentNumber] = useState(
     user.student_number ?? "",
   )
@@ -952,14 +951,6 @@ function UserRow({
     user.role === "admin" || user.role === "super_admin"
   const canEdit =
     isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
-  const isOfficerAccount =
-    isSuperAdmin &&
-    Boolean(
-      user.student_number ||
-        user.position_id ||
-        user.academic_year_id ||
-        user.section_id,
-    )
   const editableRoles: UserRole[] = isSuperAdmin
     ? user.role === "class_representative"
       ? [...roles, "class_representative"]
@@ -995,7 +986,6 @@ function UserRow({
   const openEdit = () => {
     setEditName(user.full_name ?? "")
     setEditEmail(user.email)
-    setEditPassword("")
     setEditStudentNumber(user.student_number ?? "")
     setEditFirstName(user.first_name ?? "")
     setEditMiddleInitial(user.middle_name ?? "")
@@ -1011,7 +1001,7 @@ function UserRow({
   const saveDetails = async () => {
     setSavingDetails(true)
     try {
-      const payload: Record<string, unknown> = isOfficerAccount
+      const payload: Record<string, unknown> = isSuperAdmin
         ? {
             email: editEmail.trim(),
             student_number: editStudentNumber.trim(),
@@ -1034,7 +1024,6 @@ function UserRow({
             role: editRole,
             is_active: active,
           }
-      if (editPassword.trim()) payload.password = editPassword
       await apiRequest<OfficerUser>(`/users/${user.id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
@@ -1126,7 +1115,7 @@ function UserRow({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              {isOfficerAccount ? (
+              {isSuperAdmin ? (
                 <>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-2">
@@ -1305,15 +1294,6 @@ function UserRow({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>New Password</Label>
-                    <Input
-                      type="password"
-                      value={editPassword}
-                      onChange={(event) => setEditPassword(event.target.value)}
-                      placeholder="Leave blank to keep current password"
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label>Role</Label>
                     <Select
                       value={editRole}
@@ -1333,17 +1313,6 @@ function UserRow({
                   </div>
                 </>
               )}
-              {isOfficerAccount && (
-                <div className="space-y-2">
-                  <Label>New Password</Label>
-                  <Input
-                    type="password"
-                    value={editPassword}
-                    onChange={(event) => setEditPassword(event.target.value)}
-                    placeholder="Leave blank to keep current password"
-                  />
-                </div>
-              )}
             </div>
             <DialogFooter>
               <Button
@@ -1357,7 +1326,7 @@ function UserRow({
                 disabled={
                   savingDetails ||
                   !editEmail.trim() ||
-                  (isOfficerAccount &&
+                  (isSuperAdmin &&
                     (!editStudentNumber.trim() ||
                       !editFirstName.trim() ||
                       !editLastName.trim() ||
