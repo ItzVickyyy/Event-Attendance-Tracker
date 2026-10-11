@@ -201,11 +201,13 @@ export function ClassRepresentativesAdmin() {
         </CardContent>
       </Card>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create Class Representative</DialogTitle>
+            <DialogDescription>Create a login account and assign it to one section for the selected academic year. The representative must change the temporary password on first login.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-5">
+            <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
             {(
               [
                 ["first_name", "First Name"],
@@ -231,8 +233,10 @@ export function ClassRepresentativesAdmin() {
                 />
               </div>
             ))}
+            </div>
+            <div className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Academic Year</Label>
+              <Label>Academic Year *</Label>
               <Select
                 value={form.academic_year_id}
                 onValueChange={(value) =>
@@ -252,7 +256,7 @@ export function ClassRepresentativesAdmin() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Section</Label>
+              <Label>Section *</Label>
               <Select
                 value={form.section_id}
                 onValueChange={(value) =>
@@ -272,7 +276,7 @@ export function ClassRepresentativesAdmin() {
                 </SelectContent>
               </Select>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
               The initial password is {"Change" + "ThisPassword"}. The account
               is required to change it after first login. If email delivery is
               enabled, the credentials are sent automatically.
