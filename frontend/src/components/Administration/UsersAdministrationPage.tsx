@@ -1023,17 +1023,17 @@ function UserRow({
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor={user.id + "-edit-name"}>Full Name</Label>
+                <Label htmlFor={`${user.id}-edit-name`}>Full Name</Label>
                 <Input
-                  id={user.id + "-edit-name"}
+                  id={`${user.id}-edit-name`}
                   value={editName}
                   onChange={(event) => setEditName(event.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor={user.id + "-edit-email"}>Email</Label>
+                <Label htmlFor={`${user.id}-edit-email`}>Email</Label>
                 <Input
-                  id={user.id + "-edit-email"}
+                  id={`${user.id}-edit-email`}
                   type="email"
                   value={editEmail}
                   onChange={(event) => setEditEmail(event.target.value)}
@@ -1042,10 +1042,7 @@ function UserRow({
               </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setEditOpen(false)}
-              >
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
                 Cancel
               </Button>
               <Button
