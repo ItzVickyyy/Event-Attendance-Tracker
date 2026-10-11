@@ -65,7 +65,7 @@ test("Super admin can create an admin account", async ({ page }) => {
   await page.getByPlaceholder("name@example.com").fill(email)
   await page.getByPlaceholder("At least 8 characters").fill(password)
   await page.getByRole("combobox").click()
-  await page.getByRole("option", { name: "admin", exact: true }).click()
+  await page.getByRole("option", { name: "Admin", exact: true }).click()
   await page.getByRole("button", { name: "Create account" }).click()
 
   await expect(page.getByText("Account created")).toBeVisible()
