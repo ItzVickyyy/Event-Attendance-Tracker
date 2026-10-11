@@ -1,7 +1,10 @@
+import csv
+import io
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, func, select
 
 from app import crud
@@ -14,9 +17,11 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
+    AcademicProgram,
     AcademicSection,
     Message,
     OfficerAccountCreate,
+    OfficerAccountImportCommit,
     OfficerPosition,
     OfficerPositionCreate,
     OfficerPositionPublic,
@@ -33,6 +38,7 @@ from app.models import (
     UserUpdateMe,
 )
 from app.services.account_provisioning import generate_temporary_password
+from app.services.officer_import import parse_officer_import_file
 from app.student_academics import AcademicYear
 from app.utils import generate_new_account_email, send_email
 
@@ -230,6 +236,319 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
     user_create = UserCreate.model_validate(user_in)
     user = crud.create_user(session=session, user_create=user_create)
     return user
+
+
+@router.get(
+    "/officers/import/template/csv",
+    dependencies=[Depends(require_super_admin)],
+)
+def download_officer_import_csv_template() -> Response:
+    headers = [
+        "Student ID",
+        "First Name",
+        "Middle Initial",
+        "Last Name",
+        "Extension",
+        "Academic Year",
+        "Section",
+        "Email",
+        "Organization",
+        "Role",
+        "Position",
+    ]
+    output = io.StringIO(newline="")
+    csv.writer(output).writerow(headers)
+    return Response(
+        content=output.getvalue().encode("utf-8-sig"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="CCS_Officer_Import_Template.csv"'},
+    )
+
+
+@router.get(
+    "/officers/import/template/xlsx",
+    dependencies=[Depends(require_super_admin)],
+)
+def download_officer_import_xlsx_template() -> Response:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Officers"
+    sheet.append([
+        "Student ID",
+        "First Name",
+        "Middle Initial",
+        "Last Name",
+        "Extension",
+        "Academic Year",
+        "Section",
+        "Email",
+        "Organization",
+        "Role",
+        "Position",
+    ])
+    output = io.BytesIO()
+    workbook.save(output)
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="CCS_Officer_Import_Template.xlsx"'},
+    )
+
+
+@router.post(
+    "/officers/import/preview",
+    dependencies=[Depends(require_super_admin)],
+)
+async def preview_officer_import(
+    session: SessionDep,
+    _current_user: CurrentUser,
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    filename = file.filename or "officer-import"
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    try:
+        raw_rows = parse_officer_import_file(contents, filename)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    years = session.exec(select(AcademicYear)).all()
+    programs = session.exec(select(AcademicProgram)).all()
+    sections = session.exec(select(AcademicSection)).all()
+    positions = session.exec(select(OfficerPosition)).all()
+    years_by_label = {year.label.casefold(): year for year in years}
+    programs_by_id = {program.id: program for program in programs}
+    positions_by_name = {position.name.casefold(): position for position in positions}
+    existing_emails = {
+        str(user.email).casefold()
+        for user in session.exec(select(User.email)).all()
+    }
+    existing_student_numbers = {
+        number
+        for (number,) in session.exec(select(User.student_number)).all()
+        if number
+    }
+    seen_emails: set[str] = set()
+    seen_student_numbers: set[str] = set()
+    preview_rows: list[dict[str, Any]] = []
+
+    for row in raw_rows:
+        errors: list[str] = []
+        year_label = str(row.get("academic_year", "")).strip().casefold()
+        year = years_by_label.get(year_label)
+        if not year:
+            errors.append(f"Unknown academic year: {row.get('academic_year', '')}")
+        section = None
+        if year:
+            section_value = str(row.get("section", "")).strip().casefold()
+            for candidate in sections:
+                if candidate.academic_year_id != year.id:
+                    continue
+                program = programs_by_id.get(candidate.program_id)
+                labels = {
+                    candidate.section_name.casefold(),
+                    candidate.section_code.casefold() if candidate.section_code else "",
+                }
+                if program:
+                    labels.add(f"{program.program_code} {candidate.section_name}".casefold())
+                    labels.add(
+                        f"{program.program_code} {candidate.year_level} {candidate.section_name}".casefold()
+                    )
+                if section_value in labels:
+                    section = candidate
+                    break
+            if not section:
+                errors.append(
+                    f"Section '{row.get('section', '')}' was not found in {year.label}"
+                )
+
+        position_name = str(row.get("position", "")).strip()
+        position = positions_by_name.get(position_name.casefold())
+        if not position or not position.is_active:
+            errors.append(f"Unknown or inactive position: {position_name}")
+
+        role_value = str(row.get("role", "")).strip().lower().replace(" ", "_").replace("-", "_")
+        if role_value in {"superadmin", "super_admin"}:
+            role_value = UserRole.super_admin.value
+        elif role_value == "admin":
+            role_value = UserRole.admin.value
+        else:
+            errors.append("Role must be Super Admin or Admin")
+
+        email = str(row.get("email", "")).strip().lower()
+        student_number = str(row.get("student_number", "")).strip()
+        if email and (email in existing_emails or email in seen_emails):
+            errors.append(f"Duplicate email: {email}")
+        if student_number and (
+            student_number in existing_student_numbers
+            or student_number in seen_student_numbers
+        ):
+            errors.append(f"Duplicate Student ID: {student_number}")
+        if email:
+            seen_emails.add(email)
+        if student_number:
+            seen_student_numbers.add(student_number)
+
+        payload_data = None
+        try:
+            payload = OfficerAccountCreate.model_validate({
+                "email": email,
+                "student_number": student_number,
+                "first_name": str(row.get("first_name", "")).strip(),
+                "middle_initial": str(row.get("middle_initial", "")).strip() or None,
+                "last_name": str(row.get("last_name", "")).strip(),
+                "extension": str(row.get("extension", "")).strip() or None,
+                "organization": str(row.get("organization", "")).strip() or "CCS Student Council",
+                "academic_year_id": year.id if year else None,
+                "section_id": section.id if section else None,
+                "role": role_value,
+                "position_id": position.id if position else None,
+            })
+            payload_data = payload.model_dump(mode="json")
+        except Exception as exc:
+            errors.append(f"Invalid row data: {exc}")
+
+        preview_rows.append({
+            "row_number": row["source_row"],
+            "payload": payload_data if not errors else None,
+            "errors": errors,
+        })
+
+    valid_rows = sum(1 for row in preview_rows if row["payload"] is not None and not row["errors"])
+    return {
+        "total_rows": len(preview_rows),
+        "valid_rows": valid_rows,
+        "invalid_rows": len(preview_rows) - valid_rows,
+        "can_import": valid_rows == len(preview_rows) and valid_rows > 0,
+        "rows": preview_rows,
+    }
+
+
+@router.post(
+    "/officers/import/commit",
+    dependencies=[Depends(require_super_admin)],
+)
+def commit_officer_import(
+    *,
+    session: SessionDep,
+    _current_user: CurrentUser,
+    payload: OfficerAccountImportCommit,
+) -> dict[str, Any]:
+    if not settings.emails_enabled and settings.FASTAPI_ENV != "test":
+        raise HTTPException(
+            status_code=503,
+            detail="Email delivery must be configured before importing officer accounts",
+        )
+
+    normalized_rows: list[OfficerAccountCreate] = []
+    seen_emails: set[str] = set()
+    seen_student_numbers: set[str] = set()
+    for row in payload.rows:
+        email = str(row.email).strip().lower()
+        student_number = row.student_number.strip()
+        if email in seen_emails or crud.get_user_by_email(session=session, email=email):
+            raise HTTPException(status_code=409, detail=f"Duplicate email: {email}")
+        if student_number in seen_student_numbers or session.exec(
+            select(User).where(User.student_number == student_number)
+        ).first():
+            raise HTTPException(
+                status_code=409, detail=f"Duplicate Student ID: {student_number}"
+            )
+        seen_emails.add(email)
+        seen_student_numbers.add(student_number)
+        year = session.get(AcademicYear, row.academic_year_id)
+        section = session.get(AcademicSection, row.section_id)
+        position = session.get(OfficerPosition, row.position_id)
+        if not year or not section or section.academic_year_id != row.academic_year_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid academic year or section for Student ID {student_number}",
+            )
+        if not position or not position.is_active:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid or inactive position for Student ID {student_number}",
+            )
+        if row.role not in (UserRole.super_admin, UserRole.admin):
+            raise HTTPException(
+                status_code=422, detail="Officer accounts must use Super Admin or Admin"
+            )
+        normalized_rows.append(row.model_copy(update={
+            "email": email,
+            "student_number": student_number,
+            "first_name": row.first_name.strip(),
+            "middle_initial": row.middle_initial.strip().rstrip(".") if row.middle_initial else None,
+            "last_name": row.last_name.strip(),
+            "extension": row.extension.strip() if row.extension else None,
+            "organization": row.organization.strip(),
+        }))
+
+    created: list[tuple[User, str]] = []
+    for row in normalized_rows:
+        middle_initial = (row.middle_initial or "").strip().rstrip(".")
+        extension = (row.extension or "").strip()
+        full_name = " ".join(
+            part for part in (
+                row.first_name,
+                f"{middle_initial}." if middle_initial else "",
+                row.last_name,
+                extension,
+            ) if part
+        )
+        temporary_password = generate_temporary_password()
+        user = crud.create_user(
+            session=session,
+            user_create=UserCreate(
+                email=row.email,
+                password=temporary_password,
+                role=row.role,
+                is_superuser=row.role == UserRole.super_admin,
+                can_scan=True,
+                full_name=full_name,
+                first_name=row.first_name,
+                middle_name=middle_initial or None,
+                last_name=row.last_name,
+                name_extension=extension or None,
+                student_number=row.student_number,
+                organization=row.organization,
+                position_id=row.position_id,
+                academic_year_id=row.academic_year_id,
+                section_id=row.section_id,
+                must_change_password=True,
+            ),
+            commit=False,
+        )
+        user.must_change_password = True
+        session.add(user)
+        created.append((user, temporary_password))
+
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+
+    delivery_failures: list[str] = []
+    if settings.emails_enabled:
+        for user, temporary_password in created:
+            try:
+                email_data = generate_new_account_email(
+                    email_to=user.email,
+                    username=user.email,
+                    password=temporary_password,
+                )
+                send_email(
+                    email_to=user.email,
+                    subject=email_data.subject,
+                    html_content=email_data.html_content,
+                )
+            except Exception:
+                delivery_failures.append(str(user.email))
+    return {
+        "created_count": len(created),
+        "delivery_failures": delivery_failures,
+    }
 
 
 @router.get(
