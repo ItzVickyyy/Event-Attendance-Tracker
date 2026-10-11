@@ -256,7 +256,6 @@ test("Super admin can validate and import officer accounts from CSV", async ({
   await expect(row).toContainText(position)
 })
 
-
 test("Edit account matches Add Account fields without a password field", async ({
   page,
 }) => {
