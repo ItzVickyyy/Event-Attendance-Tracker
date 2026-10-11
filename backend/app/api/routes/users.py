@@ -566,7 +566,7 @@ def commit_officer_import(
 @router.get(
     "/officer-positions",
     response_model=OfficerPositionsPublic,
-    dependencies=[Depends(require_super_admin)],
+    dependencies=[Depends(require_admin)],
 )
 def list_officer_positions(session: SessionDep, _current_user: CurrentUser) -> Any:
     positions = session.exec(select(OfficerPosition).order_by(OfficerPosition.name)).all()
