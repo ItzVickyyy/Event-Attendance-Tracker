@@ -512,7 +512,7 @@ function SectionList() {
             <Plus />
             Add Student
           </Button>
-          <Button onClick={openCreate>
+          <Button onClick={openCreate}>
             <Plus />
             Add section
           </Button>
@@ -1006,7 +1006,11 @@ function SectionList() {
               Cancel
             </Button>
             <Button
-              disabled={!sections.some((section: any) => section.id === addStudentSectionId)}
+              disabled={
+                !sections.some(
+                  (section: any) => section.id === addStudentSectionId,
+                )
+              }
               onClick={() => {
                 const section = sections.find(
                   (item: any) => item.id === addStudentSectionId,
