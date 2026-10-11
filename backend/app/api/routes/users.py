@@ -42,9 +42,7 @@ def read_users(
 
     # Developer accounts are isolated from ordinary account administration.
     count_statement = (
-        select(func.count())
-        .select_from(User)
-        .where(col(User.is_developer).is_(False))
+        select(func.count()).select_from(User).where(col(User.is_developer).is_(False))
     )
     count = session.exec(count_statement).one()
 
