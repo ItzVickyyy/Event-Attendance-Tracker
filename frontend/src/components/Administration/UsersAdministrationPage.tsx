@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Plus, Settings2 } from "lucide-react"
+import { Pencil, Plus, Settings2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { type UserPublic, type UserRole, UsersService } from "@/client"
@@ -895,6 +895,9 @@ function UserRow({
   const [role, setRole] = useState<UserRole>(user.role ?? "student")
   const [active, setActive] = useState(Boolean(user.is_active))
   const [scan, setScan] = useState(Boolean(user.can_scan))
+  const [editOpen, setEditOpen] = useState(false)
+  const [editName, setEditName] = useState(user.full_name ?? "")
+  const [editEmail, setEditEmail] = useState(user.email)
   const isProtectedAccount =
     user.role === "admin" || user.role === "super_admin"
   const canEdit =
@@ -969,9 +972,32 @@ function UserRow({
         </td>
       )}
       <td className="p-3">
-        <Button size="sm" onClick={save} disabled={saving || !canEdit}>
-          Save
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={save} disabled={saving || !canEdit}>Save access</Button>
+          <Button size="sm" variant="outline" disabled={!canEdit} onClick={() => { setEditName(user.full_name ?? ""); setEditEmail(user.email); setEditOpen(true) }}><Pencil className="mr-1 size-3.5" />Edit</Button>
+        </div>
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit User Account</DialogTitle>
+              <DialogDescription>Update the account name and email address.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor={"edit-name-" + user.id}>Full Name</Label>
+                <Input id={"edit-name-" + user.id} value={editName} onChange={(event) => setEditName(event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={"edit-email-" + user.id}>Email</Label>
+                <Input id={"edit-email-" + user.id} type="email" value={editEmail} onChange={(event) => setEditEmail(event.target.value)} required />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+              <Button disabled={saving || !editEmail.trim()} onClick={() => { onSave({ full_name: editName.trim(), email: editEmail.trim(), role, is_active: active, ...(isSuperAdmin ? { can_scan: scan, is_superuser: role === "super_admin" } : {}) }); setEditOpen(false) }}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </td>
     </tr>
   )
