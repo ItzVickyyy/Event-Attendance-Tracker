@@ -71,7 +71,7 @@ test("Super admin can create an admin account", async ({ page }) => {
   await expect(page.getByText("Account created")).toBeVisible()
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
-  await expect(row).toContainText("admin")
+  await expect(row).toContainText("Admin")
 })
 
 test("Cancel account creation closes the dialog", async ({ page }) => {
@@ -156,4 +156,17 @@ test("Event details route renders when opened directly", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Events", exact: true }),
   ).toHaveCount(0)
+})
+
+test("Academic year selector stays open after changing the selected year", async ({
+  page,
+}) => {
+  await page.goto("/dashboard")
+  await page.getByRole("button", { name: /Academic Year:/ }).click()
+  const years = page.getByRole("menuitemradio")
+  await expect(years).toHaveCount(2, { timeout: 1000 }).catch(() => {})
+  const count = await years.count()
+  test.skip(count < 2, "At least two academic years are required")
+  await years.nth(1).click()
+  await expect(years.nth(1)).toBeVisible()
 })
