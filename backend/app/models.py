@@ -62,7 +62,10 @@ class UserBase(SQLModel):
         default=None, foreign_key="academic_years.id", index=True, ondelete="RESTRICT"
     )
     section_id: uuid.UUID | None = Field(
-        default=None, foreign_key="academic_sections.id", index=True, ondelete="RESTRICT"
+        default=None,
+        foreign_key="academic_sections.id",
+        index=True,
+        ondelete="RESTRICT",
     )
     must_change_password: bool = Field(default=False)
 
@@ -197,7 +200,9 @@ class OfficerAccountCreate(SQLModel):
     middle_initial: str | None = Field(default=None, max_length=5)
     last_name: str = Field(min_length=1, max_length=255)
     extension: str | None = Field(default=None, max_length=50)
-    organization: str = Field(default="CCS Student Council", min_length=1, max_length=255)
+    organization: str = Field(
+        default="CCS Student Council", min_length=1, max_length=255
+    )
     academic_year_id: uuid.UUID
     section_id: uuid.UUID
     role: UserRole
