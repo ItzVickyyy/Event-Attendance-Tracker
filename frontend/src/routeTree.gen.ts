@@ -33,7 +33,6 @@ import { Route as LayoutAdministrationAttendanceRouteImport } from './routes/_la
 import { Route as LayoutAdministrationAuditLogsRouteImport } from './routes/_layout/administration/audit-logs'
 import { Route as LayoutAdministrationClassRepresentativesRouteImport } from './routes/_layout/administration/class-representatives'
 import { Route as LayoutAdministrationRolesRouteImport } from './routes/_layout/administration/roles'
-import { Route as LayoutAdministrationScannerPermissionsRouteImport } from './routes/_layout/administration/scanner-permissions'
 import { Route as LayoutAdministrationUsersRouteImport } from './routes/_layout/administration/users'
 import { Route as LayoutEventsEventIdRouteImport } from './routes/_layout/events/$eventId'
 import { Route as LayoutRecordsExportRouteImport } from './routes/_layout/records/export'
@@ -180,12 +179,6 @@ const LayoutAdministrationRolesRoute =
     path: '/roles',
     getParentRoute: () => LayoutAdministrationRoute,
   } as any)
-const LayoutAdministrationScannerPermissionsRoute =
-  LayoutAdministrationScannerPermissionsRouteImport.update({
-    id: '/scanner-permissions',
-    path: '/scanner-permissions',
-    getParentRoute: () => LayoutAdministrationRoute,
-  } as any)
 const LayoutAdministrationUsersRoute =
   LayoutAdministrationUsersRouteImport.update({
     id: '/users',
@@ -322,7 +315,6 @@ export interface FileRoutesByFullPath {
   '/administration/audit-logs': typeof LayoutAdministrationAuditLogsRoute
   '/administration/class-representatives': typeof LayoutAdministrationClassRepresentativesRoute
   '/administration/roles': typeof LayoutAdministrationRolesRoute
-  '/administration/scanner-permissions': typeof LayoutAdministrationScannerPermissionsRoute
   '/administration/users': typeof LayoutAdministrationUsersRoute
   '/events/$eventId': typeof LayoutEventsEventIdRouteWithChildren
   '/records/export': typeof LayoutRecordsExportRoute
@@ -366,7 +358,6 @@ export interface FileRoutesByTo {
   '/administration/audit-logs': typeof LayoutAdministrationAuditLogsRoute
   '/administration/class-representatives': typeof LayoutAdministrationClassRepresentativesRoute
   '/administration/roles': typeof LayoutAdministrationRolesRoute
-  '/administration/scanner-permissions': typeof LayoutAdministrationScannerPermissionsRoute
   '/administration/users': typeof LayoutAdministrationUsersRoute
   '/events/$eventId': typeof LayoutEventsEventIdRouteWithChildren
   '/records/export': typeof LayoutRecordsExportRoute
@@ -415,7 +406,6 @@ export interface FileRoutesById {
   '/_layout/administration/audit-logs': typeof LayoutAdministrationAuditLogsRoute
   '/_layout/administration/class-representatives': typeof LayoutAdministrationClassRepresentativesRoute
   '/_layout/administration/roles': typeof LayoutAdministrationRolesRoute
-  '/_layout/administration/scanner-permissions': typeof LayoutAdministrationScannerPermissionsRoute
   '/_layout/administration/users': typeof LayoutAdministrationUsersRoute
   '/_layout/events/$eventId': typeof LayoutEventsEventIdRouteWithChildren
   '/_layout/records/export': typeof LayoutRecordsExportRoute
@@ -464,7 +454,6 @@ export interface FileRouteTypes {
     | '/administration/audit-logs'
     | '/administration/class-representatives'
     | '/administration/roles'
-    | '/administration/scanner-permissions'
     | '/administration/users'
     | '/events/$eventId'
     | '/records/export'
@@ -508,7 +497,6 @@ export interface FileRouteTypes {
     | '/administration/audit-logs'
     | '/administration/class-representatives'
     | '/administration/roles'
-    | '/administration/scanner-permissions'
     | '/administration/users'
     | '/events/$eventId'
     | '/records/export'
@@ -556,7 +544,6 @@ export interface FileRouteTypes {
     | '/_layout/administration/audit-logs'
     | '/_layout/administration/class-representatives'
     | '/_layout/administration/roles'
-    | '/_layout/administration/scanner-permissions'
     | '/_layout/administration/users'
     | '/_layout/events/$eventId'
     | '/_layout/records/export'
@@ -761,13 +748,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdministrationRolesRouteImport
       parentRoute: typeof LayoutAdministrationRoute
     }
-    '/_layout/administration/scanner-permissions': {
-      id: '/_layout/administration/scanner-permissions'
-      path: '/scanner-permissions'
-      fullPath: '/administration/scanner-permissions'
-      preLoaderRoute: typeof LayoutAdministrationScannerPermissionsRouteImport
-      parentRoute: typeof LayoutAdministrationRoute
-    }
     '/_layout/administration/users': {
       id: '/_layout/administration/users'
       path: '/users'
@@ -939,7 +919,6 @@ interface LayoutAdministrationRouteChildren {
   LayoutAdministrationAuditLogsRoute: typeof LayoutAdministrationAuditLogsRoute
   LayoutAdministrationClassRepresentativesRoute: typeof LayoutAdministrationClassRepresentativesRoute
   LayoutAdministrationRolesRoute: typeof LayoutAdministrationRolesRoute
-  LayoutAdministrationScannerPermissionsRoute: typeof LayoutAdministrationScannerPermissionsRoute
   LayoutAdministrationUsersRoute: typeof LayoutAdministrationUsersRoute
   LayoutAdministrationIndexRoute: typeof LayoutAdministrationIndexRoute
 }
@@ -950,8 +929,6 @@ const LayoutAdministrationRouteChildren: LayoutAdministrationRouteChildren = {
   LayoutAdministrationClassRepresentativesRoute:
     LayoutAdministrationClassRepresentativesRoute,
   LayoutAdministrationRolesRoute: LayoutAdministrationRolesRoute,
-  LayoutAdministrationScannerPermissionsRoute:
-    LayoutAdministrationScannerPermissionsRoute,
   LayoutAdministrationUsersRoute: LayoutAdministrationUsersRoute,
   LayoutAdministrationIndexRoute: LayoutAdministrationIndexRoute,
 }
