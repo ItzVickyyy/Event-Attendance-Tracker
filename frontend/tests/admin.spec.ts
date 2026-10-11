@@ -19,9 +19,9 @@ test("Generic account creation does not offer Class Representative role", async 
 }) => {
   await page.goto("/administration/users")
   await page.getByRole("button", { name: "Add account" }).click()
-  await page.getByRole("combobox").click()
+  await page.getByRole("combobox").nth(2).click()
   await expect(
-    page.getByRole("option", { name: "class representative", exact: true }),
+    page.getByRole("option", { name: "Class Representative", exact: true }),
   ).toHaveCount(0)
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: "Cancel" }).click()
@@ -56,22 +56,43 @@ test("Create a class representative account with an assigned section", async ({
   await expect(row).toContainText("WMAD 3A")
 })
 
-test("Super admin can create an admin account", async ({ page }) => {
+test("Super admin can create an officer account with a position", async ({
+  page,
+}) => {
   await page.goto("/administration/users")
   const email = randomEmail()
-  const password = randomPassword()
+  const studentId = `OFFICER-${randomEmail()
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 10)}`
+  const position = `Recording Secretary ${studentId.slice(-5)}`
+
+  await page.getByRole("button", { name: "Manage positions" }).click()
+  await page.getByPlaceholder("e.g. Recording Secretary").fill(position)
+  await page.getByRole("button", { name: "Add", exact: true }).click()
+  await expect(page.getByText(position, { exact: true })).toBeVisible()
+  await page.getByRole("button", { name: "Close" }).last().click()
 
   await page.getByRole("button", { name: "Add account" }).click()
+  await page.locator("#officer-student-number").fill(studentId)
+  await page.locator("#officer-first-name").fill("Juan")
+  await page.locator("#officer-middle-initial").fill("D")
+  await page.locator("#officer-last-name").fill("Dela Cruz")
   await page.getByPlaceholder("name@example.com").fill(email)
-  await page.getByPlaceholder("At least 8 characters").fill(password)
-  await page.getByRole("combobox").click()
+  await page.getByRole("combobox").nth(0).click()
+  await page.getByRole("option", { name: /2026-2027/ }).click()
+  await page.getByRole("combobox").nth(1).click()
+  await page.getByRole("option", { name: /BSIT WMAD 3A/ }).click()
+  await page.getByRole("combobox").nth(2).click()
   await page.getByRole("option", { name: "Admin", exact: true }).click()
+  await page.getByRole("combobox").nth(3).click()
+  await page.getByRole("option", { name: position, exact: true }).click()
   await page.getByRole("button", { name: "Create account" }).click()
 
   await expect(page.getByText("Account created")).toBeVisible()
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
   await expect(row).toContainText("Admin")
+  await expect(row).toContainText(position)
 })
 
 test("Cancel account creation closes the dialog", async ({ page }) => {
@@ -82,32 +103,57 @@ test("Cancel account creation closes the dialog", async ({ page }) => {
   await expect(page.getByRole("dialog")).not.toBeVisible()
 })
 
-test("Account creation requires a valid-length password", async ({ page }) => {
+test("Officer account creation requires identity and academic details", async ({
+  page,
+}) => {
   await page.goto("/administration/users")
   await page.getByRole("button", { name: "Add account" }).click()
   await page.getByPlaceholder("name@example.com").fill(randomEmail())
-  await page.getByPlaceholder("At least 8 characters").fill("short")
+  await page.locator("#officer-student-number").fill("INCOMPLETE-OFFICER")
   await expect(
     page.getByRole("button", { name: "Create account" }),
   ).toBeDisabled()
 })
 
-test("Search filters user accounts", async ({ page }) => {
+test("Search filters officer accounts by email and position", async ({
+  page,
+}) => {
   await page.goto("/administration/users")
   const email = randomEmail()
-  const password = randomPassword()
+  const studentId = `SEARCH-${randomEmail()
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 10)}`
+  const position = `Event Coordinator ${studentId.slice(-5)}`
+
+  await page.getByRole("button", { name: "Manage positions" }).click()
+  await page.getByPlaceholder("e.g. Recording Secretary").fill(position)
+  await page.getByRole("button", { name: "Add", exact: true }).click()
+  await page.getByRole("button", { name: "Close" }).last().click()
 
   await page.getByRole("button", { name: "Add account" }).click()
+  await page.locator("#officer-student-number").fill(studentId)
+  await page.locator("#officer-first-name").fill("Search")
+  await page.locator("#officer-last-name").fill("Officer")
   await page.getByPlaceholder("name@example.com").fill(email)
-  await page.getByPlaceholder("At least 8 characters").fill(password)
+  await page.getByRole("combobox").nth(0).click()
+  await page.getByRole("option", { name: /2026-2027/ }).click()
+  await page.getByRole("combobox").nth(1).click()
+  await page.getByRole("option", { name: /BSIT WMAD 3A/ }).click()
+  await page.getByRole("combobox").nth(3).click()
+  await page.getByRole("option", { name: position, exact: true }).click()
   await page.getByRole("button", { name: "Create account" }).click()
   await expect(page.getByText("Account created")).toBeVisible()
 
-  await page.getByPlaceholder("Search users…").fill(email)
+  await page
+    .getByPlaceholder("Search by name, Student ID, email, or position")
+    .fill(email)
   const row = page.getByRole("row").filter({ hasText: email })
   await expect(row).toBeVisible()
-  await expect(row).toContainText("Student")
-  await page.getByPlaceholder("Search users…").fill("no-match-for-this-test")
+  await expect(row).toContainText("Admin")
+  await expect(row).toContainText(position)
+  await page
+    .getByPlaceholder("Search by name, Student ID, email, or position")
+    .fill("no-match-for-this-test")
   await expect(page.getByText("No users found.")).toBeVisible()
 })
 
@@ -170,4 +216,46 @@ test("Academic year selector stays open after changing the selected year", async
   test.skip(count < 2, "At least two academic years are required")
   await years.nth(1).click()
   await expect(years.nth(1)).toBeVisible()
+})
+
+test("Super admin can validate and import officer accounts from CSV", async ({
+  page,
+}) => {
+  await page.goto("/administration/users")
+  const email = randomEmail()
+  const studentId = `IMPORT-${randomEmail()
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 10)}`
+  const position = `Auditor ${studentId.slice(-5)}`
+
+  await page.getByRole("button", { name: "Manage positions" }).click()
+  await page.getByPlaceholder("e.g. Recording Secretary").fill(position)
+  await page.getByRole("button", { name: "Add", exact: true }).click()
+  await page.getByRole("button", { name: "Close" }).last().click()
+
+  await page.getByRole("button", { name: "Import accounts" }).click()
+  const csv = [
+    "Student ID,First Name,Middle Initial,Last Name,Extension,Academic Year,Section,Email,Organization,Role,Position",
+    `${studentId},Jamie,Q,Importer,,2026-2027,BSIT WMAD 3A,${email},CCS Student Council,Admin,${position}`,
+  ].join("\n")
+  await page.locator("#officer-import-file").setInputFiles({
+    name: "officers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(csv),
+  })
+  await page.getByRole("button", { name: "Validate file" }).click()
+  await expect(page.getByText("Validated 1 officer rows")).toBeVisible()
+  await expect(page.getByText("Valid rows: 1")).toBeVisible()
+  await page
+    .getByRole("button", { name: "Import accounts", exact: true })
+    .last()
+    .click()
+  await expect(page.getByText("Imported 1 officer account(s)")).toBeVisible()
+
+  await page
+    .getByPlaceholder("Search by name, Student ID, email, or position")
+    .fill(email)
+  const row = page.getByRole("row").filter({ hasText: email })
+  await expect(row).toBeVisible()
+  await expect(row).toContainText(position)
 })

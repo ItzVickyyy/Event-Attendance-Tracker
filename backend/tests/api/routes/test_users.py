@@ -584,3 +584,300 @@ def test_delete_user_without_privileges(
     )
     assert r.status_code == 403
     assert r.json()["detail"] == "The user doesn't have enough privileges"
+
+
+def test_super_admin_cannot_deactivate_own_account(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    super_user = crud.get_user_by_email(session=db, email=settings.FIRST_SUPERUSER)
+    assert super_user
+    response = client.patch(
+        f"{settings.API_V1_STR}/users/{super_user.id}",
+        headers=superuser_token_headers,
+        json={"is_active": False},
+    )
+    assert response.status_code == 403
+    assert (
+        response.json()["detail"]
+        == "You cannot deactivate your own Super Admin account"
+    )
+    db.refresh(super_user)
+    assert super_user.is_active is True
+
+
+def test_super_admin_can_create_officer_position_and_account(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    years = client.get(
+        f"{settings.API_V1_STR}/academic-registry/academic-years",
+        headers=superuser_token_headers,
+    )
+    assert years.status_code == 200
+    year = next(item for item in years.json()["data"] if item["label"] == "2026-2027")
+    sections = client.get(
+        f"{settings.API_V1_STR}/academic-registry/sections",
+        headers=superuser_token_headers,
+        params={"academic_year_id": year["id"]},
+    )
+    assert sections.status_code == 200
+    section = next(
+        item
+        for item in sections.json()["data"]
+        if item["program_code"] == "BSIT" and item["section_name"] == "WMAD 3A"
+    )
+    position = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": f"Recording Secretary {uuid.uuid4().hex[:6]}"},
+    )
+    assert position.status_code == 200
+    payload = {
+        "email": random_email(),
+        "student_number": f"OFFICER-{uuid.uuid4().hex[:10].upper()}",
+        "first_name": "Juan",
+        "middle_initial": "D",
+        "last_name": "Dela Cruz",
+        "extension": "Jr.",
+        "organization": "CCS Student Council",
+        "academic_year_id": year["id"],
+        "section_id": section["id"],
+        "role": "super_admin",
+        "position_id": position.json()["id"],
+    }
+    response = client.post(
+        f"{settings.API_V1_STR}/users/officers",
+        headers=superuser_token_headers,
+        json=payload,
+    )
+    assert response.status_code == 200
+    account = response.json()
+    assert account["full_name"] == "Juan D. Dela Cruz Jr."
+    assert account["student_number"] == payload["student_number"]
+    assert account["organization"] == "CCS Student Council"
+    assert account["position_id"] == position.json()["id"]
+    assert account["role"] == "super_admin"
+    assert account["must_change_password"] is True
+
+    delete_account = client.delete(
+        f"{settings.API_V1_STR}/users/{account['id']}",
+        headers=superuser_token_headers,
+    )
+    assert delete_account.status_code == 200
+    delete_position = client.delete(
+        f"{settings.API_V1_STR}/users/officer-positions/{position.json()['id']}",
+        headers=superuser_token_headers,
+    )
+    assert delete_position.status_code == 200
+
+
+def test_officer_position_names_are_case_insensitively_unique(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    name = f"Treasurer {uuid.uuid4().hex[:6]}"
+    first = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": name},
+    )
+    assert first.status_code == 200
+    duplicate = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": name.swapcase()},
+    )
+    assert duplicate.status_code == 409
+
+
+def _officer_academic_context(
+    client: TestClient, headers: dict[str, str]
+) -> tuple[dict[str, str], dict[str, str]]:
+    years_response = client.get(
+        f"{settings.API_V1_STR}/academic-registry/academic-years",
+        headers=headers,
+    )
+    assert years_response.status_code == 200
+    year = next(
+        item for item in years_response.json()["data"] if item["label"] == "2026-2027"
+    )
+    sections_response = client.get(
+        f"{settings.API_V1_STR}/academic-registry/sections",
+        headers=headers,
+        params={"academic_year_id": year["id"]},
+    )
+    assert sections_response.status_code == 200
+    section = next(
+        item
+        for item in sections_response.json()["data"]
+        if item["program_code"] == "BSIT" and item["section_name"] == "WMAD 3A"
+    )
+    return year, section
+
+
+def test_super_admin_can_download_officer_import_templates(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    csv_response = client.get(
+        f"{settings.API_V1_STR}/users/officers/import/template/csv",
+        headers=superuser_token_headers,
+    )
+    xlsx_response = client.get(
+        f"{settings.API_V1_STR}/users/officers/import/template/xlsx",
+        headers=superuser_token_headers,
+    )
+    assert csv_response.status_code == 200
+    assert "Student ID" in csv_response.text
+    assert xlsx_response.status_code == 200
+    assert xlsx_response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+
+def test_officer_import_preview_and_bulk_commit(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: Session,
+) -> None:
+    year, section = _officer_academic_context(client, superuser_token_headers)
+    position = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": f"Import Treasurer {uuid.uuid4().hex[:6]}"},
+    )
+    assert position.status_code == 200
+    email = random_email()
+    student_number = f"IMPORT-{uuid.uuid4().hex[:10].upper()}"
+    csv_content = (
+        "Student ID,First Name,Middle Initial,Last Name,Extension,Academic Year,"
+        "Section,Email,Organization,Role,Position\n"
+        f"{student_number},Jamie,Q,Importer,,{year['label']},"
+        f"BSIT WMAD 3A,{email},CCS Student Council,Admin,{position.json()['name']}\n"
+    )
+    preview = client.post(
+        f"{settings.API_V1_STR}/users/officers/import/preview",
+        headers=superuser_token_headers,
+        files={"file": ("officers.csv", csv_content.encode("utf-8"), "text/csv")},
+    )
+    assert preview.status_code == 200
+    preview_data = preview.json()
+    assert preview_data["can_import"] is True
+    assert preview_data["valid_rows"] == 1
+    assert preview_data["invalid_rows"] == 0
+    assert preview_data["rows"][0]["payload"]["section_id"] == section["id"]
+
+    commit = client.post(
+        f"{settings.API_V1_STR}/users/officers/import/commit",
+        headers=superuser_token_headers,
+        json={"rows": [row["payload"] for row in preview_data["rows"]]},
+    )
+    assert commit.status_code == 200
+    assert commit.json()["created_count"] == 1
+
+    account = crud.get_user_by_email(session=db, email=email)
+    assert account
+    assert account.student_number == student_number
+    assert account.must_change_password is True
+    delete_account = client.delete(
+        f"{settings.API_V1_STR}/users/{account.id}",
+        headers=superuser_token_headers,
+    )
+    assert delete_account.status_code == 200
+    delete_position = client.delete(
+        f"{settings.API_V1_STR}/users/officer-positions/{position.json()['id']}",
+        headers=superuser_token_headers,
+    )
+    assert delete_position.status_code == 200
+
+
+def test_officer_import_preview_rejects_invalid_rows_and_unsupported_files(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    unsupported = client.post(
+        f"{settings.API_V1_STR}/users/officers/import/preview",
+        headers=superuser_token_headers,
+        files={"file": ("officers.txt", b"invalid", "text/plain")},
+    )
+    assert unsupported.status_code == 400
+
+    csv_content = (
+        "Student ID,First Name,Middle Initial,Last Name,Extension,Academic Year,"
+        "Section,Email,Organization,Role,Position\n"
+        "BAD-ID,Jamie,,Importer,,2099-2099,UNKNOWN SECTION,invalid-email,"
+        "CCS Student Council,Guest,Unknown Position\n"
+    )
+    preview = client.post(
+        f"{settings.API_V1_STR}/users/officers/import/preview",
+        headers=superuser_token_headers,
+        files={"file": ("officers.csv", csv_content.encode("utf-8"), "text/csv")},
+    )
+    assert preview.status_code == 200
+    data = preview.json()
+    assert data["can_import"] is False
+    assert data["invalid_rows"] == 1
+    assert data["rows"][0]["payload"] is None
+    assert len(data["rows"][0]["errors"]) >= 4
+
+
+def test_officer_import_commit_rejects_duplicate_student_ids(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    year, section = _officer_academic_context(client, superuser_token_headers)
+    position = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": f"Duplicate Import {uuid.uuid4().hex[:6]}"},
+    )
+    assert position.status_code == 200
+    student_number = f"DUPLICATE-{uuid.uuid4().hex[:8].upper()}"
+    base = {
+        "student_number": student_number,
+        "first_name": "Jamie",
+        "middle_initial": None,
+        "last_name": "Importer",
+        "extension": None,
+        "organization": "CCS Student Council",
+        "academic_year_id": year["id"],
+        "section_id": section["id"],
+        "role": "admin",
+        "position_id": position.json()["id"],
+    }
+    response = client.post(
+        f"{settings.API_V1_STR}/users/officers/import/commit",
+        headers=superuser_token_headers,
+        json={
+            "rows": [
+                {**base, "email": random_email()},
+                {**base, "email": random_email()},
+            ]
+        },
+    )
+    assert response.status_code == 409
+    assert "Duplicate Student ID" in response.json()["detail"]
+    delete_position = client.delete(
+        f"{settings.API_V1_STR}/users/officer-positions/{position.json()['id']}",
+        headers=superuser_token_headers,
+    )
+    assert delete_position.status_code == 200
+
+
+def test_officer_position_can_be_renamed_deactivated_and_deleted(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    created = client.post(
+        f"{settings.API_V1_STR}/users/officer-positions",
+        headers=superuser_token_headers,
+        json={"name": f"Temporary Position {uuid.uuid4().hex[:6]}"},
+    )
+    assert created.status_code == 200
+    updated = client.patch(
+        f"{settings.API_V1_STR}/users/officer-positions/{created.json()['id']}",
+        headers=superuser_token_headers,
+        json={"name": "Archived Position", "is_active": False},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "Archived Position"
+    assert updated.json()["is_active"] is False
+    deleted = client.delete(
+        f"{settings.API_V1_STR}/users/officer-positions/{created.json()['id']}",
+        headers=superuser_token_headers,
+    )
+    assert deleted.status_code == 200

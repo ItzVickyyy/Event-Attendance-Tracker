@@ -50,6 +50,23 @@ class UserBase(SQLModel):
     middle_name: str | None = Field(default=None, max_length=255)
     last_name: str | None = Field(default=None, max_length=255)
     name_extension: str | None = Field(default=None, max_length=50)
+    student_number: str | None = Field(default=None, max_length=50)
+    organization: str | None = Field(default=None, max_length=255)
+    position_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="officer_positions.id",
+        index=True,
+        ondelete="RESTRICT",
+    )
+    academic_year_id: uuid.UUID | None = Field(
+        default=None, foreign_key="academic_years.id", index=True, ondelete="RESTRICT"
+    )
+    section_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="academic_sections.id",
+        index=True,
+        ondelete="RESTRICT",
+    )
     must_change_password: bool = Field(default=False)
 
 
@@ -93,7 +110,10 @@ class UpdatePassword(SQLModel):
 # Database model, database table inferred from class name: 'user'
 class User(UserBase, table=True):
     __tablename__ = "user"
-    __table_args__ = (UniqueConstraint("reference_code", name="uq_usr_reference_code"),)
+    __table_args__ = (
+        UniqueConstraint("reference_code", name="uq_usr_reference_code"),
+        UniqueConstraint("student_number", name="uq_user_student_number"),
+    )
 
     reference_code: str | None = Field(
         default=None,
@@ -122,6 +142,66 @@ class UserPublic(UserBase):
 class UsersPublic(SQLModel):
     data: list[UserPublic]
     count: int
+
+
+class OfficerPositionBase(SQLModel):
+    name: str = Field(min_length=1, max_length=100)
+    is_active: bool = True
+
+
+class OfficerPositionCreate(OfficerPositionBase):
+    pass
+
+
+class OfficerPositionUpdate(SQLModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    is_active: bool | None = None
+
+
+class OfficerPosition(OfficerPositionBase, table=True):
+    __tablename__ = "officer_positions"
+    __table_args__ = (UniqueConstraint("name", name="uq_officer_positions_name"),)
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    updated_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class OfficerPositionPublic(OfficerPositionBase):
+    id: uuid.UUID
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class OfficerPositionsPublic(SQLModel):
+    data: list[OfficerPositionPublic]
+    count: int
+
+
+class OfficerAccountCreate(SQLModel):
+    email: EmailStr
+    student_number: str = Field(min_length=1, max_length=50)
+    first_name: str = Field(min_length=1, max_length=255)
+    middle_initial: str | None = Field(default=None, max_length=5)
+    last_name: str = Field(min_length=1, max_length=255)
+    extension: str | None = Field(default=None, max_length=50)
+    organization: str = Field(
+        default="CCS Student Council", min_length=1, max_length=255
+    )
+    academic_year_id: uuid.UUID
+    section_id: uuid.UUID
+    role: UserRole
+    position_id: uuid.UUID
+
+
+class OfficerAccountImportCommit(SQLModel):
+    rows: list[OfficerAccountCreate] = Field(min_length=1, max_length=500)
 
 
 # Generic message

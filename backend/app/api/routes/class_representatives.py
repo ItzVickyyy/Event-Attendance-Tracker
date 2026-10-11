@@ -1,4 +1,3 @@
-import secrets
 import uuid
 from typing import Any
 
@@ -10,6 +9,7 @@ from app import crud
 from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.core.config import settings
 from app.models import Person, Student, User, UserCreate, UserPublic, UserRole
+from app.services import account_provisioning
 from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
     AcademicYear,
@@ -19,16 +19,10 @@ from app.student_academics import (
 )
 from app.utils import generate_new_account_email, send_email
 
+TEMPORARY_PASSWORD = account_provisioning.TEMPORARY_PASSWORD
+_generate_temporary_password = account_provisioning.generate_temporary_password
+
 router = APIRouter(prefix="/class-representatives", tags=["class-representatives"])
-
-TEMPORARY_PASSWORD = "Change" + "ThisPassword"
-
-
-def _generate_temporary_password() -> str:
-    """Use a predictable password only in tests, never for real accounts."""
-    if settings.FASTAPI_ENV == "test":
-        return TEMPORARY_PASSWORD
-    return secrets.token_urlsafe(24)
 
 
 def _assignment_row(
