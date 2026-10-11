@@ -224,16 +224,13 @@ export function UsersAdministrationPage() {
     mutationFn: async (file: File) => {
       const form = new FormData()
       form.append("file", file)
-      const response = await fetch(
-        `${api}/users/officers/import/preview`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          },
-          body: form,
+      const response = await fetch(`${api}/users/officers/import/preview`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
-      )
+        body: form,
+      })
       const body = await response.json().catch(() => null)
       if (!response.ok)
         throw new Error(body?.detail ?? "Unable to validate import file")
