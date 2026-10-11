@@ -42,6 +42,9 @@ type OfficerUser = UserPublic & {
 }
 type OfficerImportRow = {
   row_number: number
+  student_number: string
+  full_name: string
+  position_name: string
   payload: Record<string, string> | null
   errors: string[]
 }
@@ -602,11 +605,10 @@ export function UsersAdministrationPage() {
                       {importPreview.rows.map((row) => (
                         <tr key={row.row_number} className="border-b align-top">
                           <td className="p-2">{row.row_number}</td>
-                          <td className="p-2">{row.payload?.student_number ?? "—"}</td>
+                          <td className="p-2">{row.student_number || "—"}</td>
                           <td className="p-2">
-                            {row.payload
-                              ? `${row.payload.first_name} ${row.payload.last_name} · ${row.payload.position_id}`
-                              : "Invalid row"}
+                            {row.full_name || "Invalid row"}
+                            <div className="text-xs text-muted-foreground">{row.position_name || "No position"}</div>
                           </td>
                           <td className="p-2">
                             {row.errors.length
