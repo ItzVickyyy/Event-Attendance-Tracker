@@ -2774,6 +2774,42 @@ export type UserUpdate = {
      * Password
      */
     password?: string | null;
+    /**
+     * First Name
+     */
+    first_name?: string | null;
+    /**
+     * Middle Name
+     */
+    middle_name?: string | null;
+    /**
+     * Last Name
+     */
+    last_name?: string | null;
+    /**
+     * Name Extension
+     */
+    name_extension?: string | null;
+    /**
+     * Student Number
+     */
+    student_number?: string | null;
+    /**
+     * Organization
+     */
+    organization?: string | null;
+    /**
+     * Position Id
+     */
+    position_id?: string | null;
+    /**
+     * Academic Year Id
+     */
+    academic_year_id?: string | null;
+    /**
+     * Section Id
+     */
+    section_id?: string | null;
 };
 
 /**

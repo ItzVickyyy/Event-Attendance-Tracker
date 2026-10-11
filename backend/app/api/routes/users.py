@@ -866,6 +866,97 @@ def update_user(
         current_user.is_superuser or current_user.role == UserRole.super_admin
     )
     submitted_fields = user_in.model_dump(exclude_unset=True)
+    officer_fields = {
+        "first_name",
+        "middle_name",
+        "last_name",
+        "name_extension",
+        "student_number",
+        "organization",
+        "position_id",
+        "academic_year_id",
+        "section_id",
+    }
+    if officer_fields.intersection(submitted_fields):
+        if not is_super_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Only a Super Admin can edit officer account details",
+            )
+        student_number = submitted_fields.get("student_number", db_user.student_number)
+        if student_number:
+            duplicate_student = session.exec(
+                select(User).where(
+                    User.student_number == student_number,
+                    User.id != db_user.id,
+                )
+            ).first()
+            if duplicate_student:
+                raise HTTPException(
+                    status_code=409,
+                    detail="An account already exists for this Student ID",
+                )
+        first_name = submitted_fields.get("first_name", db_user.first_name)
+        last_name = submitted_fields.get("last_name", db_user.last_name)
+        if (
+            not first_name
+            or not first_name.strip()
+            or not last_name
+            or not last_name.strip()
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="First name and last name are required",
+            )
+        year_id = submitted_fields.get("academic_year_id", db_user.academic_year_id)
+        section_id = submitted_fields.get("section_id", db_user.section_id)
+        if year_id or section_id:
+            year = session.get(AcademicYear, year_id) if year_id else None
+            section = session.get(AcademicSection, section_id) if section_id else None
+            if not year or not section:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Academic year and section are required for officer accounts",
+                )
+            if section.academic_year_id != year.id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Section does not belong to the selected academic year",
+                )
+            submitted_fields["academic_year_id"] = year.id
+            submitted_fields["section_id"] = section.id
+        position_id = submitted_fields.get("position_id", db_user.position_id)
+        if position_id:
+            position = session.get(OfficerPosition, position_id)
+            if not position or not position.is_active:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Select an active officer position",
+                )
+        first_name = str(first_name).strip()
+        middle_name = submitted_fields.get("middle_name", db_user.middle_name)
+        middle_name = (middle_name or "").strip().rstrip(".")
+        last_name = str(last_name).strip()
+        extension = submitted_fields.get("name_extension", db_user.name_extension)
+        extension = (extension or "").strip()
+        submitted_fields.update(
+            {
+                "first_name": first_name,
+                "middle_name": middle_name or None,
+                "last_name": last_name,
+                "name_extension": extension or None,
+                "full_name": " ".join(
+                    part
+                    for part in (
+                        first_name,
+                        f"{middle_name}." if middle_name else "",
+                        last_name,
+                        extension,
+                    )
+                    if part
+                ),
+            }
+        )
     if (
         db_user.role != UserRole.class_representative
         and submitted_fields.get("role") == UserRole.class_representative
@@ -920,6 +1011,8 @@ def update_user(
                 status_code=409, detail="User with this email already exists"
             )
 
+    if officer_fields.intersection(submitted_fields):
+        user_in = user_in.model_copy(update=submitted_fields)
     db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
     return db_user
 

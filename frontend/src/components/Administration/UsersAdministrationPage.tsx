@@ -401,7 +401,7 @@ export function UsersAdministrationPage() {
         </div>
       </div>
       <Input
-        placeholder="Search by name, Student ID, email, or position"
+        placeholder="Search by name, email, or position"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
@@ -421,7 +421,6 @@ export function UsersAdministrationPage() {
             <thead>
               <tr className="border-b text-left">
                 <th className="p-3">Name</th>
-                <th className="p-3">Student ID</th>
                 <th className="p-3">Email</th>
                 <th className="p-3">Role</th>
                 <th className="p-3">Position</th>
@@ -436,6 +435,10 @@ export function UsersAdministrationPage() {
                   key={u.id}
                   user={u}
                   position={positionName(u.position_id)}
+                  positions={positions}
+                  onEditSaved={() =>
+                    void qc.invalidateQueries({ queryKey: ["admin-users"] })
+                  }
                   isSuperAdmin={isSuperAdmin}
                   currentUserId={currentUser?.id}
                   onSave={(body) => mutation.mutate({ id: u.id, body })}
@@ -903,14 +906,18 @@ export function UsersAdministrationPage() {
 function UserRow({
   user,
   position,
+  positions,
   onSave,
+  onEditSaved,
   saving,
   isSuperAdmin,
   currentUserId,
 }: {
   user: OfficerUser
   position: string
+  positions: OfficerPosition[]
   onSave: (body: Parameters<typeof UsersService.updateUser>[0]["body"]) => void
+  onEditSaved: () => void
   saving: boolean
   isSuperAdmin: boolean
   currentUserId?: string
@@ -919,12 +926,40 @@ function UserRow({
   const [active, setActive] = useState(Boolean(user.is_active))
   const [scan, setScan] = useState(Boolean(user.can_scan))
   const [editOpen, setEditOpen] = useState(false)
+  const [savingDetails, setSavingDetails] = useState(false)
   const [editName, setEditName] = useState(user.full_name ?? "")
   const [editEmail, setEditEmail] = useState(user.email)
+  const [editPassword, setEditPassword] = useState("")
+  const [editStudentNumber, setEditStudentNumber] = useState(
+    user.student_number ?? "",
+  )
+  const [editFirstName, setEditFirstName] = useState(user.first_name ?? "")
+  const [editMiddleInitial, setEditMiddleInitial] = useState(
+    user.middle_name ?? "",
+  )
+  const [editLastName, setEditLastName] = useState(user.last_name ?? "")
+  const [editExtension, setEditExtension] = useState(user.name_extension ?? "")
+  const [editOrganization, setEditOrganization] = useState(
+    user.organization ?? "CCS Student Council",
+  )
+  const [editAcademicYearId, setEditAcademicYearId] = useState(
+    user.academic_year_id ?? "",
+  )
+  const [editSectionId, setEditSectionId] = useState(user.section_id ?? "")
+  const [editPositionId, setEditPositionId] = useState(user.position_id ?? "")
+  const [editRole, setEditRole] = useState<UserRole>(user.role ?? "student")
   const isProtectedAccount =
     user.role === "admin" || user.role === "super_admin"
   const canEdit =
     isSuperAdmin || (!isProtectedAccount && user.id !== currentUserId)
+  const isOfficerAccount =
+    isSuperAdmin &&
+    Boolean(
+      user.student_number ||
+        user.position_id ||
+        user.academic_year_id ||
+        user.section_id,
+    )
   const editableRoles: UserRole[] = isSuperAdmin
     ? user.role === "class_representative"
       ? [...roles, "class_representative"]
@@ -932,6 +967,20 @@ function UserRow({
     : user.role === "class_representative"
       ? ["student", "class_representative"]
       : ["student"]
+  const yearsQuery = useQuery({
+    queryKey: ["edit-officer-account-years"],
+    queryFn: () =>
+      apiRequest<{ data: AcademicYear[] }>("/academic-registry/academic-years"),
+    enabled: isSuperAdmin && editOpen,
+  })
+  const sectionsQuery = useQuery({
+    queryKey: ["edit-officer-account-sections", editAcademicYearId],
+    queryFn: () =>
+      apiRequest<{ data: AcademicSection[] }>(
+        `/academic-registry/sections?academic_year_id=${encodeURIComponent(editAcademicYearId)}`,
+      ),
+    enabled: isSuperAdmin && editOpen && Boolean(editAcademicYearId),
+  })
   const save = () => {
     const body: Parameters<typeof UsersService.updateUser>[0]["body"] = {
       role,
@@ -943,10 +992,67 @@ function UserRow({
     }
     onSave(body)
   }
+  const openEdit = () => {
+    setEditName(user.full_name ?? "")
+    setEditEmail(user.email)
+    setEditPassword("")
+    setEditStudentNumber(user.student_number ?? "")
+    setEditFirstName(user.first_name ?? "")
+    setEditMiddleInitial(user.middle_name ?? "")
+    setEditLastName(user.last_name ?? "")
+    setEditExtension(user.name_extension ?? "")
+    setEditOrganization(user.organization ?? "CCS Student Council")
+    setEditAcademicYearId(user.academic_year_id ?? "")
+    setEditSectionId(user.section_id ?? "")
+    setEditPositionId(user.position_id ?? "")
+    setEditRole(user.role ?? "student")
+    setEditOpen(true)
+  }
+  const saveDetails = async () => {
+    setSavingDetails(true)
+    try {
+      const payload: Record<string, unknown> = isOfficerAccount
+        ? {
+            email: editEmail.trim(),
+            student_number: editStudentNumber.trim(),
+            first_name: editFirstName.trim(),
+            middle_name: editMiddleInitial.trim() || null,
+            last_name: editLastName.trim(),
+            name_extension: editExtension.trim() || null,
+            academic_year_id: editAcademicYearId,
+            section_id: editSectionId,
+            organization: editOrganization.trim(),
+            role: editRole,
+            position_id: editPositionId,
+            is_active: active,
+            can_scan: scan,
+            is_superuser: editRole === "super_admin",
+          }
+        : {
+            full_name: editName.trim(),
+            email: editEmail.trim(),
+            role: editRole,
+            is_active: active,
+          }
+      if (editPassword.trim()) payload.password = editPassword
+      await apiRequest<OfficerUser>(`/users/${user.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      })
+      toast.success("Account details updated")
+      setEditOpen(false)
+      onEditSaved()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to update account",
+      )
+    } finally {
+      setSavingDetails(false)
+    }
+  }
   return (
     <tr className="border-b">
       <td className="p-3 font-medium">{user.full_name || "—"}</td>
-      <td className="p-3">{user.student_number || "—"}</td>
       <td className="p-3">{user.email}</td>
       <td className="p-3">
         <Select
@@ -1003,64 +1109,266 @@ function UserRow({
             size="sm"
             variant="outline"
             disabled={!canEdit}
-            onClick={() => {
-              setEditName(user.full_name ?? "")
-              setEditEmail(user.email)
-              setEditOpen(true)
-            }}
+            onClick={openEdit}
           >
-            <Pencil className="mr-1 size-3.5" />
-            Edit
+            <Pencil className="mr-1 size-3.5" /> Edit
           </Button>
         </div>
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Edit User Account</DialogTitle>
+              <DialogTitle>
+                {isSuperAdmin ? "Edit Student Council Officer" : "Edit account"}
+              </DialogTitle>
               <DialogDescription>
-                Update the account name and email address.
+                Update the same account details available when creating this
+                account.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor={`${user.id}-edit-name`}>Full Name</Label>
-                <Input
-                  id={`${user.id}-edit-name`}
-                  value={editName}
-                  onChange={(event) => setEditName(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`${user.id}-edit-email`}>Email</Label>
-                <Input
-                  id={`${user.id}-edit-email`}
-                  type="email"
-                  value={editEmail}
-                  onChange={(event) => setEditEmail(event.target.value)}
-                  required
-                />
-              </div>
+              {isOfficerAccount ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Student ID *</Label>
+                      <Input
+                        value={editStudentNumber}
+                        onChange={(event) =>
+                          setEditStudentNumber(event.target.value)
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>First Name *</Label>
+                      <Input
+                        value={editFirstName}
+                        onChange={(event) =>
+                          setEditFirstName(event.target.value)
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Middle Initial</Label>
+                      <Input
+                        value={editMiddleInitial}
+                        onChange={(event) =>
+                          setEditMiddleInitial(event.target.value)
+                        }
+                        maxLength={5}
+                        placeholder="Optional"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Last Name *</Label>
+                      <Input
+                        value={editLastName}
+                        onChange={(event) =>
+                          setEditLastName(event.target.value)
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Extension</Label>
+                      <Input
+                        value={editExtension}
+                        onChange={(event) =>
+                          setEditExtension(event.target.value)
+                        }
+                        placeholder="Jr., Sr., III (optional)"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Academic Year *</Label>
+                      <Select
+                        value={editAcademicYearId}
+                        onValueChange={(value) => {
+                          setEditAcademicYearId(value)
+                          setEditSectionId("")
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select academic year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(yearsQuery.data?.data ?? []).map((year) => (
+                            <SelectItem key={year.id} value={year.id}>
+                              {year.label}
+                              {year.is_current ? " (Default)" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Section *</Label>
+                      <Select
+                        value={editSectionId}
+                        onValueChange={setEditSectionId}
+                        disabled={!editAcademicYearId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(sectionsQuery.data?.data ?? []).map((section) => (
+                            <SelectItem key={section.id} value={section.id}>
+                              {section.program_code} {section.section_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email *</Label>
+                    <Input
+                      type="email"
+                      value={editEmail}
+                      onChange={(event) => setEditEmail(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Organization *</Label>
+                    <Input
+                      value={editOrganization}
+                      onChange={(event) =>
+                        setEditOrganization(event.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>System Role *</Label>
+                      <Select
+                        value={editRole}
+                        onValueChange={(value) =>
+                          setEditRole(value as UserRole)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {superAdminAccountRoles.map((item) => (
+                            <SelectItem key={item} value={item}>
+                              {roleLabel(item)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Position *</Label>
+                      <Select
+                        value={editPositionId}
+                        onValueChange={setEditPositionId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select officer position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {positions
+                            .filter((item) => item.is_active)
+                            .map((item) => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Full Name</Label>
+                    <Input
+                      value={editName}
+                      onChange={(event) => setEditName(event.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email *</Label>
+                    <Input
+                      type="email"
+                      value={editEmail}
+                      onChange={(event) => setEditEmail(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>New Password</Label>
+                    <Input
+                      type="password"
+                      value={editPassword}
+                      onChange={(event) => setEditPassword(event.target.value)}
+                      placeholder="Leave blank to keep current password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Role</Label>
+                    <Select
+                      value={editRole}
+                      onValueChange={(value) => setEditRole(value as UserRole)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {editableRoles.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {roleLabel(item)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+              {isOfficerAccount && (
+                <div className="space-y-2">
+                  <Label>New Password</Label>
+                  <Input
+                    type="password"
+                    value={editPassword}
+                    onChange={(event) => setEditPassword(event.target.value)}
+                    placeholder="Leave blank to keep current password"
+                  />
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+                disabled={savingDetails}
+              >
                 Cancel
               </Button>
               <Button
-                disabled={saving || !editEmail.trim()}
-                onClick={() => {
-                  onSave({
-                    full_name: editName.trim(),
-                    email: editEmail.trim(),
-                    role,
-                    is_active: active,
-                    ...(isSuperAdmin
-                      ? { can_scan: scan, is_superuser: role === "super_admin" }
-                      : {}),
-                  })
-                  setEditOpen(false)
-                }}
+                disabled={
+                  savingDetails ||
+                  !editEmail.trim() ||
+                  (isOfficerAccount &&
+                    (!editStudentNumber.trim() ||
+                      !editFirstName.trim() ||
+                      !editLastName.trim() ||
+                      !editAcademicYearId ||
+                      !editSectionId ||
+                      !editPositionId ||
+                      !editOrganization.trim()))
+                }
+                onClick={() => void saveDetails()}
               >
-                Save Changes
+                {savingDetails ? "Saving…" : "Save Changes"}
               </Button>
             </DialogFooter>
           </DialogContent>
