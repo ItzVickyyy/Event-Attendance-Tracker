@@ -112,7 +112,6 @@ export function ClassRepresentativeSectionWorkspace() {
     enabled: Boolean(activeAcademicYear),
   })
 
-
   const openCardRegistration = (student: any) => {
     setCardTarget(student)
     setCardUid("")
@@ -120,7 +119,9 @@ export function ClassRepresentativeSectionWorkspace() {
 
   const scanCardUid = async () => {
     if (!("NDEFReader" in window)) {
-      toast.error("Web NFC is not supported on this device. Use Chrome on Android or enter the UID manually.")
+      toast.error(
+        "Web NFC is not supported on this device. Use Chrome on Android or enter the UID manually.",
+      )
       return
     }
     let reader: any
@@ -135,17 +136,32 @@ export function ClassRepresentativeSectionWorkspace() {
           if (timeoutId !== undefined) window.clearTimeout(timeoutId)
         }
         const onReading = (event: any) => {
-          const serial = typeof event.serialNumber === "string" ? event.serialNumber.trim() : ""
+          const serial =
+            typeof event.serialNumber === "string"
+              ? event.serialNumber.trim()
+              : ""
           let textRecord = ""
           for (const record of event.message?.records ?? []) {
-            if (record.recordType !== "text" || !(record.data instanceof DataView)) continue
+            if (
+              record.recordType !== "text" ||
+              !(record.data instanceof DataView)
+            )
+              continue
             const data = record.data
             if (!data.byteLength) continue
             const status = data.getUint8(0)
             const start = 1 + (status & 0x3f)
             if (start < data.byteLength) {
-              textRecord = new TextDecoder((status & 0x80) !== 0 ? "utf-16" : "utf-8")
-                .decode(new Uint8Array(data.buffer, data.byteOffset + start, data.byteLength - start))
+              textRecord = new TextDecoder(
+                (status & 0x80) !== 0 ? "utf-16" : "utf-8",
+              )
+                .decode(
+                  new Uint8Array(
+                    data.buffer,
+                    data.byteOffset + start,
+                    data.byteLength - start,
+                  ),
+                )
                 .trim()
               if (textRecord) break
             }
@@ -158,13 +174,19 @@ export function ClassRepresentativeSectionWorkspace() {
         reader.addEventListener("reading", onReading)
         timeoutId = window.setTimeout(() => {
           cleanup()
-          reject(new Error("No NFC identifier was received within 30 seconds. Try again or enter the UID manually."))
+          reject(
+            new Error(
+              "No NFC identifier was received within 30 seconds. Try again or enter the UID manually.",
+            ),
+          )
         }, 30000)
       })
       setCardUid(captured)
       toast.success("Card UID captured. Review it and save the registration.")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to read NFC card")
+      toast.error(
+        error instanceof Error ? error.message : "Unable to read NFC card",
+      )
     } finally {
       if (timeoutId !== undefined) window.clearTimeout(timeoutId)
       setScanningCard(false)
@@ -181,7 +203,9 @@ export function ClassRepresentativeSectionWorkspace() {
     setSavingCard(true)
     try {
       if (!cardTarget.attendee_id) {
-        throw new Error("This student has no attendee record. Ask the Student Council to review the student record.")
+        throw new Error(
+          "This student has no attendee record. Ask the Student Council to review the student record.",
+        )
       }
       const response = await fetch(`${api}/attendee-credentials/`, {
         method: "POST",
@@ -194,13 +218,18 @@ export function ClassRepresentativeSectionWorkspace() {
         }),
       })
       const body = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(body?.detail ?? "Unable to register Card UID")
+      if (!response.ok)
+        throw new Error(body?.detail ?? "Unable to register Card UID")
       toast.success("Card UID registered successfully")
       setCardTarget(null)
       setCardUid("")
-      await client.invalidateQueries({ queryKey: ["class-representative-students"] })
+      await client.invalidateQueries({
+        queryKey: ["class-representative-students"],
+      })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to register Card UID")
+      toast.error(
+        error instanceof Error ? error.message : "Unable to register Card UID",
+      )
     } finally {
       setSavingCard(false)
     }
@@ -338,15 +367,29 @@ export function ClassRepresentativeSectionWorkspace() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">Total students</p>
-              <p className="text-2xl font-semibold">{students.data?.count ?? 0}</p>
+              <p className="text-2xl font-semibold">
+                {students.data?.count ?? 0}
+              </p>
             </div>
             <div className="rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">Registered cards</p>
-              <p className="text-2xl font-semibold">{(students.data?.data ?? []).filter((student: any) => student.card_uid_registered).length}</p>
+              <p className="text-2xl font-semibold">
+                {
+                  (students.data?.data ?? []).filter(
+                    (student: any) => student.card_uid_registered,
+                  ).length
+                }
+              </p>
             </div>
             <div className="rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">Remaining</p>
-              <p className="text-2xl font-semibold">{(students.data?.data ?? []).filter((student: any) => !student.card_uid_registered).length}</p>
+              <p className="text-2xl font-semibold">
+                {
+                  (students.data?.data ?? []).filter(
+                    (student: any) => !student.card_uid_registered,
+                  ).length
+                }
+              </p>
             </div>
           </div>
           <div className="relative max-w-sm">
@@ -396,9 +439,13 @@ export function ClassRepresentativeSectionWorkspace() {
                     <TableCell>{student.email ?? ""}</TableCell>
                     <TableCell>
                       {student.card_uid_registered ? (
-                        <span className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="size-4" /> Registered</span>
+                        <span className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="size-4" /> Registered
+                        </span>
                       ) : (
-                        <span className="text-sm text-muted-foreground">Not registered</span>
+                        <span className="text-sm text-muted-foreground">
+                          Not registered
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>{student.student_status}</TableCell>
@@ -502,8 +549,9 @@ export function ClassRepresentativeSectionWorkspace() {
           <DialogHeader>
             <DialogTitle>Register Student Card UID</DialogTitle>
             <DialogDescription>
-              Register the NFC card for {cardTarget?.first_name} {cardTarget?.last_name} ({cardTarget?.student_number}).
-              You can scan the physical card or enter a UID provided by the student.
+              Register the NFC card for {cardTarget?.first_name}{" "}
+              {cardTarget?.last_name} ({cardTarget?.student_number}). You can
+              scan the physical card or enter a UID provided by the student.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -519,18 +567,38 @@ export function ClassRepresentativeSectionWorkspace() {
                 maxLength={255}
               />
             </div>
-            <Button type="button" variant="outline" className="w-full" onClick={() => void scanCardUid()} disabled={scanningCard || savingCard}>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => void scanCardUid()}
+              disabled={scanningCard || savingCard}
+            >
               {scanningCard ? <Loader2 className="animate-spin" /> : <Wifi />}
               {scanningCard ? "Waiting for card…" : "Scan physical card"}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Scanning requires a supported NFC device and browser. Manual entry is available on any device.
+              Scanning requires a supported NFC device and browser. Manual entry
+              is available on any device.
             </p>
           </div>
           <DialogFooter className="flex-col-reverse sm:flex-row">
-            <Button variant="outline" onClick={() => setCardTarget(null)} disabled={savingCard}>Cancel</Button>
-            <Button onClick={() => void registerCardUid()} disabled={savingCard || scanningCard || !cardUid.trim()}>
-              {savingCard ? <Loader2 className="animate-spin" /> : <CreditCard />}
+            <Button
+              variant="outline"
+              onClick={() => setCardTarget(null)}
+              disabled={savingCard}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void registerCardUid()}
+              disabled={savingCard || scanningCard || !cardUid.trim()}
+            >
+              {savingCard ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <CreditCard />
+              )}
               {savingCard ? "Saving…" : "Register Card UID"}
             </Button>
           </DialogFooter>

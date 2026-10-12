@@ -5,15 +5,12 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import text
-from sqlmodel import func, select
+from sqlmodel import select
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.core.config import settings
 from app.models import (
-    Attendee,
-    AttendeeCredential,
-    CredentialType,
     Person,
     Student,
     User,
