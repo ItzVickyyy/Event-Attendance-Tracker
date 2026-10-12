@@ -613,12 +613,14 @@ def test_class_representative_can_register_student_card_uid(
 
     uid = f"04AABB{random_lower_string()[:8].upper()}"
     registered = client.post(
-        _api(
-            f"/class-representatives/me/students/{student_id}/card-uid"
-            f"?academic_year_id={year['id']}"
-        ),
+        _api("/attendee-credentials/"),
         headers=headers,
-        json={"credential_value": uid.lower()},
+        json={
+            "attendee_id": student["attendee_id"],
+            "credential_type": "nfc",
+            "credential_value": uid.lower(),
+            "is_active": True,
+        },
     )
     assert registered.status_code == 200
     assert registered.json()["card_uid_registered"] is True
@@ -641,22 +643,33 @@ def test_class_representative_can_register_student_card_uid(
     )
     assert second_created.status_code == 200
     second_student_id = second_created.json()["id"]
-    duplicate_other_student = client.post(
-        _api(
-            f"/class-representatives/me/students/{second_student_id}/card-uid"
-            f"?academic_year_id={year['id']}"
-        ),
+    second_roster = client.get(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
         headers=headers,
-        json={"credential_value": uid},
+    )
+    second_student = next(
+        row for row in second_roster.json()["data"] if row["id"] == second_student_id
+    )
+    duplicate_other_student = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": second_student["attendee_id"],
+            "credential_type": "nfc",
+            "credential_value": uid,
+            "is_active": True,
+        },
     )
     assert duplicate_other_student.status_code == 409
 
     blank = client.post(
-        _api(
-            f"/class-representatives/me/students/{student_id}/card-uid"
-            f"?academic_year_id={year['id']}"
-        ),
+        _api("/attendee-credentials/"),
         headers=headers,
-        json={"credential_value": "   "},
+        json={
+            "attendee_id": student["attendee_id"],
+            "credential_type": "nfc",
+            "credential_value": "   ",
+            "is_active": True,
+        },
     )
     assert blank.status_code == 422

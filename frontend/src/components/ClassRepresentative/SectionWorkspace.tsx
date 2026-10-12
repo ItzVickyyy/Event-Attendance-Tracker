@@ -150,7 +150,7 @@ export function ClassRepresentativeSectionWorkspace() {
               if (textRecord) break
             }
           }
-          const value = serial || textRecord
+          const value = textRecord || serial
           if (!value) return
           cleanup()
           resolve(value.toUpperCase())
@@ -180,14 +180,19 @@ export function ClassRepresentativeSectionWorkspace() {
     }
     setSavingCard(true)
     try {
-      const response = await fetch(
-        `${api}/class-representatives/me/students/${cardTarget.id}/card-uid?academic_year_id=${encodeURIComponent(activeAcademicYear.id)}`,
-        {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify({ credential_value: value }),
-        },
-      )
+      if (!cardTarget.attendee_id) {
+        throw new Error("This student has no attendee record. Ask the Student Council to review the student record.")
+      }
+      const response = await fetch(`${api}/attendee-credentials/`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          attendee_id: cardTarget.attendee_id,
+          credential_type: "nfc",
+          credential_value: value,
+          is_active: true,
+        }),
+      })
       const body = await response.json().catch(() => null)
       if (!response.ok) throw new Error(body?.detail ?? "Unable to register Card UID")
       toast.success("Card UID registered successfully")

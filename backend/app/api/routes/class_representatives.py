@@ -110,7 +110,7 @@ def read_my_students(
             text("""
             SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name,
                    p.name_extension AS extension, p.email, p.contact_number,
-                   se.student_status, se.id AS enrollment_id,
+                   se.student_status, se.id AS enrollment_id, a.id AS attendee_id,
                    EXISTS (
                        SELECT 1
                        FROM attendees a
@@ -122,6 +122,7 @@ def read_my_students(
             FROM student_enrollments se
             JOIN students s ON s.id = se.student_id
             JOIN people p ON p.id = s.person_id
+            LEFT JOIN attendees a ON a.person_id = p.id
             WHERE se.section_id = :section_id
               AND se.academic_year_id = :academic_year_id
               AND se.archived_at IS NULL
@@ -137,111 +138,6 @@ def read_my_students(
         .all()
     )
     return {"data": [dict(row) for row in rows], "count": len(rows)}
-
-
-@router.post("/me/students/{student_id}/card-uid")
-def register_my_student_card_uid(
-    *,
-    session: SessionDep,
-    current_user: CurrentUser,
-    student_id: uuid.UUID,
-    payload: dict[str, Any],
-    academic_year_id: uuid.UUID | None = None,
-) -> dict[str, Any]:
-    """Register one NFC Card UID for a student in the representative's section."""
-    if current_user.role != UserRole.class_representative:
-        raise HTTPException(
-            status_code=403, detail="Class Representative access required"
-        )
-
-    assignment = _assignment_row(session, current_user.id, academic_year_id)
-    if not assignment:
-        raise HTTPException(
-            status_code=403, detail="No Class Representative assignment found"
-        )
-
-    raw_value = payload.get("credential_value")
-    if not isinstance(raw_value, str):
-        raise HTTPException(status_code=422, detail="Card UID is required")
-    credential_value = raw_value.strip().upper()
-    if not credential_value:
-        raise HTTPException(status_code=422, detail="Card UID is required")
-    if len(credential_value) > 255:
-        raise HTTPException(
-            status_code=422, detail="Card UID must be 255 characters or fewer"
-        )
-
-    enrollment = session.connection().execute(
-        text("""
-            SELECT s.person_id
-            FROM students s
-            JOIN student_enrollments se ON se.student_id = s.id
-            WHERE s.id = :student_id
-              AND s.archived_at IS NULL
-              AND se.section_id = :section_id
-              AND se.academic_year_id = :academic_year_id
-              AND se.archived_at IS NULL
-            LIMIT 1
-        """),
-        {
-            "student_id": student_id,
-            "section_id": assignment["section_id"],
-            "academic_year_id": assignment["academic_year_id"],
-        },
-    ).mappings().first()
-    if not enrollment:
-        raise HTTPException(
-            status_code=404,
-            detail="Student not found in your assigned section for this academic year",
-        )
-
-    attendee = session.exec(
-        select(Attendee).where(Attendee.person_id == enrollment["person_id"])
-    ).first()
-    if not attendee:
-        raise HTTPException(
-            status_code=409,
-            detail="This student does not have an attendee record. Ask an administrator to review the student record.",
-        )
-
-    duplicate = session.exec(
-        select(AttendeeCredential).where(
-            func.upper(AttendeeCredential.credential_value) == credential_value
-        )
-    ).first()
-    if duplicate:
-        raise HTTPException(
-            status_code=409,
-            detail="This Card UID is already registered. Check the UID and selected student.",
-        )
-
-    existing_nfc = session.exec(
-        select(AttendeeCredential).where(
-            AttendeeCredential.attendee_id == attendee.id,
-            AttendeeCredential.credential_type == CredentialType.nfc,
-        )
-    ).first()
-    if existing_nfc:
-        raise HTTPException(
-            status_code=409,
-            detail="This student already has a registered Card UID. Contact the Student Council to change it.",
-        )
-
-    credential = AttendeeCredential(
-        attendee_id=attendee.id,
-        credential_type=CredentialType.nfc,
-        credential_value=credential_value,
-        is_active=True,
-    )
-    session.add(credential)
-    session.commit()
-    session.refresh(credential)
-    return {
-        "message": "Card UID registered successfully",
-        "student_id": student_id,
-        "card_uid_registered": True,
-        "registered_at": credential.created_at,
-    }
 
 
 @router.post("/me/students")
