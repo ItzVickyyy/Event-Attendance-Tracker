@@ -1629,3 +1629,64 @@ def test_attendance_export_csv(
     )
     assert student_num in csv_content
     assert "Export Student" in csv_content
+
+
+
+def test_student_has_only_one_always_active_nfc_credential(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    person_res = client.post(
+        f"{settings.API_V1_STR}/people/",
+        headers=superuser_token_headers,
+        json={
+            "first_name": "Nfc",
+            "last_name": "CredentialTest",
+            "email": random_email(),
+        },
+    )
+    assert person_res.status_code == 200
+    attendee_res = client.post(
+        f"{settings.API_V1_STR}/attendees/",
+        headers=superuser_token_headers,
+        json={
+            "person_id": person_res.json()["id"],
+            "attendee_type": "student",
+        },
+    )
+    assert attendee_res.status_code == 200
+    attendee_id = attendee_res.json()["id"]
+
+    credential_res = client.post(
+        f"{settings.API_V1_STR}/attendee-credentials/",
+        headers=superuser_token_headers,
+        json={
+            "attendee_id": attendee_id,
+            "credential_type": "nfc",
+            "credential_value": f"NFC_{random_lower_string()[:12].upper()}",
+            "is_active": False,
+        },
+    )
+    assert credential_res.status_code == 200
+    credential = credential_res.json()
+    assert credential["is_active"] is True
+
+    duplicate_res = client.post(
+        f"{settings.API_V1_STR}/attendee-credentials/",
+        headers=superuser_token_headers,
+        json={
+            "attendee_id": attendee_id,
+            "credential_type": "nfc",
+            "credential_value": f"NFC_{random_lower_string()[:12].upper()}",
+            "is_active": True,
+        },
+    )
+    assert duplicate_res.status_code == 409
+    assert "already has a registered Card UID" in duplicate_res.json()["detail"]
+
+    deactivate_res = client.patch(
+        f"{settings.API_V1_STR}/attendee-credentials/{credential['id']}",
+        headers=superuser_token_headers,
+        json={"is_active": False},
+    )
+    assert deactivate_res.status_code == 400
+    assert "must remain active" in deactivate_res.json()["detail"]
