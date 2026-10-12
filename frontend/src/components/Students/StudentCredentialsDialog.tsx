@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { KeyRound, Loader2, Plus, Trash2, Wifi } from "lucide-react"
+import { CheckCircle2, KeyRound, Loader2, Plus, Trash2, Wifi } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -12,7 +12,6 @@ import {
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -129,25 +128,6 @@ export function StudentCredentialsDialog({
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add credential")
-    },
-  })
-
-  // Mutation to toggle active status
-  const toggleMutation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      return await AttendeeCredentialsService.credentialsUpdateAttendeeCredential(
-        {
-          path: { credential_id: id },
-          body: { is_active: isActive },
-        },
-      )
-    },
-    onSuccess: () => {
-      toast.success("Credential status updated")
-      refetch()
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to update credential")
     },
   })
 
@@ -272,7 +252,7 @@ export function StudentCredentialsDialog({
             Manage Credentials
           </DialogTitle>
           <DialogDescription>
-            View, activate/deactivate, or register an NFC card for student{" "}
+            View or register the NFC card UID for student{" "}
             <span className="font-semibold text-foreground">
               {student.student_number}
             </span>
@@ -304,7 +284,7 @@ export function StudentCredentialsDialog({
               </h4>
               {credentials.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                  No credentials assigned yet. Add one below.
+                  No Card UID registered yet. Scan the student card below to register it.
                 </div>
               ) : (
                 <div className="divide-y rounded-md border">
@@ -324,12 +304,7 @@ export function StudentCredentialsDialog({
                               <span className="font-mono text-sm font-medium">
                                 {cred.credential_value}
                               </span>
-                              <Badge
-                                variant="outline"
-                                className="text-xs uppercase"
-                              >
-                                {cred.credential_type}
-                              </Badge>
+                              <Badge variant="outline" className="text-xs"><CheckCircle2 className="mr-1 h-3 w-3" />Registered · {cred.credential_value}</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground">
                               Added:{" "}
@@ -341,25 +316,7 @@ export function StudentCredentialsDialog({
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id={`check-${cred.id}`}
-                              checked={cred.is_active}
-                              onCheckedChange={(checked) =>
-                                toggleMutation.mutate({
-                                  id: cred.id,
-                                  isActive: checked === true,
-                                })
-                              }
-                              disabled={toggleMutation.isPending}
-                            />
-                            <Label
-                              htmlFor={`check-${cred.id}`}
-                              className="text-xs cursor-pointer text-muted-foreground"
-                            >
-                              {cred.is_active ? "Active" : "Inactive"}
-                            </Label>
-                          </div>
+                          <Badge variant="secondary">Always active</Badge>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -377,12 +334,13 @@ export function StudentCredentialsDialog({
               )}
             </div>
 
-            {/* Add New Credential Form */}
+            {/* One NFC Card UID per student. */}
+            {!credentials.some((cred) => cred.credential_type === "nfc") && (
             <form
               onSubmit={handleAddCredential}
               className="space-y-4 rounded-lg border bg-muted/30 p-4"
             >
-              <h4 className="text-sm font-semibold">Add New Credential</h4>
+              <h4 className="text-sm font-semibold">Register Card UID</h4>
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="cred-val" className="text-xs">
@@ -422,7 +380,7 @@ export function StudentCredentialsDialog({
                       ) : (
                         <Plus className="h-4 w-4" />
                       )}
-                      Add
+                      Register Card UID
                     </Button>
                   </div>
                 </div>
