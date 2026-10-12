@@ -270,6 +270,7 @@ function SectionList() {
     const details = await apiJson<any>(
       `/academic-registry/students/${student.id}`,
     )
+    setStudentTarget({ ...student, ...details })
     setStudentForm(
       Object.fromEntries(
         Object.entries(details).map(([key, value]) => [
