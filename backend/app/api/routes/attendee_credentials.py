@@ -211,7 +211,10 @@ def update_attendee_credential(
         raise HTTPException(status_code=404, detail="Attendee credential not found")
 
     update_dict = credential_in.model_dump(exclude_unset=True)
-    if credential.credential_type == CredentialType.nfc and update_dict.get("is_active") is False:
+    if (
+        credential.credential_type == CredentialType.nfc
+        and update_dict.get("is_active") is False
+    ):
         raise HTTPException(
             status_code=400,
             detail="Registered Card UIDs must remain active.",
