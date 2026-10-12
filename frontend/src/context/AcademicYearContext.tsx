@@ -25,6 +25,11 @@ type AcademicYearContextValue = {
   isLoading: boolean
 }
 
+type RepresentativeAssignment = {
+  academic_year_id: string
+  academic_year: string
+}
+
 const AcademicYearContext = createContext<AcademicYearContextValue | null>(null)
 const STORAGE_KEY = "active_academic_year_id"
 
@@ -32,18 +37,32 @@ function apiUrl(path: string) {
   return `${import.meta.env.VITE_API_URL ?? ""}/api/v1${path}`
 }
 
-async function readAcademicYears(): Promise<AcademicYear[]> {
+function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token")
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+async function readAcademicYears(): Promise<AcademicYear[]> {
   const response = await fetch(apiUrl("/academic-registry/academic-years"), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: authHeaders(),
   })
   if (!response.ok) throw new Error("Unable to load academic years")
   const body = await response.json()
   return body.data ?? []
 }
 
+async function readRepresentativeAssignment(): Promise<RepresentativeAssignment> {
+  const response = await fetch(apiUrl("/class-representatives/me"), {
+    headers: authHeaders(),
+  })
+  if (!response.ok)
+    throw new Error("Unable to load Class Representative assignment")
+  return response.json()
+}
+
 export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
+  const isClassRepresentative = user?.role === "class_representative"
   const [selectedId, setSelectedId] = useState(
     () => localStorage.getItem(STORAGE_KEY) ?? "",
   )
@@ -53,18 +72,47 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     staleTime: 60_000,
     enabled: Boolean(
       user &&
+        !isClassRepresentative &&
         (!user.is_developer ||
           user.is_superuser ||
           user.role === "admin" ||
           user.role === "super_admin"),
     ),
   })
+  const representativeAssignment = useQuery({
+    queryKey: ["class-representative-assignment", user?.id],
+    queryFn: readRepresentativeAssignment,
+    enabled: Boolean(isClassRepresentative && user?.id),
+    staleTime: 60_000,
+  })
 
-  const academicYears = query.data ?? []
-  const currentAcademicYear =
-    academicYears.find((year) => year.is_current) ?? null
-  const activeAcademicYear =
-    academicYears.find((year) => year.id === selectedId) ?? currentAcademicYear
+  const representativeYear = useMemo<AcademicYear | null>(() => {
+    const assignment = representativeAssignment.data
+    if (!assignment) return null
+    const match = assignment.academic_year.match(/(\d{4})\s*[-–/]\s*(\d{4})/)
+    const startYear = match ? Number(match[1]) : Number.NaN
+    const endYear = match ? Number(match[2]) : Number.NaN
+    return {
+      id: assignment.academic_year_id,
+      label: assignment.academic_year,
+      start_year: startYear,
+      end_year: endYear,
+      is_current: false,
+    }
+  }, [representativeAssignment.data])
+
+  const academicYears = isClassRepresentative
+    ? representativeYear
+      ? [representativeYear]
+      : []
+    : (query.data ?? [])
+  const currentAcademicYear = isClassRepresentative
+    ? representativeYear
+    : (academicYears.find((year) => year.is_current) ?? null)
+  const activeAcademicYear = isClassRepresentative
+    ? representativeYear
+    : (academicYears.find((year) => year.id === selectedId) ??
+      currentAcademicYear)
 
   useEffect(() => {
     if (activeAcademicYear && activeAcademicYear.id !== selectedId) {
@@ -82,10 +130,21 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
       academicYears,
       activeAcademicYear,
       currentAcademicYear,
-      setActiveAcademicYearId: (id: string) => setSelectedId(id),
-      isLoading: query.isLoading,
+      setActiveAcademicYearId: (id: string) => {
+        if (!isClassRepresentative) setSelectedId(id)
+      },
+      isLoading: isClassRepresentative
+        ? representativeAssignment.isLoading
+        : query.isLoading,
     }),
-    [academicYears, activeAcademicYear, currentAcademicYear, query.isLoading],
+    [
+      academicYears,
+      activeAcademicYear,
+      currentAcademicYear,
+      isClassRepresentative,
+      query.isLoading,
+      representativeAssignment.isLoading,
+    ],
   )
 
   return (
