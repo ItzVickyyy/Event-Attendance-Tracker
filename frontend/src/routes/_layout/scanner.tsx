@@ -623,10 +623,6 @@ function Scanner() {
           // Some browsers expose Permissions API but not the NFC descriptor.
           // The scan button can still request permission when clicked.
         })
-        .catch(() => {
-          // Some browsers do not expose NFC through the Permissions API.
-          // Keep the last successfully confirmed state and verify it on scan.
-        })
     }
 
     return () => {
@@ -806,7 +802,6 @@ function Scanner() {
       await ndef.scan()
       setPermissionGranted(true)
       setPermissionDenied(false)
-      localStorage.setItem("nfc-permission-granted", "true")
 
       const handleReading = (event: any) => {
         if (nfcTimeoutRef.current !== null) {
