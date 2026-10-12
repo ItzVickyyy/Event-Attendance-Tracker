@@ -522,7 +522,7 @@ def test_scan_unregistered_attendee_rejected(
         json={"event_id": event_id, "credential_value": nfc_val, "scan_method": "nfc"},
     )
     assert r_nfc.status_code == 404
-    assert "not registered" in r_nfc.json()["detail"].lower()
+    assert "no eligible sections registered yet" in r_nfc.json()["detail"].lower()
 
     # 4. QR scan -> 404, not registered
     r_qr = client.post(
@@ -531,7 +531,7 @@ def test_scan_unregistered_attendee_rejected(
         json={"event_id": event_id, "credential_value": qr_val, "scan_method": "qr"},
     )
     assert r_qr.status_code == 404
-    assert "not registered" in r_qr.json()["detail"].lower()
+    assert "no eligible sections registered yet" in r_qr.json()["detail"].lower()
 
     # 5. Manual scan -> 404, not registered
     r_manual = client.post(
@@ -540,7 +540,7 @@ def test_scan_unregistered_attendee_rejected(
         json={"event_id": event_id, "attendee_id": att_id, "scan_method": "manual"},
     )
     assert r_manual.status_code == 404
-    assert "not registered" in r_manual.json()["detail"].lower()
+    assert "no eligible sections registered yet" in r_manual.json()["detail"].lower()
 
     # 6. No attendance record should have been created for any of the above
     list_res = client.get(
