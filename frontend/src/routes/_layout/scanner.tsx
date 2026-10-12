@@ -557,6 +557,7 @@ function Scanner() {
   const [permissionGranted, setPermissionGranted] = useState(
     () => localStorage.getItem("nfc-permission-granted") === "true",
   )
+  const [permissionDenied, setPermissionDenied] = useState(false)
   const [manualSearch, setManualSearch] = useState("")
   const ndefRef = useRef<any>(null)
   const nfcHandlerRef = useRef<((event: any) => void) | null>(null)
@@ -591,6 +592,7 @@ function Scanner() {
       if (!permissionStatus || cancelled) return
       const granted = permissionStatus.state === "granted"
       setPermissionGranted(granted)
+      setPermissionDenied(permissionStatus.state === "denied")
       if (granted) {
         localStorage.setItem("nfc-permission-granted", "true")
       } else {
@@ -785,6 +787,7 @@ function Scanner() {
       const ndef = new (window as any).NDEFReader()
       await ndef.scan()
       setPermissionGranted(true)
+      setPermissionDenied(false)
       localStorage.setItem("nfc-permission-granted", "true")
 
       const handleReading = (event: any) => {
@@ -892,6 +895,7 @@ function Scanner() {
             "NFC permission denied. Please allow NFC access in browser settings.",
           )
           setPermissionGranted(false)
+          setPermissionDenied(true)
           localStorage.removeItem("nfc-permission-granted")
         } else {
           toast.error(`NFC error: ${error.message}`)
@@ -1270,7 +1274,7 @@ function Scanner() {
             >
               {scanning ? (
                 "Scanning..."
-              ) : !permissionGranted ? (
+              ) : permissionDenied ? (
                 "Request Permission"
               ) : (
                 "Scan NFC Tag"
