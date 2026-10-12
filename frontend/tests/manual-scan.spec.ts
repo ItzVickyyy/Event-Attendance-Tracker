@@ -756,15 +756,15 @@ test.describe("Manual attendance scan", () => {
     await expect(nfcButton).toBeEnabled()
     await expect(qrButton).toBeEnabled()
 
+    const missingSessionToast = page.getByText(
+      "Activate an attendance session before scanning",
+    )
     await nfcButton.click()
-    await expect(
-      page.getByText("Activate an attendance session before scanning"),
-    ).toBeVisible()
+    await expect(missingSessionToast).toBeVisible()
+    await expect(missingSessionToast).toBeHidden({ timeout: 5000 })
 
     await qrButton.click()
-    await expect(
-      page.getByText("Activate an attendance session before scanning"),
-    ).toBeVisible()
+    await expect(missingSessionToast).toBeVisible()
   })
 
 })
