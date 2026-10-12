@@ -25,13 +25,12 @@ def test_get_access_token(client: TestClient) -> None:
     assert tokens["access_token"]
 
 
-
 def test_login_email_is_case_insensitive_but_password_is_case_sensitive(
     client: TestClient, db: Session
 ) -> None:
     email = "SuperAdminCaseTest@example.com"
     password = "SampleSuperAdmin!"
-    user = create_user(
+    create_user(
         session=db,
         user_create=UserCreate(
             email=email,
@@ -55,7 +54,7 @@ def test_login_email_is_case_insensitive_but_password_is_case_sensitive(
     )
     assert wrong_password_case.status_code == 400
 
-    db.refresh(user)
+
 
 def test_get_access_token_incorrect_password(client: TestClient) -> None:
     login_data = {
