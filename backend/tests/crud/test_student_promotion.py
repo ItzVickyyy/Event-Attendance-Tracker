@@ -158,6 +158,64 @@ def test_missing_academic_program_is_blocked_not_fabricated(db_session: Session)
     assert row.promoted_student_id is None
 
 
+
+@pytest.mark.parametrize(
+    ("section_reference", "program_code", "year_level", "section_name"),
+    [
+        ("CS 1A", "BSCS", "1st Year", "1A"),
+        ("IT WMAD 3A", "BSIT", "3rd Year", "WMAD 3A"),
+    ],
+)
+def test_short_program_aliases_promote_into_registered_sections(
+    db_session: Session,
+    section_reference: str,
+    program_code: str,
+    year_level: str,
+    section_name: str,
+):
+    batch = _make_batch(db_session)
+    program = AcademicProgram(
+        program_code=program_code,
+        program_name=f"Test {program_code}",
+    )
+    db_session.add(program)
+    db_session.flush()
+
+    year = db_session.exec(
+        select(AcademicYear).where(AcademicYear.label == batch.academic_year)
+    ).first()
+    assert year is not None
+    section = AcademicSection(
+        program_id=program.id,
+        year_level=year_level,
+        section_name=section_name,
+        section_code=section_name,
+        academic_year=batch.academic_year,
+        academic_year_id=year.id,
+    )
+    db_session.add(section)
+    db_session.commit()
+
+    row = _make_staging_row(
+        db_session,
+        batch,
+        source_sheet=section_reference,
+        student_number=f"alias-{program_code}",
+    )
+    result = StudentPromotionService(session=db_session).promote_import_batch(
+        batch.id
+    )
+
+    assert result.newly_promoted_rows == 1
+    assert result.blocked_rows == []
+    db_session.refresh(row)
+    assert row.promoted_student_id is not None
+    student = db_session.get(Student, row.promoted_student_id)
+    assert student is not None
+    assert student.section_id == section.id
+
+
+
 def test_academic_section_get_or_create(db_session: Session):
     batch = _make_batch(db_session)
     program = AcademicProgram(program_code="PROC", program_name="Test Program C")
