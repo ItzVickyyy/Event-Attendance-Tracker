@@ -72,6 +72,7 @@ export function ClassRepresentativeSectionWorkspace() {
   const { activeAcademicYear } = useAcademicYear()
   const client = useQueryClient()
   const [search, setSearch] = useState("")
+  const [unregisteredOnly, setUnregisteredOnly] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState(emptyForm)
@@ -322,11 +323,12 @@ export function ClassRepresentativeSectionWorkspace() {
     await client.invalidateQueries()
   }
 
-  const filtered = (students.data?.data ?? []).filter((student: any) =>
-    `${student.student_number} ${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`
+  const filtered = (students.data?.data ?? []).filter((student: any) => {
+    const matchesSearch = `${student.student_number} ${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`
       .toLowerCase()
-      .includes(search.toLowerCase()),
-  )
+      .includes(search.toLowerCase())
+    return matchesSearch && (!unregisteredOnly || !student.card_uid_registered)
+  })
   const section = assignment.data
 
   return (
@@ -392,14 +394,22 @@ export function ClassRepresentativeSectionWorkspace() {
               </p>
             </div>
           </div>
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Search students"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Search students"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Button
+              variant={unregisteredOnly ? "default" : "outline"}
+              onClick={() => setUnregisteredOnly((value) => !value)}
+            >
+              {unregisteredOnly ? "Showing unregistered" : "Unregistered only"}
+            </Button>
           </div>
           {students.isLoading ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
