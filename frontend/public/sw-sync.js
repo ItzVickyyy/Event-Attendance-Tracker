@@ -200,6 +200,7 @@ async function syncRecord(db, token, apiBase, record) {
       synced_at_server: now(),
       retry_count: 0,
       last_error: undefined,
+      last_error_detail: undefined,
       last_retry_at: undefined,
     })
     return "synced"
