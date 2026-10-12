@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, CreditCard, History, UserRound } from "lucide-react"
+import { ArrowLeft, CreditCard, History, UserRound, Wifi } from "lucide-react"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 import {
   AcademicProgramsService,
   AcademicSectionsService,
@@ -26,6 +27,7 @@ export function StudentDetailsPage({
 }) {
   const queryClient = useQueryClient()
   const [credentialValue, setCredentialValue] = useState("")
+  const [scanningNfc, setScanningNfc] = useState(false)
   const studentQuery = useQuery({
     queryKey: ["student", studentId],
     queryFn: () =>
@@ -70,13 +72,41 @@ export function StudentDetailsPage({
       }),
     enabled: Boolean(sectionId),
   })
+  const attendeeQuery = useQuery({
+    queryKey: ["attendeeIdForPerson", student?.person_id],
+    queryFn: async () => {
+      const result = await AttendeesService.readAttendees({
+        query: { limit: 10000 },
+        throwOnError: true,
+      })
+      const attendees = (
+        result as unknown as {
+          data: { data: { id: string; person_id: string }[] }
+        }
+      ).data.data
+      const existing = attendees.find(
+        (attendee) => attendee.person_id === student!.person_id,
+      )
+      if (existing) return existing.id
+      const created = await AttendeesService.createAttendee({
+        body: {
+          person_id: student!.person_id,
+          attendee_type: "student",
+        },
+        throwOnError: true,
+      })
+      return (created as unknown as { data: { id: string } }).data.id
+    },
+    enabled: Boolean(student?.person_id),
+  })
+  const attendeeId = student?.attendee_id ?? attendeeQuery.data
   const credentialsQuery = useQuery({
-    queryKey: ["studentCredentials", student?.attendee_id],
+    queryKey: ["studentCredentials", attendeeId],
     queryFn: () =>
       AttendeeCredentialsService.credentialsReadAttendeeCredentials({
-        query: { attendee_id: student!.attendee_id! },
+        query: { attendee_id: attendeeId! },
       }),
-    enabled: Boolean(student?.attendee_id),
+    enabled: Boolean(attendeeId),
   })
   const relationshipsQuery = useQuery({
     queryKey: ["studentRelationships", studentId],
@@ -84,15 +114,15 @@ export function StudentDetailsPage({
       AttendeeRelationshipsService.relationshipsReadAttendeeRelationships({
         query: { related_student_id: studentId },
       }),
-    enabled: Boolean(student?.attendee_id),
+    enabled: Boolean(attendeeId),
   })
   const registrationsQuery = useQuery({
-    queryKey: ["studentRegistrations", student?.attendee_id],
+    queryKey: ["studentRegistrations", attendeeId],
     queryFn: () =>
       EventRegistrationsService.registrationsReadEventRegistrations({
-        query: { attendee_id: student!.attendee_id! },
+        query: { attendee_id: attendeeId! },
       }),
-    enabled: Boolean(student?.attendee_id),
+    enabled: Boolean(attendeeId),
   })
   const registrationIds = useMemo(
     () =>
@@ -119,16 +149,16 @@ export function StudentDetailsPage({
     mutationFn: () =>
       AttendeeCredentialsService.credentialsCreateAttendeeCredential({
         body: {
-          attendee_id: student!.attendee_id!,
+          attendee_id: attendeeId!,
           credential_type: "nfc",
-          credential_value: credentialValue.trim(),
+          credential_value: credentialValue.trim().toUpperCase(),
           is_active: true,
         },
       }),
     onSuccess: () => {
       setCredentialValue("")
       void queryClient.invalidateQueries({
-        queryKey: ["studentCredentials", student?.attendee_id],
+        queryKey: ["studentCredentials", attendeeId],
       })
     },
   })
@@ -140,9 +170,87 @@ export function StudentDetailsPage({
       }),
     onSuccess: () =>
       void queryClient.invalidateQueries({
-        queryKey: ["studentCredentials", student?.attendee_id],
+        queryKey: ["studentCredentials", attendeeId],
       }),
   })
+  const handleScanNfc = async () => {
+    if (!("NDEFReader" in window)) {
+      toast.error(
+        "Web NFC is not supported here. Use Chrome on Android or enter the UID manually.",
+      )
+      return
+    }
+
+    let reader: any
+    let timeoutId: number | undefined
+    setScanningNfc(true)
+    try {
+      reader = new (window as any).NDEFReader()
+      await reader.scan()
+      const captured = await new Promise<string>((resolve, reject) => {
+        const cleanup = () => {
+          reader.removeEventListener("reading", onReading)
+          if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+        }
+        const onReading = (event: any) => {
+          const serial =
+            typeof event.serialNumber === "string"
+              ? event.serialNumber.trim()
+              : ""
+          let textRecord = ""
+          for (const record of event.message?.records ?? []) {
+            if (
+              record.recordType !== "text" ||
+              !(record.data instanceof DataView)
+            )
+              continue
+            const data = record.data
+            if (!data.byteLength) continue
+            const status = data.getUint8(0)
+            const languageLength = status & 0x3f
+            const start = 1 + languageLength
+            if (start < data.byteLength) {
+              textRecord = new TextDecoder(
+                (status & 0x80) !== 0 ? "utf-16" : "utf-8",
+              )
+                .decode(
+                  new Uint8Array(
+                    data.buffer,
+                    data.byteOffset + start,
+                    data.byteLength - start,
+                  ),
+                )
+                .trim()
+              if (textRecord) break
+            }
+          }
+          const value = textRecord || serial
+          if (!value) return
+          cleanup()
+          resolve(value.toUpperCase())
+        }
+        reader.addEventListener("reading", onReading)
+        timeoutId = window.setTimeout(() => {
+          cleanup()
+          reject(
+            new Error(
+              "No NFC identifier was received within 30 seconds. Try again or enter the UID manually.",
+            ),
+          )
+        }, 30000)
+      })
+      setCredentialValue(captured)
+      toast.success("Card UID captured. Click Issue / Reissue to save it.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to read NFC card",
+      )
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+      setScanningNfc(false)
+    }
+  }
+
   const section = sectionQuery.data?.data
   const program = section
     ? programsQuery.data?.data.data.find(
@@ -347,7 +455,7 @@ export function StudentDetailsPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!student.attendee_id ? (
+          {!attendeeId ? (
             <p className="text-sm text-muted-foreground">
               This student is not linked to an attendee record, so NFC
               credential management is unavailable.
@@ -389,8 +497,17 @@ export function StudentDetailsPage({
                 <Input
                   value={credentialValue}
                   onChange={(event) => setCredentialValue(event.target.value)}
-                  placeholder="Enter NFC card UID"
+                  placeholder="Scan card or enter UID"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleScanNfc()}
+                  disabled={scanningNfc || credentialMutation.isPending}
+                >
+                  <Wifi className="mr-2 size-4" />
+                  {scanningNfc ? "Tap card..." : "Scan card"}
+                </Button>
                 <Button
                   onClick={() => credentialMutation.mutate()}
                   disabled={

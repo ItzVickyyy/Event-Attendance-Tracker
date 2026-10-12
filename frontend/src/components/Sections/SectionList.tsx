@@ -969,7 +969,7 @@ function SectionList() {
           <DialogHeader>
             <DialogTitle>Add Student</DialogTitle>
             <DialogDescription>
-              Choose the section and academic year for this student.
+              Choose the section for this student.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -985,9 +985,8 @@ function SectionList() {
                 {sections.map((section: any) => (
                   <SelectItem key={section.id} value={section.id}>
                     {section.program_code}
-                    {section.major_code ? ` · ${section.major_code}` : ""}{" "}
-                    {section.section_code} · {section.year_level} ·{" "}
-                    {section.academic_year}
+                    {section.major_code ? ` ${section.major_code}` : ""}{" "}
+                    {section.section_code}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1031,10 +1030,9 @@ function SectionList() {
             <DialogDescription>
               Add a student to {studentsTarget?.program_code}
               {studentsTarget?.major_code
-                ? ` · ${studentsTarget.major_code}`
+                ? ` ${studentsTarget.major_code}`
                 : ""}{" "}
-              {studentsTarget?.section_code} for Academic Year{" "}
-              {studentsTarget?.academic_year}.
+              {studentsTarget?.section_code}.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
