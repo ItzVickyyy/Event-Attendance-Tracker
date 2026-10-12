@@ -7,8 +7,8 @@ import {
   type AttendeeCredentialPublic,
   AttendeeCredentialsService,
   AttendeesService,
-  StudentsService,
   type StudentPublic,
+  StudentsService,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
