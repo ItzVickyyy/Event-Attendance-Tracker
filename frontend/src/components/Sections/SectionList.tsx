@@ -907,7 +907,9 @@ function SectionList() {
                                   {student.middle_name
                                     ? ` ${student.middle_name}`
                                     : ""}
-                                  {student.extension ? ` ${student.extension}` : ""}
+                                  {student.extension
+                                    ? ` ${student.extension}`
+                                    : ""}
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -953,41 +955,65 @@ function SectionList() {
                     </Table>
                   </div>
                   <div className="space-y-3 py-3 sm:hidden">
-                    {filteredRosterStudents.map((student: any, index: number) => (
-                      <div key={student.id} className="rounded-lg border p-3">
-                        <div className="flex items-start gap-3">
-                          <span className="pt-0.5 text-xs tabular-nums text-muted-foreground">
-                            {index + 1}.
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="break-words font-semibold">
-                              {student.last_name}, {student.first_name}
-                              {student.middle_name ? ` ${student.middle_name}` : ""}
-                              {student.extension ? (
-                                <span className="ml-1 font-medium">{student.extension}</span>
-                              ) : null}
-                            </p>
-                            <p className="mt-1 break-all font-mono text-sm text-muted-foreground">
-                              {student.student_number}
-                            </p>
-                            <span className="mt-2 inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
-                              {String(student.student_status).replaceAll("_", " ")}
+                    {filteredRosterStudents.map(
+                      (student: any, index: number) => (
+                        <div key={student.id} className="rounded-lg border p-3">
+                          <div className="flex items-start gap-3">
+                            <span className="pt-0.5 text-xs tabular-nums text-muted-foreground">
+                              {index + 1}.
                             </span>
-                          </div>
-                          <div className="flex shrink-0 flex-col gap-1">
-                            <Button variant="ghost" size="icon" title="QR Code" onClick={() => void openStudentQr(student)}>
-                              <QrCode />
-                            </Button>
-                            <Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}>
-                              <Pencil />
-                            </Button>
-                            <Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}>
-                              <Trash2 />
-                            </Button>
+                            <div className="min-w-0 flex-1">
+                              <p className="break-words font-semibold">
+                                {student.last_name}, {student.first_name}
+                                {student.middle_name
+                                  ? ` ${student.middle_name}`
+                                  : ""}
+                                {student.extension ? (
+                                  <span className="ml-1 font-medium">
+                                    {student.extension}
+                                  </span>
+                                ) : null}
+                              </p>
+                              <p className="mt-1 break-all font-mono text-sm text-muted-foreground">
+                                {student.student_number}
+                              </p>
+                              <span className="mt-2 inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
+                                {String(student.student_status).replaceAll(
+                                  "_",
+                                  " ",
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex shrink-0 flex-col gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="QR Code"
+                                onClick={() => void openStudentQr(student)}
+                              >
+                                <QrCode />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Edit student"
+                                onClick={() => void openStudent(student)}
+                              >
+                                <Pencil />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Archive student"
+                                onClick={() => setDeleteTarget(student)}
+                              >
+                                <Trash2 />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 </>
               )}
