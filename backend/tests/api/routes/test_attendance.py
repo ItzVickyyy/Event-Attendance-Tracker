@@ -408,7 +408,7 @@ def test_scan_credential_eligibility_validation(
         json={
             "event_id": event_id,
             "credential_value": "NON_EXISTENT_CREDENTIAL_9999",
-            "scan_method": "nfc",
+            "scan_method": "qr",
         },
     )
     assert r_nonexistent.status_code == 404
@@ -437,7 +437,7 @@ def test_scan_credential_eligibility_validation(
         headers=superuser_token_headers,
         json={
             "attendee_id": att_id,
-            "credential_type": "nfc",
+            "credential_type": "qr",
             "credential_value": inactive_cred,
             "is_active": False,
         },
