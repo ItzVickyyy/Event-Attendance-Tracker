@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, Check, Users } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   AcademicSectionsService,
   EventRegistrationsService,
@@ -21,6 +21,7 @@ function getYearNumber(
 export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient()
   const [selectedSections, setSelectedSections] = useState<string[]>([])
+  const hydratedEventRef = useRef<string | null>(null)
   const eventQuery = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => EventsService.readEvent({ path: { event_id: eventId } }),
@@ -39,6 +40,51 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         query: { event_id: eventId, skip: 0, limit: 1000 },
       }),
   })
+  useEffect(() => {
+    if (
+      !sectionsQuery.isSuccess ||
+      !registrationQuery.isSuccess ||
+      hydratedEventRef.current === eventId
+    ) {
+      return
+    }
+
+    let cancelled = false
+    const registeredAttendeeIds = new Set(
+      (registrationQuery.data?.data.data ?? []).map((item) => item.attendee_id),
+    )
+
+    void Promise.all(
+      (sectionsQuery.data?.data.data ?? []).map(async (section) => {
+        const response = await StudentsService.readStudents({
+          query: { section_id: section.id, skip: 0, limit: 1000 },
+        })
+        const hasRegisteredStudent = response.data.data.some(
+          (student) =>
+            student.attendee_id && registeredAttendeeIds.has(student.attendee_id),
+        )
+        return hasRegisteredStudent ? section.id : null
+      }),
+    )
+      .then((sectionIds) => {
+        if (cancelled) return
+        setSelectedSections(sectionIds.filter((id): id is string => id !== null))
+        hydratedEventRef.current = eventId
+      })
+      .catch(() => {
+        // Keep the registration page usable if roster hydration temporarily fails.
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    eventId,
+    sectionsQuery.isSuccess,
+    sectionsQuery.data,
+    registrationQuery.isSuccess,
+    registrationQuery.data,
+  ])
   const studentQueries = useQuery({
     queryKey: ["registrationStudents", selectedSections],
     enabled: selectedSections.length > 0,
