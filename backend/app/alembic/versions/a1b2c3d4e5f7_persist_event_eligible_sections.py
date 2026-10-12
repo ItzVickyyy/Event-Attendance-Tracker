@@ -19,6 +19,25 @@ def upgrade() -> None:
             server_default=sa.text("'[]'"),
         ),
     )
+    # Preserve the best available historical selection from existing registered
+    # students. New selections are stored explicitly by the registration page.
+    op.execute(
+        """
+        UPDATE events AS e
+        SET eligible_section_ids = COALESCE(
+            (
+                SELECT json_agg(DISTINCT s.section_id::text)
+                FROM event_registrations AS er
+                JOIN attendees AS a ON a.id = er.attendee_id
+                JOIN students AS s ON s.person_id = a.person_id
+                WHERE er.event_id = e.id
+                  AND er.registration_status = 'registered'
+                  AND s.section_id IS NOT NULL
+            ),
+            '[]'::json
+        )
+        """
+    )
 
 
 def downgrade() -> None:
