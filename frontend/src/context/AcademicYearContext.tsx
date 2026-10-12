@@ -89,9 +89,7 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const representativeYear = useMemo<AcademicYear | null>(() => {
     const assignment = representativeAssignment.data
     if (!assignment) return null
-    const match = assignment.academic_year.match(
-      /(\d{4})\s*[-–/]\s*(\d{4})/,
-    )
+    const match = assignment.academic_year.match(/(\d{4})\s*[-–/]\s*(\d{4})/)
     const startYear = match ? Number(match[1]) : Number.NaN
     const endYear = match ? Number(match[2]) : Number.NaN
     return {
