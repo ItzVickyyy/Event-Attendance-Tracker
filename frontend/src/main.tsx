@@ -39,6 +39,10 @@ const queryClient = new QueryClient({
     onError: handleApiError,
   }),
   mutationCache: new MutationCache({
+    onSuccess: () => {
+      // Refresh active views without delaying the mutation's success feedback.
+      void queryClient.invalidateQueries()
+    },
     onError: handleApiError,
   }),
 })

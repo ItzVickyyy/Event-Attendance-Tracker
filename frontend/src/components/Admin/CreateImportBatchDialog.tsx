@@ -60,7 +60,7 @@ export function CreateImportBatchDialog() {
       toast.success(
         `Batch created and parsed! Total rows: ${(uploadRes.data as any).total_rows}, Valid: ${(uploadRes.data as any).valid_rows}`,
       )
-      queryClient.invalidateQueries({ queryKey: ["importBatches"] })
+      await queryClient.invalidateQueries()
       setOpen(false)
       setSelectedFile(null)
       setNotes("")
