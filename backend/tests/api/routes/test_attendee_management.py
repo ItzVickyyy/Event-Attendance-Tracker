@@ -295,19 +295,40 @@ def test_attendee_credential_management_and_public_lookup(
     assert public.status_code == 200
     assert public.json()["attendee_id"] == attendee["id"]
 
+    another_nfc = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": attendee["id"],
+            "credential_type": "nfc",
+            "credential_value": f"TEST-{random_lower_string()[:12].upper()}",
+            "is_active": True,
+        },
+    )
+    assert another_nfc.status_code == 409
+
     changed_value = f"TEST-{random_lower_string()[:12].upper()}"
     updated = client.patch(
         _api(f"/attendee-credentials/{credential_id}"),
         headers=headers,
-        json={"credential_value": changed_value, "is_active": False},
+        json={"credential_value": changed_value},
     )
     assert updated.status_code == 200
+    assert updated.json()["is_active"] is True
     assert (
         client.get(
             _api(f"/attendee-credentials/public/{changed_value}"), headers=headers
         ).status_code
-        == 404
+        == 200
     )
+
+    deactivated = client.patch(
+        _api(f"/attendee-credentials/{credential_id}"),
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert deactivated.status_code == 400
+    assert "must remain active" in deactivated.json()["detail"]
 
     assert (
         client.get(
