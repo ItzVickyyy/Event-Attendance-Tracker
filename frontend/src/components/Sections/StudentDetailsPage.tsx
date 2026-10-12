@@ -72,13 +72,41 @@ export function StudentDetailsPage({
       }),
     enabled: Boolean(sectionId),
   })
+  const attendeeQuery = useQuery({
+    queryKey: ["attendeeIdForPerson", student?.person_id],
+    queryFn: async () => {
+      const result = await AttendeesService.readAttendees({
+        query: { limit: 10000 },
+        throwOnError: true,
+      })
+      const attendees = (
+        result as unknown as {
+          data: { data: { id: string; person_id: string }[] }
+        }
+      ).data.data
+      const existing = attendees.find(
+        (attendee) => attendee.person_id === student!.person_id,
+      )
+      if (existing) return existing.id
+      const created = await AttendeesService.createAttendee({
+        body: {
+          person_id: student!.person_id,
+          attendee_type: "student",
+        },
+        throwOnError: true,
+      })
+      return (created as unknown as { data: { id: string } }).data.id
+    },
+    enabled: Boolean(student?.person_id),
+  })
+  const attendeeId = student?.attendee_id ?? attendeeQuery.data
   const credentialsQuery = useQuery({
-    queryKey: ["studentCredentials", student?.attendee_id],
+    queryKey: ["studentCredentials", attendeeId],
     queryFn: () =>
       AttendeeCredentialsService.credentialsReadAttendeeCredentials({
-        query: { attendee_id: student!.attendee_id! },
+        query: { attendee_id: attendeeId! },
       }),
-    enabled: Boolean(student?.attendee_id),
+    enabled: Boolean(attendeeId),
   })
   const relationshipsQuery = useQuery({
     queryKey: ["studentRelationships", studentId],
@@ -86,15 +114,15 @@ export function StudentDetailsPage({
       AttendeeRelationshipsService.relationshipsReadAttendeeRelationships({
         query: { related_student_id: studentId },
       }),
-    enabled: Boolean(student?.attendee_id),
+    enabled: Boolean(attendeeId),
   })
   const registrationsQuery = useQuery({
     queryKey: ["studentRegistrations", student?.attendee_id],
     queryFn: () =>
       EventRegistrationsService.registrationsReadEventRegistrations({
-        query: { attendee_id: student!.attendee_id! },
+        query: { attendee_id: attendeeId! },
       }),
-    enabled: Boolean(student?.attendee_id),
+    enabled: Boolean(attendeeId),
   })
   const registrationIds = useMemo(
     () =>
@@ -121,7 +149,7 @@ export function StudentDetailsPage({
     mutationFn: () =>
       AttendeeCredentialsService.credentialsCreateAttendeeCredential({
         body: {
-          attendee_id: student!.attendee_id!,
+          attendee_id: attendeeId!,
           credential_type: "nfc",
           credential_value: credentialValue.trim().toUpperCase(),
           is_active: true,
@@ -130,7 +158,7 @@ export function StudentDetailsPage({
     onSuccess: () => {
       setCredentialValue("")
       void queryClient.invalidateQueries({
-        queryKey: ["studentCredentials", student?.attendee_id],
+        queryKey: ["studentCredentials", attendeeId],
       })
     },
   })
@@ -414,7 +442,7 @@ export function StudentDetailsPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!student.attendee_id ? (
+          {!attendeeId ? (
             <p className="text-sm text-muted-foreground">
               This student is not linked to an attendee record, so NFC
               credential management is unavailable.
