@@ -569,9 +569,9 @@ function Scanner() {
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
-  const [permissionGranted, setPermissionGranted] = useState(
-    () => localStorage.getItem("nfc-permission-granted") === "true",
-  )
+  // Start unknown and read the browser's current NFC permission state below.
+  // Do not trust a stale localStorage flag from an earlier browser session.
+  const [permissionGranted, setPermissionGranted] = useState(false)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [manualSearch, setManualSearch] = useState("")
   const ndefRef = useRef<any>(null)
@@ -608,11 +608,6 @@ function Scanner() {
       const granted = permissionStatus.state === "granted"
       setPermissionGranted(granted)
       setPermissionDenied(permissionStatus.state === "denied")
-      if (granted) {
-        localStorage.setItem("nfc-permission-granted", "true")
-      } else {
-        localStorage.removeItem("nfc-permission-granted")
-      }
     }
 
     if ("permissions" in navigator) {
@@ -625,8 +620,8 @@ function Scanner() {
           status.addEventListener("change", updatePermission)
         })
         .catch(() => {
-          // Some browsers do not expose NFC through the Permissions API.
-          // Keep the last successfully confirmed state and verify it on scan.
+          // Some browsers expose Permissions API but not the NFC descriptor.
+          // The scan button can still request permission when clicked.
         })
     }
 
@@ -807,7 +802,6 @@ function Scanner() {
       await ndef.scan()
       setPermissionGranted(true)
       setPermissionDenied(false)
-      localStorage.setItem("nfc-permission-granted", "true")
 
       const handleReading = (event: any) => {
         if (nfcTimeoutRef.current !== null) {
@@ -915,7 +909,6 @@ function Scanner() {
           )
           setPermissionGranted(false)
           setPermissionDenied(true)
-          localStorage.removeItem("nfc-permission-granted")
         } else {
           toast.error(`NFC error: ${error.message}`)
         }
@@ -1297,13 +1290,9 @@ function Scanner() {
             <LoadingButton
               loading={scanning}
               onClick={scanNfc}
-              disabled={scanning || !nfcSupported || !syncStatus.activeSession}
+              disabled={scanning || !nfcSupported}
             >
-              {scanning
-                ? "Scanning..."
-                : permissionDenied
-                  ? "Request Permission"
-                  : "Scan NFC Tag"}
+              {permissionDenied ? "Request Permission" : "Scan NFC Tag"}
             </LoadingButton>
             {scanning && (
               <Button variant="outline" onClick={stopNfcScanning}>
@@ -1429,10 +1418,10 @@ function Scanner() {
                 <LoadingButton
                   loading={qrScanning}
                   onClick={scanQr}
-                  disabled={qrScanning || !syncStatus.activeSession}
+                  disabled={qrScanning}
                   className="flex-1"
                 >
-                  {qrScanning ? "Scanning QR..." : "Start QR Scanner"}
+                  Start QR Scanner
                 </LoadingButton>
                 <Button
                   variant="outline"

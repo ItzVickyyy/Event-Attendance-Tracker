@@ -728,4 +728,51 @@ test.describe("Manual attendance scan", () => {
       page.locator('input[placeholder="Search by student number or name..."]'),
     ).toBeVisible()
   })
+
+  test("NFC and QR buttons explain missing session instead of being disabled", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    // Override the fixture's default active session so the API confirms none is open.
+    await page.route(ACTIVE_SESSION_URL, async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        headers: corsHeaders,
+        body: JSON.stringify({ detail: "No active attendance session" }),
+      })
+    })
+    await gotoApp(page)
+    await setToken(page)
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "NDEFReader", {
+        configurable: true,
+        value: class NDEFReaderMock {},
+      })
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: { getUserMedia: async () => ({}) },
+      })
+    })
+    await page.goto("/scanner?event_id=evt-1")
+
+    const nfcButton = page.getByRole("button", {
+      name: /Scan NFC Tag|Request Permission/,
+    })
+    const qrButton = page.getByRole("button", { name: "Start QR Scanner" })
+
+    await expect(nfcButton).toBeEnabled()
+    await expect(qrButton).toBeEnabled()
+
+    const missingSessionToast = page.getByText(
+      "Activate an attendance session before scanning",
+    )
+    await nfcButton.click()
+    await expect(missingSessionToast).toBeVisible()
+    await expect(missingSessionToast).toBeHidden({ timeout: 5000 })
+
+    await qrButton.click()
+    await expect(missingSessionToast).toBeVisible()
+  })
 })
