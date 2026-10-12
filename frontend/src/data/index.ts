@@ -44,6 +44,7 @@ interface QueueRecord {
   synced_at?: string
   retry_count: number
   last_error?: string
+  last_error_detail?: string
   last_retry_at?: string
   created_at: string
   synced_at_server?: string
@@ -306,6 +307,7 @@ export async function markFailed(
   localId: string,
   error: string,
   syncStatus: "REJECTED" | "RETRY" = "RETRY",
+  detail?: string,
 ): Promise<void> {
   const db = await getDB()
   const record = await db.get("attendanceQueue", localId)
@@ -317,6 +319,7 @@ export async function markFailed(
     sync_status: syncStatus,
     retry_count: record.retry_count + 1,
     last_error: error,
+    last_error_detail: detail?.slice(0, 500),
     last_retry_at: new Date().toISOString(),
   }
   await db.put("attendanceQueue", updated)
