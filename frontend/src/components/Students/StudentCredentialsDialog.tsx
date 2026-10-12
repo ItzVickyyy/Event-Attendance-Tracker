@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CheckCircle2, KeyRound, Loader2, Plus, Trash2, Wifi } from "lucide-react"
+import { CheckCircle2, KeyRound, Loader2, Plus, Wifi } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -216,7 +216,7 @@ export function StudentCredentialsDialog({
       })
       setNewCredValue(captured)
       toast.success(
-        "Card identifier captured. Confirm the student and click Add to save it.",
+        "Card identifier captured. Click Register Card UID to save it.",
       )
     } catch (error) {
       const message =
@@ -304,7 +304,7 @@ export function StudentCredentialsDialog({
                               <span className="font-mono text-sm font-medium">
                                 {cred.credential_value}
                               </span>
-                              <Badge variant="outline" className="text-xs"><CheckCircle2 className="mr-1 h-3 w-3" />Registered · {cred.credential_value}</Badge>
+                              <Badge variant="outline" className="text-xs"><CheckCircle2 className="mr-1 h-3 w-3" />Registered</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground">
                               Added:{" "}
