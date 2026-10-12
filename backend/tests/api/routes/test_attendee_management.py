@@ -112,7 +112,7 @@ def test_attendee_creation_and_person_reassignment_reject_invalid_or_duplicate(
     assert created.status_code == 200
 
     duplicate = client.post(_api("/attendees/"), headers=headers, json=payload)
-    assert duplicate.status_code == 409
+    assert duplicate.status_code == 400
 
     unknown_person = client.post(
         _api("/attendees/"),
@@ -280,7 +280,7 @@ def test_attendee_credential_management_and_public_lookup(
     duplicate = client.post(
         _api("/attendee-credentials/"), headers=headers, json=payload
     )
-    assert duplicate.status_code == 400
+    assert duplicate.status_code == 409
 
     listing = client.get(
         _api(
