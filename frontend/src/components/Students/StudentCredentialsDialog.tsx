@@ -58,6 +58,7 @@ export function StudentCredentialsDialog({
   const [open, setOpen] = useState(false)
   const [newCredType, setNewCredType] = useState<CredentialType>("nfc")
   const [newCredValue, setNewCredValue] = useState("")
+  const [scanningNfc, setScanningNfc] = useState(false)
   const queryClient = useQueryClient()
 
   // 1. Resolve Attendee ID for Student
@@ -150,6 +151,64 @@ export function StudentCredentialsDialog({
       toast.error(err.message || "Failed to delete credential")
     },
   })
+
+  const handleScanNfc = async () => {
+    if (!("NDEFReader" in window)) {
+      toast.error("Web NFC is not supported here. Use Chrome on Android.")
+      return
+    }
+
+    let reader: any
+    let timeoutId: number | undefined
+    setScanningNfc(true)
+    try {
+      reader = new (window as any).NDEFReader()
+      await reader.scan()
+      const captured = await new Promise<string>((resolve, reject) => {
+        const cleanup = () => {
+          reader.removeEventListener("reading", onReading)
+          if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+        }
+        const onReading = (event: any) => {
+          // Empty NDEF tags can still expose the card identity as serialNumber.
+          const serial = typeof event.serialNumber === "string" ? event.serialNumber.trim() : ""
+          let textRecord = ""
+          for (const record of event.message?.records ?? []) {
+            if (record.recordType !== "text" || !(record.data instanceof DataView)) continue
+            const data = record.data
+            if (!data.byteLength) continue
+            const status = data.getUint8(0)
+            const languageLength = status & 0x3f
+            const start = 1 + languageLength
+            if (start < data.byteLength) {
+              textRecord = new TextDecoder((status & 0x80) !== 0 ? "utf-16" : "utf-8")
+                .decode(new Uint8Array(data.buffer, data.byteOffset + start, data.byteLength - start))
+                .trim()
+              if (textRecord) break
+            }
+          }
+          const value = textRecord || serial
+          if (!value) return
+          cleanup()
+          resolve(value.toUpperCase())
+        }
+        reader.addEventListener("reading", onReading)
+        timeoutId = window.setTimeout(() => {
+          cleanup()
+          reject(new Error("No NFC identifier was received within 30 seconds. Try again or enter the UID manually."))
+        }, 30000)
+      })
+      setNewCredType("nfc")
+      setNewCredValue(captured)
+      toast.success("Card identifier captured. Confirm the student and click Add to save it.")
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to read NFC card"
+      toast.error(message)
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+      setScanningNfc(false)
+    }
+  }
 
   const handleAddCredential = (e: React.FormEvent) => {
     e.preventDefault()
@@ -300,14 +359,30 @@ export function StudentCredentialsDialog({
                   <Label htmlFor="cred-val" className="text-xs">
                     Value / UID
                   </Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Input
                       id="cred-val"
-                      placeholder="e.g. 04A1B2C3D4"
+                      placeholder="Scan card or enter UID"
                       value={newCredValue}
                       onChange={(e) => setNewCredValue(e.target.value)}
-                      className="font-mono text-sm"
+                      className="min-w-0 flex-1 font-mono text-sm"
                     />
+                    {newCredType === "nfc" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void handleScanNfc()}
+                        disabled={scanningNfc || createMutation.isPending}
+                        className="shrink-0"
+                      >
+                        {scanningNfc ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Wifi className="h-4 w-4" />
+                        )}
+                        {scanningNfc ? "Tap card..." : "Scan card"}
+                      </Button>
+                    )}
                     <Button
                       type="submit"
                       disabled={
