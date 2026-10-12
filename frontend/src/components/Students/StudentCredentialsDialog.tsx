@@ -121,7 +121,7 @@ export function StudentCredentialsDialog({
       )
     },
     onSuccess: () => {
-      toast.success("Credential added successfully")
+      toast.success("Card UID registered successfully")
       setNewCredValue("")
       refetch()
       queryClient.invalidateQueries({ queryKey: ["attendeeCredentials"] })
@@ -282,7 +282,7 @@ export function StudentCredentialsDialog({
                 }
                 )
               </h4>
-              {credentials.length === 0 ? (
+              {!credentials.some((cred) => cred.credential_type === "nfc") ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                   No Card UID registered yet. Scan the student card below to register it.
                 </div>
