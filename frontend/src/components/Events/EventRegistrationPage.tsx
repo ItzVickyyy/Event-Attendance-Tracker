@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, Check, Users } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   AcademicSectionsService,
   EventRegistrationsService,
@@ -21,6 +21,7 @@ function getYearNumber(
 export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient()
   const [selectedSections, setSelectedSections] = useState<string[]>([])
+  const hydratedEventRef = useRef<string | null>(null)
   const eventQuery = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => EventsService.readEvent({ path: { event_id: eventId } }),
@@ -39,6 +40,11 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         query: { event_id: eventId, skip: 0, limit: 1000 },
       }),
   })
+  useEffect(() => {
+    if (!eventQuery.isSuccess || hydratedEventRef.current === eventId) return
+    setSelectedSections(eventQuery.data?.data.eligible_section_ids ?? [])
+    hydratedEventRef.current = eventId
+  }, [eventId, eventQuery.isSuccess, eventQuery.data])
   const studentQueries = useQuery({
     queryKey: ["registrationStudents", selectedSections],
     enabled: selectedSections.length > 0,
@@ -53,8 +59,21 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       return results.flatMap((result) => result.data.data)
     },
   })
+  const saveSectionsMutation = useMutation({
+    mutationFn: () =>
+      EventsService.updateEvent({
+        path: { event_id: eventId },
+        body: { eligible_section_ids: selectedSections },
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
+  })
   const mutation = useMutation({
     mutationFn: async () => {
+      await EventsService.updateEvent({
+        path: { event_id: eventId },
+        body: { eligible_section_ids: selectedSections },
+      })
       const existing = new Set(
         (registrationQuery.data?.data.data ?? []).map(
           (item) => item.attendee_id,
@@ -73,10 +92,12 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         })
       return students.length
     },
-    onSuccess: () =>
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["eventRegistrations", eventId],
-      }),
+      })
+      queryClient.invalidateQueries({ queryKey: ["event", eventId] })
+    },
   })
   const registered = registrationQuery.data?.data.data ?? []
   const students = studentQueries.data ?? []
@@ -242,17 +263,40 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
             <Stat label="Selected students" value={eligibleCount} />
             <Stat label="To add" value={missing} />
           </div>
-          <Button
-            disabled={
-              selectedSections.length === 0 ||
-              eligibleCount === 0 ||
-              mutation.isPending
-            }
-            onClick={() => mutation.mutate()}
-          >
-            <Check />
-            {mutation.isPending ? "Registering…" : "Register selected sections"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              disabled={saveSectionsMutation.isPending}
+              onClick={() => saveSectionsMutation.mutate()}
+            >
+              {saveSectionsMutation.isPending
+                ? "Saving sections…"
+                : "Save eligible sections"}
+            </Button>
+            <Button
+              disabled={
+                selectedSections.length === 0 ||
+                eligibleCount === 0 ||
+                mutation.isPending
+              }
+              onClick={() => mutation.mutate()}
+            >
+              <Check />
+              {mutation.isPending
+                ? "Registering…"
+                : "Register selected sections"}
+            </Button>
+          </div>
+          {saveSectionsMutation.isSuccess && (
+            <p className="text-sm text-muted-foreground">
+              Eligible section selections saved.
+            </p>
+          )}
+          {saveSectionsMutation.isError && (
+            <p className="text-sm text-destructive">
+              Could not save eligible sections. Please retry.
+            </p>
+          )}
           {mutation.isSuccess && (
             <p className="text-sm text-muted-foreground">
               Registration population updated.
