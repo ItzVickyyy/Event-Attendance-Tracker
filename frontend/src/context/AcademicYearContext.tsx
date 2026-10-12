@@ -55,7 +55,8 @@ async function readRepresentativeAssignment(): Promise<RepresentativeAssignment>
   const response = await fetch(apiUrl("/class-representatives/me"), {
     headers: authHeaders(),
   })
-  if (!response.ok) throw new Error("Unable to load Class Representative assignment")
+  if (!response.ok)
+    throw new Error("Unable to load Class Representative assignment")
   return response.json()
 }
 
@@ -88,7 +89,9 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
   const representativeYear = useMemo<AcademicYear | null>(() => {
     const assignment = representativeAssignment.data
     if (!assignment) return null
-    const match = assignment.academic_year.match(/(\\d{4})\\s*[-–/]\\s*(\\d{4})/)
+    const match = assignment.academic_year.match(
+      /(\\d{4})\\s*[-–/]\\s*(\\d{4})/,
+    )
     const startYear = match ? Number(match[1]) : Number.NaN
     const endYear = match ? Number(match[2]) : Number.NaN
     return {
@@ -104,14 +107,14 @@ export function AcademicYearProvider({ children }: { children: ReactNode }) {
     ? representativeYear
       ? [representativeYear]
       : []
-    : query.data ?? []
+    : (query.data ?? [])
   const currentAcademicYear = isClassRepresentative
     ? representativeYear
-    : academicYears.find((year) => year.is_current) ?? null
+    : (academicYears.find((year) => year.is_current) ?? null)
   const activeAcademicYear = isClassRepresentative
     ? representativeYear
-    : academicYears.find((year) => year.id === selectedId) ??
-      currentAcademicYear
+    : (academicYears.find((year) => year.id === selectedId) ??
+      currentAcademicYear)
 
   useEffect(() => {
     if (activeAcademicYear && activeAcademicYear.id !== selectedId) {
