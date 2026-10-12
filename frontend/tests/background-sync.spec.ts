@@ -16,6 +16,7 @@ interface QueueRecordLike {
   client_timestamp: string
   local_id: string
   synced: boolean
+  sync_status?: string
   synced_at?: string
   retry_count: number
   last_error?: string
@@ -356,6 +357,7 @@ test.describe("Attendance background sync", () => {
     await expect.poll(() => scan.count(), { timeout: 15000 }).toBe(1)
     const [queued] = await readQueue(page)
     expect(queued.synced).toBe(true)
+    expect(queued.sync_status).toBe("DUPLICATE")
     expect(queued.retry_count).toBe(0)
     expect(queued.last_error).toBeUndefined()
   })
