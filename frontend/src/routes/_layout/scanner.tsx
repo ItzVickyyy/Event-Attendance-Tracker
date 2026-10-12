@@ -906,7 +906,7 @@ function Scanner() {
         }
       }
     }
-  }, [checkNfcSupport, handleNfcLookup])
+  }, [checkNfcSupport, handleNfcLookup, syncStatus.activeSession])
 
   useEffect(() => {
     return () => {
@@ -991,7 +991,7 @@ function Scanner() {
         }
       }
     }
-  }, [checkQrSupport, lastScannedCredential, lastScanTime, handleQrLookup])
+  }, [checkQrSupport, lastScannedCredential, lastScanTime, handleQrLookup, syncStatus.activeSession])
 
   const stopQrScanning = useCallback(() => {
     if (html5QrcodeRef.current) {
