@@ -569,8 +569,8 @@ function Scanner() {
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
-  // Browser permission state is not persisted across page loads. Mark it granted
-  // only after this page successfully starts a Web NFC scan.
+  // Start unknown and read the browser's current NFC permission state below.
+  // Do not trust a stale localStorage flag from an earlier browser session.
   const [permissionGranted, setPermissionGranted] = useState(false)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [manualSearch, setManualSearch] = useState("")
