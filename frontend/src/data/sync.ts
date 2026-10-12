@@ -224,6 +224,15 @@ async function executeForegroundSync(): Promise<ForegroundSyncResult> {
   }
 }
 
+function isDuplicateAttendanceConflict(detail: string | undefined): boolean {
+  if (!detail) return false
+  return (
+    /^Already (Recorded|Completed)\\s*-/i.test(detail) ||
+    /^Attendance already recorded for this session\\.?$/i.test(detail) ||
+    /^Attendance already completed\\.?$/i.test(detail)
+  )
+}
+
 async function syncOneQueuedRecord(
   record: Awaited<ReturnType<typeof getPendingScans>>[number],
 ): Promise<RecordOutcome> {
@@ -267,11 +276,6 @@ async function syncOneQueuedRecord(
       return "retry"
     }
     const httpStatus = error.response.status
-    if (httpStatus === 409) {
-      await markSynced(record.id, { syncStatus: "DUPLICATE" })
-      return "duplicate"
-    }
-    if (httpStatus === 401) return "unauthorized"
     const responseBody = error.response?.data as
       | { detail?: unknown }
       | string
@@ -282,6 +286,11 @@ async function syncOneQueuedRecord(
         : typeof responseBody?.detail === "string"
           ? responseBody.detail
           : undefined
+    if (httpStatus === 409 && isDuplicateAttendanceConflict(detail)) {
+      await markSynced(record.id, { syncStatus: "DUPLICATE" })
+      return "duplicate"
+    }
+    if (httpStatus === 401) return "unauthorized"
     await markFailed(
       record.id,
       `http-${httpStatus}`,
