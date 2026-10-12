@@ -16,6 +16,21 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+type ImportValidationResult = {
+  total_rows: number
+  valid_rows: number
+  invalid_rows: number
+  conflict_rows: number
+  can_promote: boolean
+}
+
+type PromotionResult = {
+  newly_promoted_rows: number
+  already_promoted_rows: number
+  blocked_rows: Array<{ reason: string }>
+  batch_status: string
+}
+
 export function CreateImportBatchDialog() {
   const [open, setOpen] = useState(false)
   const [academicYear, setAcademicYear] = useState(
@@ -38,7 +53,6 @@ export function CreateImportBatchDialog() {
     try {
       setIsProcessing(true)
 
-      // 1. Create the Import Batch record
       const batchRes = await ImportBatchesService.batchesCreateImportBatch({
         body: {
           source_filename: selectedFile.name,
@@ -49,23 +63,55 @@ export function CreateImportBatchDialog() {
       })
 
       const batch = batchRes.data
-
-      // 2. Upload the workbook to parse & validate staging records
       const uploadRes =
         await ImportBatchesService.batchesUploadImportBatchWorkbook({
           path: { batch_id: batch.id },
           body: { file: selectedFile },
         })
+      const validation = uploadRes.data as ImportValidationResult
 
-      toast.success(
-        `Batch created and parsed! Total rows: ${(uploadRes.data as any).total_rows}, Valid: ${(uploadRes.data as any).valid_rows}`,
-      )
+      if (
+        !validation.can_promote ||
+        validation.valid_rows === 0 ||
+        validation.invalid_rows > 0 ||
+        validation.conflict_rows > 0
+      ) {
+        toast.warning(
+          `Uploaded for review. Valid: ${validation.valid_rows}, errors: ${validation.invalid_rows}, conflicts: ${validation.conflict_rows}. No students were promoted.`,
+        )
+      } else {
+        // Clean batches are promoted immediately. The backend rechecks the
+        // batch status, validation errors, conflicts, and source reconciliation.
+        const promotionRes =
+          await ImportBatchesService.batchesPromoteImportBatch({
+            path: { batch_id: batch.id },
+          })
+        const promotion = promotionRes.data as PromotionResult
+        const blockedCount = promotion.blocked_rows?.length ?? 0
+
+        if (blockedCount > 0) {
+          toast.warning(
+            `Imported ${promotion.newly_promoted_rows} student(s). ${blockedCount} row(s) need attention. Open the batch to review them.`,
+          )
+        } else {
+          const imported =
+            promotion.newly_promoted_rows + promotion.already_promoted_rows
+          toast.success(
+            `Import complete. ${imported} student(s) are now in the student roster.`,
+          )
+        }
+      }
+
       await queryClient.invalidateQueries()
       setOpen(false)
       setSelectedFile(null)
       setNotes("")
     } catch (err: any) {
-      toast.error(err.message || "Failed to create and upload batch")
+      toast.error(
+        err.message ||
+          "The batch was created, but upload or promotion could not be completed. Check Import Batches before trying again.",
+      )
+      await queryClient.invalidateQueries()
     } finally {
       setIsProcessing(false)
     }
@@ -83,8 +129,9 @@ export function CreateImportBatchDialog() {
         <DialogHeader>
           <DialogTitle>Upload Student Masterlist</DialogTitle>
           <DialogDescription>
-            Create an import batch and upload the student masterlist Excel
-            (.xlsx) workbook.
+            Upload a student masterlist workbook. Clean, validated records are
+            automatically added to the student roster. Files with validation
+            issues remain staged for review.
           </DialogDescription>
         </DialogHeader>
 
@@ -94,7 +141,7 @@ export function CreateImportBatchDialog() {
               <Label htmlFor="academic-year">Academic Year</Label>
               <Input
                 id="academic-year"
-                placeholder="2025-2026"
+                placeholder="2026-2027"
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
                 required
@@ -127,7 +174,7 @@ export function CreateImportBatchDialog() {
             <Input
               id="file-upload"
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.csv"
               onChange={(e) => {
                 if (e.target.files?.[0]) {
                   setSelectedFile(e.target.files[0])
@@ -135,6 +182,9 @@ export function CreateImportBatchDialog() {
               }}
               required
             />
+            <p className="text-xs text-muted-foreground">
+              Supported formats: .xlsx and .csv
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -150,12 +200,12 @@ export function CreateImportBatchDialog() {
               {isProcessing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading & Validating...
+                  Uploading & Importing...
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  Upload & Stage
+                  Upload & Import
                 </>
               )}
             </Button>
