@@ -215,7 +215,6 @@ export function StudentCredentialsDialog({
           )
         }, 30000)
       })
-      setNewCredType("nfc")
       setNewCredValue(captured)
       toast.success(
         "Card identifier captured. Confirm the student and click Add to save it.",
