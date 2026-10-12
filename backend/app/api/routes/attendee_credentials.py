@@ -81,7 +81,7 @@ def read_attendee_credentials(
 def create_attendee_credential(
     *,
     session: SessionDep,
-    current_user: CurrentUser,
+    _current_user: CurrentUser,
     credential_in: AttendeeCredentialCreate,
 ) -> Any:
     attendee = session.get(Attendee, credential_in.attendee_id)

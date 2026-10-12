@@ -623,7 +623,7 @@ def test_class_representative_can_register_student_card_uid(
         },
     )
     assert registered.status_code == 200
-    assert registered.json()["card_uid_registered"] is True
+    assert registered.json()["credential_value"] == uid
 
     roster = client.get(
         _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
