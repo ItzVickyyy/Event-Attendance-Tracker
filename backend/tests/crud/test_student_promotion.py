@@ -174,27 +174,20 @@ def test_short_program_aliases_promote_into_registered_sections(
     section_name: str,
 ):
     batch = _make_batch(db_session)
-    program = AcademicProgram(
-        program_code=program_code,
-        program_name=f"Test {program_code}",
-    )
-    db_session.add(program)
-    db_session.flush()
-
-    year = db_session.exec(
-        select(AcademicYear).where(AcademicYear.label == batch.academic_year)
+    program = db_session.exec(
+        select(AcademicProgram).where(AcademicProgram.program_code == program_code)
     ).first()
-    assert year is not None
-    section = AcademicSection(
-        program_id=program.id,
-        year_level=year_level,
-        section_name=section_name,
-        section_code=section_name,
-        academic_year=batch.academic_year,
-        academic_year_id=year.id,
-    )
-    db_session.add(section)
-    db_session.commit()
+    assert program is not None
+
+    section = db_session.exec(
+        select(AcademicSection).where(
+            AcademicSection.program_id == program.id,
+            AcademicSection.year_level == year_level,
+            AcademicSection.section_name == section_name,
+            AcademicSection.academic_year == batch.academic_year,
+        )
+    ).first()
+    assert section is not None
 
     row = _make_staging_row(
         db_session,
