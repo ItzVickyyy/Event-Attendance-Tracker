@@ -126,9 +126,12 @@ export async function activateAttendanceSession(
 export async function closeAttendanceSession(
   id: string,
 ): Promise<AttendanceSession> {
-  return request<AttendanceSession>(`/attendance-sessions/${id}/close`, {
-    method: "POST",
-  })
+  const closed = await request<AttendanceSession>(
+    `/attendance-sessions/${id}/close`,
+    { method: "POST" },
+  )
+  localStorage.removeItem(cacheKey(closed.event_id))
+  return closed
 }
 
 export interface SessionRosterEntry {
