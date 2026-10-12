@@ -39,7 +39,6 @@ def test_derive_section_from_sheet_extra_whitespace():
     service = StudentImportService(session=MagicMock())
     assert service._derive_section_from_sheet("  BSCS   2B  ") == ("BSCS", "2", "B")
 
-
 @pytest.mark.parametrize(
     "malformed_name",
     ["Summary", "BSCS", "1A", "BSCS1A", "", "   "],
@@ -157,8 +156,6 @@ def test_missing_academic_program_is_blocked_not_fabricated(db_session: Session)
     db_session.refresh(row)
     assert row.promoted_student_id is None
 
-
-
 @pytest.mark.parametrize(
     ("section_reference", "program_code", "year_level", "section_name"),
     [
@@ -195,9 +192,7 @@ def test_short_program_aliases_promote_into_registered_sections(
         source_sheet=section_reference,
         student_number=f"alias-{program_code}",
     )
-    result = StudentPromotionService(session=db_session).promote_import_batch(
-        batch.id
-    )
+    result = StudentPromotionService(session=db_session).promote_import_batch(batch.id)
 
     assert result.newly_promoted_rows == 1
     assert result.blocked_rows == []
@@ -206,8 +201,6 @@ def test_short_program_aliases_promote_into_registered_sections(
     student = db_session.get(Student, row.promoted_student_id)
     assert student is not None
     assert student.section_id == section.id
-
-
 
 def test_academic_section_get_or_create(db_session: Session):
     batch = _make_batch(db_session)
