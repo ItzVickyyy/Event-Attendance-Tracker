@@ -55,7 +55,6 @@ def test_login_email_is_case_insensitive_but_password_is_case_sensitive(
     assert wrong_password_case.status_code == 400
 
 
-
 def test_get_access_token_incorrect_password(client: TestClient) -> None:
     login_data = {
         "username": settings.FIRST_SUPERUSER,
