@@ -1268,17 +1268,13 @@ function Scanner() {
             <LoadingButton
               loading={scanning}
               onClick={scanNfc}
-              disabled={
-                scanning || !nfcSupported || !syncStatus.activeSession
-              }
+              disabled={scanning || !nfcSupported || !syncStatus.activeSession}
             >
-              {scanning ? (
-                "Scanning..."
-              ) : permissionDenied ? (
-                "Request Permission"
-              ) : (
-                "Scan NFC Tag"
-              )}
+              {scanning
+                ? "Scanning..."
+                : permissionDenied
+                  ? "Request Permission"
+                  : "Scan NFC Tag"}
             </LoadingButton>
             {scanning && (
               <Button variant="outline" onClick={stopNfcScanning}>
