@@ -61,14 +61,40 @@ export async function getActiveAttendanceSession(
     const session = await request<AttendanceSession>(
       `/attendance-sessions/active/${encodeURIComponent(eventId)}`,
     )
+    if (
+      session.event_id !== eventId ||
+      !session.is_active ||
+      session.status !== "OPEN"
+    ) {
+      localStorage.removeItem(cacheKey(eventId))
+      return null
+    }
     localStorage.setItem(cacheKey(eventId), JSON.stringify(session))
     return session
   } catch {
+    // When online, the server is authoritative. A cached session must not
+    // remain active after the server reports no active session or is reached
+    // but rejects the request. Use a previously confirmed open session only
+    // for genuine offline operation.
+    if (navigator.onLine) {
+      localStorage.removeItem(cacheKey(eventId))
+      return null
+    }
     const cached = localStorage.getItem(cacheKey(eventId))
     if (!cached) return null
     try {
-      return JSON.parse(cached) as AttendanceSession
+      const session = JSON.parse(cached) as AttendanceSession
+      if (
+        session.event_id !== eventId ||
+        !session.is_active ||
+        session.status !== "OPEN"
+      ) {
+        localStorage.removeItem(cacheKey(eventId))
+        return null
+      }
+      return session
     } catch {
+      localStorage.removeItem(cacheKey(eventId))
       return null
     }
   }
