@@ -488,16 +488,31 @@ function SyncStatusCard({
         )}
 
         {failedScans.length > 0 && (
-          <div className="flex items-center justify-between gap-2 text-sm text-destructive">
-            <div className="flex items-center gap-2">
-              <TriangleAlert className="h-4 w-4" />
-              Some scans failed to sync
-              {failedCodes.length > 0 ? ` (${failedCodes.join(", ")})` : ""}
+          <div className="space-y-2 text-sm text-destructive">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <TriangleAlert className="h-4 w-4" />
+                Some scans failed to sync
+                {failedCodes.length > 0 ? ` (${failedCodes.join(", ")})` : ""}
+              </div>
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                <RefreshCw className="mr-1 h-3 w-3" />
+                Retry
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCw className="mr-1 h-3 w-3" />
-              Retry
-            </Button>
+            {failedScans.some((scan) => scan.last_error_detail) && (
+              <div className="rounded-md border border-destructive/30 p-3 text-foreground">
+                {failedScans
+                  .filter((scan) => scan.last_error_detail)
+                  .slice(0, 3)
+                  .map((scan) => (
+                    <p key={scan.id} className="break-words">
+                      <span className="font-medium">{scan.last_error}:</span>{" "}
+                      {scan.last_error_detail}
+                    </p>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 

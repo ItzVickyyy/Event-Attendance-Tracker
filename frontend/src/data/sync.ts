@@ -272,10 +272,21 @@ async function syncOneQueuedRecord(
       return "duplicate"
     }
     if (httpStatus === 401) return "unauthorized"
+    const responseBody = error.response?.data as
+      | { detail?: unknown }
+      | string
+      | undefined
+    const detail =
+      typeof responseBody === "string"
+        ? responseBody
+        : typeof responseBody?.detail === "string"
+          ? responseBody.detail
+          : undefined
     await markFailed(
       record.id,
       `http-${httpStatus}`,
       httpStatus >= 500 ? "RETRY" : "REJECTED",
+      detail,
     )
     return httpStatus >= 500 ? "retry" : "failed"
   }
