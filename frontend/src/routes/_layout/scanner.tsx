@@ -608,10 +608,6 @@ function Scanner() {
       const granted = permissionStatus.state === "granted"
       setPermissionGranted(granted)
       setPermissionDenied(permissionStatus.state === "denied")
-      if (granted) {
-        } else {
-        localStorage.removeItem("nfc-permission-granted")
-      }
     }
 
     if ("permissions" in navigator) {
