@@ -620,6 +620,10 @@ function Scanner() {
           status.addEventListener("change", updatePermission)
         })
         .catch(() => {
+          // Some browsers expose Permissions API but not the NFC descriptor.
+          // The scan button can still request permission when clicked.
+        })
+        .catch(() => {
           // Some browsers do not expose NFC through the Permissions API.
           // Keep the last successfully confirmed state and verify it on scan.
         })
