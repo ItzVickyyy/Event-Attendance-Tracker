@@ -51,7 +51,9 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
 
     let cancelled = false
     const registeredAttendeeIds = new Set(
-      (registrationQuery.data?.data.data ?? []).map((item) => item.attendee_id),
+      (registrationQuery.data?.data.data ?? [])
+        .filter((item) => item.registration_status === "registered")
+        .map((item) => item.attendee_id),
     )
 
     void Promise.all(
