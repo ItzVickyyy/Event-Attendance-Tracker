@@ -1689,3 +1689,58 @@ def test_student_has_only_one_always_active_nfc_credential(
     )
     assert deactivate_res.status_code == 400
     assert "must remain active" in deactivate_res.json()["detail"]
+
+
+def test_scan_explains_event_with_no_eligible_sections(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=superuser_token_headers,
+        json={
+            "event_name": f"No Eligible Sections {random_lower_string()[:5]}",
+            "event_date": "2026-10-12",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    ).json()
+
+    person = client.post(
+        f"{settings.API_V1_STR}/people/",
+        headers=superuser_token_headers,
+        json={
+            "first_name": "Eligibility",
+            "last_name": "Tester",
+            "email": random_email(),
+        },
+    ).json()
+    attendee = client.post(
+        f"{settings.API_V1_STR}/attendees/",
+        headers=superuser_token_headers,
+        json={"person_id": person["id"], "attendee_type": "guest"},
+    ).json()
+    credential_value = f"NO_REG_{random_lower_string()[:8].upper()}"
+    client.post(
+        f"{settings.API_V1_STR}/attendee-credentials/",
+        headers=superuser_token_headers,
+        json={
+            "attendee_id": attendee["id"],
+            "credential_type": "qr",
+            "credential_value": credential_value,
+            "is_active": True,
+        },
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/attendance/scan",
+        headers=superuser_token_headers,
+        json={
+            "event_id": event["id"],
+            "credential_value": credential_value,
+            "scan_method": "qr",
+        },
+    )
+
+    assert response.status_code == 404
+    assert "no eligible sections registered yet" in response.json()["detail"]
+    assert "Register selected sections" in response.json()["detail"]
