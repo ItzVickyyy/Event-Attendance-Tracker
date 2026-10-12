@@ -911,6 +911,12 @@ class EventBase(SQLModel):
         ondelete="SET NULL",
     )
     status: EventStatus = Field(default=EventStatus.draft)
+    eligible_section_ids: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(
+            JSON, nullable=False, default=list, server_default=text("'[]'")
+        ),
+    )
 
 
 class EventCreate(EventBase):
@@ -927,6 +933,7 @@ class EventUpdate(SQLModel):
     attendance_mode: AttendanceMode | None = None
     organization_id: uuid.UUID | None = None
     status: EventStatus | None = None
+    eligible_section_ids: list[str] | None = None
 
 
 class AttendanceSessionBase(SQLModel):
