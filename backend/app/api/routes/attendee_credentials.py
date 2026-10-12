@@ -211,14 +211,44 @@ def update_attendee_credential(
         raise HTTPException(status_code=404, detail="Attendee credential not found")
 
     update_dict = credential_in.model_dump(exclude_unset=True)
-    if (
-        credential.credential_type == CredentialType.nfc
-        and update_dict.get("is_active") is False
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Registered Card UIDs must remain active.",
-        )
+    if credential.credential_type == CredentialType.nfc:
+        if update_dict.get("is_active") is False:
+            raise HTTPException(
+                status_code=400,
+                detail="Registered Card UIDs must remain active.",
+            )
+        if update_dict.get("credential_type", CredentialType.nfc) != CredentialType.nfc:
+            raise HTTPException(
+                status_code=400,
+                detail="A registered Card UID cannot be changed to another credential type.",
+            )
+        if (
+            "attendee_id" in update_dict
+            and update_dict["attendee_id"] != credential.attendee_id
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="A registered Card UID cannot be reassigned to another student.",
+            )
+
+    target_credential_type = update_dict.get(
+        "credential_type", credential.credential_type
+    )
+    target_attendee_id = update_dict.get("attendee_id", credential.attendee_id)
+    if target_credential_type == CredentialType.nfc:
+        existing_nfc = session.exec(
+            select(AttendeeCredential).where(
+                AttendeeCredential.attendee_id == target_attendee_id,
+                AttendeeCredential.credential_type == CredentialType.nfc,
+                col(AttendeeCredential.id) != credential_id,
+            )
+        ).first()
+        if existing_nfc:
+            raise HTTPException(
+                status_code=409,
+                detail="This student already has a registered Card UID.",
+            )
+
     if (
         "credential_value" in update_dict
         and update_dict["credential_value"] != credential.credential_value
