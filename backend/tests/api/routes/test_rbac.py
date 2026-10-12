@@ -322,7 +322,7 @@ def test_scanner_permission_matrix(client: TestClient, db: Session) -> None:
         headers=get_token_headers_for_role(client, db, role=UserRole.admin),
         json={"person_id": p3["id"], "attendee_type": "student"},
     ).json()
-    cred_val3 = f"NFC_{random_lower_string()[:8]}"
+    cred_val3 = f"NFC_{random_lower_string()[:8]}".upper()
     client.post(
         f"{settings.API_V1_STR}/attendee-credentials/",
         headers=get_token_headers_for_role(client, db, role=UserRole.admin),
