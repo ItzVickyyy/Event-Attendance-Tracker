@@ -83,6 +83,15 @@ def create_attendee_credential(
     current_user: CurrentUser,
     credential_in: AttendeeCredentialCreate,
 ) -> Any:
+    if (
+        current_user.role == UserRole.class_representative
+        and credential_in.credential_type != CredentialType.nfc
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Class Representatives can only register NFC Card UIDs",
+        )
+
     attendee = session.get(Attendee, credential_in.attendee_id)
     if not attendee:
         raise HTTPException(status_code=404, detail="Attendee not found")
