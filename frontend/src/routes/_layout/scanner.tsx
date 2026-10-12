@@ -600,7 +600,7 @@ function Scanner() {
 
     if ("permissions" in navigator) {
       void navigator.permissions
-        .query({ name: "nfc" as PermissionName })
+        .query({ name: "nfc" as unknown as PermissionName })
         .then((status) => {
           if (cancelled) return
           permissionStatus = status
