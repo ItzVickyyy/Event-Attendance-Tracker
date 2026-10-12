@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_layout/events/$eventId/sessions")({
 
 function SessionsPage() {
   const { eventId } = Route.useParams()
+  const queryClient = useQueryClient()
   const [sessions, setSessions] = useState<AttendanceSession[]>([])
   const [name, setName] = useState("")
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
@@ -61,7 +63,7 @@ function SessionsPage() {
       })
       setName("")
       toast.success("Attendance session created")
-      await reload()
+      await Promise.all([reload(), queryClient.invalidateQueries()])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to create session",
@@ -75,7 +77,7 @@ function SessionsPage() {
     try {
       await activateAttendanceSession(id)
       toast.success("Session is now active")
-      await reload()
+      await Promise.all([reload(), queryClient.invalidateQueries()])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to activate session",
@@ -87,7 +89,7 @@ function SessionsPage() {
     try {
       await closeAttendanceSession(id)
       toast.success("Session closed")
-      await reload()
+      await Promise.all([reload(), queryClient.invalidateQueries()])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to close session",
