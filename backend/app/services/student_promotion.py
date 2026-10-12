@@ -190,12 +190,30 @@ class StudentPromotionService:
             raise _PromotionBlocked(
                 f"Section reference {section_reference!r} must include a program and section."
             )
-        program_code, _section_name = parts
+        program_code, section_name = parts
         academic_program = self.session.exec(
             select(AcademicProgram).where(
                 col(AcademicProgram.program_code) == program_code
             )
         ).first()
+
+        # The import template's section labels use the familiar short forms
+        # "CS 1A" and "IT 1A", while the academic registry stores BSCS/BSIT.
+        # Resolve those aliases only when the literal program code is absent,
+        # and keep the registry's canonical code for section lookup.
+        if academic_program is None:
+            program_aliases = {"CS": "BSCS", "IT": "BSIT"}
+            canonical_code = program_aliases.get(program_code)
+            if canonical_code:
+                academic_program = self.session.exec(
+                    select(AcademicProgram).where(
+                        col(AcademicProgram.program_code) == canonical_code
+                    )
+                ).first()
+                if academic_program is not None:
+                    program_code = canonical_code
+                    section_reference = f"{canonical_code} {section_name}"
+
         if academic_program is None:
             raise _PromotionBlocked(
                 f"AcademicProgram {program_code!r} does not exist. "
