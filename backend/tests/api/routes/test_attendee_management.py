@@ -456,14 +456,30 @@ def test_credential_creation_and_update_reject_missing_or_duplicate_values(
         == 404
     )
 
-    assert (
-        client.patch(
-            _api(f"/attendee-credentials/{other.json()['id']}"),
-            headers=headers,
-            json={"attendee_id": str(uuid4())},
-        ).status_code
-        == 404
+    nfc_reassignment = client.patch(
+        _api(f"/attendee-credentials/{other.json()['id']}"),
+        headers=headers,
+        json={"attendee_id": first["id"]},
     )
+    assert nfc_reassignment.status_code == 400
+    assert "cannot be reassigned" in nfc_reassignment.json()["detail"]
+
+    qr = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": second["id"],
+            "credential_type": "qr",
+            "credential_value": f"QR-{random_lower_string()[:10].upper()}",
+        },
+    )
+    assert qr.status_code == 200
+    invalid_qr_reassignment = client.patch(
+        _api(f"/attendee-credentials/{qr.json()['id']}"),
+        headers=headers,
+        json={"attendee_id": str(uuid4())},
+    )
+    assert invalid_qr_reassignment.status_code == 404
 
 
 def test_public_credential_lookup_includes_student_and_section(
