@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, CreditCard, History, UserRound } from "lucide-react"
+import { ArrowLeft, CreditCard, History, UserRound, Wifi } from "lucide-react"
 import { useMemo, useState } from "react"
 import {
   AcademicProgramsService,
@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
 
 export function StudentDetailsPage({
   sectionId,
@@ -26,6 +27,7 @@ export function StudentDetailsPage({
 }) {
   const queryClient = useQueryClient()
   const [credentialValue, setCredentialValue] = useState("")
+  const [scanningNfc, setScanningNfc] = useState(false)
   const studentQuery = useQuery({
     queryKey: ["student", studentId],
     queryFn: () =>
@@ -121,7 +123,7 @@ export function StudentDetailsPage({
         body: {
           attendee_id: student!.attendee_id!,
           credential_type: "nfc",
-          credential_value: credentialValue.trim(),
+          credential_value: credentialValue.trim().toUpperCase(),
           is_active: true,
         },
       }),
@@ -143,6 +145,71 @@ export function StudentDetailsPage({
         queryKey: ["studentCredentials", student?.attendee_id],
       }),
   })
+  const handleScanNfc = async () => {
+    if (!("NDEFReader" in window)) {
+      toast.error("Web NFC is not supported here. Use Chrome on Android or enter the UID manually.")
+      return
+    }
+
+    let reader: any
+    let timeoutId: number | undefined
+    setScanningNfc(true)
+    try {
+      reader = new (window as any).NDEFReader()
+      await reader.scan()
+      const captured = await new Promise<string>((resolve, reject) => {
+        const cleanup = () => {
+          reader.removeEventListener("reading", onReading)
+          if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+        }
+        const onReading = (event: any) => {
+          const serial =
+            typeof event.serialNumber === "string"
+              ? event.serialNumber.trim()
+              : ""
+          let textRecord = ""
+          for (const record of event.message?.records ?? []) {
+            if (record.recordType !== "text" || !(record.data instanceof DataView))
+              continue
+            const data = record.data
+            if (!data.byteLength) continue
+            const status = data.getUint8(0)
+            const languageLength = status & 0x3f
+            const start = 1 + languageLength
+            if (start < data.byteLength) {
+              textRecord = new TextDecoder(
+                (status & 0x80) !== 0 ? "utf-16" : "utf-8",
+              ).decode(
+                new Uint8Array(
+                  data.buffer,
+                  data.byteOffset + start,
+                  data.byteLength - start,
+                ),
+              ).trim()
+              if (textRecord) break
+            }
+          }
+          const value = textRecord || serial
+          if (!value) return
+          cleanup()
+          resolve(value.toUpperCase())
+        }
+        reader.addEventListener("reading", onReading)
+        timeoutId = window.setTimeout(() => {
+          cleanup()
+          reject(new Error("No NFC identifier was received within 30 seconds. Try again or enter the UID manually."))
+        }, 30000)
+      })
+      setCredentialValue(captured)
+      toast.success("Card UID captured. Click Issue / Reissue to save it.")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to read NFC card")
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+      setScanningNfc(false)
+    }
+  }
+
   const section = sectionQuery.data?.data
   const program = section
     ? programsQuery.data?.data.data.find(
@@ -389,8 +456,17 @@ export function StudentDetailsPage({
                 <Input
                   value={credentialValue}
                   onChange={(event) => setCredentialValue(event.target.value)}
-                  placeholder="Enter NFC card UID"
+                  placeholder="Scan card or enter UID"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void handleScanNfc()}
+                  disabled={scanningNfc || credentialMutation.isPending}
+                >
+                  <Wifi className="mr-2 size-4" />
+                  {scanningNfc ? "Tap card..." : "Scan card"}
+                </Button>
                 <Button
                   onClick={() => credentialMutation.mutate()}
                   disabled={
