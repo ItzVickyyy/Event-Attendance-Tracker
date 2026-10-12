@@ -19,6 +19,7 @@ interface QueueRecordLike {
   synced_at?: string
   retry_count: number
   last_error?: string
+  last_error_detail?: string
   last_retry_at?: string
   created_at: string
   synced_at_server?: string
@@ -345,7 +346,7 @@ test.describe("Attendance background sync", () => {
   }) => {
     const scan = await mockScan(page, () => ({
       status: 409,
-      json: { detail: "already scanned" },
+      json: { detail: "Attendance already recorded for this session" },
     }))
     await gotoApp(page)
     await setToken(page)
@@ -357,6 +358,28 @@ test.describe("Attendance background sync", () => {
     expect(queued.synced).toBe(true)
     expect(queued.retry_count).toBe(0)
     expect(queued.last_error).toBeUndefined()
+  })
+
+  test("409 session conflicts are not incorrectly marked as synced", async ({
+    page,
+    mockScan,
+  }) => {
+    const scan = await mockScan(page, () => ({
+      status: 409,
+      json: { detail: "Attendance session is not open" },
+    }))
+    await gotoApp(page)
+    await setToken(page)
+    await seedRecords(page, [record({ id: "rec-closed-session" })])
+    await triggerSyncNow(page)
+
+    await expect.poll(() => scan.count(), { timeout: 15000 }).toBe(1)
+    const [queued] = await readQueue(page)
+    expect(queued.synced).toBe(false)
+    expect(queued.sync_status).toBe("REJECTED")
+    expect(queued.retry_count).toBe(1)
+    expect(queued.last_error).toBe("http-409")
+    expect(queued.last_error_detail).toBe("Attendance session is not open")
   })
 
   test("401 responses leave the record pending and untouched", async ({
