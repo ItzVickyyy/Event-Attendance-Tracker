@@ -719,7 +719,6 @@ function SectionList() {
           if (!open) {
             setStudentsTarget(null)
             setStudentSearch("")
-            setStudentPage(1)
           }
         }}
       >
@@ -847,12 +846,8 @@ function SectionList() {
                               {student.middle_name
                                 ? ` ${student.middle_name}`
                                 : ""}
+                              {student.extension ? ` ${student.extension}` : ""}
                             </div>
-                            {student.extension ? (
-                              <span className="ml-1 font-medium">
-                                {student.extension}
-                              </span>
-                            ) : null}
                           </TableCell>
                           <TableCell>
                             <span className="inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
