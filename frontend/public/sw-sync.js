@@ -253,9 +253,9 @@ async function syncRecord(db, token, apiBase, record) {
 function isDuplicateAttendanceConflict(detail) {
   if (typeof detail !== "string") return false
   return (
-    /^Already (Recorded|Completed)\\s*-/i.test(detail) ||
-    /^Attendance already recorded for this session\\.?$/i.test(detail) ||
-    /^Attendance already completed\\.?$/i.test(detail)
+    /^Already (Recorded|Completed)\s*-/i.test(detail) ||
+    /^Attendance already recorded for this session\.?$/i.test(detail) ||
+    /^Attendance already completed\.?$/i.test(detail)
   )
 }
 
