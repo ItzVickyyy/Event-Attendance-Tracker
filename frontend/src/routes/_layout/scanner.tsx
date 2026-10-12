@@ -80,6 +80,15 @@ function normalizeNfcCredential(raw: string): string {
   return raw.trim().toUpperCase()
 }
 
+function getSessionLabel(
+  sessionType?: AttendanceSession["session_type"],
+  sessionName?: string,
+): string {
+  if (sessionType === "TIME_IN") return "TIME-IN"
+  if (sessionType === "TIME_OUT") return "TIME-OUT"
+  return sessionName?.trim() || "ATTENDANCE"
+}
+
 function extractNfcCredential(event: any): string {
   const msg = event.message
   if (typeof msg === "string" && msg.trim()) return normalizeNfcCredential(msg)
@@ -545,7 +554,10 @@ function Scanner() {
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
-  const [permissionGranted, setPermissionGranted] = useState(false)
+  const [permissionGranted, setPermissionGranted] = useState(
+    () => localStorage.getItem("nfc-permission-granted") === "true",
+  )
+  const [permissionDenied, setPermissionDenied] = useState(false)
   const [manualSearch, setManualSearch] = useState("")
   const ndefRef = useRef<any>(null)
   const nfcHandlerRef = useRef<((event: any) => void) | null>(null)
@@ -563,6 +575,8 @@ function Scanner() {
     message: string
     name?: string
     studentNumber?: string
+    sessionType?: AttendanceSession["session_type"]
+    sessionName?: string
     timestamp: string
   } | null>(null)
 
@@ -570,6 +584,42 @@ function Scanner() {
   // production scanning). Driven by React state so it renders in the UI;
   // the same object is also exposed on `window` for console inspection.
   const [nfcDiagnostic, setNfcDiagnostic] = useState<NfcDiagnostic | null>(null)
+
+  useEffect(() => {
+    let permissionStatus: PermissionStatus | null = null
+    let cancelled = false
+    const updatePermission = () => {
+      if (!permissionStatus || cancelled) return
+      const granted = permissionStatus.state === "granted"
+      setPermissionGranted(granted)
+      setPermissionDenied(permissionStatus.state === "denied")
+      if (granted) {
+        localStorage.setItem("nfc-permission-granted", "true")
+      } else {
+        localStorage.removeItem("nfc-permission-granted")
+      }
+    }
+
+    if ("permissions" in navigator) {
+      void navigator.permissions
+        .query({ name: "nfc" as unknown as PermissionName })
+        .then((status) => {
+          if (cancelled) return
+          permissionStatus = status
+          updatePermission()
+          status.addEventListener("change", updatePermission)
+        })
+        .catch(() => {
+          // Some browsers do not expose NFC through the Permissions API.
+          // Keep the last successfully confirmed state and verify it on scan.
+        })
+    }
+
+    return () => {
+      cancelled = true
+      permissionStatus?.removeEventListener("change", updatePermission)
+    }
+  }, [])
 
   useEffect(() => {
     if (!lastResult) return
@@ -622,6 +672,8 @@ function Scanner() {
             setLastResult({
               type: "error",
               message: "Credential not recognized in offline roster",
+              sessionType: activeSession.session_type,
+              sessionName: activeSession.name,
               timestamp: nowStr,
             })
             toast.error("No offline roster entry for this credential")
@@ -643,6 +695,8 @@ function Scanner() {
               message: "Already queued for this attendee",
               name: entry.person_name,
               studentNumber: entry.student_number,
+              sessionType: activeSession.session_type,
+              sessionName: activeSession.name,
               timestamp: nowStr,
             })
             toast.info("Already queued for this attendee")
@@ -659,6 +713,8 @@ function Scanner() {
             message: "Saved offline",
             name: entry.person_name,
             studentNumber: entry.student_number,
+            sessionType: activeSession.session_type,
+            sessionName: activeSession.name,
             timestamp: nowStr,
           })
           toast.success(`Scan queued - ${entry.person_name}`)
@@ -666,6 +722,8 @@ function Scanner() {
           setLastResult({
             type: "error",
             message: "Failed to queue offline scan",
+            sessionType: activeSession.session_type,
+            sessionName: activeSession.name,
             timestamp: nowStr,
           })
           toast.error("Failed to queue scan")
@@ -682,6 +740,8 @@ function Scanner() {
         setLastResult({
           type: "success",
           message: "Scan queued for sync",
+          sessionType: activeSession.session_type,
+          sessionName: activeSession.name,
           timestamp: nowStr,
         })
         toast.success("Scan queued locally")
@@ -689,6 +749,8 @@ function Scanner() {
         setLastResult({
           type: "error",
           message: "Failed to queue scan",
+          sessionType: activeSession.session_type,
+          sessionName: activeSession.name,
           timestamp: nowStr,
         })
         toast.error("Failed to queue scan")
@@ -725,6 +787,8 @@ function Scanner() {
       const ndef = new (window as any).NDEFReader()
       await ndef.scan()
       setPermissionGranted(true)
+      setPermissionDenied(false)
+      localStorage.setItem("nfc-permission-granted", "true")
 
       const handleReading = (event: any) => {
         if (nfcTimeoutRef.current !== null) {
@@ -831,6 +895,8 @@ function Scanner() {
             "NFC permission denied. Please allow NFC access in browser settings.",
           )
           setPermissionGranted(false)
+          setPermissionDenied(true)
+          localStorage.removeItem("nfc-permission-granted")
         } else {
           toast.error(`NFC error: ${error.message}`)
         }
@@ -995,6 +1061,8 @@ function Scanner() {
           : "Saved offline",
         name: student.person_name ?? undefined,
         studentNumber: student.student_number ?? undefined,
+        sessionType: activeSession.session_type,
+        sessionName: activeSession.name,
         timestamp: nowStr,
       })
       toast.success(
@@ -1027,7 +1095,7 @@ function Scanner() {
           </h1>
           <p className="text-muted-foreground">
             {currentEvent
-              ? `Recording for "${currentEvent.event_name}" (Auto Time-In / Time-Out)`
+              ? `Recording attendance for "${currentEvent.event_name}"`
               : "Select an event to start recording attendance"}
           </p>
         </div>
@@ -1055,6 +1123,51 @@ function Scanner() {
         </div>
       </div>
 
+      {eventId && (
+        <Card
+          className={
+            syncStatus.activeSession?.session_type === "TIME_IN"
+              ? "border-2 border-green-600 bg-green-500/5"
+              : syncStatus.activeSession?.session_type === "TIME_OUT"
+                ? "border-2 border-orange-500 bg-orange-500/5"
+                : "border border-dashed"
+          }
+          data-testid="active-attendance-mode"
+        >
+          <CardContent className="flex items-center justify-between gap-4 py-4">
+            <div className="space-y-1">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Current attendance mode
+              </div>
+              <div className="text-xl font-bold">
+                {syncStatus.activeSession
+                  ? `${getSessionLabel(syncStatus.activeSession.session_type, syncStatus.activeSession.name)} ACTIVE`
+                  : "NO ACTIVE SESSION"}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {syncStatus.activeSession
+                  ? syncStatus.activeSession.name
+                  : "Scanning is disabled until an officer activates a session."}
+              </p>
+            </div>
+            <Badge
+              variant={
+                syncStatus.activeSession?.session_type === "TIME_IN"
+                  ? "default"
+                  : "outline"
+              }
+            >
+              {syncStatus.activeSession
+                ? getSessionLabel(
+                    syncStatus.activeSession.session_type,
+                    syncStatus.activeSession.name,
+                  )
+                : "INACTIVE"}
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
+
       {lastResult ? (
         <Card
           className={`border-2 transition-all ${
@@ -1078,7 +1191,9 @@ function Scanner() {
                   }
                 >
                   {lastResult.type === "success"
-                    ? "Recorded"
+                    ? lastResult.sessionType
+                      ? `${getSessionLabel(lastResult.sessionType, lastResult.sessionName)} QUEUED`
+                      : "Queued"
                     : lastResult.type === "duplicate"
                       ? "Duplicate"
                       : "Notice"}
@@ -1121,9 +1236,7 @@ function Scanner() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {scanning ? (
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            ) : permissionGranted ? (
+            {permissionGranted ? (
               <Wifi className="h-5 w-5 text-green-500" />
             ) : (
               <Wifi className="h-5 w-5 text-muted-foreground" />
@@ -1155,18 +1268,13 @@ function Scanner() {
             <LoadingButton
               loading={scanning}
               onClick={scanNfc}
-              disabled={scanning || !nfcSupported}
+              disabled={scanning || !nfcSupported || !syncStatus.activeSession}
             >
-              {scanning ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Scanning...
-                </>
-              ) : !permissionGranted ? (
-                "Request Permission"
-              ) : (
-                "Scan NFC Tag"
-              )}
+              {scanning
+                ? "Scanning..."
+                : permissionDenied
+                  ? "Request Permission"
+                  : "Scan NFC Tag"}
             </LoadingButton>
             {scanning && (
               <Button variant="outline" onClick={stopNfcScanning}>
@@ -1296,7 +1404,7 @@ function Scanner() {
                 <LoadingButton
                   loading={qrScanning}
                   onClick={scanQr}
-                  disabled={qrScanning}
+                  disabled={qrScanning || !syncStatus.activeSession}
                   className="flex-1"
                 >
                   {qrScanning ? "Scanning QR..." : "Start QR Scanner"}
