@@ -11,7 +11,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-function getYearNumber(yearLevel: string | number | null | undefined): number | null {
+function getYearNumber(
+  yearLevel: string | number | null | undefined,
+): number | null {
   const match = String(yearLevel ?? "").match(/[1-4]/)
   return match ? Number(match[0]) : null
 }
@@ -80,10 +82,12 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const students = studentQueries.data ?? []
   const sections = sectionsQuery.data?.data.data ?? []
   const allSectionsSelected =
-    sections.length > 0 && sections.every((section) => selectedSections.includes(section.id))
+    sections.length > 0 &&
+    sections.every((section) => selectedSections.includes(section.id))
   const toggleSectionGroup = (sectionIds: string[]) => {
     setSelectedSections((current) => {
-      const allSelected = sectionIds.length > 0 && sectionIds.every((id) => current.includes(id))
+      const allSelected =
+        sectionIds.length > 0 && sectionIds.every((id) => current.includes(id))
       return allSelected
         ? current.filter((id) => !sectionIds.includes(id))
         : [...new Set([...current, ...sectionIds])]
@@ -157,7 +161,9 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                   size="sm"
                   variant="outline"
                   disabled={sections.length === 0}
-                  onClick={() => toggleSectionGroup(sections.map((section) => section.id))}
+                  onClick={() =>
+                    toggleSectionGroup(sections.map((section) => section.id))
+                  }
                 >
                   {allSectionsSelected ? "Clear all" : "Select all"}
                 </Button>
@@ -167,7 +173,9 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                   )
                   const allYearSelected =
                     yearSections.length > 0 &&
-                    yearSections.every((section) => selectedSections.includes(section.id))
+                    yearSections.every((section) =>
+                      selectedSections.includes(section.id),
+                    )
                   return (
                     <Button
                       key={year}
@@ -175,36 +183,48 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                       size="sm"
                       variant="outline"
                       disabled={yearSections.length === 0}
-                      onClick={() => toggleSectionGroup(yearSections.map((section) => section.id))}
+                      onClick={() =>
+                        toggleSectionGroup(
+                          yearSections.map((section) => section.id),
+                        )
+                      }
                     >
-                      {allYearSelected ? "Clear" : "All"} {year === 1 ? "1st" : year === 2 ? "2nd" : year === 3 ? "3rd" : "4th"} year
+                      {allYearSelected ? "Clear" : "All"}{" "}
+                      {year === 1
+                        ? "1st"
+                        : year === 2
+                          ? "2nd"
+                          : year === 3
+                            ? "3rd"
+                            : "4th"}{" "}
+                      year
                     </Button>
                   )
                 })}
               </div>
               {sections.map((section) => {
-              const checked = selectedSections.includes(section.id)
-              return (
-                <label
-                  key={section.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleSectionGroup([section.id])}
-                  />
-                  <span className="flex-1">
-                    <span className="block font-medium">
-                      {section.section_name}
+                const checked = selectedSections.includes(section.id)
+                return (
+                  <label
+                    key={section.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleSectionGroup([section.id])}
+                    />
+                    <span className="flex-1">
+                      <span className="block font-medium">
+                        {section.section_name}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        Year {section.year_level} · {section.academic_year}
+                      </span>
                     </span>
-                    <span className="text-sm text-muted-foreground">
-                      Year {section.year_level} · {section.academic_year}
-                    </span>
-                  </span>
-                </label>
-              )
-            })}
+                  </label>
+                )
+              })}
             </>
           )}
         </CardContent>
