@@ -9,6 +9,7 @@ const SCAN_MANUAL_URL = "http://localhost:8001/api/v1/attendance/scan-manual*"
 const STUDENTS_SEARCH_URL = "**/api/v1/students**"
 const ATTENDEES_FILTER_URL = "**/api/v1/attendees**"
 const USERS_ME_URL = "**/api/v1/users/me*"
+const ACTIVE_SESSION_URL = "**/api/v1/attendance-sessions/active/evt-1*"
 
 interface MockHttpResponse {
   status?: number
@@ -150,6 +151,28 @@ const test = base.extend<{
               id: "user-1",
               is_superuser: true,
               can_scan: true,
+            }),
+          })
+        })
+        await page.route(ACTIVE_SESSION_URL, async (route) => {
+          const request = route.request()
+          if (request.method() === "OPTIONS") {
+            await route.fulfill({ status: 204, headers: corsHeaders })
+            return
+          }
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            headers: corsHeaders,
+            body: JSON.stringify({
+              id: "session-1",
+              event_id: "evt-1",
+              session_date: "2026-01-01",
+              name: "Morning Session",
+              session_type: "TIME_IN",
+              status: "OPEN",
+              display_order: 1,
+              is_active: true,
             }),
           })
         })
