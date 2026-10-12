@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Users } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   AcademicSectionsService,
+  type EventPublic,
   EventRegistrationsService,
   EventsService,
   StudentsService,
@@ -40,11 +41,19 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         query: { event_id: eventId, skip: 0, limit: 1000 },
       }),
   })
+  const eventResponse = eventQuery.data as unknown as
+    | { data?: EventPublic }
+    | EventPublic
+    | undefined
+  const event =
+    eventResponse && "event_name" in eventResponse
+      ? eventResponse
+      : eventResponse?.data
   useEffect(() => {
     if (!eventQuery.isSuccess || hydratedEventRef.current === eventId) return
-    setSelectedSections(eventQuery.data?.data.eligible_section_ids ?? [])
+    setSelectedSections(event?.eligible_section_ids ?? [])
     hydratedEventRef.current = eventId
-  }, [eventId, eventQuery.isSuccess, eventQuery.data])
+  }, [eventId, eventQuery.isSuccess, event?.eligible_section_ids])
   const studentQueries = useQuery({
     queryKey: ["registrationStudents", selectedSections],
     enabled: selectedSections.length > 0,
@@ -127,7 +136,6 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           registered.some((item) => item.attendee_id === student.attendee_id),
       ).length,
   )
-  const event = eventQuery.data?.data
   if (eventQuery.isLoading)
     return (
       <Card>
