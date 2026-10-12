@@ -992,7 +992,6 @@ function SectionList() {
                 if (!section) return
                 setStudentsTarget(section)
                 setStudentSearch("")
-                setStudentPage(1)
                 setAddStudentSectionOpen(false)
                 setAddStudentOpen(true)
               }}
