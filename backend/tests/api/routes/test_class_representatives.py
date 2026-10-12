@@ -583,7 +583,7 @@ def test_import_keeps_created_accounts_when_email_delivery_fails(
 def test_class_representative_can_register_student_card_uid(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
-    representative, year, _section_id = _create_representative(
+    representative, year, section_id = _create_representative(
         client, superuser_token_headers
     )
     headers = _representative_headers(client, representative["email"])
@@ -671,3 +671,61 @@ def test_class_representative_can_register_student_card_uid(
         },
     )
     assert blank.status_code == 422
+
+    sections = client.get(
+        _api("/academic-registry/sections"), headers=superuser_token_headers
+    )
+    other_section = next(
+        row
+        for row in sections.json()["data"]
+        if row["academic_year_id"] == year["id"] and row["id"] != section_id
+    )
+    person_response = client.post(
+        _api("/people/"),
+        headers=superuser_token_headers,
+        json={
+            "first_name": "Outside",
+            "last_name": "Section",
+            "email": random_email(),
+        },
+    )
+    assert person_response.status_code == 200
+    outside_student = client.post(
+        _api("/students/"),
+        headers=superuser_token_headers,
+        json={
+            "person_id": person_response.json()["id"],
+            "student_number": f"OUT-{random_lower_string()[:10].upper()}",
+            "section_id": other_section["id"],
+        },
+    )
+    assert outside_student.status_code == 200
+    enrollment = client.post(
+        _api("/academic-registry/enrollments"),
+        headers=superuser_token_headers,
+        json={
+            "student_id": outside_student.json()["id"],
+            "academic_year_id": year["id"],
+            "section_id": other_section["id"],
+            "student_status": "regular",
+        },
+    )
+    assert enrollment.status_code == 200
+    attendee_response = client.get(
+        _api(f"/attendees/?person_id={person_response.json()['id']}&limit=1"),
+        headers=superuser_token_headers,
+    )
+    assert attendee_response.status_code == 200
+    outside_attendee_id = attendee_response.json()["data"][0]["id"]
+    forbidden = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": outside_attendee_id,
+            "credential_type": "nfc",
+            "credential_value": f"OUTSIDE-{random_lower_string()[:10].upper()}",
+            "is_active": True,
+        },
+    )
+    assert forbidden.status_code == 403
+
