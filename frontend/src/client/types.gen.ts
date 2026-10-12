@@ -1245,7 +1245,7 @@ export type EventPublic = {
     /**
      * Eligible Section Ids
      */
-    eligible_section_ids: Array<string>;
+    eligible_section_ids?: Array<string>;
     /**
      * Reference Code
      */
