@@ -324,9 +324,10 @@ export function ClassRepresentativeSectionWorkspace() {
   }
 
   const filtered = (students.data?.data ?? []).filter((student: any) => {
-    const matchesSearch = `${student.student_number} ${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    const matchesSearch =
+      `${student.student_number} ${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
     return matchesSearch && (!unregisteredOnly || !student.card_uid_registered)
   })
   const section = assignment.data
