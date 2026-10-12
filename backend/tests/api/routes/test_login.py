@@ -25,6 +25,38 @@ def test_get_access_token(client: TestClient) -> None:
     assert tokens["access_token"]
 
 
+
+def test_login_email_is_case_insensitive_but_password_is_case_sensitive(
+    client: TestClient, db: Session
+) -> None:
+    email = "SuperAdminCaseTest@example.com"
+    password = "SampleSuperAdmin!"
+    user = create_user(
+        session=db,
+        user_create=UserCreate(
+            email=email,
+            full_name="Case Test",
+            password=password,
+            is_active=True,
+            is_superuser=True,
+        ),
+    )
+
+    case_insensitive_login = client.post(
+        f"{settings.API_V1_STR}/login/access-token",
+        data={"username": email.lower(), "password": password},
+    )
+    assert case_insensitive_login.status_code == 200
+    assert case_insensitive_login.json().get("access_token")
+
+    wrong_password_case = client.post(
+        f"{settings.API_V1_STR}/login/access-token",
+        data={"username": email.lower(), "password": password.lower()},
+    )
+    assert wrong_password_case.status_code == 400
+
+    db.refresh(user)
+
 def test_get_access_token_incorrect_password(client: TestClient) -> None:
     login_data = {
         "username": settings.FIRST_SUPERUSER,
