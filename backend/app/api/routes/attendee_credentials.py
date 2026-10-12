@@ -8,7 +8,6 @@ from sqlmodel import col, func, select
 from app.api.deps import (
     CurrentUser,
     SessionDep,
-    class_rep_assignment,
     require_admin,
     require_scanner_permission,
 )
@@ -89,29 +88,22 @@ def create_attendee_credential(
         raise HTTPException(status_code=404, detail="Attendee not found")
 
     if current_user.role == UserRole.class_representative:
-        assignment = class_rep_assignment(session, current_user)
-        if not assignment:
-            raise HTTPException(
-                status_code=403, detail="No Class Representative assignment found"
-            )
         allowed = session.connection().execute(
             text("""
                 SELECT 1
                 FROM attendees a
                 JOIN students s ON s.person_id = a.person_id
                 JOIN student_enrollments se ON se.student_id = s.id
+                JOIN class_representative_assignments cra
+                  ON cra.section_id = se.section_id
+                 AND cra.academic_year_id = se.academic_year_id
                 WHERE a.id = :attendee_id
+                  AND cra.user_id = :user_id
                   AND s.archived_at IS NULL
-                  AND se.section_id = :section_id
-                  AND se.academic_year_id = :academic_year_id
                   AND se.archived_at IS NULL
                 LIMIT 1
             """),
-            {
-                "attendee_id": attendee.id,
-                "section_id": assignment["section_id"],
-                "academic_year_id": assignment["academic_year_id"],
-            },
+            {"attendee_id": attendee.id, "user_id": current_user.id},
         ).first()
         if not allowed:
             raise HTTPException(
