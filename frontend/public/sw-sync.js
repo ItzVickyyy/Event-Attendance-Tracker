@@ -218,10 +218,30 @@ async function syncRecord(db, token, apiBase, record) {
   }
   if (status === 401) return "unauthorized"
 
+  let errorDetail
+  try {
+    const responseText = await response.text()
+    if (responseText) {
+      try {
+        const responseBody = JSON.parse(responseText)
+        if (typeof responseBody?.detail === "string") {
+          errorDetail = responseBody.detail
+        } else {
+          errorDetail = responseText
+        }
+      } catch (_error) {
+        errorDetail = responseText
+      }
+    }
+  } catch (_error) {
+    // Keep the HTTP status even if the response body cannot be read.
+  }
+
   await markRecord(db, record.id, {
     sync_status: status >= 500 ? "RETRY" : "REJECTED",
     retry_count: record.retry_count + 1,
     last_error: `http-${status}`,
+    last_error_detail: errorDetail?.slice(0, 500),
     last_retry_at: now(),
   })
   return status >= 500 ? "retry" : "failed"
