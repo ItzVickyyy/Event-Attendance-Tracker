@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import CurrentUser, SessionDep, class_rep_assignment, require_admin
+from app.services.student_credentials import ensure_student_qr_credential
 from app.models import (
     AcademicSection,
     Attendee,
@@ -199,6 +200,8 @@ def create_student(
     student = Student.model_validate(student_in)
     student.reference_code = next_student_reference_code(session)
     session.add(student)
+    session.flush()
+    ensure_student_qr_credential(session, student)
     session.commit()
     session.refresh(student)
     return student
