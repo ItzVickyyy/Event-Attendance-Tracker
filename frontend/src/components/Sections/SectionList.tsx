@@ -104,7 +104,6 @@ function SectionList() {
   const [majorId, setMajorId] = useState("")
   const [studentForm, setStudentForm] = useState<Record<string, string>>({})
   const [studentSearch, setStudentSearch] = useState("")
-  const [studentPage, setStudentPage] = useState(1)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
   const [addStudentSectionOpen, setAddStudentSectionOpen] = useState(false)
   const [addStudentSectionId, setAddStudentSectionId] = useState("")
@@ -170,15 +169,6 @@ function SectionList() {
       ),
     )
   }, [rosterStudents, studentSearch])
-  const studentPageSize = 10
-  const studentPageCount = Math.max(
-    1,
-    Math.ceil(filteredRosterStudents.length / studentPageSize),
-  )
-  const visibleRosterStudents = filteredRosterStudents.slice(
-    (studentPage - 1) * studentPageSize,
-    studentPage * studentPageSize,
-  )
   const printRosterQuery = useQuery({
     queryKey: ["academicRegistryPrintRoster", printTarget?.id],
     queryFn: () =>
@@ -327,7 +317,6 @@ function SectionList() {
         contact_number: "",
         student_status: "regular",
       })
-      setStudentPage(1)
       void queryClient.invalidateQueries({
         queryKey: ["academicRegistryRoster"],
       })
@@ -734,9 +723,9 @@ function SectionList() {
           }
         }}
       >
-        <DialogContent className="!w-[calc(100vw-48px)] !max-w-[1440px] !h-[calc(100vh-64px)] !max-h-[900px] overflow-hidden p-0 gap-0">
+        <DialogContent className="!w-[calc(100vw-16px)] sm:!w-[calc(100vw-48px)] !max-w-[1440px] !h-[calc(100dvh-16px)] sm:!h-[calc(100dvh-64px)] !max-h-[calc(100dvh-16px)] sm:!max-h-[900px] overflow-hidden p-0 gap-0">
           <div className="flex h-full min-h-0 flex-col">
-            <DialogHeader className="shrink-0 border-b px-7 py-5 pr-16">
+            <DialogHeader className="shrink-0 border-b px-4 py-4 pr-12 sm:px-7 sm:py-5 sm:pr-16">
               <div className="flex items-start justify-between gap-6">
                 <div className="min-w-0">
                   <DialogTitle className="text-2xl font-semibold tracking-tight">
@@ -763,13 +752,12 @@ function SectionList() {
               </div>
             </DialogHeader>
 
-            <div className="flex shrink-0 items-center gap-3 border-b bg-muted/[0.18] px-7 py-4">
+            <div className="flex shrink-0 flex-col gap-3 border-b bg-muted/[0.18] px-4 py-3 sm:flex-row sm:items-center sm:px-7 sm:py-4">
               <div className="relative min-w-0 flex-1">
                 <Input
                   value={studentSearch}
                   onChange={(event) => {
                     setStudentSearch(event.target.value)
-                    setStudentPage(1)
                   }}
                   placeholder="Search by student number or name..."
                   className="h-10 bg-background"
@@ -784,7 +772,7 @@ function SectionList() {
               </Button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-auto px-7">
+            <div className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 sm:px-7">
               {rosterQuery.isLoading ? (
                 <div className="space-y-2 py-5">
                   {Array.from({ length: 10 }).map((_, index) => (
@@ -827,6 +815,8 @@ function SectionList() {
                   </p>
                 </div>
               ) : (
+                <>
+                <div className="hidden overflow-x-auto sm:block">
                 <Table>
                   <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
                     <TableRow className="hover:bg-background">
@@ -842,11 +832,11 @@ function SectionList() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {visibleRosterStudents.map(
+                    {filteredRosterStudents.map(
                       (student: any, index: number) => (
                         <TableRow key={student.id} className="h-[58px]">
                           <TableCell className="text-muted-foreground">
-                            {(studentPage - 1) * studentPageSize + index + 1}
+                            {index + 1}
                           </TableCell>
                           <TableCell className="font-semibold tabular-nums">
                             {student.student_number}
@@ -859,9 +849,9 @@ function SectionList() {
                                 : ""}
                             </div>
                             {student.extension ? (
-                              <div className="text-xs text-muted-foreground">
+                              <span className="ml-1 font-medium">
                                 {student.extension}
-                              </div>
+                              </span>
                             ) : null}
                           </TableCell>
                           <TableCell>
@@ -905,56 +895,49 @@ function SectionList() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
+                <div className="space-y-3 py-3 sm:hidden">
+                  {filteredRosterStudents.map((student: any, index: number) => (
+                    <div key={student.id} className="rounded-lg border p-3">
+                      <div className="flex items-start gap-3">
+                        <span className="pt-0.5 text-xs tabular-nums text-muted-foreground">
+                          {index + 1}.
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="break-words font-semibold">
+                            {student.last_name}, {student.first_name}
+                            {student.middle_name ? ` ${student.middle_name}` : ""}
+                            {student.extension ? (
+                              <span className="ml-1 font-medium">{student.extension}</span>
+                            ) : null}
+                          </p>
+                          <p className="mt-1 break-all font-mono text-sm text-muted-foreground">
+                            {student.student_number}
+                          </p>
+                          <span className="mt-2 inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
+                            {String(student.student_status).replaceAll("_", " ")}
+                          </span>
+                        </div>
+                        <div className="flex shrink-0 flex-col gap-1">
+                          <Button variant="ghost" size="icon" title="QR Code" onClick={() => void openStudentQr(student)}>
+                            <QrCode />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}>
+                            <Pencil />
+                          </Button>
+                          <Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}>
+                            <Trash2 />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                </>
               )}
             </div>
 
-            {!rosterQuery.isLoading && filteredRosterStudents.length > 0 ? (
-              <div className="flex shrink-0 items-center justify-between gap-4 border-t px-7 py-3.5">
-                <p className="text-sm text-muted-foreground">
-                  Showing{" "}
-                  <span className="font-medium text-foreground">
-                    {(studentPage - 1) * studentPageSize + 1}–
-                    {Math.min(
-                      studentPage * studentPageSize,
-                      filteredRosterStudents.length,
-                    )}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium text-foreground">
-                    {filteredRosterStudents.length}
-                  </span>
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={studentPage <= 1}
-                    onClick={() =>
-                      setStudentPage((page) => Math.max(1, page - 1))
-                    }
-                  >
-                    Previous
-                  </Button>
-                  <span className="min-w-20 text-center text-sm text-muted-foreground">
-                    Page {studentPage} of {studentPageCount}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={studentPage >= studentPageCount}
-                    onClick={() =>
-                      setStudentPage((page) =>
-                        Math.min(studentPageCount, page + 1),
-                      )
-                    }
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            <DialogFooter className="shrink-0 border-t px-7 py-3">
+            <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-7">
               <Button variant="outline" onClick={() => setStudentsTarget(null)}>
                 Close
               </Button>
@@ -1026,7 +1009,7 @@ function SectionList() {
       </Dialog>
 
       <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-h-[calc(100dvh-4rem)]">
           <DialogHeader>
             <DialogTitle>Add Student</DialogTitle>
             <DialogDescription>
@@ -1228,12 +1211,19 @@ function SectionList() {
             <div className="font-medium">Credentials</div>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <div className="flex flex-col gap-2 rounded-md bg-muted/40 px-3 py-2">
-                <span className="text-muted-foreground">
-                  NFC:{" "}
-                  {studentForm.nfc_registered === "true"
-                    ? "Registered"
-                    : "Not registered"}
-                </span>
+                <span className="text-muted-foreground">NFC:</span>
+                {studentForm.nfc_registered === "true" ? (
+                  <div className="space-y-1">
+                    <span className="font-medium">Registered</span>
+                    {studentForm.nfc_credential_value ? (
+                      <p className="break-all font-mono text-xs">
+                        {studentForm.nfc_credential_value}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Not registered</span>
+                )}
                 {studentTarget ? (
                   <StudentCredentialsDialog
                     student={studentTarget as StudentPublic}
