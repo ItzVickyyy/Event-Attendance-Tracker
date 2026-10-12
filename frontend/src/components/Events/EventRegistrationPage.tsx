@@ -42,7 +42,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   })
   useEffect(() => {
     if (!eventQuery.isSuccess || hydratedEventRef.current === eventId) return
-    setSelectedSections(eventQuery.data?.data.eligible_section_ids ?? [])
+    setSelectedSections(eventQuery.data?.eligible_section_ids ?? [])
     hydratedEventRef.current = eventId
   }, [eventId, eventQuery.isSuccess, eventQuery.data])
   const studentQueries = useQuery({
@@ -56,7 +56,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           }),
         ),
       )
-      return results.flatMap((result) => result.data.data)
+      return results.flatMap((result) => result.data)
     },
   })
   const saveSectionsMutation = useMutation({
@@ -99,9 +99,9 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       queryClient.invalidateQueries({ queryKey: ["event", eventId] })
     },
   })
-  const registered = registrationQuery.data?.data.data ?? []
+  const registered = registrationQuery.data?.data ?? []
   const students = studentQueries.data ?? []
-  const sections = sectionsQuery.data?.data.data ?? []
+  const sections = sectionsQuery.data?.data ?? []
   const allSectionsSelected =
     sections.length > 0 &&
     sections.every((section) => selectedSections.includes(section.id))
@@ -127,7 +127,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           registered.some((item) => item.attendee_id === student.attendee_id),
       ).length,
   )
-  const event = eventQuery.data?.data
+  const event = eventQuery.data
   if (eventQuery.isLoading)
     return (
       <Card>
