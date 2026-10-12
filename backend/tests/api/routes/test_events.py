@@ -50,11 +50,13 @@ def test_event_crud(
         json={
             "status": "open",
             "academic_year_id": r.json()["academic_year_id"],
+            "eligible_section_ids": ["section-a", "section-b"],
         },
     )
     assert update_res.status_code == 200
     assert update_res.json()["status"] == "open"
     assert update_res.json()["academic_year_id"] == r.json()["academic_year_id"]
+    assert update_res.json()["eligible_section_ids"] == ["section-a", "section-b"]
 
     # 5. Delete Event
     del_res = client.delete(
