@@ -30,7 +30,7 @@ type ImportDialogProps = {
   onOpenChange: (open: boolean) => void
   academicYear: any
   sections: any[]
-  onImported: () => void
+  onImported: () => void | Promise<void>
 }
 
 const TUTORIAL_SEEN_KEY = "student-import-tutorial-seen"
@@ -190,7 +190,7 @@ export function StudentImportDialog({
         method: "POST",
       })
       toast.success(`Imported ${data.newly_promoted_rows} student(s)`)
-      onImported()
+      await onImported()
       close(false)
     } catch (error) {
       toast.error(

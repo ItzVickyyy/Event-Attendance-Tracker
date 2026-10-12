@@ -603,13 +603,8 @@ function SectionList() {
         onOpenChange={setImportDialog}
         academicYear={activeAcademicYear}
         sections={sections}
-        onImported={() => {
-          void queryClient.invalidateQueries({
-            queryKey: ["academicRegistrySections"],
-          })
-          void queryClient.invalidateQueries({
-            queryKey: ["academicRegistryRoster"],
-          })
+        onImported={async () => {
+          await queryClient.invalidateQueries()
         }}
       />
 
