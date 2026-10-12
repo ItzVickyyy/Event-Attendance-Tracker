@@ -70,6 +70,7 @@ export function StudentImportDialog({
   const [defaultSectionId, setDefaultSectionId] = useState("")
   const [batchId, setBatchId] = useState<string | null>(null)
   const [result, setResult] = useState<any>(null)
+  const [promotionResult, setPromotionResult] = useState<any>(null)
   const [uploading, setUploading] = useState(false)
   const [promoting, setPromoting] = useState(false)
   const [step, setStep] = useState(0)
@@ -92,6 +93,7 @@ export function StudentImportDialog({
     setDefaultSectionId("")
     setBatchId(null)
     setResult(null)
+    setPromotionResult(null)
     setUploading(false)
     setPromoting(false)
     setStep(0)
@@ -165,6 +167,7 @@ export function StudentImportDialog({
       const data = await response.json()
       setBatchId(batch.id)
       setResult(data)
+      setPromotionResult(null)
       toast.success("Import validated")
     } catch (error) {
       toast.error(
@@ -189,8 +192,25 @@ export function StudentImportDialog({
       const data = await apiJson<any>(`/import-batches/${batchId}/promote`, {
         method: "POST",
       })
-      toast.success(`Imported ${data.newly_promoted_rows} student(s)`)
+      setPromotionResult(data)
+      const blockedRows = data.blocked_rows ?? []
       await onImported()
+
+      if (blockedRows.length > 0) {
+        toast.error(
+          `Imported ${data.newly_promoted_rows} student(s); ${blockedRows.length} row(s) still need attention.`,
+        )
+        return
+      }
+
+      if (data.newly_promoted_rows > 0) {
+        toast.success(`Imported ${data.newly_promoted_rows} student(s)`)
+      } else if (data.already_promoted_rows > 0) {
+        toast.success(`${data.already_promoted_rows} student(s) were already imported`)
+      } else {
+        toast.error("No students were imported. Check the promotion result below.")
+        return
+      }
       close(false)
     } catch (error) {
       toast.error(
@@ -249,6 +269,7 @@ export function StudentImportDialog({
     setDefaultSectionId("")
     setBatchId(null)
     setResult(null)
+    setPromotionResult(null)
     setStep(3)
   }
 
@@ -558,6 +579,34 @@ export function StudentImportDialog({
                 </div>
               </div>
 
+              {promotionResult?.blocked_rows?.length ? (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium">
+                        {promotionResult.blocked_rows.length} row(s) could not be imported
+                      </p>
+                      <p className="mt-1 text-muted-foreground">
+                        Correct the section or academic-year setup, then select Retry Import. Successfully imported rows will not be duplicated.
+                      </p>
+                      <ul className="mt-2 list-disc space-y-1 pl-5">
+                        {promotionResult.blocked_rows.slice(0, 8).map((row: any) => (
+                          <li key={row.record_id}>
+                            Row {row.source_row} ({row.source_sheet}): {row.reason}
+                          </li>
+                        ))}
+                      </ul>
+                      {promotionResult.blocked_rows.length > 8 ? (
+                        <p className="mt-2 text-muted-foreground">
+                          And {promotionResult.blocked_rows.length - 8} more row(s). The same issue may affect multiple rows.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               {reconciliationBlocked ? (
                 <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
                   <div className="flex items-start gap-2">
@@ -613,7 +662,11 @@ export function StudentImportDialog({
                 onClick={() => void confirmImport()}
                 disabled={!canConfirm || promoting}
               >
-                {promoting ? "Importing…" : "Confirm Import"}
+                {promoting
+                  ? "Importing…"
+                  : promotionResult?.blocked_rows?.length
+                    ? "Retry Import"
+                    : "Confirm Import"}
               </Button>
             </>
           ) : (
