@@ -29,10 +29,14 @@ interface StudentCredentialsDialogProps {
 
 async function resolveAttendeeId(student: StudentPublic): Promise<string> {
   if (student.attendee_id) return student.attendee_id
+
   const personId = student.person_id
-  if (typeof personId !== "string" || personId.length < 36) {
-    throw new Error("This student has no valid person ID. Refresh the student record and try again.")
+  if (!personId) {
+    throw new Error(
+      "This student has no valid person ID. Refresh the student record and try again.",
+    )
   }
+
   const result = await AttendeesService.readAttendees({
     query: { person_id: personId, limit: 1 },
     throwOnError: true,
@@ -40,27 +44,31 @@ async function resolveAttendeeId(student: StudentPublic): Promise<string> {
   const attendees = (
     result as unknown as { data: { data: { id: string; person_id: string }[] } }
   ).data.data
-  const existing = attendees.find((a) => a.person_id === personId)
-  if (existing) return existing.id
-  const created = await AttendeesService.createAttendee({
-    body: { person_id: personId, attendee_type: "student" },
-    throwOnError: true,
-  })
-  const attendee = (created as unknown as { data: { id: string } }).data
-  if (!attendee?.id) throw new Error("The server did not return an attendee ID.")
-  return attendee.id
+  const existing = attendees.find((attendee) => attendee.person_id === personId)
+
+  if (!existing) {
+    throw new Error(
+      "This student does not have an attendee record. Re-save or re-import the student to provision the QR credential, then try again.",
+    )
+  }
+
+  return existing.id
 }
 
 export function StudentCredentialsDialog({
   student,
 }: StudentCredentialsDialogProps) {
   const [open, setOpen] = useState(false)
-    const [newCredValue, setNewCredValue] = useState("")
+  const [newCredValue, setNewCredValue] = useState("")
   const [scanningNfc, setScanningNfc] = useState(false)
   const queryClient = useQueryClient()
 
   // 1. Resolve Attendee ID for Student
-  const { data: attendeeId, isLoading: isLoadingAttendee } = useQuery({
+  const {
+    data: attendeeId,
+    isLoading: isLoadingAttendee,
+    error: attendeeError,
+  } = useQuery({
     queryKey: ["attendeeIdForPerson", student.person_id],
     queryFn: () => resolveAttendeeId(student),
     enabled: open,
@@ -262,16 +270,24 @@ export function StudentCredentialsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {isLoadingAttendee || isLoadingCreds ? (
+        {isLoadingAttendee || (attendeeId && isLoadingCreds) ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : attendeeError ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            {attendeeError instanceof Error
+              ? attendeeError.message
+              : "Unable to resolve this student’s attendee record."}
           </div>
         ) : (
           <div className="flex flex-col gap-6 py-2">
             {/* List Existing Credentials */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground">
-                Assigned NFC Cards ({credentials.filter((cred) => cred.credential_type === "nfc").length})
+                Assigned NFC Cards (
+                {credentials.filter((cred) => cred.credential_type === "nfc").length}
+                )
               </h4>
               {credentials.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
@@ -279,7 +295,9 @@ export function StudentCredentialsDialog({
                 </div>
               ) : (
                 <div className="divide-y rounded-md border">
-                  {credentials.filter((cred) => cred.credential_type === "nfc").map((cred) => (
+                  {credentials
+                    .filter((cred) => cred.credential_type === "nfc")
+                    .map((cred) => (
                     <div
                       key={cred.id}
                       className="flex items-center justify-between p-3"
