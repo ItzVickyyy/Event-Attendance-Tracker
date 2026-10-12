@@ -991,7 +991,13 @@ function Scanner() {
         }
       }
     }
-  }, [checkQrSupport, lastScannedCredential, lastScanTime, handleQrLookup, syncStatus.activeSession])
+  }, [
+    checkQrSupport,
+    lastScannedCredential,
+    lastScanTime,
+    handleQrLookup,
+    syncStatus.activeSession,
+  ])
 
   const stopQrScanning = useCallback(() => {
     if (html5QrcodeRef.current) {
