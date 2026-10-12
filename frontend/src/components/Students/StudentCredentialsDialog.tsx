@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CheckCircle2, KeyRound, Loader2, Plus, Trash2, Wifi } from "lucide-react"
+import {
+  CheckCircle2,
+  KeyRound,
+  Loader2,
+  Plus,
+  Trash2,
+  Wifi,
+} from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -284,7 +291,8 @@ export function StudentCredentialsDialog({
               </h4>
               {!credentials.some((cred) => cred.credential_type === "nfc") ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                  No Card UID registered yet. Scan the student card below to register it.
+                  No Card UID registered yet. Scan the student card below to
+                  register it.
                 </div>
               ) : (
                 <div className="divide-y rounded-md border">
@@ -304,7 +312,10 @@ export function StudentCredentialsDialog({
                               <span className="font-mono text-sm font-medium">
                                 {cred.credential_value}
                               </span>
-                              <Badge variant="outline" className="text-xs"><CheckCircle2 className="mr-1 h-3 w-3" />Registered</Badge>
+                              <Badge variant="outline" className="text-xs">
+                                <CheckCircle2 className="mr-1 h-3 w-3" />
+                                Registered
+                              </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground">
                               Added:{" "}
