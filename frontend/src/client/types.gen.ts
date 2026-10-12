@@ -1202,6 +1202,10 @@ export type EventCreate = {
      */
     organization_id?: string | null;
     status?: EventStatus;
+    /**
+     * Eligible Section Ids
+     */
+    eligible_section_ids?: Array<string>;
 };
 
 /**
