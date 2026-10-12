@@ -417,7 +417,11 @@ def scan_attendance(
     ).first()
     if not registration:
         raise HTTPException(
-            status_code=404, detail="Attendee is not registered for this event"
+            status_code=404, detail=(
+                "Attendee is not registered for this event. In Event Registration, "
+                "select the attendee's section under Eligible Sections and register "
+                "the selected sections before scanning or syncing."
+            )
         )
     session_id = scan_in.attendance_session_id
     if attendance_session_header:
@@ -490,7 +494,11 @@ def scan_attendance_manual(
     ).first()
     if not registration:
         raise HTTPException(
-            status_code=404, detail="Attendee is not registered for this event"
+            status_code=404, detail=(
+                "Attendee is not registered for this event. In Event Registration, "
+                "select the attendee's section under Eligible Sections and register "
+                "the selected sections before scanning or syncing."
+            )
         )
     session_id = scan_in.attendance_session_id
     if attendance_session_header:
