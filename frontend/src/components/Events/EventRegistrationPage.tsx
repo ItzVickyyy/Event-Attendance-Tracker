@@ -11,6 +11,11 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+function getYearNumber(yearLevel: string | number | null | undefined): number | null {
+  const match = String(yearLevel ?? "").match(/[1-4]/)
+  return match ? Number(match[0]) : null
+}
+
 export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient()
   const [selectedSections, setSelectedSections] = useState<string[]>([])
@@ -73,6 +78,17 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   })
   const registered = registrationQuery.data?.data.data ?? []
   const students = studentQueries.data ?? []
+  const sections = sectionsQuery.data?.data.data ?? []
+  const allSectionsSelected =
+    sections.length > 0 && sections.every((section) => selectedSections.includes(section.id))
+  const toggleSectionGroup = (sectionIds: string[]) => {
+    setSelectedSections((current) => {
+      const allSelected = sectionIds.length > 0 && sectionIds.every((id) => current.includes(id))
+      return allSelected
+        ? current.filter((id) => !sectionIds.includes(id))
+        : [...new Set([...current, ...sectionIds])]
+    })
+  }
   const eligibleCount = useMemo(
     () => students.filter((student) => student.attendee_id).length,
     [students],
@@ -134,7 +150,39 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           {sectionsQuery.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading sections…</p>
           ) : (
-            (sectionsQuery.data?.data.data ?? []).map((section) => {
+            <>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={sections.length === 0}
+                  onClick={() => toggleSectionGroup(sections.map((section) => section.id))}
+                >
+                  {allSectionsSelected ? "Clear all" : "Select all"}
+                </Button>
+                {[1, 2, 3, 4].map((year) => {
+                  const yearSections = sections.filter(
+                    (section) => getYearNumber(section.year_level) === year,
+                  )
+                  const allYearSelected =
+                    yearSections.length > 0 &&
+                    yearSections.every((section) => selectedSections.includes(section.id))
+                  return (
+                    <Button
+                      key={year}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={yearSections.length === 0}
+                      onClick={() => toggleSectionGroup(yearSections.map((section) => section.id))}
+                    >
+                      {allYearSelected ? "Clear" : "All"} {year === 1 ? "1st" : year === 2 ? "2nd" : year === 3 ? "3rd" : "4th"} year
+                    </Button>
+                  )
+                })}
+              </div>
+              {sections.map((section) => {
               const checked = selectedSections.includes(section.id)
               return (
                 <label
@@ -144,13 +192,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                   <input
                     type="checkbox"
                     checked={checked}
-                    onChange={() =>
-                      setSelectedSections((current) =>
-                        checked
-                          ? current.filter((id) => id !== section.id)
-                          : [...current, section.id],
-                      )
-                    }
+                    onChange={() => toggleSectionGroup([section.id])}
                   />
                   <span className="flex-1">
                     <span className="block font-medium">
@@ -162,7 +204,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                   </span>
                 </label>
               )
-            })
+            })}
+            </>
           )}
         </CardContent>
       </Card>
