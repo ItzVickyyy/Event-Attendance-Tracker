@@ -228,6 +228,7 @@ function isDuplicateAttendanceConflict(detail: string | undefined): boolean {
   if (!detail) return false
   return (
     /^Already (Recorded|Completed)\s*-/i.test(detail) ||
+    /^Already recorded for this attendee\./i.test(detail) ||
     /^Attendance already recorded for this session\.?$/i.test(detail) ||
     /^Attendance already completed\.?$/i.test(detail)
   )
