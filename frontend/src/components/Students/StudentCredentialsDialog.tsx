@@ -171,18 +171,33 @@ export function StudentCredentialsDialog({
         }
         const onReading = (event: any) => {
           // Empty NDEF tags can still expose the card identity as serialNumber.
-          const serial = typeof event.serialNumber === "string" ? event.serialNumber.trim() : ""
+          const serial =
+            typeof event.serialNumber === "string"
+              ? event.serialNumber.trim()
+              : ""
           let textRecord = ""
           for (const record of event.message?.records ?? []) {
-            if (record.recordType !== "text" || !(record.data instanceof DataView)) continue
+            if (
+              record.recordType !== "text" ||
+              !(record.data instanceof DataView)
+            )
+              continue
             const data = record.data
             if (!data.byteLength) continue
             const status = data.getUint8(0)
             const languageLength = status & 0x3f
             const start = 1 + languageLength
             if (start < data.byteLength) {
-              textRecord = new TextDecoder((status & 0x80) !== 0 ? "utf-16" : "utf-8")
-                .decode(new Uint8Array(data.buffer, data.byteOffset + start, data.byteLength - start))
+              textRecord = new TextDecoder(
+                (status & 0x80) !== 0 ? "utf-16" : "utf-8",
+              )
+                .decode(
+                  new Uint8Array(
+                    data.buffer,
+                    data.byteOffset + start,
+                    data.byteLength - start,
+                  ),
+                )
                 .trim()
               if (textRecord) break
             }
@@ -195,14 +210,21 @@ export function StudentCredentialsDialog({
         reader.addEventListener("reading", onReading)
         timeoutId = window.setTimeout(() => {
           cleanup()
-          reject(new Error("No NFC identifier was received within 30 seconds. Try again or enter the UID manually."))
+          reject(
+            new Error(
+              "No NFC identifier was received within 30 seconds. Try again or enter the UID manually.",
+            ),
+          )
         }, 30000)
       })
       setNewCredType("nfc")
       setNewCredValue(captured)
-      toast.success("Card identifier captured. Confirm the student and click Add to save it.")
+      toast.success(
+        "Card identifier captured. Confirm the student and click Add to save it.",
+      )
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to read NFC card"
+      const message =
+        error instanceof Error ? error.message : "Unable to read NFC card"
       toast.error(message)
     } finally {
       if (timeoutId !== undefined) window.clearTimeout(timeoutId)
