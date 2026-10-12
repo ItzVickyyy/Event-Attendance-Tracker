@@ -781,6 +781,10 @@ function Scanner() {
 
   const scanNfc = useCallback(async () => {
     if (!checkNfcSupport()) return
+    if (!syncStatus.activeSession) {
+      toast.error("Activate an attendance session before scanning")
+      return
+    }
 
     try {
       setScanning(true)
@@ -931,6 +935,10 @@ function Scanner() {
 
   const scanQr = useCallback(async () => {
     if (!checkQrSupport()) return
+    if (!syncStatus.activeSession) {
+      toast.error("Activate an attendance session before scanning")
+      return
+    }
 
     try {
       setQrScanning(true)
@@ -1381,11 +1389,7 @@ function Scanner() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {qrScanning ? (
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            ) : (
-              <Camera className="h-5 w-5" />
-            )}
+            <Camera className="h-5 w-5" />
             QR Scanner
           </CardTitle>
         </CardHeader>
