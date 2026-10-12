@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 
-const ErrorComponent = () => {
+const ErrorComponent = ({ error }: { error?: Error }) => {
   return (
     <div
       className="flex min-h-screen items-center justify-center flex-col p-4"
@@ -19,6 +19,11 @@ const ErrorComponent = () => {
       <p className="text-lg text-muted-foreground mb-4 text-center z-10">
         Something went wrong. Please try again.
       </p>
+      {import.meta.env.DEV && error && (
+        <pre className="mb-4 max-w-full overflow-auto rounded border p-3 text-sm">
+          {error.message}
+        </pre>
+      )}
       <Link to="/">
         <Button>Go Home</Button>
       </Link>
