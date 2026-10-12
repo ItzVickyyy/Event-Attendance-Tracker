@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router"
 
 import { cn } from "@/lib/utils"
-import favicon from "/assets/images/favicon.png"
+
+const logo = "/assets/images/CCS-SC_Logo_Maroon.webp"
 
 interface LogoProps {
   variant?: "full" | "icon" | "responsive"
@@ -26,8 +27,8 @@ export function Logo({
           Event Attendance Tracker
         </span>
         <img
-          src={favicon}
-          alt="Event Attendance Tracker"
+          src={logo}
+          alt="College of Computer Studies Student Council logo"
           className={cn(
             "size-5 hidden group-data-[collapsible=icon]:block",
             className,
@@ -45,8 +46,8 @@ export function Logo({
       </span>
     ) : (
       <img
-        src={favicon}
-        alt="Event Attendance Tracker"
+        src={logo}
+        alt="College of Computer Studies Student Council logo"
         className={cn("size-5", className)}
       />
     )
