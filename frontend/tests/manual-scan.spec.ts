@@ -734,6 +734,15 @@ test.describe("Manual attendance scan", () => {
     mockHttp,
   }) => {
     await mockHttp(page)
+    // Override the fixture's default active session so the API confirms none is open.
+    await page.route(ACTIVE_SESSION_URL, async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        headers: corsHeaders,
+        body: JSON.stringify({ detail: "No active attendance session" }),
+      })
+    })
     await gotoApp(page)
     await setToken(page)
     await page.addInitScript(() => {
