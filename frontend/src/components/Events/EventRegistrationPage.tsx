@@ -41,52 +41,10 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       }),
   })
   useEffect(() => {
-    if (
-      !sectionsQuery.isSuccess ||
-      !registrationQuery.isSuccess ||
-      hydratedEventRef.current === eventId
-    ) {
-      return
-    }
-
-    let cancelled = false
-    const registeredAttendeeIds = new Set(
-      (registrationQuery.data?.data.data ?? [])
-        .filter((item) => item.registration_status === "registered")
-        .map((item) => item.attendee_id),
-    )
-
-    void Promise.all(
-      (sectionsQuery.data?.data.data ?? []).map(async (section) => {
-        const response = await StudentsService.readStudents({
-          query: { section_id: section.id, skip: 0, limit: 1000 },
-        })
-        const hasRegisteredStudent = response.data.data.some(
-          (student) =>
-            student.attendee_id && registeredAttendeeIds.has(student.attendee_id),
-        )
-        return hasRegisteredStudent ? section.id : null
-      }),
-    )
-      .then((sectionIds) => {
-        if (cancelled) return
-        setSelectedSections(sectionIds.filter((id): id is string => id !== null))
-        hydratedEventRef.current = eventId
-      })
-      .catch(() => {
-        // Keep the registration page usable if roster hydration temporarily fails.
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [
-    eventId,
-    sectionsQuery.isSuccess,
-    sectionsQuery.data,
-    registrationQuery.isSuccess,
-    registrationQuery.data,
-  ])
+    if (!eventQuery.isSuccess || hydratedEventRef.current === eventId) return
+    setSelectedSections(eventQuery.data?.data.eligible_section_ids ?? [])
+    hydratedEventRef.current = eventId
+  }, [eventId, eventQuery.isSuccess, eventQuery.data])
   const studentQueries = useQuery({
     queryKey: ["registrationStudents", selectedSections],
     enabled: selectedSections.length > 0,
@@ -101,8 +59,21 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       return results.flatMap((result) => result.data.data)
     },
   })
+  const saveSectionsMutation = useMutation({
+    mutationFn: () =>
+      EventsService.updateEvent({
+        path: { event_id: eventId },
+        body: { eligible_section_ids: selectedSections },
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
+  })
   const mutation = useMutation({
     mutationFn: async () => {
+      await EventsService.updateEvent({
+        path: { event_id: eventId },
+        body: { eligible_section_ids: selectedSections },
+      })
       const existing = new Set(
         (registrationQuery.data?.data.data ?? []).map(
           (item) => item.attendee_id,
@@ -121,10 +92,12 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         })
       return students.length
     },
-    onSuccess: () =>
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["eventRegistrations", eventId],
-      }),
+      })
+      queryClient.invalidateQueries({ queryKey: ["event", eventId] })
+    },
   })
   const registered = registrationQuery.data?.data.data ?? []
   const students = studentQueries.data ?? []
@@ -290,17 +263,38 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
             <Stat label="Selected students" value={eligibleCount} />
             <Stat label="To add" value={missing} />
           </div>
-          <Button
-            disabled={
-              selectedSections.length === 0 ||
-              eligibleCount === 0 ||
-              mutation.isPending
-            }
-            onClick={() => mutation.mutate()}
-          >
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              disabled={saveSectionsMutation.isPending}
+              onClick={() => saveSectionsMutation.mutate()}
+            >
+              {saveSectionsMutation.isPending
+                ? "Saving sections…"
+                : "Save eligible sections"}
+            </Button>
+            <Button
+              disabled={
+                selectedSections.length === 0 ||
+                eligibleCount === 0 ||
+                mutation.isPending
+              }
+              onClick={() => mutation.mutate()}
+            >
             <Check />
-            {mutation.isPending ? "Registering…" : "Register selected sections"}
-          </Button>
+              {mutation.isPending ? "Registering…" : "Register selected sections"}
+            </Button>
+          </div>
+          {saveSectionsMutation.isSuccess && (
+            <p className="text-sm text-muted-foreground">
+              Eligible section selections saved.
+            </p>
+          )}
+          {saveSectionsMutation.isError && (
+            <p className="text-sm text-destructive">
+              Could not save eligible sections. Please retry.
+            </p>
+          )}
           {mutation.isSuccess && (
             <p className="text-sm text-muted-foreground">
               Registration population updated.
