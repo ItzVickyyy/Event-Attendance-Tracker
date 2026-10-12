@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { KeyRound, Loader2, Plus, QrCode, Trash2, Wifi } from "lucide-react"
+import { KeyRound, Loader2, Plus, Trash2, Wifi } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -7,7 +7,6 @@ import {
   type AttendeeCredentialPublic,
   AttendeeCredentialsService,
   AttendeesService,
-  type CredentialType,
   type StudentPublic,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
@@ -23,21 +22,19 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 interface StudentCredentialsDialogProps {
   student: StudentPublic
 }
 
-async function resolveAttendeeId(personId: string): Promise<string> {
+async function resolveAttendeeId(student: StudentPublic): Promise<string> {
+  if (student.attendee_id) return student.attendee_id
+  const personId = student.person_id
+  if (typeof personId !== "string" || personId.length < 36) {
+    throw new Error("This student has no valid person ID. Refresh the student record and try again.")
+  }
   const result = await AttendeesService.readAttendees({
-    query: { limit: 10000 },
+    query: { person_id: personId, limit: 1 },
     throwOnError: true,
   })
   const attendees = (
@@ -49,22 +46,23 @@ async function resolveAttendeeId(personId: string): Promise<string> {
     body: { person_id: personId, attendee_type: "student" },
     throwOnError: true,
   })
-  return (created as unknown as { data: { id: string } }).data.id
+  const attendee = (created as unknown as { data: { id: string } }).data
+  if (!attendee?.id) throw new Error("The server did not return an attendee ID.")
+  return attendee.id
 }
 
 export function StudentCredentialsDialog({
   student,
 }: StudentCredentialsDialogProps) {
   const [open, setOpen] = useState(false)
-  const [newCredType, setNewCredType] = useState<CredentialType>("nfc")
-  const [newCredValue, setNewCredValue] = useState("")
+    const [newCredValue, setNewCredValue] = useState("")
   const [scanningNfc, setScanningNfc] = useState(false)
   const queryClient = useQueryClient()
 
   // 1. Resolve Attendee ID for Student
   const { data: attendeeId, isLoading: isLoadingAttendee } = useQuery({
     queryKey: ["attendeeIdForPerson", student.person_id],
-    queryFn: () => resolveAttendeeId(student.person_id),
+    queryFn: () => resolveAttendeeId(student),
     enabled: open,
   })
 
@@ -97,7 +95,7 @@ export function StudentCredentialsDialog({
         {
           body: {
             attendee_id: attendeeId,
-            credential_type: newCredType,
+            credential_type: "nfc",
             credential_value: newCredValue.trim().toUpperCase(),
             is_active: true,
           },
@@ -256,7 +254,7 @@ export function StudentCredentialsDialog({
             Manage Credentials
           </DialogTitle>
           <DialogDescription>
-            View, activate/deactivate, or add credentials (NFC UID, QR Code) for
+            View, activate/deactivate, or register an NFC card for
             student{" "}
             <span className="font-semibold text-foreground">
               {student.student_number}
@@ -274,7 +272,7 @@ export function StudentCredentialsDialog({
             {/* List Existing Credentials */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground">
-                Assigned Credentials ({credentials.length})
+                Assigned NFC Cards ({credentials.filter((cred) => cred.credential_type === "nfc").length})
               </h4>
               {credentials.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
@@ -282,18 +280,14 @@ export function StudentCredentialsDialog({
                 </div>
               ) : (
                 <div className="divide-y rounded-md border">
-                  {credentials.map((cred) => (
+                  {credentials.filter((cred) => cred.credential_type === "nfc").map((cred) => (
                     <div
                       key={cred.id}
                       className="flex items-center justify-between p-3"
                     >
                       <div className="flex items-center gap-3">
                         <div className="rounded-full bg-muted p-2">
-                          {cred.credential_type === "nfc" ? (
-                            <Wifi className="h-4 w-4 text-blue-500" />
-                          ) : (
-                            <QrCode className="h-4 w-4 text-emerald-500" />
-                          )}
+                          <Wifi className="h-4 w-4 text-blue-500" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -359,25 +353,8 @@ export function StudentCredentialsDialog({
               className="space-y-4 rounded-lg border bg-muted/30 p-4"
             >
               <h4 className="text-sm font-semibold">Add New Credential</h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-1 space-y-1.5">
-                  <Label htmlFor="cred-type" className="text-xs">
-                    Type
-                  </Label>
-                  <Select
-                    value={newCredType}
-                    onValueChange={(val: CredentialType) => setNewCredType(val)}
-                  >
-                    <SelectTrigger id="cred-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nfc">NFC UID</SelectItem>
-                      <SelectItem value="qr">QR Code</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-1.5">
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1.5">
                   <Label htmlFor="cred-val" className="text-xs">
                     Value / UID
                   </Label>
@@ -389,8 +366,7 @@ export function StudentCredentialsDialog({
                       onChange={(e) => setNewCredValue(e.target.value)}
                       className="min-w-0 flex-1 font-mono text-sm"
                     />
-                    {newCredType === "nfc" && (
-                      <Button
+                    <Button
                         type="button"
                         variant="outline"
                         onClick={() => void handleScanNfc()}
@@ -403,8 +379,7 @@ export function StudentCredentialsDialog({
                           <Wifi className="h-4 w-4" />
                         )}
                         {scanningNfc ? "Tap card..." : "Scan card"}
-                      </Button>
-                    )}
+                    </Button>
                     <Button
                       type="submit"
                       disabled={
