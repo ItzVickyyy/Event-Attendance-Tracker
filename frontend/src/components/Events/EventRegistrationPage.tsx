@@ -281,7 +281,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
               }
               onClick={() => mutation.mutate()}
             >
-            <Check />
+              <Check />
               {mutation.isPending ? "Registering…" : "Register selected sections"}
             </Button>
           </div>
