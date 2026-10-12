@@ -540,23 +540,47 @@ function SectionList() {
                 {filteredSections.map((section: any, index: number) => (
                   <TableRow key={section.id}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{section.program_code}</TableCell>
+                    <TableCell className="font-medium">
+                      {section.program_code}
+                    </TableCell>
                     <TableCell>{section.major_code ?? ""}</TableCell>
-                    <TableCell className="font-medium">{section.section_code}</TableCell>
+                    <TableCell className="font-medium">
+                      {section.section_code}
+                    </TableCell>
                     <TableCell>{section.year_level}</TableCell>
                     <TableCell>{section.enrolled}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" title="Students" onClick={() => setStudentsTarget(section)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Students"
+                          onClick={() => setStudentsTarget(section)}
+                        >
                           <UsersRound />
                         </Button>
-                        <Button variant="ghost" size="icon" title="Edit" onClick={() => openEdit(section)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Edit"
+                          onClick={() => openEdit(section)}
+                        >
                           <Pencil />
                         </Button>
-                        <Button variant="ghost" size="icon" title="Print preview" onClick={() => setPrintTarget(section)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Print preview"
+                          onClick={() => setPrintTarget(section)}
+                        >
                           <Printer />
                         </Button>
-                        <Button variant="ghost" size="icon" title="Download" onClick={() => setDownloadTarget(section)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Download"
+                          onClick={() => setDownloadTarget(section)}
+                        >
                           <Download />
                         </Button>
                       </div>
@@ -571,26 +595,52 @@ function SectionList() {
               <div key={section.id} className="rounded-lg border p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold">{section.program_code}{section.major_code ? ` · ${section.major_code}` : ""} {section.section_code}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{section.year_level}</p>
+                    <p className="font-semibold">
+                      {section.program_code}
+                      {section.major_code ? ` · ${section.major_code}` : ""}{" "}
+                      {section.section_code}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {section.year_level}
+                    </p>
                   </div>
                   <div className="rounded-md bg-muted/50 px-3 py-2 text-center">
-                    <p className="text-lg font-semibold tabular-nums">{section.enrolled}</p>
+                    <p className="text-lg font-semibold tabular-nums">
+                      {section.enrolled}
+                    </p>
                     <p className="text-xs text-muted-foreground">Students</p>
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">Section {index + 1}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Section {index + 1}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
-                  <Button variant="outline" size="sm" onClick={() => setStudentsTarget(section)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStudentsTarget(section)}
+                  >
                     <UsersRound /> Students
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => openEdit(section)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEdit(section)}
+                  >
                     <Pencil /> Edit
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setPrintTarget(section)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPrintTarget(section)}
+                  >
                     <Printer /> Print
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setDownloadTarget(section)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDownloadTarget(section)}
+                  >
                     <Download /> Download
                   </Button>
                 </div>
@@ -826,119 +876,119 @@ function SectionList() {
                 </div>
               ) : (
                 <>
-                <div className="hidden overflow-x-auto sm:block">
-                <Table>
-                  <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
-                    <TableRow className="hover:bg-background">
-                      <TableHead className="w-14">#</TableHead>
-                      <TableHead className="w-[190px]">
-                        Student Number
-                      </TableHead>
-                      <TableHead>Full Name</TableHead>
-                      <TableHead className="w-[150px]">Status</TableHead>
-                      <TableHead className="w-[120px] text-right">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRosterStudents.map(
-                      (student: any, index: number) => (
-                        <TableRow key={student.id} className="h-[58px]">
-                          <TableCell className="text-muted-foreground">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="font-semibold tabular-nums">
-                            {student.student_number}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">
-                              {student.last_name}, {student.first_name}
-                              {student.middle_name
-                                ? ` ${student.middle_name}`
-                                : ""}
-                              {student.extension ? ` ${student.extension}` : ""}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
-                              {String(student.student_status).replaceAll(
-                                "_",
-                                " ",
-                              )}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="QR Code"
-                                onClick={() => void openStudentQr(student)}
-                              >
-                                <QrCode />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Edit student"
-                                onClick={() => void openStudent(student)}
-                              >
-                                <Pencil />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Archive student"
-                                onClick={() => setDeleteTarget(student)}
-                              >
-                                <Trash2 />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ),
-                    )}
-                  </TableBody>
-                </Table>
-                </div>
-                <div className="space-y-3 py-3 sm:hidden">
-                  {filteredRosterStudents.map((student: any, index: number) => (
-                    <div key={student.id} className="rounded-lg border p-3">
-                      <div className="flex items-start gap-3">
-                        <span className="pt-0.5 text-xs tabular-nums text-muted-foreground">
-                          {index + 1}.
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="break-words font-semibold">
-                            {student.last_name}, {student.first_name}
-                            {student.middle_name ? ` ${student.middle_name}` : ""}
-                            {student.extension ? (
-                              <span className="ml-1 font-medium">{student.extension}</span>
-                            ) : null}
-                          </p>
-                          <p className="mt-1 break-all font-mono text-sm text-muted-foreground">
-                            {student.student_number}
-                          </p>
-                          <span className="mt-2 inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
-                            {String(student.student_status).replaceAll("_", " ")}
+                  <div className="hidden overflow-x-auto sm:block">
+                  <Table>
+                    <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
+                      <TableRow className="hover:bg-background">
+                        <TableHead className="w-14">#</TableHead>
+                        <TableHead className="w-[190px]">
+                          Student Number
+                        </TableHead>
+                        <TableHead>Full Name</TableHead>
+                        <TableHead className="w-[150px]">Status</TableHead>
+                        <TableHead className="w-[120px] text-right">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRosterStudents.map(
+                        (student: any, index: number) => (
+                          <TableRow key={student.id} className="h-[58px]">
+                            <TableCell className="text-muted-foreground">
+                              {index + 1}
+                            </TableCell>
+                            <TableCell className="font-semibold tabular-nums">
+                              {student.student_number}
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {student.last_name}, {student.first_name}
+                                {student.middle_name
+                                  ? ` ${student.middle_name}`
+                                  : ""}
+                                {student.extension ? ` ${student.extension}` : ""}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
+                                {String(student.student_status).replaceAll(
+                                  "_",
+                                  " ",
+                                )}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="QR Code"
+                                  onClick={() => void openStudentQr(student)}
+                                >
+                                  <QrCode />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Edit student"
+                                  onClick={() => void openStudent(student)}
+                                >
+                                  <Pencil />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Archive student"
+                                  onClick={() => setDeleteTarget(student)}
+                                >
+                                  <Trash2 />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ),
+                      )}
+                    </TableBody>
+                  </Table>
+                  </div>
+                  <div className="space-y-3 py-3 sm:hidden">
+                    {filteredRosterStudents.map((student: any, index: number) => (
+                      <div key={student.id} className="rounded-lg border p-3">
+                        <div className="flex items-start gap-3">
+                          <span className="pt-0.5 text-xs tabular-nums text-muted-foreground">
+                            {index + 1}.
                           </span>
-                        </div>
-                        <div className="flex shrink-0 flex-col gap-1">
-                          <Button variant="ghost" size="icon" title="QR Code" onClick={() => void openStudentQr(student)}>
-                            <QrCode />
-                          </Button>
-                          <Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}>
-                            <Pencil />
-                          </Button>
-                          <Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}>
-                            <Trash2 />
-                          </Button>
+                          <div className="min-w-0 flex-1">
+                            <p className="break-words font-semibold">
+                              {student.last_name}, {student.first_name}
+                              {student.middle_name ? ` ${student.middle_name}` : ""}
+                              {student.extension ? (
+                                <span className="ml-1 font-medium">{student.extension}</span>
+                              ) : null}
+                            </p>
+                            <p className="mt-1 break-all font-mono text-sm text-muted-foreground">
+                              {student.student_number}
+                            </p>
+                            <span className="mt-2 inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
+                              {String(student.student_status).replaceAll("_", " ")}
+                            </span>
+                          </div>
+                          <div className="flex shrink-0 flex-col gap-1">
+                            <Button variant="ghost" size="icon" title="QR Code" onClick={() => void openStudentQr(student)}>
+                              <QrCode />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Edit student" onClick={() => void openStudent(student)}>
+                              <Pencil />
+                            </Button>
+                            <Button variant="ghost" size="icon" title="Archive student" onClick={() => setDeleteTarget(student)}>
+                              <Trash2 />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
