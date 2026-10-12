@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, CreditCard, History, UserRound, Wifi } from "lucide-react"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 import {
   AcademicProgramsService,
   AcademicSectionsService,
@@ -16,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { toast } from "sonner"
 
 export function StudentDetailsPage({
   sectionId,
@@ -175,7 +175,9 @@ export function StudentDetailsPage({
   })
   const handleScanNfc = async () => {
     if (!("NDEFReader" in window)) {
-      toast.error("Web NFC is not supported here. Use Chrome on Android or enter the UID manually.")
+      toast.error(
+        "Web NFC is not supported here. Use Chrome on Android or enter the UID manually.",
+      )
       return
     }
 
@@ -197,7 +199,10 @@ export function StudentDetailsPage({
               : ""
           let textRecord = ""
           for (const record of event.message?.records ?? []) {
-            if (record.recordType !== "text" || !(record.data instanceof DataView))
+            if (
+              record.recordType !== "text" ||
+              !(record.data instanceof DataView)
+            )
               continue
             const data = record.data
             if (!data.byteLength) continue
@@ -207,13 +212,15 @@ export function StudentDetailsPage({
             if (start < data.byteLength) {
               textRecord = new TextDecoder(
                 (status & 0x80) !== 0 ? "utf-16" : "utf-8",
-              ).decode(
-                new Uint8Array(
-                  data.buffer,
-                  data.byteOffset + start,
-                  data.byteLength - start,
-                ),
-              ).trim()
+              )
+                .decode(
+                  new Uint8Array(
+                    data.buffer,
+                    data.byteOffset + start,
+                    data.byteLength - start,
+                  ),
+                )
+                .trim()
               if (textRecord) break
             }
           }
@@ -225,13 +232,19 @@ export function StudentDetailsPage({
         reader.addEventListener("reading", onReading)
         timeoutId = window.setTimeout(() => {
           cleanup()
-          reject(new Error("No NFC identifier was received within 30 seconds. Try again or enter the UID manually."))
+          reject(
+            new Error(
+              "No NFC identifier was received within 30 seconds. Try again or enter the UID manually.",
+            ),
+          )
         }, 30000)
       })
       setCredentialValue(captured)
       toast.success("Card UID captured. Click Issue / Reissue to save it.")
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to read NFC card")
+      toast.error(
+        error instanceof Error ? error.message : "Unable to read NFC card",
+      )
     } finally {
       if (timeoutId !== undefined) window.clearTimeout(timeoutId)
       setScanningNfc(false)
