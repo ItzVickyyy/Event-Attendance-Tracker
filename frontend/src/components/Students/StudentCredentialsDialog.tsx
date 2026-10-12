@@ -261,8 +261,7 @@ export function StudentCredentialsDialog({
             Manage Credentials
           </DialogTitle>
           <DialogDescription>
-            View, activate/deactivate, or register an NFC card for
-            student{" "}
+            View, activate/deactivate, or register an NFC card for student{" "}
             <span className="font-semibold text-foreground">
               {student.student_number}
             </span>
@@ -286,7 +285,10 @@ export function StudentCredentialsDialog({
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground">
                 Assigned NFC Cards (
-                {credentials.filter((cred) => cred.credential_type === "nfc").length}
+                {
+                  credentials.filter((cred) => cred.credential_type === "nfc")
+                    .length
+                }
                 )
               </h4>
               {credentials.length === 0 ? (
@@ -359,8 +361,7 @@ export function StudentCredentialsDialog({
                           </Button>
                         </div>
                       </div>
-
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
