@@ -298,67 +298,68 @@ export function StudentCredentialsDialog({
                   {credentials
                     .filter((cred) => cred.credential_type === "nfc")
                     .map((cred) => (
-                    <div
-                      key={cred.id}
-                      className="flex items-center justify-between p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-muted p-2">
-                          <Wifi className="h-4 w-4 text-blue-500" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm font-medium">
-                              {cred.credential_value}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="text-xs uppercase"
-                            >
-                              {cred.credential_type}
-                            </Badge>
+                      <div
+                        key={cred.id}
+                        className="flex items-center justify-between p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full bg-muted p-2">
+                            <Wifi className="h-4 w-4 text-blue-500" />
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Added:{" "}
-                            {new Date(
-                              cred.created_at || Date.now(),
-                            ).toLocaleDateString()}
-                          </p>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm font-medium">
+                                {cred.credential_value}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="text-xs uppercase"
+                              >
+                                {cred.credential_type}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Added:{" "}
+                              {new Date(
+                                cred.created_at || Date.now(),
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`check-${cred.id}`}
+                              checked={cred.is_active}
+                              onCheckedChange={(checked) =>
+                                toggleMutation.mutate({
+                                  id: cred.id,
+                                  isActive: checked === true,
+                                })
+                              }
+                              disabled={toggleMutation.isPending}
+                            />
+                            <Label
+                              htmlFor={`check-${cred.id}`}
+                              className="text-xs cursor-pointer text-muted-foreground"
+                            >
+                              {cred.is_active ? "Active" : "Inactive"}
+                            </Label>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => deleteMutation.mutate(cred.id)}
+                            disabled={deleteMutation.isPending}
+                            title="Delete credential"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id={`check-${cred.id}`}
-                            checked={cred.is_active}
-                            onCheckedChange={(checked) =>
-                              toggleMutation.mutate({
-                                id: cred.id,
-                                isActive: checked === true,
-                              })
-                            }
-                            disabled={toggleMutation.isPending}
-                          />
-                          <Label
-                            htmlFor={`check-${cred.id}`}
-                            className="text-xs cursor-pointer text-muted-foreground"
-                          >
-                            {cred.is_active ? "Active" : "Inactive"}
-                          </Label>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => deleteMutation.mutate(cred.id)}
-                          disabled={deleteMutation.isPending}
-                          title="Delete credential"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
                   ))}
                 </div>
               )}
