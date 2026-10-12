@@ -416,20 +416,15 @@ def scan_attendance(
         )
     ).first()
     if not registration:
-        has_any_registration = session.exec(
-            select(EventRegistration.id).where(
-                col(EventRegistration.event_id) == event.id,
-            )
-        ).first()
         detail = (
-            "This event has no eligible sections registered yet. Open Event "
-            "Registration, select the sections under Eligible Sections, click "
-            "Register selected sections, then retry sync."
-            if not has_any_registration
+            "This event has no eligible sections selected yet. Open Event "
+            "Registration, select sections under Eligible Sections, click Save "
+            "eligible sections, then click Register selected sections before retrying sync."
+            if not event.eligible_section_ids
             else (
-                "Attendee is not registered for this event. In Event Registration, "
-                "select the attendee's section under Eligible Sections and register "
-                "the selected sections before scanning or syncing."
+                "Attendee is not registered for this event. Confirm the attendee's "
+                "section is selected under Eligible Sections and click Register "
+                "selected sections before scanning or syncing."
             )
         )
         raise HTTPException(status_code=404, detail=detail)
@@ -503,20 +498,15 @@ def scan_attendance_manual(
         )
     ).first()
     if not registration:
-        has_any_registration = session.exec(
-            select(EventRegistration.id).where(
-                col(EventRegistration.event_id) == event.id,
-            )
-        ).first()
         detail = (
-            "This event has no eligible sections registered yet. Open Event "
-            "Registration, select the sections under Eligible Sections, click "
-            "Register selected sections, then retry sync."
-            if not has_any_registration
+            "This event has no eligible sections selected yet. Open Event "
+            "Registration, select sections under Eligible Sections, click Save "
+            "eligible sections, then click Register selected sections before retrying sync."
+            if not event.eligible_section_ids
             else (
-                "Attendee is not registered for this event. In Event Registration, "
-                "select the attendee's section under Eligible Sections and register "
-                "the selected sections before scanning or syncing."
+                "Attendee is not registered for this event. Confirm the attendee's "
+                "section is selected under Eligible Sections and click Register "
+                "selected sections before scanning or syncing."
             )
         )
         raise HTTPException(status_code=404, detail=detail)
