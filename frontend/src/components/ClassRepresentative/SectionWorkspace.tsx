@@ -158,12 +158,7 @@ export function ClassRepresentativeSectionWorkspace() {
     setDialogOpen(false)
     setEditing(null)
     setForm(emptyForm)
-    await client.invalidateQueries({
-      queryKey: ["class-representative-students"],
-    })
-    await client.invalidateQueries({
-      queryKey: ["class-representative-assignment"],
-    })
+    await client.invalidateQueries()
   }
 
   const archive = async (student: any) => {
@@ -186,12 +181,7 @@ export function ClassRepresentativeSectionWorkspace() {
       return
     }
     toast.success("Student archived")
-    await client.invalidateQueries({
-      queryKey: ["class-representative-students"],
-    })
-    await client.invalidateQueries({
-      queryKey: ["class-representative-assignment"],
-    })
+    await client.invalidateQueries()
   }
 
   const filtered = (students.data?.data ?? []).filter((student: any) =>
