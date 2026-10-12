@@ -67,6 +67,10 @@ function extractNfcCredential(event: any): string {
       }
     }
   }
+  // Empty NDEF tags can still expose their UID through Web NFC's serialNumber.
+  if (typeof event.serialNumber === "string" && event.serialNumber.trim()) {
+    return event.serialNumber.trim()
+  }
   return ""
 }
 
