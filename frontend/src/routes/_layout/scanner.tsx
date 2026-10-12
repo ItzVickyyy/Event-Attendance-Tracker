@@ -569,9 +569,9 @@ function Scanner() {
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
-  const [permissionGranted, setPermissionGranted] = useState(
-    () => localStorage.getItem("nfc-permission-granted") === "true",
-  )
+  // Browser permission state is not persisted across page loads. Mark it granted
+  // only after this page successfully starts a Web NFC scan.
+  const [permissionGranted, setPermissionGranted] = useState(false)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [manualSearch, setManualSearch] = useState("")
   const ndefRef = useRef<any>(null)
@@ -609,8 +609,7 @@ function Scanner() {
       setPermissionGranted(granted)
       setPermissionDenied(permissionStatus.state === "denied")
       if (granted) {
-        localStorage.setItem("nfc-permission-granted", "true")
-      } else {
+        } else {
         localStorage.removeItem("nfc-permission-granted")
       }
     }
@@ -915,7 +914,6 @@ function Scanner() {
           )
           setPermissionGranted(false)
           setPermissionDenied(true)
-          localStorage.removeItem("nfc-permission-granted")
         } else {
           toast.error(`NFC error: ${error.message}`)
         }
@@ -1297,13 +1295,9 @@ function Scanner() {
             <LoadingButton
               loading={scanning}
               onClick={scanNfc}
-              disabled={scanning || !nfcSupported || !syncStatus.activeSession}
+              disabled={scanning || !nfcSupported}
             >
-              {scanning
-                ? "Scanning..."
-                : permissionDenied
-                  ? "Request Permission"
-                  : "Scan NFC Tag"}
+              {permissionDenied ? "Request Permission" : "Scan NFC Tag"}
             </LoadingButton>
             {scanning && (
               <Button variant="outline" onClick={stopNfcScanning}>
@@ -1429,10 +1423,10 @@ function Scanner() {
                 <LoadingButton
                   loading={qrScanning}
                   onClick={scanQr}
-                  disabled={qrScanning || !syncStatus.activeSession}
+                  disabled={qrScanning}
                   className="flex-1"
                 >
-                  {qrScanning ? "Scanning QR..." : "Start QR Scanner"}
+                  Start QR Scanner
                 </LoadingButton>
                 <Button
                   variant="outline"
