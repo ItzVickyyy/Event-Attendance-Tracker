@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Users } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   AcademicSectionsService,
+  type EventPublic,
   EventRegistrationsService,
   EventsService,
   StudentsService,
@@ -128,11 +129,13 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       ).length,
   )
   const eventResponse = eventQuery.data as unknown as
-    | (typeof eventQuery.data & {
-        data?: { eligible_section_ids?: string[]; event_name?: string }
-      })
+    | { data?: EventPublic }
+    | EventPublic
     | undefined
-  const event = eventResponse?.data ?? eventResponse
+  const event =
+    eventResponse && "data" in eventResponse
+      ? eventResponse.data
+      : eventResponse
   if (eventQuery.isLoading)
     return (
       <Card>
