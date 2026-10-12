@@ -580,6 +580,7 @@ def test_import_keeps_created_accounts_when_email_delivery_fails(
         )
         assert login.status_code == 200
 
+
 def test_class_representative_can_register_student_card_uid(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
@@ -728,4 +729,3 @@ def test_class_representative_can_register_student_card_uid(
         },
     )
     assert forbidden.status_code == 403
-
