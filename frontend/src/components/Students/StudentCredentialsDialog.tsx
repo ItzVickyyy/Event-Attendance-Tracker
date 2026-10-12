@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CheckCircle2, KeyRound, Loader2, Plus, Wifi } from "lucide-react"
+import { CheckCircle2, KeyRound, Loader2, Plus, Trash2, Wifi } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -336,56 +336,56 @@ export function StudentCredentialsDialog({
 
             {/* One NFC Card UID per student. */}
             {!credentials.some((cred) => cred.credential_type === "nfc") && (
-            <form
-              onSubmit={handleAddCredential}
-              className="space-y-4 rounded-lg border bg-muted/30 p-4"
-            >
-              <h4 className="text-sm font-semibold">Register Card UID</h4>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="cred-val" className="text-xs">
-                    Value / UID
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Input
-                      id="cred-val"
-                      placeholder="Scan card or enter UID"
-                      value={newCredValue}
-                      onChange={(e) => setNewCredValue(e.target.value)}
-                      className="min-w-0 flex-1 font-mono text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => void handleScanNfc()}
-                      disabled={scanningNfc || createMutation.isPending}
-                      className="shrink-0"
-                    >
-                      {scanningNfc ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Wifi className="h-4 w-4" />
-                      )}
-                      {scanningNfc ? "Tap card..." : "Scan card"}
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={
-                        createMutation.isPending || !newCredValue.trim()
-                      }
-                      className="shrink-0"
-                    >
-                      {createMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4" />
-                      )}
-                      Register Card UID
-                    </Button>
+              <form
+                onSubmit={handleAddCredential}
+                className="space-y-4 rounded-lg border bg-muted/30 p-4"
+              >
+                <h4 className="text-sm font-semibold">Register Card UID</h4>
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cred-val" className="text-xs">
+                      Value / UID
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Input
+                        id="cred-val"
+                        placeholder="Scan card or enter UID"
+                        value={newCredValue}
+                        onChange={(e) => setNewCredValue(e.target.value)}
+                        className="min-w-0 flex-1 font-mono text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void handleScanNfc()}
+                        disabled={scanningNfc || createMutation.isPending}
+                        className="shrink-0"
+                      >
+                        {scanningNfc ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Wifi className="h-4 w-4" />
+                        )}
+                        {scanningNfc ? "Tap card..." : "Scan card"}
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={
+                          createMutation.isPending || !newCredValue.trim()
+                        }
+                        className="shrink-0"
+                      >
+                        {createMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                        Register Card UID
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </form>
+              </form>
             )}
           </div>
         )}
