@@ -295,19 +295,76 @@ def test_attendee_credential_management_and_public_lookup(
     assert public.status_code == 200
     assert public.json()["attendee_id"] == attendee["id"]
 
+    another_nfc = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": attendee["id"],
+            "credential_type": "nfc",
+            "credential_value": f"TEST-{random_lower_string()[:12].upper()}",
+            "is_active": True,
+        },
+    )
+    assert another_nfc.status_code == 409
+
+    another_attendee = _attendee(client, headers)
+    reassigned = client.patch(
+        _api(f"/attendee-credentials/{credential_id}"),
+        headers=headers,
+        json={"attendee_id": another_attendee["id"]},
+    )
+    assert reassigned.status_code == 400
+    assert "cannot be reassigned" in reassigned.json()["detail"]
+
+    changed_type = client.patch(
+        _api(f"/attendee-credentials/{credential_id}"),
+        headers=headers,
+        json={"credential_type": "qr"},
+    )
+    assert changed_type.status_code == 400
+    assert "cannot be changed" in changed_type.json()["detail"]
+
+    qr_credential = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": attendee["id"],
+            "credential_type": "qr",
+            "credential_value": f"QR-{random_lower_string()[:12].upper()}",
+            "is_active": True,
+        },
+    )
+    assert qr_credential.status_code == 200
+    qr_to_nfc = client.patch(
+        _api(f"/attendee-credentials/{qr_credential.json()['id']}"),
+        headers=headers,
+        json={"credential_type": "nfc"},
+    )
+    assert qr_to_nfc.status_code == 409
+    assert "already has a registered Card UID" in qr_to_nfc.json()["detail"]
+
     changed_value = f"TEST-{random_lower_string()[:12].upper()}"
     updated = client.patch(
         _api(f"/attendee-credentials/{credential_id}"),
         headers=headers,
-        json={"credential_value": changed_value, "is_active": False},
+        json={"credential_value": changed_value},
     )
     assert updated.status_code == 200
+    assert updated.json()["is_active"] is True
     assert (
         client.get(
             _api(f"/attendee-credentials/public/{changed_value}"), headers=headers
         ).status_code
-        == 404
+        == 200
     )
+
+    deactivated = client.patch(
+        _api(f"/attendee-credentials/{credential_id}"),
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert deactivated.status_code == 400
+    assert "must remain active" in deactivated.json()["detail"]
 
     assert (
         client.get(
@@ -399,14 +456,30 @@ def test_credential_creation_and_update_reject_missing_or_duplicate_values(
         == 404
     )
 
-    assert (
-        client.patch(
-            _api(f"/attendee-credentials/{other.json()['id']}"),
-            headers=headers,
-            json={"attendee_id": str(uuid4())},
-        ).status_code
-        == 404
+    nfc_reassignment = client.patch(
+        _api(f"/attendee-credentials/{other.json()['id']}"),
+        headers=headers,
+        json={"attendee_id": first["id"]},
     )
+    assert nfc_reassignment.status_code == 400
+    assert "cannot be reassigned" in nfc_reassignment.json()["detail"]
+
+    qr = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": second["id"],
+            "credential_type": "qr",
+            "credential_value": f"QR-{random_lower_string()[:10].upper()}",
+        },
+    )
+    assert qr.status_code == 200
+    invalid_qr_reassignment = client.patch(
+        _api(f"/attendee-credentials/{qr.json()['id']}"),
+        headers=headers,
+        json={"attendee_id": str(uuid4())},
+    )
+    assert invalid_qr_reassignment.status_code == 404
 
 
 def test_public_credential_lookup_includes_student_and_section(

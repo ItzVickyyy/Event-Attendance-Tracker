@@ -447,7 +447,10 @@ test.describe("Foreground sync fallback (no service worker)", () => {
   }) => {
     await mockScan(page, () => ({
       status: 409,
-      json: { detail: "already scanned" },
+      json: {
+        detail:
+          "Already recorded for this attendee. Existing scan: In: 2026-09-15T09:00:00.000Z",
+      },
     }))
     await gotoApp(page)
     await setToken(page)

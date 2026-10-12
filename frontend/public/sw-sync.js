@@ -200,11 +200,32 @@ async function syncRecord(db, token, apiBase, record) {
       synced_at_server: now(),
       retry_count: 0,
       last_error: undefined,
+      last_error_detail: undefined,
       last_retry_at: undefined,
     })
     return "synced"
   }
-  if (status === 409) {
+
+  let errorDetail
+  try {
+    const responseText = await response.text()
+    if (responseText) {
+      try {
+        const responseBody = JSON.parse(responseText)
+        if (typeof responseBody?.detail === "string") {
+          errorDetail = responseBody.detail
+        } else {
+          errorDetail = responseText
+        }
+      } catch (_error) {
+        errorDetail = responseText
+      }
+    }
+  } catch (_error) {
+    // Keep the HTTP status even if the response body cannot be read.
+  }
+
+  if (status === 409 && isDuplicateAttendanceConflict(errorDetail)) {
     await markRecord(db, record.id, {
       sync_status: "DUPLICATE",
       synced: true,
@@ -212,6 +233,7 @@ async function syncRecord(db, token, apiBase, record) {
       synced_at_server: now(),
       retry_count: 0,
       last_error: undefined,
+      last_error_detail: undefined,
       last_retry_at: undefined,
     })
     return "duplicate"
@@ -222,9 +244,20 @@ async function syncRecord(db, token, apiBase, record) {
     sync_status: status >= 500 ? "RETRY" : "REJECTED",
     retry_count: record.retry_count + 1,
     last_error: `http-${status}`,
+    last_error_detail: errorDetail?.slice(0, 500),
     last_retry_at: now(),
   })
   return status >= 500 ? "retry" : "failed"
+}
+
+function isDuplicateAttendanceConflict(detail) {
+  if (typeof detail !== "string") return false
+  return (
+    /^Already (Recorded|Completed)\s*-/i.test(detail) ||
+    /^Already recorded for this attendee\./i.test(detail) ||
+    /^Attendance already recorded for this session\.?$/i.test(detail) ||
+    /^Attendance already completed\.?$/i.test(detail)
+  )
 }
 
 function markRecord(db, id, patch) {
