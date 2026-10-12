@@ -117,7 +117,7 @@ export function StudentDetailsPage({
     enabled: Boolean(attendeeId),
   })
   const registrationsQuery = useQuery({
-    queryKey: ["studentRegistrations", student?.attendee_id],
+    queryKey: ["studentRegistrations", attendeeId],
     queryFn: () =>
       EventRegistrationsService.registrationsReadEventRegistrations({
         query: { attendee_id: attendeeId! },
@@ -170,7 +170,7 @@ export function StudentDetailsPage({
       }),
     onSuccess: () =>
       void queryClient.invalidateQueries({
-        queryKey: ["studentCredentials", student?.attendee_id],
+        queryKey: ["studentCredentials", attendeeId],
       }),
   })
   const handleScanNfc = async () => {
