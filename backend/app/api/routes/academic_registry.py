@@ -334,7 +334,8 @@ def read_student_details(
                p.email, p.contact_number, se.id AS enrollment_id, se.student_status, se.section_id, se.academic_year_id,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='nfc' AND c.is_active=true) AS nfc_registered,
                EXISTS (SELECT 1 FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true) AS qr_registered,
-               (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS qr_credential_value
+               (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='qr' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS qr_credential_value,
+               (SELECT c.credential_value FROM attendees a JOIN attendee_credentials c ON c.attendee_id=a.id WHERE a.person_id=s.person_id AND CAST(c.credential_type AS TEXT)='nfc' AND c.is_active=true ORDER BY c.created_at ASC LIMIT 1) AS nfc_credential_value
         FROM students s JOIN people p ON p.id=s.person_id
         LEFT JOIN student_enrollments se ON se.student_id=s.id AND se.archived_at IS NULL
         WHERE s.id=:id AND s.archived_at IS NULL{section_filter}{year_filter}
