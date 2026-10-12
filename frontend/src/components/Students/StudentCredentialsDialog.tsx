@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { KeyRound, Loader2, Plus, QrCode, Trash2, Wifi } from "lucide-react"
+import { KeyRound, Loader2, Plus, Trash2, Wifi } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -7,7 +7,6 @@ import {
   type AttendeeCredentialPublic,
   AttendeeCredentialsService,
   AttendeesService,
-  type CredentialType,
   type StudentPublic,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
@@ -23,48 +22,55 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 interface StudentCredentialsDialogProps {
   student: StudentPublic
 }
 
-async function resolveAttendeeId(personId: string): Promise<string> {
+async function resolveAttendeeId(student: StudentPublic): Promise<string> {
+  if (student.attendee_id) return student.attendee_id
+
+  const personId = student.person_id
+  if (!personId) {
+    throw new Error(
+      "This student has no valid person ID. Refresh the student record and try again.",
+    )
+  }
+
   const result = await AttendeesService.readAttendees({
-    query: { limit: 10000 },
+    query: { person_id: personId, limit: 1 },
     throwOnError: true,
   })
   const attendees = (
     result as unknown as { data: { data: { id: string; person_id: string }[] } }
   ).data.data
-  const existing = attendees.find((a) => a.person_id === personId)
-  if (existing) return existing.id
-  const created = await AttendeesService.createAttendee({
-    body: { person_id: personId, attendee_type: "student" },
-    throwOnError: true,
-  })
-  return (created as unknown as { data: { id: string } }).data.id
+  const existing = attendees.find((attendee) => attendee.person_id === personId)
+
+  if (!existing) {
+    throw new Error(
+      "This student does not have an attendee record. Re-save or re-import the student to provision the QR credential, then try again.",
+    )
+  }
+
+  return existing.id
 }
 
 export function StudentCredentialsDialog({
   student,
 }: StudentCredentialsDialogProps) {
   const [open, setOpen] = useState(false)
-  const [newCredType, setNewCredType] = useState<CredentialType>("nfc")
   const [newCredValue, setNewCredValue] = useState("")
   const [scanningNfc, setScanningNfc] = useState(false)
   const queryClient = useQueryClient()
 
   // 1. Resolve Attendee ID for Student
-  const { data: attendeeId, isLoading: isLoadingAttendee } = useQuery({
+  const {
+    data: attendeeId,
+    isLoading: isLoadingAttendee,
+    error: attendeeError,
+  } = useQuery({
     queryKey: ["attendeeIdForPerson", student.person_id],
-    queryFn: () => resolveAttendeeId(student.person_id),
+    queryFn: () => resolveAttendeeId(student),
     enabled: open,
   })
 
@@ -97,7 +103,7 @@ export function StudentCredentialsDialog({
         {
           body: {
             attendee_id: attendeeId,
-            credential_type: newCredType,
+            credential_type: "nfc",
             credential_value: newCredValue.trim().toUpperCase(),
             is_active: true,
           },
@@ -217,7 +223,6 @@ export function StudentCredentialsDialog({
           )
         }, 30000)
       })
-      setNewCredType("nfc")
       setNewCredValue(captured)
       toast.success(
         "Card identifier captured. Confirm the student and click Add to save it.",
@@ -256,8 +261,7 @@ export function StudentCredentialsDialog({
             Manage Credentials
           </DialogTitle>
           <DialogDescription>
-            View, activate/deactivate, or add credentials (NFC UID, QR Code) for
-            student{" "}
+            View, activate/deactivate, or register an NFC card for student{" "}
             <span className="font-semibold text-foreground">
               {student.student_number}
             </span>
@@ -265,16 +269,27 @@ export function StudentCredentialsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {isLoadingAttendee || isLoadingCreds ? (
+        {isLoadingAttendee || (attendeeId && isLoadingCreds) ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : attendeeError ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            {attendeeError instanceof Error
+              ? attendeeError.message
+              : "Unable to resolve this student’s attendee record."}
           </div>
         ) : (
           <div className="flex flex-col gap-6 py-2">
             {/* List Existing Credentials */}
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground">
-                Assigned Credentials ({credentials.length})
+                Assigned NFC Cards (
+                {
+                  credentials.filter((cred) => cred.credential_type === "nfc")
+                    .length
+                }
+                )
               </h4>
               {credentials.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
@@ -282,73 +297,71 @@ export function StudentCredentialsDialog({
                 </div>
               ) : (
                 <div className="divide-y rounded-md border">
-                  {credentials.map((cred) => (
-                    <div
-                      key={cred.id}
-                      className="flex items-center justify-between p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-muted p-2">
-                          {cred.credential_type === "nfc" ? (
+                  {credentials
+                    .filter((cred) => cred.credential_type === "nfc")
+                    .map((cred) => (
+                      <div
+                        key={cred.id}
+                        className="flex items-center justify-between p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full bg-muted p-2">
                             <Wifi className="h-4 w-4 text-blue-500" />
-                          ) : (
-                            <QrCode className="h-4 w-4 text-emerald-500" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm font-medium">
-                              {cred.credential_value}
-                            </span>
-                            <Badge
-                              variant="outline"
-                              className="text-xs uppercase"
-                            >
-                              {cred.credential_type}
-                            </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            Added:{" "}
-                            {new Date(
-                              cred.created_at || Date.now(),
-                            ).toLocaleDateString()}
-                          </p>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm font-medium">
+                                {cred.credential_value}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="text-xs uppercase"
+                              >
+                                {cred.credential_type}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Added:{" "}
+                              {new Date(
+                                cred.created_at || Date.now(),
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id={`check-${cred.id}`}
-                            checked={cred.is_active}
-                            onCheckedChange={(checked) =>
-                              toggleMutation.mutate({
-                                id: cred.id,
-                                isActive: checked === true,
-                              })
-                            }
-                            disabled={toggleMutation.isPending}
-                          />
-                          <Label
-                            htmlFor={`check-${cred.id}`}
-                            className="text-xs cursor-pointer text-muted-foreground"
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`check-${cred.id}`}
+                              checked={cred.is_active}
+                              onCheckedChange={(checked) =>
+                                toggleMutation.mutate({
+                                  id: cred.id,
+                                  isActive: checked === true,
+                                })
+                              }
+                              disabled={toggleMutation.isPending}
+                            />
+                            <Label
+                              htmlFor={`check-${cred.id}`}
+                              className="text-xs cursor-pointer text-muted-foreground"
+                            >
+                              {cred.is_active ? "Active" : "Inactive"}
+                            </Label>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => deleteMutation.mutate(cred.id)}
+                            disabled={deleteMutation.isPending}
+                            title="Delete credential"
                           >
-                            {cred.is_active ? "Active" : "Inactive"}
-                          </Label>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => deleteMutation.mutate(cred.id)}
-                          disabled={deleteMutation.isPending}
-                          title="Delete credential"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
@@ -359,25 +372,8 @@ export function StudentCredentialsDialog({
               className="space-y-4 rounded-lg border bg-muted/30 p-4"
             >
               <h4 className="text-sm font-semibold">Add New Credential</h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-1 space-y-1.5">
-                  <Label htmlFor="cred-type" className="text-xs">
-                    Type
-                  </Label>
-                  <Select
-                    value={newCredType}
-                    onValueChange={(val: CredentialType) => setNewCredType(val)}
-                  >
-                    <SelectTrigger id="cred-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nfc">NFC UID</SelectItem>
-                      <SelectItem value="qr">QR Code</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-1.5">
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1.5">
                   <Label htmlFor="cred-val" className="text-xs">
                     Value / UID
                   </Label>
@@ -389,22 +385,20 @@ export function StudentCredentialsDialog({
                       onChange={(e) => setNewCredValue(e.target.value)}
                       className="min-w-0 flex-1 font-mono text-sm"
                     />
-                    {newCredType === "nfc" && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => void handleScanNfc()}
-                        disabled={scanningNfc || createMutation.isPending}
-                        className="shrink-0"
-                      >
-                        {scanningNfc ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Wifi className="h-4 w-4" />
-                        )}
-                        {scanningNfc ? "Tap card..." : "Scan card"}
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void handleScanNfc()}
+                      disabled={scanningNfc || createMutation.isPending}
+                      className="shrink-0"
+                    >
+                      {scanningNfc ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wifi className="h-4 w-4" />
+                      )}
+                      {scanningNfc ? "Tap card..." : "Scan card"}
+                    </Button>
                     <Button
                       type="submit"
                       disabled={

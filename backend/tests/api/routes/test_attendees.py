@@ -40,14 +40,21 @@ def test_attendee_and_credentials_and_relationships(
     )
     p2_id = p2_res.json()["id"]
 
-    # 3. Create Attendee for person 1
-    att1_res = client.post(
-        f"{settings.API_V1_STR}/attendees/",
+    # Student creation provisions the attendee and QR credential automatically.
+    att1_res = client.get(
+        f"{settings.API_V1_STR}/attendees/?person_id={p1_id}",
         headers=superuser_token_headers,
-        json={"person_id": p1_id, "attendee_type": "student"},
     )
     assert att1_res.status_code == 200
-    att1_id = att1_res.json()["id"]
+    assert att1_res.json()["count"] == 1
+    att1_id = att1_res.json()["data"][0]["id"]
+
+    qr_res = client.get(
+        f"{settings.API_V1_STR}/attendee-credentials/?attendee_id={att1_id}",
+        headers=superuser_token_headers,
+    )
+    assert qr_res.status_code == 200
+    assert any(item["credential_type"] == "qr" for item in qr_res.json()["data"])
 
     # 4. Create Attendee for person 2 (Guardian)
     att2_res = client.post(

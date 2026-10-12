@@ -77,9 +77,16 @@ def create_attendee(
         select(Attendee).where(Attendee.person_id == attendee_in.person_id)
     ).first()
     if existing:
+        # Student creation provisions its attendee automatically. Keep that path
+        # idempotent while preserving duplicate rejection for manual guest/faculty creation.
+        if (
+            existing.attendee_type == attendee_in.attendee_type
+            and attendee_in.attendee_type == AttendeeType.student
+        ):
+            return existing
         raise HTTPException(
             status_code=400,
-            detail="An attendee record already exists for this person.",
+            detail="An attendee record already exists for this person with a different type.",
         )
 
     attendee = Attendee.model_validate(attendee_in)

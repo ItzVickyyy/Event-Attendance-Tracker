@@ -19,6 +19,7 @@ from app.models import (
     get_datetime_utc,
 )
 from app.services.reference_codes import next_student_reference_code
+from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import StudentEnrollment
 
 router = APIRouter(prefix="/students", tags=["students"])
@@ -199,6 +200,8 @@ def create_student(
     student = Student.model_validate(student_in)
     student.reference_code = next_student_reference_code(session)
     session.add(student)
+    session.flush()
+    ensure_student_qr_credential(session, student)
     session.commit()
     session.refresh(student)
     return student
