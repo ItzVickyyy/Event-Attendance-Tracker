@@ -206,9 +206,13 @@ export function StudentImportDialog({
       if (data.newly_promoted_rows > 0) {
         toast.success(`Imported ${data.newly_promoted_rows} student(s)`)
       } else if (data.already_promoted_rows > 0) {
-        toast.success(`${data.already_promoted_rows} student(s) were already imported`)
+        toast.success(
+          `${data.already_promoted_rows} student(s) were already imported`,
+        )
       } else {
-        toast.error("No students were imported. Check the promotion result below.")
+        toast.error(
+          "No students were imported. Check the promotion result below.",
+        )
         return
       }
       close(false)
@@ -585,21 +589,28 @@ export function StudentImportDialog({
                     <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                     <div className="min-w-0">
                       <p className="font-medium">
-                        {promotionResult.blocked_rows.length} row(s) could not be imported
+                        {promotionResult.blocked_rows.length} row(s) could not
+                        be imported
                       </p>
                       <p className="mt-1 text-muted-foreground">
-                        Correct the section or academic-year setup, then select Retry Import. Successfully imported rows will not be duplicated.
+                        Correct the section or academic-year setup, then select
+                        Retry Import. Successfully imported rows will not be
+                        duplicated.
                       </p>
                       <ul className="mt-2 list-disc space-y-1 pl-5">
-                        {promotionResult.blocked_rows.slice(0, 8).map((row: any) => (
-                          <li key={row.record_id}>
-                            Row {row.source_row} ({row.source_sheet}): {row.reason}
-                          </li>
-                        ))}
+                        {promotionResult.blocked_rows
+                          .slice(0, 8)
+                          .map((row: any) => (
+                            <li key={row.record_id}>
+                              Row {row.source_row} ({row.source_sheet}):{" "}
+                              {row.reason}
+                            </li>
+                          ))}
                       </ul>
                       {promotionResult.blocked_rows.length > 8 ? (
                         <p className="mt-2 text-muted-foreground">
-                          And {promotionResult.blocked_rows.length - 8} more row(s). The same issue may affect multiple rows.
+                          And {promotionResult.blocked_rows.length - 8} more
+                          row(s). The same issue may affect multiple rows.
                         </p>
                       ) : null}
                     </div>
