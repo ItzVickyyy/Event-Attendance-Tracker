@@ -775,5 +775,4 @@ test.describe("Manual attendance scan", () => {
     await qrButton.click()
     await expect(missingSessionToast).toBeVisible()
   })
-
 })
