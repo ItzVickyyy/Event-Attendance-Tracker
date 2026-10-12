@@ -579,3 +579,84 @@ def test_import_keeps_created_accounts_when_email_delivery_fails(
             data={"username": email, "password": TEMPORARY_PASSWORD},
         )
         assert login.status_code == 200
+
+
+
+def test_class_representative_can_register_student_card_uid(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, year, _section_id = _create_representative(
+        client, superuser_token_headers
+    )
+    headers = _representative_headers(client, representative["email"])
+    student_payload = {
+        "student_number": f"CARD-{random_lower_string()[:10].upper()}",
+        "first_name": "Card",
+        "last_name": "Owner",
+        "email": random_email(),
+    }
+    created = client.post(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+        json=student_payload,
+    )
+    assert created.status_code == 200
+    student_id = created.json()["id"]
+
+    roster = client.get(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+    )
+    assert roster.status_code == 200
+    student = next(row for row in roster.json()["data"] if row["id"] == student_id)
+    assert student["card_uid_registered"] is False
+
+    uid = f"04AABB{random_lower_string()[:8].upper()}"
+    registered = client.post(
+        _api(
+            f"/class-representatives/me/students/{student_id}/card-uid"
+            f"?academic_year_id={year['id']}"
+        ),
+        headers=headers,
+        json={"credential_value": uid.lower()},
+    )
+    assert registered.status_code == 200
+    assert registered.json()["card_uid_registered"] is True
+
+    roster = client.get(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+    )
+    student = next(row for row in roster.json()["data"] if row["id"] == student_id)
+    assert student["card_uid_registered"] is True
+
+    second_created = client.post(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+        json={
+            **student_payload,
+            "student_number": f"CARD-{random_lower_string()[:10].upper()}",
+            "email": random_email(),
+        },
+    )
+    assert second_created.status_code == 200
+    second_student_id = second_created.json()["id"]
+    duplicate_other_student = client.post(
+        _api(
+            f"/class-representatives/me/students/{second_student_id}/card-uid"
+            f"?academic_year_id={year['id']}"
+        ),
+        headers=headers,
+        json={"credential_value": uid},
+    )
+    assert duplicate_other_student.status_code == 409
+
+    blank = client.post(
+        _api(
+            f"/class-representatives/me/students/{student_id}/card-uid"
+            f"?academic_year_id={year['id']}"
+        ),
+        headers=headers,
+        json={"credential_value": "   "},
+    )
+    assert blank.status_code == 422
