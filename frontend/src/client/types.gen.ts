@@ -1239,6 +1239,10 @@ export type EventPublic = {
     organization_id?: string | null;
     status?: EventStatus;
     /**
+     * Eligible Section Ids
+     */
+    eligible_section_ids: Array<string>;
+    /**
      * Reference Code
      */
     reference_code?: string | null;
@@ -1374,6 +1378,10 @@ export type EventUpdate = {
      */
     organization_id?: string | null;
     status?: EventStatus | null;
+    /**
+     * Eligible Section Ids
+     */
+    eligible_section_ids?: Array<string> | null;
 };
 
 /**
