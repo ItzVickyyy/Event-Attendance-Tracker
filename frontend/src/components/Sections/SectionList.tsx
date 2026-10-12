@@ -13,8 +13,9 @@ import {
 } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { AcademicProgramsService } from "@/client"
+import { AcademicProgramsService, type StudentPublic } from "@/client"
 import { StudentImportDialog } from "@/components/Sections/StudentImportDialog"
+import { StudentCredentialsDialog } from "@/components/Students/StudentCredentialsDialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -1225,11 +1226,18 @@ function SectionList() {
           <div className="rounded-md border p-3 text-sm">
             <div className="font-medium">Credentials</div>
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              <div className="rounded-md bg-muted/40 px-3 py-2 text-muted-foreground">
-                NFC:{" "}
-                {studentForm.nfc_registered === "true"
-                  ? "Registered"
-                  : "Not registered"}
+              <div className="flex flex-col gap-2 rounded-md bg-muted/40 px-3 py-2">
+                <span className="text-muted-foreground">
+                  NFC:{" "}
+                  {studentForm.nfc_registered === "true"
+                    ? "Registered"
+                    : "Not registered"}
+                </span>
+                {studentTarget ? (
+                  <StudentCredentialsDialog
+                    student={studentTarget as StudentPublic}
+                  />
+                ) : null}
               </div>
               <div className="rounded-md bg-muted/40 px-3 py-2">
                 <span className="text-muted-foreground">QR: </span>
