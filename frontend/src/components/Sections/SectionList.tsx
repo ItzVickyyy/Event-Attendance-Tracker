@@ -877,80 +877,80 @@ function SectionList() {
               ) : (
                 <>
                   <div className="hidden overflow-x-auto sm:block">
-                  <Table>
-                    <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
-                      <TableRow className="hover:bg-background">
-                        <TableHead className="w-14">#</TableHead>
-                        <TableHead className="w-[190px]">
-                          Student Number
-                        </TableHead>
-                        <TableHead>Full Name</TableHead>
-                        <TableHead className="w-[150px]">Status</TableHead>
-                        <TableHead className="w-[120px] text-right">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredRosterStudents.map(
-                        (student: any, index: number) => (
-                          <TableRow key={student.id} className="h-[58px]">
-                            <TableCell className="text-muted-foreground">
-                              {index + 1}
-                            </TableCell>
-                            <TableCell className="font-semibold tabular-nums">
-                              {student.student_number}
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium">
-                                {student.last_name}, {student.first_name}
-                                {student.middle_name
-                                  ? ` ${student.middle_name}`
-                                  : ""}
-                                {student.extension ? ` ${student.extension}` : ""}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
-                                {String(student.student_status).replaceAll(
-                                  "_",
-                                  " ",
-                                )}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="QR Code"
-                                  onClick={() => void openStudentQr(student)}
-                                >
-                                  <QrCode />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Edit student"
-                                  onClick={() => void openStudent(student)}
-                                >
-                                  <Pencil />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Archive student"
-                                  onClick={() => setDeleteTarget(student)}
-                                >
-                                  <Trash2 />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ),
-                      )}
-                    </TableBody>
-                  </Table>
+                    <Table>
+                      <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
+                        <TableRow className="hover:bg-background">
+                          <TableHead className="w-14">#</TableHead>
+                          <TableHead className="w-[190px]">
+                            Student Number
+                          </TableHead>
+                          <TableHead>Full Name</TableHead>
+                          <TableHead className="w-[150px]">Status</TableHead>
+                          <TableHead className="w-[120px] text-right">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredRosterStudents.map(
+                          (student: any, index: number) => (
+                            <TableRow key={student.id} className="h-[58px]">
+                              <TableCell className="text-muted-foreground">
+                                {index + 1}
+                              </TableCell>
+                              <TableCell className="font-semibold tabular-nums">
+                                {student.student_number}
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {student.last_name}, {student.first_name}
+                                  {student.middle_name
+                                    ? ` ${student.middle_name}`
+                                    : ""}
+                                  {student.extension ? ` ${student.extension}` : ""}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="inline-flex rounded-full border bg-muted/40 px-2.5 py-1 text-xs font-medium capitalize">
+                                  {String(student.student_status).replaceAll(
+                                    "_",
+                                    " ",
+                                  )}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="QR Code"
+                                    onClick={() => void openStudentQr(student)}
+                                  >
+                                    <QrCode />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Edit student"
+                                    onClick={() => void openStudent(student)}
+                                  >
+                                    <Pencil />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Archive student"
+                                    onClick={() => setDeleteTarget(student)}
+                                  >
+                                    <Trash2 />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
                   <div className="space-y-3 py-3 sm:hidden">
                     {filteredRosterStudents.map((student: any, index: number) => (
