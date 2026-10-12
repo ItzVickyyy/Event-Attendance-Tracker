@@ -366,18 +366,18 @@ export function StudentCredentialsDialog({
                       className="min-w-0 flex-1 font-mono text-sm"
                     />
                     <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => void handleScanNfc()}
-                        disabled={scanningNfc || createMutation.isPending}
-                        className="shrink-0"
-                      >
-                        {scanningNfc ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Wifi className="h-4 w-4" />
-                        )}
-                        {scanningNfc ? "Tap card..." : "Scan card"}
+                      type="button"
+                      variant="outline"
+                      onClick={() => void handleScanNfc()}
+                      disabled={scanningNfc || createMutation.isPending}
+                      className="shrink-0"
+                    >
+                      {scanningNfc ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Wifi className="h-4 w-4" />
+                      )}
+                      {scanningNfc ? "Tap card..." : "Scan card"}
                     </Button>
                     <Button
                       type="submit"
