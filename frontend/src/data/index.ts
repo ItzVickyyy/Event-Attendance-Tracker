@@ -298,6 +298,7 @@ export async function markSynced(
     synced_at_server: options?.serverTimestamp ?? now,
     retry_count: 0,
     last_error: undefined,
+    last_error_detail: undefined,
     last_retry_at: undefined,
   }
   await db.put("attendanceQueue", updated)
