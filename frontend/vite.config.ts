@@ -61,7 +61,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["assets/images/favicon.png"],
+      includeAssets: ["assets/images/CCS-SC_Logo_Maroon.webp"],
       manifest: {
         name: "Event Attendance Tracker",
         short_name: "Attendance",
@@ -74,15 +74,15 @@ export default defineConfig({
         start_url: "/",
         icons: [
           {
-            src: "assets/images/favicon.png",
-            sizes: "144x144",
-            type: "image/png",
+            src: "assets/images/CCS-SC_Logo_Maroon.webp",
+            sizes: "any",
+            type: "image/webp",
             purpose: "any",
           },
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
         importScripts: ["sw-sync.js"],
         runtimeCaching: [
           {
