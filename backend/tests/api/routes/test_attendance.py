@@ -1631,7 +1631,6 @@ def test_attendance_export_csv(
     assert "Export Student" in csv_content
 
 
-
 def test_student_has_only_one_always_active_nfc_credential(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
