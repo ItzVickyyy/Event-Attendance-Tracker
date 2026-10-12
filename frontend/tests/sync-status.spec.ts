@@ -467,7 +467,7 @@ test.describe("Scanner sync status UI", () => {
   }) => {
     await mockHttp(page, () => ({
       status: 409,
-      json: { detail: "already scanned" },
+      json: { detail: "Already recorded for this attendee. Existing scan: In: 2026-09-15T09:00:00.000Z" },
     }))
     await page.goto("/login")
     await setToken(page)
