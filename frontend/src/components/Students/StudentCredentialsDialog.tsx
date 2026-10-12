@@ -386,6 +386,7 @@ export function StudentCredentialsDialog({
                 </div>
               </div>
             </form>
+            )}
           </div>
         )}
       </DialogContent>
