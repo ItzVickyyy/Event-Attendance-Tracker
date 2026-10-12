@@ -280,7 +280,7 @@ def test_attendee_credential_management_and_public_lookup(
     duplicate = client.post(
         _api("/attendee-credentials/"), headers=headers, json=payload
     )
-    assert duplicate.status_code == 400
+    assert duplicate.status_code == 409
 
     listing = client.get(
         _api(

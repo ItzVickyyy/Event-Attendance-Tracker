@@ -1,5 +1,16 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Archive, Download, Pencil, Plus, QrCode, Search } from "lucide-react"
+import {
+  Archive,
+  CheckCircle2,
+  CreditCard,
+  Download,
+  Loader2,
+  Pencil,
+  Plus,
+  QrCode,
+  Search,
+  Wifi,
+} from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -61,10 +72,15 @@ export function ClassRepresentativeSectionWorkspace() {
   const { activeAcademicYear } = useAcademicYear()
   const client = useQueryClient()
   const [search, setSearch] = useState("")
+  const [unregisteredOnly, setUnregisteredOnly] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState(emptyForm)
   const [qrTarget, setQrTarget] = useState<any>(null)
+  const [cardTarget, setCardTarget] = useState<any>(null)
+  const [cardUid, setCardUid] = useState("")
+  const [scanningCard, setScanningCard] = useState(false)
+  const [savingCard, setSavingCard] = useState(false)
 
   const assignment = useQuery({
     queryKey: ["class-representative-assignment", activeAcademicYear?.id],
@@ -96,6 +112,129 @@ export function ClassRepresentativeSectionWorkspace() {
     },
     enabled: Boolean(activeAcademicYear),
   })
+
+  const openCardRegistration = (student: any) => {
+    setCardTarget(student)
+    setCardUid("")
+  }
+
+  const scanCardUid = async () => {
+    if (!("NDEFReader" in window)) {
+      toast.error(
+        "Web NFC is not supported on this device. Use Chrome on Android or enter the UID manually.",
+      )
+      return
+    }
+    let reader: any
+    let timeoutId: number | undefined
+    setScanningCard(true)
+    try {
+      reader = new (window as any).NDEFReader()
+      await reader.scan()
+      const captured = await new Promise<string>((resolve, reject) => {
+        const cleanup = () => {
+          reader.removeEventListener("reading", onReading)
+          if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+        }
+        const onReading = (event: any) => {
+          const serial =
+            typeof event.serialNumber === "string"
+              ? event.serialNumber.trim()
+              : ""
+          let textRecord = ""
+          for (const record of event.message?.records ?? []) {
+            if (
+              record.recordType !== "text" ||
+              !(record.data instanceof DataView)
+            )
+              continue
+            const data = record.data
+            if (!data.byteLength) continue
+            const status = data.getUint8(0)
+            const start = 1 + (status & 0x3f)
+            if (start < data.byteLength) {
+              textRecord = new TextDecoder(
+                (status & 0x80) !== 0 ? "utf-16" : "utf-8",
+              )
+                .decode(
+                  new Uint8Array(
+                    data.buffer,
+                    data.byteOffset + start,
+                    data.byteLength - start,
+                  ),
+                )
+                .trim()
+              if (textRecord) break
+            }
+          }
+          const value = textRecord || serial
+          if (!value) return
+          cleanup()
+          resolve(value.toUpperCase())
+        }
+        reader.addEventListener("reading", onReading)
+        timeoutId = window.setTimeout(() => {
+          cleanup()
+          reject(
+            new Error(
+              "No NFC identifier was received within 30 seconds. Try again or enter the UID manually.",
+            ),
+          )
+        }, 30000)
+      })
+      setCardUid(captured)
+      toast.success("Card UID captured. Review it and save the registration.")
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to read NFC card",
+      )
+    } finally {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+      setScanningCard(false)
+    }
+  }
+
+  const registerCardUid = async () => {
+    if (!cardTarget || !activeAcademicYear) return
+    const value = cardUid.trim().toUpperCase()
+    if (!value) {
+      toast.error("Enter the student's Card UID first")
+      return
+    }
+    setSavingCard(true)
+    try {
+      if (!cardTarget.attendee_id) {
+        throw new Error(
+          "This student has no attendee record. Ask the Student Council to review the student record.",
+        )
+      }
+      const response = await fetch(`${api}/attendee-credentials/`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          attendee_id: cardTarget.attendee_id,
+          credential_type: "nfc",
+          credential_value: value,
+          is_active: true,
+        }),
+      })
+      const body = await response.json().catch(() => null)
+      if (!response.ok)
+        throw new Error(body?.detail ?? "Unable to register Card UID")
+      toast.success("Card UID registered successfully")
+      setCardTarget(null)
+      setCardUid("")
+      await client.invalidateQueries({
+        queryKey: ["class-representative-students"],
+      })
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to register Card UID",
+      )
+    } finally {
+      setSavingCard(false)
+    }
+  }
 
   const openStudentQr = async (student: any) => {
     try {
@@ -184,11 +323,13 @@ export function ClassRepresentativeSectionWorkspace() {
     await client.invalidateQueries()
   }
 
-  const filtered = (students.data?.data ?? []).filter((student: any) =>
-    `${student.student_number} ${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  )
+  const filtered = (students.data?.data ?? []).filter((student: any) => {
+    const matchesSearch =
+      `${student.student_number} ${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    return matchesSearch && (!unregisteredOnly || !student.card_uid_registered)
+  })
   const section = assignment.data
 
   return (
@@ -226,14 +367,50 @@ export function ClassRepresentativeSectionWorkspace() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Search students"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border p-3">
+              <p className="text-sm text-muted-foreground">Total students</p>
+              <p className="text-2xl font-semibold">
+                {students.data?.count ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-sm text-muted-foreground">Registered cards</p>
+              <p className="text-2xl font-semibold">
+                {
+                  (students.data?.data ?? []).filter(
+                    (student: any) => student.card_uid_registered,
+                  ).length
+                }
+              </p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-2xl font-semibold">
+                {
+                  (students.data?.data ?? []).filter(
+                    (student: any) => !student.card_uid_registered,
+                  ).length
+                }
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Search students"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Button
+              variant={unregisteredOnly ? "default" : "outline"}
+              onClick={() => setUnregisteredOnly((value) => !value)}
+            >
+              {unregisteredOnly ? "Showing unregistered" : "Unregistered only"}
+            </Button>
           </div>
           {students.isLoading ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
@@ -251,6 +428,7 @@ export function ClassRepresentativeSectionWorkspace() {
                   <TableHead>Student Number</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Card UID</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -270,8 +448,29 @@ export function ClassRepresentativeSectionWorkspace() {
                         .join(", ")}
                     </TableCell>
                     <TableCell>{student.email ?? ""}</TableCell>
+                    <TableCell>
+                      {student.card_uid_registered ? (
+                        <span className="inline-flex items-center gap-1 text-sm text-emerald-700 dark:text-emerald-400">
+                          <CheckCircle2 className="size-4" /> Registered
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          Not registered
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{student.student_status}</TableCell>
                     <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        title="Register Card UID"
+                        disabled={student.card_uid_registered}
+                        onClick={() => openCardRegistration(student)}
+                      >
+                        <CreditCard />
+                        <span className="hidden lg:inline">Register Card</span>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -353,6 +552,69 @@ export function ClassRepresentativeSectionWorkspace() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={Boolean(cardTarget)}
+        onOpenChange={(open) => !open && !savingCard && setCardTarget(null)}
+      >
+        <DialogContent className="w-[calc(100vw-2rem)] max-h-[85dvh] max-w-md overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register Student Card UID</DialogTitle>
+            <DialogDescription>
+              Register the NFC card for {cardTarget?.first_name}{" "}
+              {cardTarget?.last_name} ({cardTarget?.student_number}). You can
+              scan the physical card or enter a UID provided by the student.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="class-rep-card-uid">Card UID</Label>
+              <Input
+                id="class-rep-card-uid"
+                value={cardUid}
+                onChange={(event) => setCardUid(event.target.value)}
+                placeholder="Enter or scan the Card UID"
+                autoComplete="off"
+                className="font-mono"
+                maxLength={255}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => void scanCardUid()}
+              disabled={scanningCard || savingCard}
+            >
+              {scanningCard ? <Loader2 className="animate-spin" /> : <Wifi />}
+              {scanningCard ? "Waiting for card…" : "Scan physical card"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Scanning requires a supported NFC device and browser. Manual entry
+              is available on any device.
+            </p>
+          </div>
+          <DialogFooter className="flex-col-reverse sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setCardTarget(null)}
+              disabled={savingCard}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void registerCardUid()}
+              disabled={savingCard || scanningCard || !cardUid.trim()}
+            >
+              {savingCard ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <CreditCard />
+              )}
+              {savingCard ? "Saving…" : "Register Card UID"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={Boolean(qrTarget)}
         onOpenChange={(open) => !open && setQrTarget(null)}

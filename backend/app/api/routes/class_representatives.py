@@ -10,7 +10,14 @@ from sqlmodel import select
 from app import crud
 from app.api.deps import CurrentUser, SessionDep, require_super_admin
 from app.core.config import settings
-from app.models import Person, Student, User, UserCreate, UserPublic, UserRole
+from app.models import (
+    Person,
+    Student,
+    User,
+    UserCreate,
+    UserPublic,
+    UserRole,
+)
 from app.services import account_provisioning
 from app.services.student_credentials import ensure_student_qr_credential
 from app.student_academics import (
@@ -100,10 +107,19 @@ def read_my_students(
             text("""
             SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name,
                    p.name_extension AS extension, p.email, p.contact_number,
-                   se.student_status, se.id AS enrollment_id
+                   se.student_status, se.id AS enrollment_id, a.id AS attendee_id,
+                   EXISTS (
+                       SELECT 1
+                       FROM attendees a
+                       JOIN attendee_credentials ac ON ac.attendee_id = a.id
+                       WHERE a.person_id = p.id
+                         AND ac.credential_type = 'nfc'
+                         AND ac.is_active IS TRUE
+                   ) AS card_uid_registered
             FROM student_enrollments se
             JOIN students s ON s.id = se.student_id
             JOIN people p ON p.id = s.person_id
+            LEFT JOIN attendees a ON a.person_id = p.id
             WHERE se.section_id = :section_id
               AND se.academic_year_id = :academic_year_id
               AND se.archived_at IS NULL

@@ -579,3 +579,165 @@ def test_import_keeps_created_accounts_when_email_delivery_fails(
             data={"username": email, "password": TEMPORARY_PASSWORD},
         )
         assert login.status_code == 200
+
+
+def test_class_representative_can_register_student_card_uid(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, year, section_id = _create_representative(
+        client, superuser_token_headers
+    )
+    headers = _representative_headers(client, representative["email"])
+    student_payload = {
+        "student_number": f"CARD-{random_lower_string()[:10].upper()}",
+        "first_name": "Card",
+        "last_name": "Owner",
+        "email": random_email(),
+    }
+    created = client.post(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+        json=student_payload,
+    )
+    assert created.status_code == 200
+    student_id = created.json()["id"]
+
+    roster = client.get(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+    )
+    assert roster.status_code == 200
+    student = next(row for row in roster.json()["data"] if row["id"] == student_id)
+    assert student["card_uid_registered"] is False
+
+    uid = f"04AABB{random_lower_string()[:8].upper()}"
+    registered = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": student["attendee_id"],
+            "credential_type": "nfc",
+            "credential_value": uid.lower(),
+            "is_active": True,
+        },
+    )
+    assert registered.status_code == 200
+    assert registered.json()["credential_value"] == uid
+
+    non_nfc = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": student["attendee_id"],
+            "credential_type": "qr",
+            "credential_value": f"QR-{random_lower_string()[:10].upper()}",
+            "is_active": True,
+        },
+    )
+    assert non_nfc.status_code == 403
+
+    roster = client.get(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+    )
+    student = next(row for row in roster.json()["data"] if row["id"] == student_id)
+    assert student["card_uid_registered"] is True
+
+    second_created = client.post(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+        json={
+            **student_payload,
+            "student_number": f"CARD-{random_lower_string()[:10].upper()}",
+            "email": random_email(),
+        },
+    )
+    assert second_created.status_code == 200
+    second_student_id = second_created.json()["id"]
+    second_roster = client.get(
+        _api(f"/class-representatives/me/students?academic_year_id={year['id']}"),
+        headers=headers,
+    )
+    second_student = next(
+        row for row in second_roster.json()["data"] if row["id"] == second_student_id
+    )
+    duplicate_other_student = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": second_student["attendee_id"],
+            "credential_type": "nfc",
+            "credential_value": uid,
+            "is_active": True,
+        },
+    )
+    assert duplicate_other_student.status_code == 409
+
+    blank = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": student["attendee_id"],
+            "credential_type": "nfc",
+            "credential_value": "   ",
+            "is_active": True,
+        },
+    )
+    assert blank.status_code == 422
+
+    sections = client.get(
+        _api("/academic-registry/sections"), headers=superuser_token_headers
+    )
+    other_section = next(
+        row
+        for row in sections.json()["data"]
+        if row["academic_year_id"] == year["id"] and row["id"] != section_id
+    )
+    person_response = client.post(
+        _api("/people/"),
+        headers=superuser_token_headers,
+        json={
+            "first_name": "Outside",
+            "last_name": "Section",
+            "email": random_email(),
+        },
+    )
+    assert person_response.status_code == 200
+    outside_student = client.post(
+        _api("/students/"),
+        headers=superuser_token_headers,
+        json={
+            "person_id": person_response.json()["id"],
+            "student_number": f"OUT-{random_lower_string()[:10].upper()}",
+            "section_id": other_section["id"],
+        },
+    )
+    assert outside_student.status_code == 200
+    enrollment = client.post(
+        _api("/academic-registry/enrollments"),
+        headers=superuser_token_headers,
+        json={
+            "student_id": outside_student.json()["id"],
+            "academic_year_id": year["id"],
+            "section_id": other_section["id"],
+            "student_status": "regular",
+        },
+    )
+    assert enrollment.status_code == 200
+    attendee_response = client.get(
+        _api(f"/attendees/?person_id={person_response.json()['id']}&limit=1"),
+        headers=superuser_token_headers,
+    )
+    assert attendee_response.status_code == 200
+    outside_attendee_id = attendee_response.json()["data"][0]["id"]
+    forbidden = client.post(
+        _api("/attendee-credentials/"),
+        headers=headers,
+        json={
+            "attendee_id": outside_attendee_id,
+            "credential_type": "nfc",
+            "credential_value": f"OUTSIDE-{random_lower_string()[:10].upper()}",
+            "is_active": True,
+        },
+    )
+    assert forbidden.status_code == 403

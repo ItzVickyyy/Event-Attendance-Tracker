@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import text
 from sqlmodel import col, func, select
 
 from app.api.deps import (
@@ -22,6 +23,7 @@ from app.models import (
     Person,
     PublicCredentialLookup,
     Student,
+    UserRole,
     get_datetime_utc,
 )
 
@@ -74,29 +76,88 @@ def read_attendee_credentials(
     )
 
 
-@router.post(
-    "/", response_model=AttendeeCredentialPublic, dependencies=[Depends(require_admin)]
-)
+@router.post("/", response_model=AttendeeCredentialPublic)
 def create_attendee_credential(
     *,
     session: SessionDep,
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
     credential_in: AttendeeCredentialCreate,
 ) -> Any:
+    if (
+        current_user.role == UserRole.class_representative
+        and credential_in.credential_type != CredentialType.nfc
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Class Representatives can only register NFC Card UIDs",
+        )
+
     attendee = session.get(Attendee, credential_in.attendee_id)
     if not attendee:
         raise HTTPException(status_code=404, detail="Attendee not found")
 
-    existing = session.exec(
-        select(AttendeeCredential).where(
-            AttendeeCredential.credential_value == credential_in.credential_value
+    if current_user.role == UserRole.class_representative:
+        allowed = (
+            session.connection()
+            .execute(
+                text("""
+                    SELECT 1
+                    FROM attendees a
+                    JOIN students s ON s.person_id = a.person_id
+                    JOIN student_enrollments se ON se.student_id = s.id
+                    JOIN class_representative_assignments cra
+                      ON cra.section_id = se.section_id
+                     AND cra.academic_year_id = se.academic_year_id
+                    WHERE a.id = :attendee_id
+                      AND cra.user_id = :user_id
+                      AND s.archived_at IS NULL
+                      AND se.archived_at IS NULL
+                    LIMIT 1
+                """),
+                {"attendee_id": attendee.id, "user_id": current_user.id},
+            )
+            .first()
         )
-    ).first()
-    if existing:
+        if not allowed:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only register Card UIDs for students in your assigned section",
+            )
+    elif not current_user.is_superuser and current_user.role not in (
+        UserRole.super_admin,
+        UserRole.admin,
+    ):
         raise HTTPException(
-            status_code=400,
-            detail="A credential with this value already exists.",
+            status_code=403,
+            detail="Administrator or assigned Class Representative access is required",
         )
+
+    credential_value = credential_in.credential_value
+    if credential_in.credential_type == CredentialType.nfc:
+        credential_value = credential_value.strip().upper()
+        if not credential_value:
+            raise HTTPException(status_code=422, detail="Card UID is required")
+        if session.exec(
+            select(AttendeeCredential).where(
+                func.upper(AttendeeCredential.credential_value) == credential_value
+            )
+        ).first():
+            raise HTTPException(
+                status_code=409,
+                detail="This Card UID is already registered.",
+            )
+        credential_in.credential_value = credential_value
+    else:
+        existing = session.exec(
+            select(AttendeeCredential).where(
+                AttendeeCredential.credential_value == credential_value
+            )
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="A credential with this value already exists.",
+            )
 
     if credential_in.credential_type == CredentialType.nfc:
         existing_nfc = session.exec(
@@ -108,7 +169,7 @@ def create_attendee_credential(
         if existing_nfc:
             raise HTTPException(
                 status_code=409,
-                detail="This student already has a registered Card UID.",
+                detail="This student already has a registered Card UID. Contact the Student Council to change it.",
             )
 
     credential = AttendeeCredential.model_validate(credential_in)
