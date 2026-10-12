@@ -139,7 +139,16 @@ def test_roster_returns_registered_attendees(
     assert student_entry["registration_status"] == "registered"
     assert student_entry["student_number"] == student_num
     assert student_entry["credentials"] == [
-        {"credential_type": "nfc", "credential_value": nfc_uid, "is_active": True}
+        {
+            "credential_type": "qr",
+            "credential_value": next(
+                credential["credential_value"]
+                for credential in student_entry["credentials"]
+                if credential["credential_type"] == "qr"
+            ),
+            "is_active": True,
+        },
+        {"credential_type": "nfc", "credential_value": nfc_uid, "is_active": True},
     ]
     # PII pruning: email/contact_number must never leak into the roster
     assert "email" not in student_entry
