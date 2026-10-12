@@ -8,6 +8,7 @@ import {
   AttendeeCredentialsService,
   AttendeesService,
   type StudentPublic,
+  StudentsService,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,10 +31,20 @@ interface StudentCredentialsDialogProps {
 async function resolveAttendeeId(student: StudentPublic): Promise<string> {
   if (student.attendee_id) return student.attendee_id
 
-  const personId = student.person_id
+  // Some student-table views pass a reduced row without person_id. Resolve the
+  // canonical record by student ID before looking up its attendee.
+  let personId = student.person_id
+  if (!personId && student.id) {
+    const detail = await StudentsService.readStudent({
+      path: { student_id: student.id },
+      throwOnError: true,
+    })
+    personId = detail.data.person_id
+  }
+
   if (!personId) {
     throw new Error(
-      "This student has no valid person ID. Refresh the student record and try again.",
+      "Could not resolve this student's person ID from the saved student record. Refresh the page and try again.",
     )
   }
 
