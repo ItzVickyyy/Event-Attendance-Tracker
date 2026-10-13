@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { extractNfcCredential } from "@/lib/nfcCredential"
 
 interface NfcRegisterProps {
   student?: StudentPublic
@@ -39,38 +40,6 @@ async function resolveAttendeeId(personId: string): Promise<string> {
     throwOnError: true,
   })
   return (created as unknown as { data: { id: string } }).data.id
-}
-
-function extractNfcCredential(event: any): string {
-  const msg = event.message
-  if (typeof msg === "string" && msg.trim()) return msg.trim()
-  if (msg?.records && Array.isArray(msg.records)) {
-    for (const r of msg.records) {
-      if (r.recordType === "text" && r.data instanceof DataView) {
-        const dv = r.data as DataView
-        if (dv.byteLength === 0) continue
-        const status = dv.getUint8(0)
-        const isUtf16 = (status & 0x80) !== 0
-        const langLen = status & 0x3f
-        const start = 1 + langLen
-        if (start >= dv.byteLength) continue
-        const bytes = new Uint8Array(
-          dv.buffer,
-          dv.byteOffset + start,
-          dv.byteLength - start,
-        )
-        const uid = new TextDecoder(isUtf16 ? "utf-16" : "utf-8")
-          .decode(bytes)
-          .trim()
-        if (uid) return uid
-      }
-    }
-  }
-  // Empty NDEF tags can still expose their UID through Web NFC's serialNumber.
-  if (typeof event.serialNumber === "string" && event.serialNumber.trim()) {
-    return event.serialNumber.trim()
-  }
-  return ""
 }
 
 export function NfcRegister({ student }: NfcRegisterProps) {
