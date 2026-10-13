@@ -514,6 +514,26 @@ test.describe("Foreground sync fallback (no service worker)", () => {
   test("sync history only displays records owned by the current account", async ({
     page,
   }) => {
+    // Install the authenticated-user response before any navigation so both
+    // the layout guard and the Sync route's own beforeLoad see the same user.
+    await page.route("**/api/v1/users/me*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "user-1",
+          email: "admin@example.com",
+          full_name: "Test Admin",
+          is_active: true,
+          is_superuser: true,
+          is_developer: false,
+          role: "admin",
+          can_scan: true,
+          must_change_password: false,
+        }),
+      })
+    })
+
     await gotoApp(page)
     await setToken(page, "account-one-token", "user-1")
     await seedRecords(page, [
@@ -534,29 +554,10 @@ test.describe("Foreground sync fallback (no service worker)", () => {
       }),
     ])
 
-    // Establish the same verified account context used by the scanner before
-    // testing what the queue history renders. This keeps the assertion focused
-    // on account isolation rather than the layout's authentication bootstrap.
+    // Ensure the account cache is tied to the token used by this test.
     await page.evaluate(async () => {
       const accountModule = await import("/src/data/account.ts")
       await accountModule.rememberOfflineAccount("user-1", "account-one-token")
-    })
-    await page.route("**/api/v1/users/me*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "user-1",
-          email: "admin@example.com",
-          full_name: "Test Admin",
-          is_active: true,
-          is_superuser: true,
-          is_developer: false,
-          role: "admin",
-          can_scan: true,
-          must_change_password: false,
-        }),
-      })
     })
     await page.goto("/scanner/sync")
 
