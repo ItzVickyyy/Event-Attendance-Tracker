@@ -35,11 +35,17 @@ def _normalize(value: str) -> str:
 
 
 def _middle_name_matches(stored: str, supplied: str) -> bool:
-    """Accept an omitted middle name, the full name, or its first initial."""
-    if not supplied or stored == supplied:
+    """Match a blank value, exact normalized name, or the stored name's initial.
+
+    Both arguments should already be normalized. A middle initial may have
+    optional whitespace before its period (for example, "A", "A.", or "A .").
+    """
+    if not supplied:
         return True
-    initial = re.fullmatch(r"([a-z0-9])\.?", supplied)
-    return bool(initial and stored and stored[0] == initial.group(1))
+    if stored == supplied:
+        return True
+    initial = re.fullmatch(r"([^\W_])\s*\.?", supplied, flags=re.UNICODE)
+    return bool(initial and stored and stored[0].casefold() == initial.group(1).casefold())
 
 
 def _allow_request(client_key: str) -> bool:
