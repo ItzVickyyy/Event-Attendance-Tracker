@@ -330,9 +330,7 @@ function useSyncStatus(eventId?: string) {
 }
 
 async function exportLegacyAttendanceScans(): Promise<void> {
-  const records = (await getAllQueuedScans()).filter(
-    (record) => !record.synced && !record.account_id,
-  )
+  const records = await getUnassignedPendingScans()
   if (records.length === 0) {
     toast.info("No unassigned pending scans to export")
     return
