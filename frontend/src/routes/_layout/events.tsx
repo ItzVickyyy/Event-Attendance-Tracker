@@ -12,14 +12,27 @@ import { useAcademicYear } from "@/context/AcademicYearContext"
 function getEventsQueryOptions(academicYearId: string | undefined) {
   return {
     queryFn: async () => {
-      const response = await EventsService.readEvents({
-        query: {
-          skip: 0,
-          limit: 1000,
-          academic_year_id: academicYearId,
-        },
-      })
-      return response.data
+      const limit = 100
+      const events = []
+      let skip = 0
+      let count = Number.POSITIVE_INFINITY
+
+      while (skip < count) {
+        const response = await EventsService.readEvents({
+          query: {
+            skip,
+            limit,
+            academic_year_id: academicYearId,
+          },
+        })
+        const page = response.data
+        events.push(...page.data)
+        count = page.count
+        skip += page.data.length
+        if (page.data.length === 0) break
+      }
+
+      return { data: events, count }
     },
     queryKey: ["events", academicYearId],
   }
