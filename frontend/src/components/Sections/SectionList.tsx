@@ -274,7 +274,9 @@ function SectionList() {
     } catch (error) {
       setStudentTarget(null)
       toast.error(
-        error instanceof Error ? error.message : "Unable to load student details",
+        error instanceof Error
+          ? error.message
+          : "Unable to load student details",
       )
       return null
     }
