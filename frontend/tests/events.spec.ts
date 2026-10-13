@@ -24,29 +24,19 @@ test("new event appears in the list without refreshing the page", async ({
 test("registration page reports section loading failures and can retry", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    const originalFetch = window.fetch.bind(window)
-    window.fetch = async (input, init) => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.toString()
-            : input.url
-      if (
-        url.includes("academic-sections") &&
-        window.sessionStorage.getItem("allow-section-retry") !== "true"
-      ) {
-        return new Response(
-          JSON.stringify({ detail: "Simulated section request failure" }),
-          {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          },
-        )
+  let failSectionRequests = true
+  await page.route("**/*", async (route) => {
+    if (route.request().url().includes("/api/v1/academic-sections/")) {
+      if (failSectionRequests) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "Simulated section request failure" }),
+        })
+        return
       }
-      return originalFetch(input, init)
     }
+    await route.continue()
   })
 
   await page.goto("/events")
@@ -74,9 +64,7 @@ test("registration page reports section loading failures and can retry", async (
     page.getByRole("button", { name: "Save eligible sections" }),
   ).toBeDisabled()
 
-  await page.evaluate(() => {
-    window.sessionStorage.setItem("allow-section-retry", "true")
-  })
+  failSectionRequests = false
   await page.getByRole("button", { name: "Retry loading sections" }).click()
   await expect(
     page.getByRole("alert").getByText(/Unable to load eligible sections/),
