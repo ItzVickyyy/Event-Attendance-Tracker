@@ -511,6 +511,36 @@ test.describe("Foreground sync fallback (no service worker)", () => {
     expect(queued.last_retry_at).toBeTruthy()
   })
 
+  test("sync history only displays records owned by the current account", async ({
+    page,
+  }) => {
+    await gotoApp(page)
+    await setToken(page, "account-one-token", "user-1")
+    await seedRecords(page, [
+      record({
+        id: "rec-current-account",
+        account_id: "user-1",
+        credential_value: "CURRENT-CREDENTIAL",
+      }),
+      record({
+        id: "rec-other-account",
+        account_id: "user-2",
+        credential_value: "OTHER-ACCOUNT-SECRET",
+      }),
+      record({
+        id: "rec-legacy",
+        account_id: undefined,
+        credential_value: "LEGACY-UNSCOPED-CREDENTIAL",
+      }),
+    ])
+
+    await page.goto("/scanner/sync")
+
+    await expect(page.getByText("CURRENT-CREDENTIAL")).toBeVisible()
+    await expect(page.getByText("OTHER-ACCOUNT-SECRET")).toHaveCount(0)
+    await expect(page.getByText("LEGACY-UNSCOPED-CREDENTIAL")).toHaveCount(0)
+  })
+
   test("two concurrent foreground sync calls never process the same record twice", async ({
     page,
     mockScan,
