@@ -34,6 +34,14 @@ def _normalize(value: str) -> str:
     return re.sub(r"\s+", " ", value.strip()).casefold()
 
 
+def _middle_name_matches(stored: str, supplied: str) -> bool:
+    """Accept an omitted middle name, the full name, or its first initial."""
+    if not supplied or stored == supplied:
+        return True
+    initial = re.fullmatch(r"([a-z0-9])\.?", supplied)
+    return bool(initial and stored and stored[0] == initial.group(1))
+
+
 def _allow_request(client_key: str) -> bool:
     now = time.monotonic()
     recent = [stamp for stamp in _attempts[client_key] if now - stamp < WINDOW_SECONDS]
@@ -136,7 +144,15 @@ def lookup_student_qr(
         "last_name": last_name,
         "name_extension": name_extension,
     }
-    if stored != supplied:
+    stored_without_middle = {
+        key: value for key, value in stored.items() if key != "middle_name"
+    }
+    supplied_without_middle = {
+        key: value for key, value in supplied.items() if key != "middle_name"
+    }
+    if stored_without_middle != supplied_without_middle or not _middle_name_matches(
+        stored["middle_name"], supplied["middle_name"]
+    ):
         raise HTTPException(status_code=404, detail="Student record not found.")
 
     return {
