@@ -185,7 +185,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           ) : sectionsQuery.isError ? (
             <div className="space-y-2" role="alert">
               <p className="text-sm text-destructive">
-                Unable to load eligible sections. Your current selections have not been changed.
+                Unable to load eligible sections. Your current selections have
+                not been changed.
               </p>
               <Button
                 type="button"
@@ -198,7 +199,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
             </div>
           ) : sections.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No sections are available. Check the academic year and section setup.
+              No sections are available. Check the academic year and section
+              setup.
             </p>
           ) : (
             <>
@@ -287,7 +289,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           {registrationQuery.isError && (
             <div className="space-y-2" role="alert">
               <p className="text-sm text-destructive">
-                Unable to load current registrations. The registration count may be incomplete.
+                Unable to load current registrations. The registration count may
+                be incomplete.
               </p>
               <Button
                 type="button"
