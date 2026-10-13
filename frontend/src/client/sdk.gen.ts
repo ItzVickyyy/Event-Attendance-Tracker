@@ -1176,6 +1176,7 @@ export class AttendeeCredentialsService {
     public static credentialsPublicLookupCredential<ThrowOnError extends boolean = true>(options: Options<attendeeCredentialsPublicLookupCredentialData, ThrowOnError>) {
         return (options.client ?? client).get<attendeeCredentialsPublicLookupCredentialResponses, attendeeCredentialsPublicLookupCredentialErrors, ThrowOnError>({
             responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/v1/attendee-credentials/public/{credential_value}',
             ...options
         });
