@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Download, QrCode, Search } from "lucide-react"
 import { type FormEvent, useState } from "react"
 import { toast } from "sonner"
@@ -185,12 +185,7 @@ function GetMyQr() {
               </div>
             </div>
           )}
-          <div className="mt-6 border-t pt-4 text-center text-sm text-muted-foreground">
-            <Link to="/login" className="underline underline-offset-4">
-              Staff Login
-            </Link>
-          </div>
-        </CardContent>
+</CardContent>
       </Card>
     </main>
   )
