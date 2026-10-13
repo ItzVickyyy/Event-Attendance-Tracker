@@ -27,14 +27,29 @@ export function ImportBatchesTab() {
   const {
     data: batchesResponse,
     isLoading,
+    isError,
+    error,
     refetch,
   } = useQuery({
     queryKey: ["importBatches"],
     queryFn: async () => {
-      const res = await ImportBatchesService.batchesReadImportBatches({
-        query: { skip: 0, limit: 100 },
-      })
-      return res.data
+      const limit = 100
+      const batches: ImportBatchPublic[] = []
+      let skip = 0
+      let count = Number.POSITIVE_INFINITY
+
+      while (skip < count) {
+        const res = await ImportBatchesService.batchesReadImportBatches({
+          query: { skip, limit },
+        })
+        const page = res.data
+        batches.push(...page.data)
+        count = page.count
+        skip += page.data.length
+        if (page.data.length === 0) break
+      }
+
+      return { data: batches, count }
     },
   })
 
@@ -95,6 +110,22 @@ export function ImportBatchesTab() {
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+            <p className="font-medium">Unable to load import batches.</p>
+            <p className="max-w-md text-sm text-muted-foreground">
+              {error instanceof Error
+                ? error.message
+                : "Check your connection and try again."}
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => void refetch()}
+              disabled={isLoading}
+            >
+              Retry
+            </Button>
           </div>
         ) : batches.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
