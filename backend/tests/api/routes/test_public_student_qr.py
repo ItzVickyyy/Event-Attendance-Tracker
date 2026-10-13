@@ -1,4 +1,6 @@
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlmodel import Session
 
 from app.api.routes import public_student_qr
 from app.core.config import settings
@@ -102,7 +104,9 @@ def test_public_qr_lookup_returns_not_found_for_unknown_student(
 
 
 def test_public_qr_lookup_returns_credential_for_normalized_identity(
-    client: TestClient, superuser_token_headers: dict[str, str]
+    client: TestClient,
+    db: Session,
+    superuser_token_headers: dict[str, str],
 ) -> None:
     headers = superuser_token_headers
     years = client.get(
@@ -172,6 +176,34 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
             optional_middle_response.json()["credential_value"]
             == response.json()["credential_value"]
         )
+
+    archived = db.connection().execute(
+        text(
+            """
+            UPDATE student_enrollments
+            SET archived_at = CURRENT_TIMESTAMP
+            WHERE student_id = (
+                SELECT id FROM students WHERE student_number = :student_number
+            )
+            """
+        ),
+        {"student_number": student_number},
+    )
+    assert archived.rowcount == 1
+    db.commit()
+    archived_lookup = client.post(
+        f"{settings.API_V1_STR}/public/student-qr",
+        headers={"X-Forwarded-For": "198.51.100.44"},
+        json={
+            "student_number": student_number,
+            "first_name": "Casey",
+            "middle_name": "R",
+            "last_name": "Learner",
+            "name_extension": "Jr.",
+        },
+    )
+    assert archived_lookup.status_code == 404
+    assert archived_lookup.json()["detail"] == "Student record not found."
 
 
 def test_public_qr_lookup_rejects_identity_mismatch_and_rate_limits(
