@@ -127,12 +127,16 @@ export function NfcRegister({ student }: NfcRegisterProps) {
 
   const lookupMutation = useMutation({
     mutationFn: async (uid: string) => {
-      const result = await AttendeeCredentialsService.credentialsLookupCredential({
-        path: { credential_value: uid },
-        throwOnError: false,
-      })
+      const result =
+        await AttendeeCredentialsService.credentialsLookupCredential({
+          path: { credential_value: uid },
+          throwOnError: false,
+        })
       return requireCredentialLookupData(
-        result as { data?: AttendeeCredentialPublic; error?: unknown },
+        result as unknown as {
+          data?: AttendeeCredentialPublic
+          error?: unknown
+        },
       )
     },
     onSuccess: (result) => {
