@@ -75,6 +75,8 @@ export function BatchDetailsDialog({
   const {
     data: recordsData,
     isLoading,
+    isError,
+    error,
     refetch,
   } = useQuery({
     queryKey: ["batchRecords", batch?.id, statusFilter],
@@ -193,6 +195,22 @@ export function BatchDetailsDialog({
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <p className="font-medium">Unable to load staging records.</p>
+              <p className="max-w-md text-sm text-muted-foreground">
+                {error instanceof Error
+                  ? error.message
+                  : "Check your connection and try again."}
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => void refetch()}
+                disabled={isLoading}
+              >
+                Retry loading records
+              </Button>
             </div>
           ) : records.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
