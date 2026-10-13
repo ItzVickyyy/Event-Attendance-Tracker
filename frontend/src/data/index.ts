@@ -276,9 +276,14 @@ export async function getPendingScans(): Promise<QueueRecord[]> {
 }
 
 export async function getPendingCount(): Promise<number> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return 0
+
   const db = await getDB()
   const all = await db.getAll("attendanceQueue")
-  return all.filter((record) => !record.synced).length
+  return all.filter(
+    (record) => !record.synced && record.account_id === accountId,
+  ).length
 }
 
 export async function markSynced(
