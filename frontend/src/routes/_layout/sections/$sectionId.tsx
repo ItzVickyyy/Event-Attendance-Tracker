@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import { SectionDetailsPage } from "@/components/Sections/SectionDetailsPage"
 
 export const Route = createFileRoute("/_layout/sections/$sectionId")({
@@ -10,5 +10,9 @@ export const Route = createFileRoute("/_layout/sections/$sectionId")({
 
 function SectionDetails() {
   const { sectionId } = Route.useParams()
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  if (pathname !== `/sections/${sectionId}`) return <Outlet />
   return <SectionDetailsPage sectionId={sectionId} />
 }
