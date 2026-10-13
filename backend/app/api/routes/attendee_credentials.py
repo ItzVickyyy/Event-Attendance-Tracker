@@ -199,8 +199,14 @@ def lookup_credential(
     return credential
 
 
-@router.get("/public/{credential_value}", response_model=PublicCredentialLookup)
-def public_lookup_credential(session: SessionDep, credential_value: str) -> Any:
+@router.get(
+    "/public/{credential_value}",
+    response_model=PublicCredentialLookup,
+    dependencies=[Depends(require_scanner_permission)],
+)
+def public_lookup_credential(
+    session: SessionDep, _current_user: CurrentUser, credential_value: str
+) -> Any:
     credential = session.exec(
         select(AttendeeCredential).where(
             col(AttendeeCredential.credential_value) == credential_value,
