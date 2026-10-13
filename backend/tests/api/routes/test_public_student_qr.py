@@ -190,6 +190,7 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
         {"student_number": student_number},
     )
     assert archived.rowcount == 1
+    db.commit()
     archived_lookup = client.post(
         f"{settings.API_V1_STR}/public/student-qr",
         headers={"X-Forwarded-For": "198.51.100.44"},
