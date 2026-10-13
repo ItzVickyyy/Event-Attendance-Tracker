@@ -39,7 +39,9 @@ export function EventDetailsPage({ eventId }: { eventId: string }) {
       <Card>
         <CardContent className="py-12 text-center">
           <p className="font-medium">
-            {eventNotFound ? "Event not found." : "Unable to load event details."}
+            {eventNotFound
+              ? "Event not found."
+              : "Unable to load event details."}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             {eventNotFound
