@@ -73,6 +73,13 @@ services:
       - traefik.http.routers.public-credential-lookup-https.tls.certresolver=le
       - traefik.http.routers.public-credential-lookup-https.service=backend
       - traefik.http.routers.public-credential-lookup-https.middlewares=public-lookup-ratelimit
+      - traefik.http.routers.signup-https.rule=Host(`${DOMAIN:?Variable not set}`) && Path(`/api/v1/users/signup`)
+      - traefik.http.routers.signup-https.entrypoints=https
+      - traefik.http.routers.signup-https.priority=100
+      - traefik.http.routers.signup-https.tls=true
+      - traefik.http.routers.signup-https.tls.certresolver=le
+      - traefik.http.routers.signup-https.service=backend
+      - traefik.http.routers.signup-https.middlewares=signup-ratelimit
       - traefik.http.routers.login-https.rule=Host(`${DOMAIN:?Variable not set}`) && Path(`/api/v1/login/access-token`)
       - traefik.http.routers.login-https.entrypoints=https
       - traefik.http.routers.login-https.priority=100
