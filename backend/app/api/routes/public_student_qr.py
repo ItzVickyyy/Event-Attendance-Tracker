@@ -45,7 +45,11 @@ def _middle_name_matches(stored: str, supplied: str) -> bool:
     if stored == supplied:
         return True
     initial = re.fullmatch(r"([^\W_])\s*\.?", supplied, flags=re.UNICODE)
-    return bool(initial and stored and stored[0].casefold() == initial.group(1).casefold())
+    return bool(
+        initial
+        and stored
+        and stored[0].casefold() == initial.group(1).casefold()
+    )
 
 
 def _allow_request(client_key: str) -> bool:
