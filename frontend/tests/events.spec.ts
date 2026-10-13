@@ -129,3 +129,58 @@ test("registration page reports event loading failures and can retry", async ({
   await page.getByRole("button", { name: "Retry loading event" }).click()
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
 })
+
+test("event details distinguish server failures from missing events and can retry", async ({
+  page,
+}) => {
+  let failEventRequests = false
+  let eventId = ""
+  await page.route("**/*", async (route) => {
+    const url = new URL(route.request().url())
+    if (
+      failEventRequests &&
+      url.pathname.includes("/api/v1/events/") &&
+      url.pathname.endsWith(eventId)
+    ) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Simulated event request failure" }),
+      })
+      return
+    }
+    await route.continue()
+  })
+
+  await page.goto("/events")
+  const eventName = `Event details query failure ${randomEmail()}`
+
+  await page.getByRole("button", { name: "Add Event" }).click()
+  await page.getByLabel("Event Name").fill(eventName)
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
+  await page.getByRole("button", { name: "Create Event" }).click()
+
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+  const eventLink = page.getByRole("link", { name: eventName })
+  await expect(eventLink).toBeVisible()
+  const href = await eventLink.getAttribute("href")
+  expect(href).toBeTruthy()
+  eventId = href!.split("/").filter(Boolean).at(-1)!
+  failEventRequests = true
+
+  await page.goto(href!)
+  await expect(page.getByText("Unable to load event details.")).toBeVisible({
+    timeout: 15000,
+  })
+  await expect(
+    page.getByRole("button", { name: "Retry loading event" }),
+  ).toBeVisible()
+  await expect(page.getByText("Event not found.")).toHaveCount(0)
+
+  failEventRequests = false
+  await page.getByRole("button", { name: "Retry loading event" }).click()
+  await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
+})
