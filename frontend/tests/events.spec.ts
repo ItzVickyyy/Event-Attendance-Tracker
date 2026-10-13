@@ -42,7 +42,7 @@ test("registration page reports section loading failures and can retry", async (
   expect(href).toBeTruthy()
 
   let sectionRequests = 0
-  await page.route("**/api/v1/academic-sections**", async (route) => {
+  await page.route("**/academic-sections**", async (route) => {
     sectionRequests += 1
     if (sectionRequests === 1) {
       await route.fulfill({
