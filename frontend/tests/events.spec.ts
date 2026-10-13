@@ -42,9 +42,10 @@ test("registration page reports section loading failures and can retry", async (
   expect(href).toBeTruthy()
 
   let sectionRequests = 0
+  let failSectionRequests = true
   await page.route("**/academic-sections**", async (route) => {
     sectionRequests += 1
-    if (sectionRequests === 1) {
+    if (failSectionRequests) {
       await route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -63,6 +64,7 @@ test("registration page reports section loading failures and can retry", async (
     page.getByRole("button", { name: "Save eligible sections" }),
   ).toBeDisabled()
 
+  failSectionRequests = false
   await page.getByRole("button", { name: "Retry loading sections" }).click()
   await expect(
     page.getByRole("alert").getByText(/Unable to load eligible sections/),
