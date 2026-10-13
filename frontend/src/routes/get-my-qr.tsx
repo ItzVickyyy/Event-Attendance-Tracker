@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Download, QrCode, Search } from "lucide-react"
 import { type FormEvent, useState } from "react"
 import { toast } from "sonner"
@@ -96,8 +96,9 @@ function GetMyQr() {
           <QrCode className="mx-auto mb-2 size-10 text-primary" />
           <CardTitle className="text-2xl">Get My QR Code</CardTitle>
           <CardDescription>
-            Enter your student number and name as registered in the attendance
-            system.
+            Enter your student number, first name, and last name as registered.
+            Middle name is optional. You can enter the full middle name or its
+            initial with or without a period.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,7 +131,7 @@ function GetMyQr() {
                     value={middleName}
                     onChange={(e) => setMiddleName(e.target.value)}
                     autoComplete="additional-name"
-                    placeholder="Optional"
+                    placeholder="Optional, e.g. R or R."
                   />
                 </div>
                 <div className="space-y-2">
@@ -154,7 +155,8 @@ function GetMyQr() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Enter your name as registered in the attendance system.
+                First and last names must match your student record. Middle name
+                can be left blank or entered as a full name or initial.
               </p>
               <Button className="w-full" disabled={loading}>
                 <Search className="size-4" />
@@ -185,11 +187,6 @@ function GetMyQr() {
               </div>
             </div>
           )}
-          <div className="mt-6 border-t pt-4 text-center text-sm text-muted-foreground">
-            <Link to="/login" className="underline underline-offset-4">
-              Staff Login
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </main>

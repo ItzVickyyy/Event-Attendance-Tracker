@@ -9,6 +9,18 @@ def test_normalize_collapses_whitespace_and_case() -> None:
     assert public_student_qr._normalize("  Jane   DOE ") == "jane doe"
 
 
+def test_middle_name_matches_optional_full_name_or_initial() -> None:
+    matches = public_student_qr._middle_name_matches
+
+    assert matches("rafael", "")
+    assert matches("rafael", "rafael")
+    assert matches("rafael", "r")
+    assert matches("rafael", "r.")
+    assert matches("r", "r.")
+    assert not matches("rafael", "m.")
+    assert not matches("rafael", "wrong")
+
+
 def test_rate_limit_blocks_attempts_and_recovers_after_window(
     monkeypatch,
 ) -> None:
@@ -127,6 +139,26 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
     assert response.json()["full_name"] == "Casey R Learner Jr."
     assert response.json()["section"] == "BSIT WMAD 3A"
     assert response.json()["credential_value"]
+
+    for middle_name in ("", "R", "R."):
+        optional_middle_response = client.post(
+            f"{settings.API_V1_STR}/public/student-qr",
+            headers={"X-Forwarded-For": f"198.51.100.{30 + len(middle_name)}"},
+            json={
+                "student_number": student_number,
+                "first_name": "Casey",
+                "middle_name": middle_name,
+                "last_name": "Learner",
+                "name_extension": "Jr.",
+            },
+        )
+        assert optional_middle_response.status_code == 200, (
+            optional_middle_response.text
+        )
+        assert (
+            optional_middle_response.json()["credential_value"]
+            == response.json()["credential_value"]
+        )
 
 
 def test_public_qr_lookup_rejects_identity_mismatch_and_rate_limits(
