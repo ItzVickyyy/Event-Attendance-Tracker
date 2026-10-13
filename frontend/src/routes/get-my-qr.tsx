@@ -187,7 +187,7 @@ function GetMyQr() {
               </div>
             </div>
           )}
-</CardContent>
+        </CardContent>
       </Card>
     </main>
   )
