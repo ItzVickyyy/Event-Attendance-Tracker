@@ -60,6 +60,7 @@ def test_unauthenticated_requests_return_401_with_bearer_header(
         ("GET", f"{settings.API_V1_STR}/users/me"),
         ("GET", f"{settings.API_V1_STR}/academic-programs/"),
         ("GET", f"{settings.API_V1_STR}/attendance/"),
+        ("GET", f"{settings.API_V1_STR}/attendee-credentials/public/unknown-credential"),
     ]
     for method, url in endpoints:
         if method == "GET":
@@ -68,6 +69,25 @@ def test_unauthenticated_requests_return_401_with_bearer_header(
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
         assert response_data["detail"] == "Not authenticated"
+
+
+def test_public_credential_lookup_requires_scanner_permission(
+    client: TestClient, db: Session
+) -> None:
+    endpoint = f"{settings.API_V1_STR}/attendee-credentials/public/unknown-credential"
+
+    student_headers = get_token_headers_for_role(
+        client, db, role=UserRole.student, can_scan=False
+    )
+    denied = client.get(endpoint, headers=student_headers)
+    assert denied.status_code == 403
+
+    scanner_headers = get_token_headers_for_role(
+        client, db, role=UserRole.student, can_scan=True
+    )
+    allowed = client.get(endpoint, headers=scanner_headers)
+    assert allowed.status_code == 404
+    assert allowed.json()["detail"] == "Credential not found"
 
 
 def test_invalid_token_returns_401_with_bearer_header(client: TestClient) -> None:
