@@ -368,6 +368,26 @@ export async function getAllQueuedScans(): Promise<QueueRecord[]> {
   )
 }
 
+export async function getUnassignedPendingScans(): Promise<QueueRecord[]> {
+  const db = await getDB()
+  return (await db.getAll("attendanceQueue")).filter(
+    (record) => !record.synced && !record.account_id,
+  )
+}
+
+export async function getOtherAccountPendingCount(): Promise<number> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return 0
+
+  const db = await getDB()
+  return (await db.getAll("attendanceQueue")).filter(
+    (record) =>
+      !record.synced &&
+      Boolean(record.account_id) &&
+      record.account_id !== accountId,
+  ).length
+}
+
 export async function clearQueue(): Promise<void> {
   const db = await getDB()
   await db.clear("attendanceQueue")
