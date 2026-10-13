@@ -164,6 +164,20 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
             == response.json()["credential_value"]
         )
 
+    incorrect_middle_response = client.post(
+        f"{settings.API_V1_STR}/public/student-qr",
+        headers={"X-Forwarded-For": "198.51.100.45"},
+        json={
+            "student_number": student_number,
+            "first_name": "Casey",
+            "middle_name": "Michael",
+            "last_name": "Learner",
+            "name_extension": "Jr.",
+        },
+    )
+    assert incorrect_middle_response.status_code == 404
+    assert incorrect_middle_response.json()["detail"] == "Student record not found."
+
 
 def test_public_qr_lookup_rejects_identity_mismatch_and_rate_limits(
     client: TestClient,
