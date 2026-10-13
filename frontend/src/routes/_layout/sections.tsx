@@ -11,7 +11,9 @@ export const Route = createFileRoute("/_layout/sections")({
 
 function Sections() {
   const { user } = useAuth()
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
   if (user?.role === "class_representative")
     return <ClassRepresentativeSectionWorkspace />
   if (pathname !== "/sections") return <Outlet />
