@@ -41,7 +41,11 @@ test.describe("Public student QR code", () => {
       const pixels = context.getImageData(0, 0, qr.width, qr.height).data
       let nonWhitePixels = 0
       for (let index = 0; index < pixels.length; index += 4) {
-        if (pixels[index] < 250 || pixels[index + 1] < 250 || pixels[index + 2] < 250) {
+        if (
+          pixels[index] < 250 ||
+          pixels[index + 1] < 250 ||
+          pixels[index + 2] < 250
+        ) {
           nonWhitePixels += 1
         }
       }
