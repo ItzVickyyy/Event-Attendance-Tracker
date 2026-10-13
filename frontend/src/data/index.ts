@@ -265,10 +265,13 @@ export async function enqueueScan(scan: QueuedScan): Promise<string> {
 }
 
 export async function getPendingScans(): Promise<QueueRecord[]> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return []
+
   const db = await getDB()
   const all = await db.getAll("attendanceQueue")
   return all
-    .filter((record) => !record.synced)
+    .filter((record) => !record.synced && record.account_id === accountId)
     .sort((a, b) => {
       const byCreated = a.created_at.localeCompare(b.created_at)
       return byCreated !== 0 ? byCreated : a.id.localeCompare(b.id)
@@ -277,12 +280,15 @@ export async function getPendingScans(): Promise<QueueRecord[]> {
 
 export async function getPendingCount(): Promise<number> {
   const accountId = await getOfflineAccountId()
-  if (!accountId) return 0
-
   const db = await getDB()
   const all = await db.getAll("attendanceQueue")
+
+  // Keep unowned legacy scans visible to the recovery warning/export flow.
+  // They are not eligible for automatic sync or normal queue history.
   return all.filter(
-    (record) => !record.synced && record.account_id === accountId,
+    (record) =>
+      !record.synced &&
+      (record.account_id === accountId || !record.account_id),
   ).length
 }
 
