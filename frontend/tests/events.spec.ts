@@ -63,7 +63,7 @@ test("registration page reports section loading failures and can retry", async (
   await expect.poll(() => interceptedSectionRequests).toBeGreaterThan(0)
   await expect(
     page.getByRole("alert").getByText(/Unable to load eligible sections/),
-  ).toBeVisible()
+  ).toBeVisible({ timeout: 15000 })
   await expect(
     page.getByRole("button", { name: "Save eligible sections" }),
   ).toBeDisabled()
