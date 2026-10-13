@@ -51,7 +51,9 @@ test("section details distinguish server failures from missing sections and can 
   failSectionRequest = false
   await page.getByRole("button", { name: "Retry loading section" }).click()
   await expect(page.getByRole("heading", { name: "WMAD 3A" })).toBeVisible()
-  await expect(page.getByText("Students in this section", { exact: true })).toBeVisible()
+  await expect(
+    page.getByText("Students in this section", { exact: true }),
+  ).toBeVisible()
 })
 
 test("section students page distinguishes section loading failures and can retry", async ({
