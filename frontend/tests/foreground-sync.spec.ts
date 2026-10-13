@@ -511,6 +511,42 @@ test.describe("Foreground sync fallback (no service worker)", () => {
     expect(queued.last_retry_at).toBeTruthy()
   })
 
+  test("queue history data only includes records owned by the current account", async ({
+    page,
+  }) => {
+    await gotoApp(page)
+    await setToken(page, "account-one-token", "user-1")
+    await seedRecords(page, [
+      record({
+        id: "rec-current-account",
+        account_id: "user-1",
+        credential_value: "CURRENT-CREDENTIAL",
+      }),
+      record({
+        id: "rec-other-account",
+        account_id: "user-2",
+        credential_value: "OTHER-ACCOUNT-SECRET",
+      }),
+      record({
+        id: "rec-legacy",
+        account_id: undefined,
+        credential_value: "LEGACY-UNSCOPED-CREDENTIAL",
+      }),
+    ])
+
+    // Exercise the exact data function used by Sync History. This isolates
+    // the account-filtering guarantee from unrelated route/auth bootstrapping.
+    const visibleCredentials = await page.evaluate(async () => {
+      const accountModule = await import("/src/data/account.ts")
+      const queueModule = await import("/src/data/index.ts")
+      await accountModule.rememberOfflineAccount("user-1", "account-one-token")
+      const records = await queueModule.getAllQueuedScans()
+      return records.map((item) => item.credential_value)
+    })
+
+    expect(visibleCredentials).toEqual(["CURRENT-CREDENTIAL"])
+  })
+
   test("two concurrent foreground sync calls never process the same record twice", async ({
     page,
     mockScan,

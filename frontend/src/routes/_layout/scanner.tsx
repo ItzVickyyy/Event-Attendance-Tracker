@@ -42,8 +42,10 @@ import type { QueuedScanRecord, RosterRecord } from "@/data"
 import {
   enqueueScan,
   getAllQueuedScans,
+  getOtherAccountPendingCount,
   getRoster,
   getRosterEntryByCredential,
+  getUnassignedPendingScans,
   putRoster,
   QUEUE_CHANGED_EVENT,
   ROSTER_CHANGED_EVENT,
@@ -174,7 +176,11 @@ function useSyncStatus(eventId?: string) {
   const reload = useCallback(async () => {
     try {
       const accountId = await getOfflineAccountId()
-      const queued = await getAllQueuedScans()
+      const [queued, unassigned, otherAccountCount] = await Promise.all([
+        getAllQueuedScans(),
+        getUnassignedPendingScans(),
+        getOtherAccountPendingCount(),
+      ])
       setPendingScans(
         accountId
           ? queued.filter(
@@ -182,19 +188,8 @@ function useSyncStatus(eventId?: string) {
             )
           : [],
       )
-      setUnassignedPendingCount(
-        queued.filter((record) => !record.synced && !record.account_id).length,
-      )
-      setOtherAccountPendingCount(
-        accountId
-          ? queued.filter(
-              (record) =>
-                !record.synced &&
-                Boolean(record.account_id) &&
-                record.account_id !== accountId,
-            ).length
-          : 0,
-      )
+      setUnassignedPendingCount(unassigned.length)
+      setOtherAccountPendingCount(otherAccountCount)
     } catch {
       setPendingScans([])
       setUnassignedPendingCount(0)
@@ -335,9 +330,7 @@ function useSyncStatus(eventId?: string) {
 }
 
 async function exportLegacyAttendanceScans(): Promise<void> {
-  const records = (await getAllQueuedScans()).filter(
-    (record) => !record.synced && !record.account_id,
-  )
+  const records = await getUnassignedPendingScans()
   if (records.length === 0) {
     toast.info("No unassigned pending scans to export")
     return

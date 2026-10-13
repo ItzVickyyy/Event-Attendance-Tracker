@@ -265,10 +265,13 @@ export async function enqueueScan(scan: QueuedScan): Promise<string> {
 }
 
 export async function getPendingScans(): Promise<QueueRecord[]> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return []
+
   const db = await getDB()
   const all = await db.getAll("attendanceQueue")
   return all
-    .filter((record) => !record.synced)
+    .filter((record) => !record.synced && record.account_id === accountId)
     .sort((a, b) => {
       const byCreated = a.created_at.localeCompare(b.created_at)
       return byCreated !== 0 ? byCreated : a.id.localeCompare(b.id)
@@ -276,9 +279,16 @@ export async function getPendingScans(): Promise<QueueRecord[]> {
 }
 
 export async function getPendingCount(): Promise<number> {
+  const accountId = await getOfflineAccountId()
   const db = await getDB()
   const all = await db.getAll("attendanceQueue")
-  return all.filter((record) => !record.synced).length
+
+  // Keep unowned legacy scans visible to the recovery warning/export flow.
+  // They are not eligible for automatic sync or normal queue history.
+  return all.filter(
+    (record) =>
+      !record.synced && (record.account_id === accountId || !record.account_id),
+  ).length
 }
 
 export async function markSynced(
@@ -349,8 +359,33 @@ export async function removeSyncedRecords(
 }
 
 export async function getAllQueuedScans(): Promise<QueueRecord[]> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return []
+
   const db = await getDB()
-  return db.getAll("attendanceQueue")
+  return (await db.getAll("attendanceQueue")).filter(
+    (record) => record.account_id === accountId,
+  )
+}
+
+export async function getUnassignedPendingScans(): Promise<QueueRecord[]> {
+  const db = await getDB()
+  return (await db.getAll("attendanceQueue")).filter(
+    (record) => !record.synced && !record.account_id,
+  )
+}
+
+export async function getOtherAccountPendingCount(): Promise<number> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return 0
+
+  const db = await getDB()
+  return (await db.getAll("attendanceQueue")).filter(
+    (record) =>
+      !record.synced &&
+      Boolean(record.account_id) &&
+      record.account_id !== accountId,
+  ).length
 }
 
 export async function clearQueue(): Promise<void> {
