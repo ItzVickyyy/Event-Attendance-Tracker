@@ -22,10 +22,7 @@ type NfcReadingEvent = {
 }
 
 export function extractNfcCredential(event: NfcReadingEvent): string {
-  if (
-    typeof event.serialNumber === "string" &&
-    event.serialNumber.trim()
-  ) {
+  if (typeof event.serialNumber === "string" && event.serialNumber.trim()) {
     return normalizeNfcCredential(event.serialNumber)
   }
 
