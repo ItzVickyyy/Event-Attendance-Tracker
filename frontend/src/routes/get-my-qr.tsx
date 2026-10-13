@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Download, QrCode, Search } from "lucide-react"
-import { type FormEvent, useState } from "react"
+import { QRCodeCanvas } from "qrcode.react"
+import { type FormEvent, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,9 +23,6 @@ type Result = {
 
 export const Route = createFileRoute("/get-my-qr")({ component: GetMyQr })
 
-const qrUrl = (value: string) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=20&data=${encodeURIComponent(value)}`
-
 function GetMyQr() {
   const [number, setNumber] = useState("")
   const [firstName, setFirstName] = useState("")
@@ -32,6 +30,7 @@ function GetMyQr() {
   const [lastName, setLastName] = useState("")
   const [nameExtension, setNameExtension] = useState("")
   const [result, setResult] = useState<Result | null>(null)
+  const qrCanvas = useRef<HTMLCanvasElement>(null)
   const [loading, setLoading] = useState(false)
 
   async function lookup(event: FormEvent) {
@@ -69,17 +68,18 @@ function GetMyQr() {
     }
   }
 
-  async function download() {
-    if (!result) return
+  function download() {
+    const canvas = qrCanvas.current
+    if (!result || !canvas) {
+      toast.error("Unable to prepare the QR image.")
+      return
+    }
+
     try {
-      const response = await fetch(qrUrl(result.credential_value))
-      if (!response.ok) throw new Error("Unable to prepare the QR image.")
-      const url = URL.createObjectURL(await response.blob())
       const anchor = document.createElement("a")
-      anchor.href = url
+      anchor.href = canvas.toDataURL("image/png")
       anchor.download = `${result.student_number}-QR.png`
       anchor.click()
-      URL.revokeObjectURL(url)
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -165,9 +165,13 @@ function GetMyQr() {
             </form>
           ) : (
             <div className="space-y-5">
-              <img
-                src={qrUrl(result.credential_value)}
-                alt={`QR code for ${result.full_name}`}
+              <QRCodeCanvas
+                ref={qrCanvas}
+                value={result.credential_value}
+                size={600}
+                level="M"
+                includeMargin
+                title={`QR code for ${result.full_name}`}
                 className="mx-auto aspect-square w-full max-w-72"
               />
               <div className="rounded-lg border p-4 text-sm">
@@ -177,7 +181,7 @@ function GetMyQr() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button className="flex-1" onClick={() => void download()}>
+                <Button className="flex-1" onClick={download}>
                   <Download className="size-4" />
                   Download QR
                 </Button>
