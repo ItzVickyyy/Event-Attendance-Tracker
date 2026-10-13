@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { UsersService } from "@/client"
 import { RefreshCw, Wifi, WifiOff } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -6,9 +7,23 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAllQueuedScans, type QueuedScanRecord } from "@/data"
+import { rememberOfflineAccount } from "@/data/account"
 import { syncNow } from "@/data/sync"
 
 export const Route = createFileRoute("/_layout/scanner/sync")({
+  beforeLoad: async () => {
+    const sessionToken = localStorage.getItem("access_token") ?? ""
+    const { data: user } = await UsersService.readUserMe().catch(() => ({
+      data: null,
+    }))
+    if (
+      user &&
+      sessionToken &&
+      localStorage.getItem("access_token") === sessionToken
+    ) {
+      await rememberOfflineAccount(user.id, sessionToken)
+    }
+  },
   component: SyncQueuePage,
 })
 
