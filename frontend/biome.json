@@ -1,9 +1,16 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "files": {
     "includes": [
       "**",
+      "!**/openapi.json",
       "!**/dist/**/*",
       "!**/node_modules/**/*",
       "!**/src/routeTree.gen.ts",
@@ -45,7 +52,9 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.svg"],
+      "includes": [
+        "**/*.svg"
+      ],
       "linter": {
         "rules": {
           "a11y": {
