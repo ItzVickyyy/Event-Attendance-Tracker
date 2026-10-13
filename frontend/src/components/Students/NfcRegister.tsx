@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { requireCredentialLookupData } from "@/lib/credentialLookup"
 import { extractNfcCredential } from "@/lib/nfcCredential"
 
 interface NfcRegisterProps {
@@ -125,11 +126,15 @@ export function NfcRegister({ student }: NfcRegisterProps) {
   }, [])
 
   const lookupMutation = useMutation({
-    mutationFn: (uid: string) =>
-      AttendeeCredentialsService.credentialsLookupCredential({
+    mutationFn: async (uid: string) => {
+      const result = await AttendeeCredentialsService.credentialsLookupCredential({
         path: { credential_value: uid },
-        throwOnError: true,
-      }),
+        throwOnError: false,
+      })
+      return requireCredentialLookupData(
+        result as { data?: AttendeeCredentialPublic; error?: unknown },
+      )
+    },
     onSuccess: (result) => {
       const data = result.data as AttendeeCredentialPublic
       setFoundCredential(data)
