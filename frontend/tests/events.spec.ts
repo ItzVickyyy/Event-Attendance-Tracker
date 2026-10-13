@@ -80,6 +80,7 @@ test("registration page reports event loading failures and can retry", async ({
   page,
 }) => {
   let failEventRequests = false
+  let eventId = ""
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url())
     if (
@@ -114,7 +115,7 @@ test("registration page reports event loading failures and can retry", async ({
   await expect(eventLink).toBeVisible()
   const href = await eventLink.getAttribute("href")
   expect(href).toBeTruthy()
-  const eventId = href!.split("/").filter(Boolean).at(-1)!
+  eventId = href!.split("/").filter(Boolean).at(-1)!
   failEventRequests = true
 
   await page.goto(`${href}/registration`)
