@@ -18,13 +18,12 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import type { StudentPublic } from "@/client"
-import { extractNfcCredential } from "@/lib/nfcCredential"
 import {
   AttendeesService,
   EventsService,
   StudentsService,
   UsersService,
+  type StudentPublic,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -56,6 +55,7 @@ import {
   getActiveAttendanceSession,
 } from "@/data/attendanceSessions"
 import { setupSyncStatusListener, syncNow } from "@/data/sync"
+import { extractNfcCredential } from "@/lib/nfcCredential"
 
 function getSessionLabel(
   sessionType?: AttendanceSession["session_type"],
