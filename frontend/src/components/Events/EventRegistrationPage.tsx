@@ -144,6 +144,36 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         </CardContent>
       </Card>
     )
+  if (eventQuery.isError)
+    return (
+      <Card>
+        <CardContent className="space-y-3 py-12 text-center">
+          <div role="alert">
+            <p className="font-medium text-destructive">
+              Unable to load event details.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Check your connection and try again.
+            </p>
+          </div>
+          <div className="flex justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => eventQuery.refetch()}
+            >
+              Retry loading event
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/events">
+                <ArrowLeft />
+                Back to events
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
   if (!event)
     return (
       <Card>
