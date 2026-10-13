@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import {
   AlertCircle,
@@ -9,11 +9,11 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import type {
-  AttendancePublic,
-  AttendancesPublic,
-  EventPublic,
-  EventsPublic,
+import {
+  type AttendancePublic,
+  AttendanceService,
+  type EventPublic,
+  EventsService,
 } from "@/client"
 import { attendanceColumns } from "@/components/Attendance/recordsColumns"
 import { DataTable } from "@/components/Common/DataTable"
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/select"
 import { useAcademicYear } from "@/context/AcademicYearContext"
 
+const PAGE_SIZE = 100
+
 export function RecordsWorkspace({
   mode = "records",
 }: {
@@ -35,33 +37,74 @@ export function RecordsWorkspace({
 }) {
   const [eventId, setEventId] = useState<string>("all")
   const { activeAcademicYear } = useAcademicYear()
-  const fetchJson = async <T,>(path: string): Promise<T> => {
-    const token = localStorage.getItem("access_token")
-    const response = await fetch(
-      `${import.meta.env.VITE_API_URL ?? ""}/api/v1${path}`,
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-    )
-    if (!response.ok) throw new Error("Request failed")
-    return response.json() as Promise<T>
-  }
-  const eventsQuery = useQuery<EventsPublic>({
-    queryKey: ["records-events", activeAcademicYear?.id],
-    queryFn: () =>
-      fetchJson<EventsPublic>(
-        `/events/?skip=0&limit=1000&academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}`,
-      ),
-    enabled: Boolean(activeAcademicYear),
+  const academicYearId = activeAcademicYear?.id
+
+  const eventsQuery = useQuery({
+    queryKey: ["records-events", academicYearId],
+    queryFn: async () => {
+      if (!academicYearId) return []
+      const firstPage = await EventsService.readEvents({
+        query: {
+          skip: 0,
+          limit: PAGE_SIZE,
+          academic_year_id: academicYearId,
+        },
+      })
+      const events = [...firstPage.data.data]
+      for (
+        let skip = PAGE_SIZE;
+        skip < firstPage.data.count;
+        skip += PAGE_SIZE
+      ) {
+        const page = await EventsService.readEvents({
+          query: {
+            skip,
+            limit: PAGE_SIZE,
+            academic_year_id: academicYearId,
+          },
+        })
+        events.push(...page.data.data)
+      }
+      return events
+    },
+    enabled: Boolean(academicYearId),
   })
-  const attendanceQuery = useQuery<AttendancesPublic>({
-    queryKey: ["records-attendance", eventId, activeAcademicYear?.id],
-    queryFn: () =>
-      fetchJson<AttendancesPublic>(
-        `/attendance/?skip=0&limit=1000&academic_year_id=${encodeURIComponent(activeAcademicYear!.id)}${eventId === "all" ? "" : `&event_id=${encodeURIComponent(eventId)}`}`,
-      ),
-    enabled: Boolean(activeAcademicYear),
+
+  const attendanceQuery = useInfiniteQuery({
+    queryKey: ["records-attendance", eventId, academicYearId],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      if (!academicYearId) {
+        return { data: [] as AttendancePublic[], count: 0 }
+      }
+      const response = await AttendanceService.readAttendances({
+        query: {
+          skip: pageParam,
+          limit: PAGE_SIZE,
+          academic_year_id: academicYearId,
+          ...(eventId === "all" ? {} : { event_id: eventId }),
+        },
+      })
+      return response.data
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce(
+        (total, page) => total + page.data.length,
+        0,
+      )
+      return loadedCount < lastPage.count ? loadedCount : undefined
+    },
+    enabled: Boolean(academicYearId),
   })
-  const events: EventPublic[] = eventsQuery.data?.data ?? []
-  const allAttendance: AttendancePublic[] = attendanceQuery.data?.data ?? []
+
+  const events: EventPublic[] = eventsQuery.data ?? []
+  const allAttendance: AttendancePublic[] =
+    attendanceQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const attendancePages = attendanceQuery.data?.pages ?? []
+  const totalAttendance =
+    attendancePages.length > 0
+      ? attendancePages[attendancePages.length - 1].count
+      : 0
   const attendance =
     mode === "incomplete"
       ? allAttendance.filter(
@@ -74,16 +117,30 @@ export function RecordsWorkspace({
 
   async function exportAttendance() {
     try {
-      const token = localStorage.getItem("access_token")
       const params = new URLSearchParams()
       if (eventId !== "all") params.set("event_id", eventId)
-      if (activeAcademicYear)
-        params.set("academic_year_id", activeAcademicYear.id)
+      if (academicYearId) params.set("academic_year_id", academicYearId)
+      const baseUrl = import.meta.env.VITE_API_URL ?? ""
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || ""}/api/v1/attendance/export${params.toString() ? `?${params}` : ""}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+        `${baseUrl}/api/v1/attendance/export${params.toString() ? `?${params}` : ""}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        },
       )
-      if (!response.ok) throw new Error("Failed to export attendance")
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        const detail =
+          body && typeof body === "object" && "detail" in body
+            ? (body as { detail?: unknown }).detail
+            : undefined
+        throw new Error(
+          typeof detail === "string"
+            ? detail
+            : `Failed to export attendance (${response.status})`,
+        )
+      }
       const blob = await response.blob()
       if (!blob.size) {
         toast.info("No attendance data to export")
@@ -93,7 +150,9 @@ export function RecordsWorkspace({
       const anchor = document.createElement("a")
       anchor.href = url
       anchor.download = `attendance_${selectedEvent?.event_name?.replace(/\s+/g, "_").toLowerCase() || "all"}.csv`
+      document.body.appendChild(anchor)
       anchor.click()
+      anchor.remove()
       URL.revokeObjectURL(url)
       toast.success("Attendance exported successfully")
     } catch (error) {
@@ -119,6 +178,12 @@ export function RecordsWorkspace({
         : mode === "export"
           ? "Export attendance records using the project's supported CSV export."
           : "Operational attendance records from the existing attendance API."
+
+  const queryFailed = eventsQuery.isError || attendanceQuery.isError
+  const retryQueries = () => {
+    if (eventsQuery.isError) void eventsQuery.refetch()
+    if (attendanceQuery.isError) void attendanceQuery.refetch()
+  }
 
   return (
     <div className="space-y-6">
@@ -155,30 +220,38 @@ export function RecordsWorkspace({
           </Button>
           <Button
             onClick={exportAttendance}
-            disabled={attendanceQuery.isLoading}
+            disabled={attendanceQuery.isLoading || !academicYearId}
           >
             <Download />
             Export
           </Button>
         </div>
       </div>
-      {eventsQuery.isError || attendanceQuery.isError ? (
+      {queryFailed ? (
         <Card>
-          <CardContent className="py-10 text-center">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <AlertCircle className="size-5 text-destructive" />
             <p className="font-medium">Unable to load attendance records.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              The existing attendance API returned an error.
+            <p className="text-sm text-muted-foreground">
+              Check your connection and account permissions, then try again.
             </p>
+            <Button
+              variant="outline"
+              onClick={retryQueries}
+              disabled={eventsQuery.isFetching || attendanceQuery.isFetching}
+            >
+              Retry
+            </Button>
           </CardContent>
         </Card>
-      ) : attendanceQuery.isLoading ? (
+      ) : attendanceQuery.isLoading || eventsQuery.isLoading ? (
         <Card>
           <CardContent className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
             <Loader2 className="animate-spin" />
             Loading attendance records…
           </CardContent>
         </Card>
-      ) : attendance.length === 0 ? (
+      ) : attendance.length === 0 && !attendanceQuery.hasNextPage ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <ClipboardList className="mb-3 h-8 w-8 text-muted-foreground" />
@@ -189,7 +262,34 @@ export function RecordsWorkspace({
           </CardContent>
         </Card>
       ) : (
-        <DataTable columns={attendanceColumns} data={attendance} />
+        <>
+          <DataTable columns={attendanceColumns} data={attendance} />
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-sm text-muted-foreground">
+              Loaded {allAttendance.length.toLocaleString()} of{" "}
+              {totalAttendance.toLocaleString()} attendance records
+              {mode === "incomplete"
+                ? `. ${attendance.length.toLocaleString()} loaded records match the incomplete view.`
+                : "."}
+            </p>
+            {attendanceQuery.hasNextPage && (
+              <Button
+                variant="outline"
+                onClick={() => void attendanceQuery.fetchNextPage()}
+                disabled={attendanceQuery.isFetchingNextPage}
+              >
+                {attendanceQuery.isFetchingNextPage ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Loading more…
+                  </>
+                ) : (
+                  "Load more records"
+                )}
+              </Button>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
