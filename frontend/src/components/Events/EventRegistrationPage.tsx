@@ -182,6 +182,26 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         <CardContent className="space-y-3">
           {sectionsQuery.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading sections…</p>
+          ) : sectionsQuery.isError ? (
+            <div className="space-y-2" role="alert">
+              <p className="text-sm text-destructive">
+                Unable to load eligible sections. Your current selections have
+                not been changed.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => sectionsQuery.refetch()}
+              >
+                Retry loading sections
+              </Button>
+            </div>
+          ) : sections.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No sections are available. Check the academic year and section
+              setup.
+            </p>
           ) : (
             <>
               <div className="flex flex-wrap gap-2">
@@ -266,15 +286,63 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {registrationQuery.isError && (
+            <div className="space-y-2" role="alert">
+              <p className="text-sm text-destructive">
+                Unable to load current registrations. The registration count may
+                be incomplete.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => registrationQuery.refetch()}
+              >
+                Retry loading registrations
+              </Button>
+            </div>
+          )}
+          {selectedSections.length > 0 && studentQueries.isError && (
+            <div className="space-y-2" role="alert">
+              <p className="text-sm text-destructive">
+                Unable to load students for the selected sections.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => studentQueries.refetch()}
+              >
+                Retry loading students
+              </Button>
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-3">
-            <Stat label="Registered" value={registered.length} />
-            <Stat label="Selected students" value={eligibleCount} />
-            <Stat label="To add" value={missing} />
+            <Stat
+              label="Registered"
+              value={registrationQuery.isError ? "—" : registered.length}
+            />
+            <Stat
+              label="Selected students"
+              value={studentQueries.isError ? "—" : eligibleCount}
+            />
+            <Stat
+              label="To add"
+              value={
+                registrationQuery.isError || studentQueries.isError
+                  ? "—"
+                  : missing
+              }
+            />
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              disabled={saveSectionsMutation.isPending}
+              disabled={
+                saveSectionsMutation.isPending ||
+                sectionsQuery.isLoading ||
+                sectionsQuery.isError
+              }
               onClick={() => saveSectionsMutation.mutate()}
             >
               {saveSectionsMutation.isPending
@@ -285,7 +353,13 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
               disabled={
                 selectedSections.length === 0 ||
                 eligibleCount === 0 ||
-                mutation.isPending
+                mutation.isPending ||
+                sectionsQuery.isLoading ||
+                sectionsQuery.isError ||
+                registrationQuery.isLoading ||
+                registrationQuery.isError ||
+                studentQueries.isLoading ||
+                studentQueries.isError
               }
               onClick={() => mutation.mutate()}
             >
@@ -327,7 +401,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
     </div>
   )
 }
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-lg border p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
