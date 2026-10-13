@@ -43,7 +43,11 @@ test("registration page reports section loading failures and can retry", async (
 
   let sectionRequests = 0
   let failSectionRequests = true
-  await page.route("**/academic-sections**", async (route) => {
+  await page.route("**/*", async (route) => {
+    if (!route.request().url().includes("academic-sections")) {
+      await route.continue()
+      return
+    }
     sectionRequests += 1
     if (failSectionRequests) {
       await route.fulfill({
