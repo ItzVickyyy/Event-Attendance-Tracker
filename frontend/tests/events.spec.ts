@@ -21,7 +21,6 @@ test("new event appears in the list without refreshing the page", async ({
   ).toBeVisible()
 })
 
-
 test("registration page reports section loading failures and can retry", async ({
   page,
 }) => {
