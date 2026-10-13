@@ -286,9 +286,7 @@ export async function getPendingCount(): Promise<number> {
   // Keep unowned legacy scans visible to the recovery warning/export flow.
   // They are not eligible for automatic sync or normal queue history.
   return all.filter(
-    (record) =>
-      !record.synced &&
-      (record.account_id === accountId || !record.account_id),
+    (record) => !record.synced && (record.account_id === accountId || !record.account_id),
   ).length
 }
 
