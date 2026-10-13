@@ -105,4 +105,3 @@ test("section students page distinguishes section loading failures and can retry
   await page.getByRole("button", { name: "Retry loading section" }).click()
   await expect(page.getByRole("heading", { name: "WMAD 3A" })).toBeVisible()
 })
-
