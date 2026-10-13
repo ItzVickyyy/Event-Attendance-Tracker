@@ -127,6 +127,7 @@ def lookup_student_qr(
              AND c.is_active = true
             WHERE s.student_number = :student_number
               AND s.archived_at IS NULL
+              AND se.archived_at IS NULL
               AND se.student_status IS NOT NULL
             ORDER BY se.created_at DESC
             LIMIT 1
