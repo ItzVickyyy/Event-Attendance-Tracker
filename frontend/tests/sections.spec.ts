@@ -26,13 +26,11 @@ test("section details distinguish server failures from missing sections and can 
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          data: {
-            id: sectionId,
-            section_name: "WMAD 3A",
-            program_id: "test-program",
-            year_level: "3rd Year",
-            academic_year: "2026-2027",
-          },
+          id: sectionId,
+          section_name: "WMAD 3A",
+          program_id: "test-program",
+          year_level: "3rd Year",
+          academic_year: "2026-2027",
         }),
       })
       return
