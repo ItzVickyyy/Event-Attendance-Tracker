@@ -46,6 +46,8 @@ services:
 
   backend:
     restart: always
+    # The production backend must only be reachable through the rate-limited proxy.
+    ports: !reset []
     environment:
       FRONTEND_HOST: https://${DOMAIN:?Variable not set}
     labels:
