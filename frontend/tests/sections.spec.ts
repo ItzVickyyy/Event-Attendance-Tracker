@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test"
 test("section details distinguish server failures from missing sections and can retry", async ({
   page,
 }) => {
-  const sectionId = "section-query-failure-test"
+  const sectionId = "550e8400-e29b-41d4-a716-446655440000"
   let failSectionRequest = true
   let interceptedRequests = 0
 
