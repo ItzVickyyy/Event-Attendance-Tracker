@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Download, FileUp, Plus } from "lucide-react"
+import { AlertCircle, Download, FileUp, Plus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -188,6 +188,31 @@ export function ClassRepresentativesAdmin() {
           </Button>
         </div>
       </div>
+      {(years.isError || sections.isError || reps.isError) && (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="mt-0.5 size-4 text-destructive" />
+              <div>
+                <p className="font-medium">Unable to load some administration data.</p>
+                <p className="text-sm text-muted-foreground">
+                  Check your connection and account permissions, then retry.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (years.isError) void years.refetch()
+                if (sections.isError) void sections.refetch()
+                if (reps.isError) void reps.refetch()
+              }}
+            >
+              Retry failed requests
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Import Class Representatives</CardTitle>
