@@ -27,14 +27,14 @@ interface NfcRegisterProps {
 
 async function resolveAttendeeId(personId: string): Promise<string> {
   const result = await AttendeesService.readAttendees({
-    query: { limit: 10000 },
+    query: { person_id: personId, limit: 1 },
     throwOnError: true,
   })
-  const attendees = (
-    result as unknown as { data: { data: { id: string; person_id: string }[] } }
-  ).data.data
-  const existing = attendees.find((a) => a.person_id === personId)
+  const existing = (
+    result as unknown as { data: { data: { id: string }[] } }
+  ).data.data[0]
   if (existing) return existing.id
+
   const created = await AttendeesService.createAttendee({
     body: { person_id: personId, attendee_type: "student" },
     throwOnError: true,
