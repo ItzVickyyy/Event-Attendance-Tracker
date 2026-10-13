@@ -42,9 +42,9 @@ test("section details distinguish server failures from missing sections and can 
 
   await page.goto(`/sections/${sectionId}`)
   await expect.poll(() => interceptedRequests).toBeGreaterThan(0)
-  await expect(
-    page.getByText("Unable to load section details."),
-  ).toBeVisible({ timeout: 15000 })
+  await expect(page.getByText("Unable to load section details.")).toBeVisible({
+    timeout: 15000,
+  })
   await expect(page.getByText("Section not found.")).toHaveCount(0)
   await expect(
     page.getByRole("button", { name: "Retry loading section" }),
