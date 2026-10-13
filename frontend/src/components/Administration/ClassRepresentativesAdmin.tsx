@@ -37,11 +37,13 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
         ? (body as { detail?: unknown }).detail
         : undefined
     const message = Array.isArray(detail)
-      ? detail.map((item) =>
-          item && typeof item === "object" && "msg" in item
-            ? String((item as { msg: unknown }).msg)
-            : String(item),
-        ).join("; ")
+      ? detail
+          .map((item) =>
+            item && typeof item === "object" && "msg" in item
+              ? String((item as { msg: unknown }).msg)
+              : String(item),
+          )
+          .join("; ")
       : typeof detail === "string"
         ? detail
         : `Request failed (${response.status})`
@@ -75,7 +77,9 @@ export function ClassRepresentativesAdmin() {
   const sections = useQuery({
     queryKey: ["sections-admin-reps", form.academic_year_id],
     queryFn: () =>
-      fetchJson<{ data: Array<{ id: string; program_code: string; section_name: string }> }>(
+      fetchJson<{
+        data: Array<{ id: string; program_code: string; section_name: string }>
+      }>(
         `/academic-registry/sections?academic_year_id=${encodeURIComponent(form.academic_year_id)}`,
         { headers: headers() },
       ),
@@ -194,7 +198,9 @@ export function ClassRepresentativesAdmin() {
             <div className="flex items-start gap-2">
               <AlertCircle className="mt-0.5 size-4 text-destructive" />
               <div>
-                <p className="font-medium">Unable to load some administration data.</p>
+                <p className="font-medium">
+                  Unable to load some administration data.
+                </p>
                 <p className="text-sm text-muted-foreground">
                   Check your connection and account permissions, then retry.
                 </p>
