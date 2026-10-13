@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import { ClassRepresentativeSectionWorkspace } from "@/components/ClassRepresentative/SectionWorkspace"
 import SectionList from "@/components/Sections/SectionList"
 import { StudentSearch } from "@/components/Sections/StudentSearch"
@@ -11,8 +11,11 @@ export const Route = createFileRoute("/_layout/sections")({
 
 function Sections() {
   const { user } = useAuth()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   if (user?.role === "class_representative")
     return <ClassRepresentativeSectionWorkspace />
+  if (pathname !== "/sections") return <Outlet />
+
   return (
     <div className="space-y-8">
       <header className="space-y-2">
