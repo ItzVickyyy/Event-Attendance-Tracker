@@ -11,6 +11,7 @@ def test_compose_rate_limits_public_and_authentication_routes() -> None:
         "traefik.http.middlewares.public-lookup-ratelimit.ratelimit.average=12"
         in compose
     )
+    assert "traefik.http.middlewares.signup-ratelimit.ratelimit.average=5" in compose
     assert "traefik.http.middlewares.login-ratelimit.ratelimit.average=10" in compose
     assert (
         "traefik.http.middlewares.password-recovery-ratelimit.ratelimit.average=3"
@@ -20,6 +21,7 @@ def test_compose_rate_limits_public_and_authentication_routes() -> None:
     for route in (
         "public-student-qr",
         "public-credential-lookup",
+        "signup",
         "login",
         "password-recovery",
     ):
