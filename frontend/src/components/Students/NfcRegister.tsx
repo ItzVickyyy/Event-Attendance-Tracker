@@ -30,9 +30,8 @@ async function resolveAttendeeId(personId: string): Promise<string> {
     query: { person_id: personId, limit: 1 },
     throwOnError: true,
   })
-  const existing = (
-    result as unknown as { data: { data: { id: string }[] } }
-  ).data.data[0]
+  const existing = (result as unknown as { data: { data: { id: string }[] } })
+    .data.data[0]
   if (existing) return existing.id
 
   const created = await AttendeesService.createAttendee({
