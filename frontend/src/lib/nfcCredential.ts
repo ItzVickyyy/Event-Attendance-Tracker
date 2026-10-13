@@ -34,7 +34,11 @@ export function extractNfcCredential(event: NfcReadingEvent): string {
     return normalizeNfcCredential(message)
   }
 
-  if (message && typeof message === "object" && Array.isArray(message.records)) {
+  if (
+    message &&
+    typeof message === "object" &&
+    Array.isArray(message.records)
+  ) {
     for (const record of message.records) {
       if (record.recordType !== "text" || !(record.data instanceof DataView)) {
         continue
