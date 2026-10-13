@@ -539,10 +539,7 @@ test.describe("Foreground sync fallback (no service worker)", () => {
     // on account isolation rather than the layout's authentication bootstrap.
     await page.evaluate(async () => {
       const accountModule = await import("/src/data/account.ts")
-      await accountModule.rememberOfflineAccount(
-        "user-1",
-        "account-one-token",
-      )
+      await accountModule.rememberOfflineAccount("user-1", "account-one-token")
     })
     await page.goto("/scanner/sync")
 
