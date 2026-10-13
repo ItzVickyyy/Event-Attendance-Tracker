@@ -11,7 +11,7 @@ test("section details distinguish server failures from missing sections and can 
     const url = new URL(route.request().url())
     if (
       url.pathname.includes("/api/v1/academic-sections/") &&
-      url.pathname.endsWith(sectionId)
+      url.pathname !== "/api/v1/academic-sections/"
     ) {
       interceptedRequests += 1
       if (failSectionRequest) {
