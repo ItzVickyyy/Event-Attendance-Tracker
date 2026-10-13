@@ -93,7 +93,11 @@ export function RecordsWorkspace({
   const events: EventPublic[] = eventsQuery.data ?? []
   const allAttendance: AttendancePublic[] =
     attendanceQuery.data?.pages.flatMap((page) => page.data) ?? []
-  const totalAttendance = attendanceQuery.data?.pages.at(-1)?.count ?? 0
+  const attendancePages = attendanceQuery.data?.pages ?? []
+  const totalAttendance =
+    attendancePages.length > 0
+      ? attendancePages[attendancePages.length - 1].count
+      : 0
   const attendance =
     mode === "incomplete"
       ? allAttendance.filter(
