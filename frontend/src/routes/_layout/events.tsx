@@ -2,6 +2,7 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import { Calendar, Search } from "lucide-react"
 import { Suspense, useState } from "react"
+import { EventsService } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
 import AddEvent from "@/components/Events/AddEvent"
 import { eventsColumns } from "@/components/Events/columns"
@@ -11,13 +12,14 @@ import { useAcademicYear } from "@/context/AcademicYearContext"
 function getEventsQueryOptions(academicYearId: string | undefined) {
   return {
     queryFn: async () => {
-      const token = localStorage.getItem("access_token")
-      const url = `${import.meta.env.VITE_API_URL ?? ""}/api/v1/events/?skip=0&limit=1000${academicYearId ? `&academic_year_id=${encodeURIComponent(academicYearId)}` : ""}`
-      const response = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const response = await EventsService.readEvents({
+        query: {
+          skip: 0,
+          limit: 1000,
+          academic_year_id: academicYearId,
+        },
       })
-      if (!response.ok) throw new Error("Unable to load events")
-      return response.json()
+      return response.data
     },
     queryKey: ["events", academicYearId],
   }
