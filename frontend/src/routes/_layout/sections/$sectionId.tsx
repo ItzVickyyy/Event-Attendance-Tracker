@@ -13,6 +13,7 @@ function SectionDetails() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
-  if (pathname !== `/sections/${sectionId}`) return <Outlet />
+  const pathSegments = pathname.split("/").filter(Boolean)
+  if (pathSegments.length > 2) return <Outlet />
   return <SectionDetailsPage sectionId={sectionId} />
 }
