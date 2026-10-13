@@ -42,6 +42,8 @@ import type { QueuedScanRecord, RosterRecord } from "@/data"
 import {
   enqueueScan,
   getAllQueuedScans,
+  getOtherAccountPendingCount,
+  getUnassignedPendingScans,
   getRoster,
   getRosterEntryByCredential,
   putRoster,
@@ -174,7 +176,11 @@ function useSyncStatus(eventId?: string) {
   const reload = useCallback(async () => {
     try {
       const accountId = await getOfflineAccountId()
-      const queued = await getAllQueuedScans()
+      const [queued, unassigned, otherAccountCount] = await Promise.all([
+        getAllQueuedScans(),
+        getUnassignedPendingScans(),
+        getOtherAccountPendingCount(),
+      ])
       setPendingScans(
         accountId
           ? queued.filter(
@@ -182,19 +188,8 @@ function useSyncStatus(eventId?: string) {
             )
           : [],
       )
-      setUnassignedPendingCount(
-        queued.filter((record) => !record.synced && !record.account_id).length,
-      )
-      setOtherAccountPendingCount(
-        accountId
-          ? queued.filter(
-              (record) =>
-                !record.synced &&
-                Boolean(record.account_id) &&
-                record.account_id !== accountId,
-            ).length
-          : 0,
-      )
+      setUnassignedPendingCount(unassigned.length)
+      setOtherAccountPendingCount(otherAccountCount)
     } catch {
       setPendingScans([])
       setUnassignedPendingCount(0)
