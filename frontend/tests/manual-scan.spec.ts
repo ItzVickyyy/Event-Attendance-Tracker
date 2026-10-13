@@ -775,4 +775,18 @@ test.describe("Manual attendance scan", () => {
     await qrButton.click()
     await expect(missingSessionToast).toBeVisible()
   })
+  test("does not expose temporary NFC diagnostic details", async ({
+    page,
+    mockHttp,
+  }) => {
+    await mockHttp(page)
+    await gotoApp(page)
+    await setToken(page)
+    await page.goto("/scanner?event_id=evt-1")
+
+    await expect(page.getByText("NFC Diagnostic")).toHaveCount(0)
+    await expect(page.getByText("Serial Number", { exact: true })).toHaveCount(
+      0,
+    )
+  })
 })
