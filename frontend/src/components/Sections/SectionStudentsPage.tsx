@@ -80,16 +80,38 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
   }
 
   if (sectionQuery.isError || !section) {
+    const sectionNotFound =
+      sectionQuery.error instanceof Error &&
+      /404|not found/i.test(sectionQuery.error.message)
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="font-medium">Section not found.</p>
-          <Button className="mt-4" variant="outline" asChild>
-            <Link to="/sections">
-              <ArrowLeft />
-              Back to sections
-            </Link>
-          </Button>
+          <p className="font-medium">
+            {sectionNotFound
+              ? "Section not found."
+              : "Unable to load section details."}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {sectionNotFound
+              ? "The requested academic section could not be found."
+              : "Check your connection and try again."}
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            {!sectionNotFound && (
+              <Button
+                variant="default"
+                onClick={() => void sectionQuery.refetch()}
+              >
+                Retry loading section
+              </Button>
+            )}
+            <Button variant="outline" asChild>
+              <Link to="/sections">
+                <ArrowLeft />
+                Back to sections
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
