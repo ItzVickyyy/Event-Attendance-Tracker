@@ -534,17 +534,15 @@ test.describe("Foreground sync fallback (no service worker)", () => {
       }),
     ])
 
-    await page.route("**/api/v1/users/me*", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "user-1",
-          is_superuser: true,
-          can_scan: true,
-          role: "admin",
-        }),
-      })
+    // Establish the same verified account context used by the scanner before
+    // testing what the queue history renders. This keeps the assertion focused
+    // on account isolation rather than the layout's authentication bootstrap.
+    await page.evaluate(async () => {
+      const accountModule = await import("/src/data/account.ts")
+      await accountModule.rememberOfflineAccount(
+        "user-1",
+        "account-one-token",
+      )
     })
     await page.goto("/scanner/sync")
 
