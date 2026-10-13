@@ -790,3 +790,30 @@ test.describe("Manual attendance scan", () => {
     )
   })
 })
+
+test.describe("NFC credential extraction", () => {
+  test("prefers the physical card UID over NDEF text payloads", async () => {
+    const { extractNfcCredential } = await import("../src/lib/nfcCredential")
+    const payload = new TextEncoder().encode("\u0002enOTHER-TEXT")
+    const event = {
+      serialNumber: "8f:49:5b:74",
+      message: {
+        records: [{ recordType: "text", data: new DataView(payload.buffer) }],
+      },
+    }
+
+    expect(extractNfcCredential(event)).toBe("8F:49:5B:74")
+  })
+
+  test("falls back to an NDEF text record when the tag has no serial number", async () => {
+    const { extractNfcCredential } = await import("../src/lib/nfcCredential")
+    const payload = new TextEncoder().encode("\u0002en8f:49:5b:74")
+    const event = {
+      message: {
+        records: [{ recordType: "text", data: new DataView(payload.buffer) }],
+      },
+    }
+
+    expect(extractNfcCredential(event)).toBe("8F:49:5B:74")
+  })
+})
