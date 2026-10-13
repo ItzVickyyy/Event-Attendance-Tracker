@@ -406,7 +406,15 @@ def test_academic_registry_rejects_student_section_year_mismatch_and_blank_numbe
     )
     assert blank_number.status_code == 422
 
-    other_year = 2300 + uuid4().int % 500
+    existing_years = client.get(
+        _api("/academic-registry/academic-years"), headers=headers
+    )
+    assert existing_years.status_code == 200
+    existing_labels = {row["label"] for row in existing_years.json()["data"]}
+    other_year = 2300
+    while f"{other_year}-{other_year + 1}" in existing_labels:
+        other_year += 1
+
     created_year = client.post(
         _api("/academic-registry/academic-years"),
         headers=headers,
