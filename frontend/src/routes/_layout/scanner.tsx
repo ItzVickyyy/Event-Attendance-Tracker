@@ -18,10 +18,10 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import type { StudentPublic } from "@/client"
 import {
   AttendeesService,
   EventsService,
+  type StudentPublic,
   StudentsService,
   UsersService,
 } from "@/client"
@@ -55,16 +55,7 @@ import {
   getActiveAttendanceSession,
 } from "@/data/attendanceSessions"
 import { setupSyncStatusListener, syncNow } from "@/data/sync"
-
-/**
- * Normalizes a raw NFC credential value (from an NDEF text record or the
- * tag's `serialNumber`) into the canonical form used by the backend's
- * `AttendeeCredential.credential_value` column: uppercase, separators
- * preserved as-is (the DB already stores values like "8F:49:5B:74").
- */
-function normalizeNfcCredential(raw: string): string {
-  return raw.trim().toUpperCase()
-}
+import { extractNfcCredential } from "@/lib/nfcCredential"
 
 function getSessionLabel(
   sessionType?: AttendanceSession["session_type"],
@@ -73,40 +64,6 @@ function getSessionLabel(
   if (sessionType === "TIME_IN") return "TIME-IN"
   if (sessionType === "TIME_OUT") return "TIME-OUT"
   return sessionName?.trim() || "ATTENDANCE"
-}
-
-function extractNfcCredential(event: any): string {
-  const msg = event.message
-  if (typeof msg === "string" && msg.trim()) return normalizeNfcCredential(msg)
-  if (msg?.records && Array.isArray(msg.records)) {
-    for (const r of msg.records) {
-      if (r.recordType === "text" && r.data instanceof DataView) {
-        const dv = r.data as DataView
-        if (dv.byteLength === 0) continue
-        const status = dv.getUint8(0)
-        const isUtf16 = (status & 0x80) !== 0
-        const langLen = status & 0x3f
-        const start = 1 + langLen
-        if (start >= dv.byteLength) continue
-        const bytes = new Uint8Array(
-          dv.buffer,
-          dv.byteOffset + start,
-          dv.byteLength - start,
-        )
-        const uid = new TextDecoder(isUtf16 ? "utf-16" : "utf-8")
-          .decode(bytes)
-          .trim()
-        if (uid) return normalizeNfcCredential(uid)
-      }
-    }
-  }
-  // No usable NDEF text credential was found. Many physical tags (e.g.
-  // blank/empty NDEF records) only expose their identity via the Web NFC
-  // `serialNumber`, so fall back to that.
-  if (typeof event.serialNumber === "string" && event.serialNumber.trim()) {
-    return normalizeNfcCredential(event.serialNumber)
-  }
-  return ""
 }
 
 export const Route = createFileRoute("/_layout/scanner")({
