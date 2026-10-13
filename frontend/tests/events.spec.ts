@@ -75,7 +75,6 @@ test("registration page reports section loading failures and can retry", async (
   ).toHaveCount(0)
 })
 
-
 test("registration page reports event loading failures and can retry", async ({
   page,
 }) => {
