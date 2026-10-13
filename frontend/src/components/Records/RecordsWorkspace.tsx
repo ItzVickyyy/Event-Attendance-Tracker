@@ -10,10 +10,10 @@ import {
 import { useState } from "react"
 import { toast } from "sonner"
 import {
-  AttendanceService,
-  EventsService,
   type AttendancePublic,
+  AttendanceService,
   type EventPublic,
+  EventsService,
 } from "@/client"
 import { attendanceColumns } from "@/components/Attendance/recordsColumns"
 import { DataTable } from "@/components/Common/DataTable"
@@ -51,7 +51,11 @@ export function RecordsWorkspace({
         },
       })
       const events = [...firstPage.data.data]
-      for (let skip = PAGE_SIZE; skip < firstPage.data.count; skip += PAGE_SIZE) {
+      for (
+        let skip = PAGE_SIZE;
+        skip < firstPage.data.count;
+        skip += PAGE_SIZE
+      ) {
         const page = await EventsService.readEvents({
           query: {
             skip,
@@ -84,7 +88,10 @@ export function RecordsWorkspace({
       return response.data
     },
     getNextPageParam: (lastPage, pages) => {
-      const loadedCount = pages.reduce((total, page) => total + page.data.length, 0)
+      const loadedCount = pages.reduce(
+        (total, page) => total + page.data.length,
+        0,
+      )
       return loadedCount < lastPage.count ? loadedCount : undefined
     },
     enabled: Boolean(academicYearId),
