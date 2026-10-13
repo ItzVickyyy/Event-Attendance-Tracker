@@ -107,12 +107,20 @@ services:
       - traefik.http.routers.public-credential-lookup-http.service=backend
       - traefik.http.routers.public-credential-lookup-http.middlewares=public-lookup-ratelimit
       # Rate-limit credential stuffing and password-reset email abuse at the edge.
+      - traefik.http.middlewares.signup-ratelimit.ratelimit.average=5
+      - traefik.http.middlewares.signup-ratelimit.ratelimit.period=1m
+      - traefik.http.middlewares.signup-ratelimit.ratelimit.burst=5
       - traefik.http.middlewares.login-ratelimit.ratelimit.average=10
       - traefik.http.middlewares.login-ratelimit.ratelimit.period=1m
       - traefik.http.middlewares.login-ratelimit.ratelimit.burst=10
       - traefik.http.middlewares.password-recovery-ratelimit.ratelimit.average=3
       - traefik.http.middlewares.password-recovery-ratelimit.ratelimit.period=1m
       - traefik.http.middlewares.password-recovery-ratelimit.ratelimit.burst=3
+      - traefik.http.routers.signup-http.rule=Host(`${DOMAIN:-localhost}`) && Path(`/api/v1/users/signup`)
+      - traefik.http.routers.signup-http.entrypoints=http
+      - traefik.http.routers.signup-http.priority=100
+      - traefik.http.routers.signup-http.service=backend
+      - traefik.http.routers.signup-http.middlewares=signup-ratelimit
       - traefik.http.routers.login-http.rule=Host(`${DOMAIN:-localhost}`) && Path(`/api/v1/login/access-token`)
       - traefik.http.routers.login-http.entrypoints=http
       - traefik.http.routers.login-http.priority=100
