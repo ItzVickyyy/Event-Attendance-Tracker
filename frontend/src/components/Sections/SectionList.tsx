@@ -257,19 +257,29 @@ function SectionList() {
 
   const openStudent = async (student: any) => {
     setStudentTarget(student)
-    const details = await apiJson<any>(
-      `/academic-registry/students/${student.id}`,
-    )
-    setStudentTarget({ ...student, ...details })
-    setStudentForm(
-      Object.fromEntries(
-        Object.entries(details).map(([key, value]) => [
-          key,
-          value == null ? "" : String(value),
-        ]),
-      ),
-    )
-    return details
+    try {
+      const details = await apiJson<any>(
+        `/academic-registry/students/${student.id}`,
+      )
+      setStudentTarget({ ...student, ...details })
+      setStudentForm(
+        Object.fromEntries(
+          Object.entries(details).map(([key, value]) => [
+            key,
+            value == null ? "" : String(value),
+          ]),
+        ),
+      )
+      return details
+    } catch (error) {
+      setStudentTarget(null)
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to load student details",
+      )
+      return null
+    }
   }
 
   const openStudentQr = async (student: any) => {
@@ -517,8 +527,20 @@ function SectionList() {
         </Card>
       ) : sectionsQuery.isError ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            Unable to load sections.
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <p>Unable to load sections.</p>
+            <p className="text-sm text-muted-foreground">
+              {sectionsQuery.error instanceof Error
+                ? sectionsQuery.error.message
+                : "Check your connection and try again."}
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => void sectionsQuery.refetch()}
+              disabled={sectionsQuery.isFetching}
+            >
+              {sectionsQuery.isFetching ? "Retrying…" : "Retry"}
+            </Button>
           </CardContent>
         </Card>
       ) : (
