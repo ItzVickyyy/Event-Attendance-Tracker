@@ -73,6 +73,20 @@ services:
       - traefik.http.routers.public-credential-lookup-https.tls.certresolver=le
       - traefik.http.routers.public-credential-lookup-https.service=backend
       - traefik.http.routers.public-credential-lookup-https.middlewares=public-lookup-ratelimit
+      - traefik.http.routers.login-https.rule=Host(`${DOMAIN:?Variable not set}`) && Path(`/api/v1/login/access-token`)
+      - traefik.http.routers.login-https.entrypoints=https
+      - traefik.http.routers.login-https.priority=100
+      - traefik.http.routers.login-https.tls=true
+      - traefik.http.routers.login-https.tls.certresolver=le
+      - traefik.http.routers.login-https.service=backend
+      - traefik.http.routers.login-https.middlewares=login-ratelimit
+      - traefik.http.routers.password-recovery-https.rule=Host(`${DOMAIN:?Variable not set}`) && PathPrefix(`/api/v1/password-recovery/`)
+      - traefik.http.routers.password-recovery-https.entrypoints=https
+      - traefik.http.routers.password-recovery-https.priority=100
+      - traefik.http.routers.password-recovery-https.tls=true
+      - traefik.http.routers.password-recovery-https.tls.certresolver=le
+      - traefik.http.routers.password-recovery-https.service=backend
+      - traefik.http.routers.password-recovery-https.middlewares=password-recovery-ratelimit
 
 volumes:
   # Create a volume to store the certificates, even if the container is recreated
