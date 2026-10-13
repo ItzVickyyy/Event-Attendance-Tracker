@@ -2,7 +2,10 @@ import { expect, test } from "@playwright/test"
 import { requireCredentialLookupData } from "../src/lib/credentialLookup"
 
 test("credential lookup returns data for a successful response", () => {
-  const credential = { attendee_id: "attendee-1", credential_value: "8F:49:5B:74" }
+  const credential = {
+    attendee_id: "attendee-1",
+    credential_value: "8F:49:5B:74",
+  }
 
   expect(requireCredentialLookupData({ data: credential })).toEqual(credential)
 })
