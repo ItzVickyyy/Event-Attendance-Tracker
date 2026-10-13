@@ -37,6 +37,19 @@ def test_rate_limit_blocks_attempts_and_recovers_after_window(
     public_student_qr._attempts.clear()
 
 
+def test_rate_limiter_bounds_tracked_client_keys(monkeypatch) -> None:
+    public_student_qr._attempts.clear()
+    monkeypatch.setattr(public_student_qr, "MAX_TRACKED_CLIENTS", 2)
+    monkeypatch.setattr(public_student_qr.time, "monotonic", lambda: 100.0)
+
+    assert public_student_qr._allow_request("client-one") is True
+    assert public_student_qr._allow_request("client-two") is True
+    assert public_student_qr._allow_request("client-three") is True
+    assert len(public_student_qr._attempts) == 2
+    assert "client-three" in public_student_qr._attempts
+    public_student_qr._attempts.clear()
+
+
 def test_public_qr_lookup_rejects_missing_required_fields(
     client: TestClient,
 ) -> None:
