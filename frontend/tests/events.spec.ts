@@ -24,9 +24,11 @@ test("new event appears in the list without refreshing the page", async ({
 test("registration page reports section loading failures and can retry", async ({
   page,
 }) => {
-  let failSectionRequests = true
+  let failSectionRequests = false
+  let interceptedSectionRequests = 0
   await page.route("**/*", async (route) => {
-    if (route.request().url().includes("/api/v1/academic-sections/")) {
+    if (route.request().url().includes("academic-sections")) {
+      interceptedSectionRequests += 1
       if (failSectionRequests) {
         await route.fulfill({
           status: 500,
@@ -56,7 +58,9 @@ test("registration page reports section loading failures and can retry", async (
   const href = await eventLink.getAttribute("href")
   expect(href).toBeTruthy()
 
+  failSectionRequests = true
   await page.goto(`${href}/registration`)
+  await expect.poll(() => interceptedSectionRequests).toBeGreaterThan(0)
   await expect(
     page.getByRole("alert").getByText(/Unable to load eligible sections/),
   ).toBeVisible()
