@@ -92,6 +92,20 @@ services:
       - traefik.http.services.backend.loadbalancer.server.port=8000
       - traefik.http.routers.backend-http.rule=Host(`${DOMAIN:-localhost}`)
       - traefik.http.routers.backend-http.entrypoints=http
+      # Apply a shared edge limit before requests reach any backend worker.
+      - traefik.http.middlewares.public-lookup-ratelimit.ratelimit.average=12
+      - traefik.http.middlewares.public-lookup-ratelimit.ratelimit.period=1m
+      - traefik.http.middlewares.public-lookup-ratelimit.ratelimit.burst=12
+      - traefik.http.routers.public-student-qr-http.rule=Host(`${DOMAIN:-localhost}`) && Path(`/api/v1/public/student-qr`)
+      - traefik.http.routers.public-student-qr-http.entrypoints=http
+      - traefik.http.routers.public-student-qr-http.priority=100
+      - traefik.http.routers.public-student-qr-http.service=backend
+      - traefik.http.routers.public-student-qr-http.middlewares=public-lookup-ratelimit
+      - traefik.http.routers.public-credential-lookup-http.rule=Host(`${DOMAIN:-localhost}`) && PathPrefix(`/api/v1/attendee-credentials/public/`)
+      - traefik.http.routers.public-credential-lookup-http.entrypoints=http
+      - traefik.http.routers.public-credential-lookup-http.priority=100
+      - traefik.http.routers.public-credential-lookup-http.service=backend
+      - traefik.http.routers.public-credential-lookup-http.middlewares=public-lookup-ratelimit
 
 volumes:
   app-db-data:

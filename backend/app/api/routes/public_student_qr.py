@@ -19,6 +19,7 @@ router = APIRouter(prefix="/public/student-qr", tags=["public-student-qr"])
 
 WINDOW_SECONDS = 60
 MAX_ATTEMPTS = 12
+MAX_TRACKED_CLIENTS = 10_000
 _attempts: dict[str, list[float]] = defaultdict(list)
 
 
@@ -44,6 +45,20 @@ def _middle_name_matches(stored: str, supplied: str) -> bool:
 
 def _allow_request(client_key: str) -> bool:
     now = time.monotonic()
+
+    # Keep the in-process fallback bounded if callers rotate client identifiers.
+    # The deployment proxy also applies a shared limit across backend workers.
+    if client_key not in _attempts and len(_attempts) >= MAX_TRACKED_CLIENTS:
+        expired = [
+            key
+            for key, stamps in _attempts.items()
+            if not any(now - stamp < WINDOW_SECONDS for stamp in stamps)
+        ]
+        for key in expired:
+            _attempts.pop(key, None)
+        if len(_attempts) >= MAX_TRACKED_CLIENTS:
+            _attempts.pop(next(iter(_attempts)))
+
     recent = [stamp for stamp in _attempts[client_key] if now - stamp < WINDOW_SECONDS]
     if len(recent) >= MAX_ATTEMPTS:
         _attempts[client_key] = recent
