@@ -22,11 +22,33 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const api = "/api/v1"
+const api = `${import.meta.env.VITE_API_URL ?? ""}/api/v1`
 const headers = (json = false) => ({
   Authorization: `Bearer ${localStorage.getItem("access_token")}`,
   ...(json ? { "Content-Type": "application/json" } : {}),
 })
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${api}${path}`, init)
+  const body: unknown = await response.json().catch(() => null)
+  if (!response.ok) {
+    const detail =
+      body && typeof body === "object" && "detail" in body
+        ? (body as { detail?: unknown }).detail
+        : undefined
+    const message = Array.isArray(detail)
+      ? detail.map((item) =>
+          item && typeof item === "object" && "msg" in item
+            ? String((item as { msg: unknown }).msg)
+            : String(item),
+        ).join("; ")
+      : typeof detail === "string"
+        ? detail
+        : `Request failed (${response.status})`
+    throw new Error(message)
+  }
+  return body as T
+}
 
 export function ClassRepresentativesAdmin() {
   const client = useQueryClient()
@@ -44,30 +66,28 @@ export function ClassRepresentativesAdmin() {
   })
   const years = useQuery({
     queryKey: ["academic-years-admin"],
-    queryFn: async () =>
-      (
-        await fetch(`${api}/academic-registry/academic-years`, {
-          headers: headers(),
-        })
-      ).json(),
+    queryFn: () =>
+      fetchJson<{ data: Array<{ id: string; label: string }> }>(
+        "/academic-registry/academic-years",
+        { headers: headers() },
+      ),
   })
   const sections = useQuery({
     queryKey: ["sections-admin-reps", form.academic_year_id],
-    queryFn: async () =>
-      (
-        await fetch(
-          `${api}/academic-registry/sections?academic_year_id=${encodeURIComponent(form.academic_year_id)}`,
-          { headers: headers() },
-        )
-      ).json(),
+    queryFn: () =>
+      fetchJson<{ data: Array<{ id: string; program_code: string; section_name: string }> }>(
+        `/academic-registry/sections?academic_year_id=${encodeURIComponent(form.academic_year_id)}`,
+        { headers: headers() },
+      ),
     enabled: Boolean(form.academic_year_id),
   })
   const reps = useQuery({
     queryKey: ["class-representatives"],
-    queryFn: async () =>
-      (
-        await fetch(`${api}/class-representatives/`, { headers: headers() })
-      ).json(),
+    queryFn: () =>
+      fetchJson<{ data: Array<Record<string, any>> }>(
+        "/class-representatives/",
+        { headers: headers() },
+      ),
   })
   const downloadTemplate = () => {
     const csv =
@@ -91,18 +111,14 @@ export function ClassRepresentativesAdmin() {
     try {
       const body = new FormData()
       body.append("file", importFile)
-      const response = await fetch(`${api}/class-representatives/import`, {
+      const result = await fetchJson<{
+        created_count: number
+        delivery_failures?: string[]
+      }>("/class-representatives/import", {
         method: "POST",
         headers: headers(),
         body,
       })
-      const result = await response.json().catch(() => null)
-      if (!response.ok) {
-        const detail = Array.isArray(result?.detail)
-          ? result.detail.join("; ")
-          : result?.detail
-        throw new Error(detail ?? "Import failed")
-      }
       if (
         Array.isArray(result.delivery_failures) &&
         result.delivery_failures.length
@@ -124,28 +140,31 @@ export function ClassRepresentativesAdmin() {
     }
   }
   const create = async () => {
-    const response = await fetch(`${api}/class-representatives/`, {
-      method: "POST",
-      headers: headers(true),
-      body: JSON.stringify(form),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => null)
-      toast.error(body?.detail ?? "Unable to create Class Representative")
-      return
+    try {
+      await fetchJson("/class-representatives/", {
+        method: "POST",
+        headers: headers(true),
+        body: JSON.stringify(form),
+      })
+      toast.success("Class Representative account created")
+      setOpen(false)
+      setForm({
+        email: "",
+        first_name: "",
+        middle_initial: "",
+        last_name: "",
+        extension: "",
+        academic_year_id: "",
+        section_id: "",
+      })
+      await client.invalidateQueries({ queryKey: ["class-representatives"] })
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to create Class Representative",
+      )
     }
-    toast.success("Class Representative account created")
-    setOpen(false)
-    setForm({
-      email: "",
-      first_name: "",
-      middle_initial: "",
-      last_name: "",
-      extension: "",
-      academic_year_id: "",
-      section_id: "",
-    })
-    await client.invalidateQueries({ queryKey: ["class-representatives"] })
   }
   return (
     <div className="space-y-6">
