@@ -317,17 +317,17 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           <div className="grid gap-4 sm:grid-cols-3">
             <Stat
               label="Registered"
-              value={registrationQuery.isError ? 0 : registered.length}
+              value={registrationQuery.isError ? "—" : registered.length}
             />
             <Stat
               label="Selected students"
-              value={studentQueries.isError ? 0 : eligibleCount}
+              value={studentQueries.isError ? "—" : eligibleCount}
             />
             <Stat
               label="To add"
               value={
                 registrationQuery.isError || studentQueries.isError
-                  ? 0
+                  ? "—"
                   : missing
               }
             />
@@ -398,7 +398,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
     </div>
   )
 }
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="rounded-lg border p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
