@@ -21,9 +21,9 @@ import { toast } from "sonner"
 import {
   AttendeesService,
   EventsService,
+  type StudentPublic,
   StudentsService,
   UsersService,
-  type StudentPublic,
 } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
