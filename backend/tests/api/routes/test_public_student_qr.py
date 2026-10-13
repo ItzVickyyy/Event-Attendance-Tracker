@@ -16,7 +16,11 @@ def test_middle_name_matches_optional_full_name_or_initial() -> None:
     assert matches("rafael", "rafael")
     assert matches("rafael", "r")
     assert matches("rafael", "r.")
-    assert matches("r", "r.")
+    assert matches("rafael", "R .")
+    assert matches("Anderson", "A")
+    assert matches("Anderson", "A.")
+    assert matches("A.", "A")
+    assert matches("A", "A.")
     assert not matches("rafael", "m.")
     assert not matches("rafael", "wrong")
 
@@ -113,7 +117,7 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
         json={
             "student_number": student_number,
             "first_name": "Casey",
-            "middle_name": "R",
+            "middle_name": "Rafael",
             "last_name": "Learner",
             "name_extension": "Jr.",
             "section_id": section["id"],
@@ -136,11 +140,11 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
     )
     assert response.status_code == 200, response.text
     assert response.json()["student_number"] == student_number
-    assert response.json()["full_name"] == "Casey R Learner Jr."
+    assert response.json()["full_name"] == "Casey Rafael Learner Jr."
     assert response.json()["section"] == "BSIT WMAD 3A"
     assert response.json()["credential_value"]
 
-    for middle_name in ("", "R", "R."):
+    for middle_name in ("", "Rafael", "R", "R.", "R ."):
         optional_middle_response = client.post(
             f"{settings.API_V1_STR}/public/student-qr",
             headers={"X-Forwarded-For": f"198.51.100.{30 + len(middle_name)}"},
