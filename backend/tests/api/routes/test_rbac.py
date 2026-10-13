@@ -60,7 +60,10 @@ def test_unauthenticated_requests_return_401_with_bearer_header(
         ("GET", f"{settings.API_V1_STR}/users/me"),
         ("GET", f"{settings.API_V1_STR}/academic-programs/"),
         ("GET", f"{settings.API_V1_STR}/attendance/"),
-        ("GET", f"{settings.API_V1_STR}/attendee-credentials/public/unknown-credential"),
+        (
+            "GET",
+            f"{settings.API_V1_STR}/attendee-credentials/public/unknown-credential",
+        ),
     ]
     for method, url in endpoints:
         if method == "GET":
