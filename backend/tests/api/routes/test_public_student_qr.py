@@ -176,7 +176,9 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
         },
     )
     assert incorrect_middle_response.status_code == 404
-    assert incorrect_middle_response.json()["detail"] == "Student record not found."
+    assert (
+        incorrect_middle_response.json()["detail"] == "Student record not found."
+    )
 
 
 def test_public_qr_lookup_rejects_identity_mismatch_and_rate_limits(
