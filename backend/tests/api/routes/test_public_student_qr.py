@@ -152,7 +152,9 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
                 "name_extension": "Jr.",
             },
         )
-        assert optional_middle_response.status_code == 200, optional_middle_response.text
+        assert optional_middle_response.status_code == 200, (
+            optional_middle_response.text
+        )
         assert (
             optional_middle_response.json()["credential_value"]
             == response.json()["credential_value"]
