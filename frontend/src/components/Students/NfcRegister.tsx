@@ -128,10 +128,10 @@ export function NfcRegister({ student }: NfcRegisterProps) {
     mutationFn: (uid: string) =>
       AttendeeCredentialsService.credentialsLookupCredential({
         path: { credential_value: uid },
-        throwOnError: false,
+        throwOnError: true,
       }),
     onSuccess: (result) => {
-      const data = (result as any).data as AttendeeCredentialPublic
+      const data = result.data as AttendeeCredentialPublic
       setFoundCredential(data)
       toast.success(`Found credential for attendee: ${data.attendee_id}`)
     },
