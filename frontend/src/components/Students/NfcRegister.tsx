@@ -139,8 +139,7 @@ export function NfcRegister({ student }: NfcRegisterProps) {
         },
       )
     },
-    onSuccess: (result) => {
-      const data = result.data as AttendeeCredentialPublic
+    onSuccess: (data) => {
       setFoundCredential(data)
       toast.success(`Found credential for attendee: ${data.attendee_id}`)
     },
