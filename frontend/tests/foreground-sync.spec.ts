@@ -541,6 +541,23 @@ test.describe("Foreground sync fallback (no service worker)", () => {
       const accountModule = await import("/src/data/account.ts")
       await accountModule.rememberOfflineAccount("user-1", "account-one-token")
     })
+    await page.route("**/api/v1/users/me*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "user-1",
+          email: "admin@example.com",
+          full_name: "Test Admin",
+          is_active: true,
+          is_superuser: true,
+          is_developer: false,
+          role: "admin",
+          can_scan: true,
+          must_change_password: false,
+        }),
+      })
+    })
     await page.goto("/scanner/sync")
 
     await expect(page.getByText("CURRENT-CREDENTIAL")).toBeVisible()
