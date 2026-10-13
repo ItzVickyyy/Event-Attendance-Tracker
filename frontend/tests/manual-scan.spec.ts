@@ -785,7 +785,9 @@ test.describe("Manual attendance scan", () => {
     await page.goto("/scanner?event_id=evt-1")
 
     await expect(page.getByText("NFC Diagnostic")).toHaveCount(0)
-    await expect(page.getByText("Serial Number", { exact: true })).toHaveCount(0)
+    await expect(
+      page.getByText("Serial Number", { exact: true }),
+    ).toHaveCount(0)
   })
 
 })
