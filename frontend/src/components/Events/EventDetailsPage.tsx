@@ -32,23 +32,37 @@ export function EventDetailsPage({ eventId }: { eventId: string }) {
         </CardContent>
       </Card>
     )
-  if (query.isError || !event)
+  if (query.isError || !event) {
+    const eventNotFound =
+      query.error instanceof Error && query.error.message === "Event not found"
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="font-medium">Event not found.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            The requested event could not be loaded.
+          <p className="font-medium">
+            {eventNotFound ? "Event not found." : "Unable to load event details."}
           </p>
-          <Button className="mt-4" variant="outline" asChild>
-            <Link to="/events">
-              <ArrowLeft />
-              Back to events
-            </Link>
-          </Button>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {eventNotFound
+              ? "The requested event could not be found."
+              : "Check your connection and try again."}
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            {!eventNotFound && (
+              <Button onClick={() => query.refetch()} variant="default">
+                Retry loading event
+              </Button>
+            )}
+            <Button variant="outline" asChild>
+              <Link to="/events">
+                <ArrowLeft />
+                Back to events
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
+  }
   const mode =
     event.attendance_mode === "time_in_time_out"
       ? "Time-In + Time-Out"
