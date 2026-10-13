@@ -349,8 +349,13 @@ export async function removeSyncedRecords(
 }
 
 export async function getAllQueuedScans(): Promise<QueueRecord[]> {
+  const accountId = await getOfflineAccountId()
+  if (!accountId) return []
+
   const db = await getDB()
-  return db.getAll("attendanceQueue")
+  return (await db.getAll("attendanceQueue")).filter(
+    (record) => record.account_id === accountId,
+  )
 }
 
 export async function clearQueue(): Promise<void> {
