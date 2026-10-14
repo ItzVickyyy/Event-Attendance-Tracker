@@ -449,7 +449,7 @@ export function AppearanceSettings() {
             </CardContent>
           </Card>
         </section>
- 
+
         <section aria-labelledby="theme-colors-title">
           <Card>
             <CardHeader>
@@ -465,7 +465,7 @@ export function AppearanceSettings() {
             <CardContent className="space-y-5">
               {colors.map(({ key, title, description }) => {
                 const value = preferences[key] ?? defaults[key]
- 
+
                 return (
                   <div
                     key={key}
@@ -533,7 +533,7 @@ export function AppearanceSettings() {
             </CardContent>
           </Card>
         </section>
- 
+
         <section aria-labelledby="advanced-appearance-title">
           <Card>
             <CardHeader>
@@ -606,7 +606,7 @@ export function AppearanceSettings() {
             </CardContent>
           </Card>
         </section>
- 
+
         <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Settings are saved to your account and apply immediately.
