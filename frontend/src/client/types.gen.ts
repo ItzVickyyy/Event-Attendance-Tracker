@@ -3063,10 +3063,6 @@ export type developerReadAuditLogsData = {
          */
         limit?: number;
         /**
-         * Search
-         */
-        search?: string | null;
-        /**
          * Offset
          */
         offset?: number;
@@ -3136,6 +3132,10 @@ export type usersReadUsersData = {
          * Limit
          */
         limit?: number;
+        /**
+         * Search
+         */
+        search?: string | null;
     };
     url: '/api/v1/users/';
 };
