@@ -5,8 +5,8 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
-from sqlalchemy import or_
 from openpyxl import Workbook  # type: ignore[import-untyped]
+from sqlalchemy import or_
 from sqlmodel import col, delete, func, select
 
 from app import crud
