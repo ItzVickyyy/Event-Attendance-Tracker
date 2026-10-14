@@ -1,5 +1,5 @@
 import { Link as RouterLink } from "@tanstack/react-router"
-import { ChevronsUpDown, LogOut, UserRound } from "lucide-react"
+import { ChevronsUpDown, LogOut, Settings2, UserRound } from "lucide-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -64,12 +64,24 @@ export function User({ user }: { user: any }) {
               <UserInfo fullName={user.full_name} email={user.email} />
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <RouterLink to="/account" onClick={closeMobile}>
-              <DropdownMenuItem>
-                <UserRound />
-                My Account
-              </DropdownMenuItem>
-            </RouterLink>
+            <DropdownMenuItem
+              onSelect={() => {
+                closeMobile()
+                window.dispatchEvent(new Event("open-account-modal"))
+              }}
+            >
+              <UserRound />
+              My Account
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                closeMobile()
+                window.dispatchEvent(new Event("open-settings-modal"))
+              }}
+            >
+              <Settings2 />
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={logout}>
               <LogOut />
               Log Out
