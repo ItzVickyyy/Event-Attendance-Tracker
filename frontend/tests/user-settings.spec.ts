@@ -144,7 +144,5 @@ test("Appearance settings remain available from the user menu", async ({
   await page.getByTestId("user-menu").click()
   await page.getByRole("menuitem", { name: "Settings" }).click()
   await expect(page.getByRole("dialog")).toBeVisible()
-  await expect(
-    page.getByRole("heading", { name: "Appearance" }),
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Appearance" })).toBeVisible()
 })
