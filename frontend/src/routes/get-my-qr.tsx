@@ -165,15 +165,18 @@ function GetMyQr() {
             </form>
           ) : (
             <div className="space-y-5">
-              <QRCodeCanvas
-                ref={qrCanvas}
-                value={result.credential_value}
-                size={600}
-                level="M"
-                includeMargin
-                title={`QR code for ${result.full_name}`}
-                className="mx-auto aspect-square w-full max-w-72"
-              />
+              <div className="mx-auto aspect-square w-full max-w-72">
+                <QRCodeCanvas
+                  ref={qrCanvas}
+                  value={result.credential_value}
+                  size={600}
+                  level="M"
+                  includeMargin
+                  title={`QR code for ${result.full_name}`}
+                  className="block !h-full !w-full"
+                  style={{ height: "100%", width: "100%" }}
+                />
+              </div>
               <div className="rounded-lg border p-4 text-sm">
                 <p className="font-medium">{result.full_name}</p>
                 <p className="text-muted-foreground">
