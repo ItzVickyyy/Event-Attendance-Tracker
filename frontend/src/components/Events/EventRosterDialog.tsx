@@ -325,7 +325,9 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
                             (studentSearchPage + 1) * studentSearchPageSize >=
                             (studentSearchResponse?.count ?? 0)
                           }
-                          onClick={() => setStudentSearchPage((page) => page + 1)}
+                          onClick={() =>
+                            setStudentSearchPage((page) => page + 1)
+                          }
                         >
                           Next
                         </Button>
