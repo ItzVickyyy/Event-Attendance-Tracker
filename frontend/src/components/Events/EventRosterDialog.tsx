@@ -34,6 +34,8 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   const [open, setOpen] = useState(false)
   const [searchRoster, setSearchRoster] = useState("")
   const [searchStudent, setSearchStudent] = useState("")
+  const [studentSearchPage, setStudentSearchPage] = useState(0)
+  const studentSearchPageSize = 10
   const queryClient = useQueryClient()
 
   // 1. Fetch Event Roster
@@ -86,11 +88,15 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   // 4. Search Students for Adding
   const { data: studentSearchResponse, isLoading: isSearchingStudents } =
     useQuery({
-      queryKey: ["studentsSearch", searchStudent],
+      queryKey: ["studentsSearch", searchStudent, studentSearchPage],
       queryFn: async () => {
         if (!searchStudent.trim()) return { data: [], count: 0 }
         const res = await StudentsService.readStudents({
-          query: { search: searchStudent.trim(), limit: 10 },
+          query: {
+            search: searchStudent.trim(),
+            skip: studentSearchPage * studentSearchPageSize,
+            limit: studentSearchPageSize,
+          },
           throwOnError: true,
         })
         return res.data
@@ -245,7 +251,10 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
             <Input
               placeholder="Search student by name or student number..."
               value={searchStudent}
-              onChange={(e) => setSearchStudent(e.target.value)}
+              onChange={(e) => {
+                setSearchStudent(e.target.value)
+                setStudentSearchPage(0)
+              }}
               className="pl-9 bg-background"
             />
           </div>
@@ -262,8 +271,8 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
                   No matching students found
                 </div>
               ) : (
-                (studentSearchResponse?.data ?? []).map((stu) => {
-                  return (
+                <>
+                  {(studentSearchResponse?.data ?? []).map((stu) => (
                     <div
                       key={stu.id}
                       className="p-2 flex items-center justify-between hover:bg-muted/50 transition-colors"
@@ -286,8 +295,49 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
                         Add
                       </LoadingButton>
                     </div>
-                  )
-                })
+                  ))}
+                  {(studentSearchResponse?.count ?? 0) >
+                    studentSearchPageSize && (
+                    <div className="flex items-center justify-between gap-2 border-t p-2">
+                      <span className="text-xs text-muted-foreground">
+                        Showing {studentSearchPage * studentSearchPageSize + 1}
+                        {"–"}
+                        {Math.min(
+                          (studentSearchPage + 1) * studentSearchPageSize,
+                          studentSearchResponse?.count ?? 0,
+                        )}{" "}
+                        of {studentSearchResponse?.count ?? 0}
+                      </span>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={studentSearchPage === 0}
+                          onClick={() =>
+                            setStudentSearchPage((page) =>
+                              Math.max(0, page - 1),
+                            )
+                          }
+                        >
+                          Previous
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            (studentSearchPage + 1) * studentSearchPageSize >=
+                            (studentSearchResponse?.count ?? 0)
+                          }
+                          onClick={() =>
+                            setStudentSearchPage((page) => page + 1)
+                          }
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
