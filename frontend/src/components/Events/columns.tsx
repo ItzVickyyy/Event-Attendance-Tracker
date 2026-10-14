@@ -4,8 +4,8 @@ import { Calendar, Clock, ScanLine } from "lucide-react"
 import type { EventPublic } from "@/client"
 import { Button } from "@/components/ui/button"
 import DeleteEvent from "./DeleteEvent"
-import EventRosterDialog from "./EventRosterDialog"
 import EditEvent from "./EditEvent"
+import EventRosterDialog from "./EventRosterDialog"
 
 export const eventsColumns: ColumnDef<EventPublic>[] = [
   {
