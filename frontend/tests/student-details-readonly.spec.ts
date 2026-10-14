@@ -113,7 +113,9 @@ test("viewing student details never creates an attendee record", async ({
   await expect(
     page.getByText("Student Information", { exact: true }),
   ).toBeVisible()
-  await expect(page.getByText("READONLY-001", { exact: true })).toBeVisible()
+  await expect(
+    page.getByText("READONLY-001", { exact: true }).first(),
+  ).toBeVisible()
   await expect(
     page.getByText(
       "This student is not linked to an attendee record, so NFC credential management is unavailable.",
