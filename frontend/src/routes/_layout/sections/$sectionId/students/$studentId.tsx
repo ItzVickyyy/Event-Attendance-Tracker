@@ -6,7 +6,7 @@ export const Route = createFileRoute(
 )({
   component: StudentDetails,
   validateSearch: (search: Record<string, unknown>) => ({
-    from: search.from === "search" ? ("search" as const) : undefined,
+    from: search.from === "search" ? ("search" as const) : ("section" as const),
   }),
   head: () => ({
     meta: [{ title: "Student Details - Event Attendance Tracker" }],
