@@ -11,10 +11,13 @@ import {
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { UsersService } from "@/client"
-import { Footer } from "@/components/Common/Footer"
 import { AccountModal } from "@/components/Account/AccountModal"
-import { AppearancePreferencesInitializer, AppearanceSettings } from "@/components/UserSettings/AppearanceSettings"
+import { Footer } from "@/components/Common/Footer"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
+import {
+  AppearancePreferencesInitializer,
+  AppearanceSettings,
+} from "@/components/UserSettings/AppearanceSettings"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
