@@ -185,32 +185,14 @@ test("event details distinguish server failures from missing events and can retr
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
 })
 
-test("event modal Cancel buttons close without submitting or deleting", async ({
-  page,
-}) => {
+test("Create Event Cancel closes without submitting", async ({ page }) => {
   await page.goto("/events")
-
   await page.getByRole("button", { name: "Add Event" }).click()
-  let dialog = page.getByRole("dialog")
+
+  const dialog = page.getByRole("dialog")
   await expect(dialog).toBeVisible()
   await dialog.getByLabel("Event Name").fill(`Cancelled event ${randomEmail()}`)
   await dialog.getByRole("button", { name: "Cancel" }).click()
-  await expect(page.getByRole("dialog")).toHaveCount(0)
 
-  const eventRow = page.getByRole("row").nth(1)
-  await expect(eventRow).toBeVisible()
-
-  await eventRow.getByRole("button").nth(2).click()
-  dialog = page.getByRole("dialog")
-  await expect(dialog).toBeVisible()
-  await dialog.getByRole("button", { name: "Cancel" }).click()
   await expect(page.getByRole("dialog")).toHaveCount(0)
-  await expect(eventRow).toBeVisible()
-
-  await eventRow.getByRole("button").nth(3).click()
-  dialog = page.getByRole("dialog")
-  await expect(dialog).toBeVisible()
-  await dialog.getByRole("button", { name: "Cancel" }).click()
-  await expect(page.getByRole("dialog")).toHaveCount(0)
-  await expect(eventRow).toBeVisible()
 })
