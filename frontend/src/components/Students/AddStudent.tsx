@@ -10,6 +10,7 @@ import { PeopleService, StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -148,13 +149,15 @@ export function AddStudent() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => form.reset()}
-              >
-                Cancel
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => form.reset()}
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
               <LoadingButton loading={mutation.isPending} type="submit">
                 Create Student
               </LoadingButton>

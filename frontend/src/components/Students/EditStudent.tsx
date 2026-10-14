@@ -215,6 +215,7 @@ export function EditStudent({ student }: EditStudentProps) {
                     last_name: p?.last_name ?? row.last_name ?? "",
                     extension: p?.name_extension ?? row.extension ?? undefined,
                   })
+                  setIsOpen(false)
                 }}
               >
                 Cancel
