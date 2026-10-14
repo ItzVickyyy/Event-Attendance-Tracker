@@ -873,9 +873,12 @@ function SectionList() {
                 </div>
               ) : rosterQuery.isError ? (
                 <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center">
-                  <h3 className="text-lg font-semibold">Unable to load students</h3>
+                  <h3 className="text-lg font-semibold">
+                    Unable to load students
+                  </h3>
                   <p className="max-w-md text-sm text-muted-foreground">
-                    The roster could not be loaded. Check your connection and retry.
+                    The roster could not be loaded. Check your connection and
+                    retry.
                   </p>
                   <Button
                     type="button"
