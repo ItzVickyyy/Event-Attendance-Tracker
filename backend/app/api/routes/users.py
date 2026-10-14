@@ -5,6 +5,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from sqlalchemy import or_
 from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlmodel import col, delete, func, select
 
@@ -52,20 +53,39 @@ def read_users(
     _current_user: User = Depends(require_admin),
     skip: int = 0,
     limit: int = 100,
+    search: str | None = None,
 ) -> Any:
-    """
-    Retrieve users.
-    """
+    """Retrieve users, optionally searching account and officer-position fields."""
 
-    # Developer accounts are isolated from ordinary account administration.
-    count_statement = (
-        select(func.count()).select_from(User).where(col(User.is_developer).is_(False))
-    )
+    # Treat LIKE metacharacters as literal text so search input cannot broaden
+    # results unexpectedly. The same conditions are used for data and count.
+    conditions = [col(User.is_developer).is_(False)]
+    normalized_search = (search or "").strip()
+    if normalized_search:
+        escaped_search = (
+            normalized_search.replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        )
+        pattern = f"%{escaped_search}%"
+        position_ids = select(OfficerPosition.id).where(
+            col(OfficerPosition.name).ilike(pattern, escape="\\")
+        )
+        conditions.append(
+            or_(
+                col(User.email).ilike(pattern, escape="\\"),
+                col(User.full_name).ilike(pattern, escape="\\"),
+                col(User.student_number).ilike(pattern, escape="\\"),
+                col(User.position_id).in_(position_ids),
+            )
+        )
+
+    count_statement = select(func.count()).select_from(User).where(*conditions)
     count = session.exec(count_statement).one()
 
     statement = (
         select(User)
-        .where(col(User.is_developer).is_(False))
+        .where(*conditions)
         .order_by(col(User.created_at).desc())
         .offset(skip)
         .limit(limit)
