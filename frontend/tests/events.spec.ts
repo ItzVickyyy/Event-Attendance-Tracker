@@ -231,7 +231,9 @@ test("event roster student search can navigate beyond the first ten matches", as
   const eventName = `Roster search pagination ${randomEmail()}`
   await page.getByRole("button", { name: "Add Event" }).click()
   await page.getByLabel("Event Name").fill(eventName)
-  await page.getByLabel("Event Date").fill(new Date().toISOString().slice(0, 10))
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
   await page.getByRole("button", { name: "Create Event" }).click()
   await expect(page.getByText("Event created successfully")).toBeVisible()
   await page.keyboard.press("Escape")
@@ -240,13 +242,19 @@ test("event roster student search can navigate beyond the first ten matches", as
   await expect(eventRow).toBeVisible()
   await eventRow.getByRole("button", { name: "Roster" }).click()
   const dialog = page.getByRole("dialog")
-  await dialog.getByPlaceholder("Search student by name or student number...").fill("Common Name")
+  await dialog
+    .getByPlaceholder("Search student by name or student number...")
+    .fill("Common Name")
   await expect(dialog.getByText("Common Name 1", { exact: true })).toBeVisible()
   await expect(dialog.getByText("Showing 1–10 of 12")).toBeVisible()
 
   await dialog.getByRole("button", { name: "Next" }).click()
-  await expect(dialog.getByText("Common Name 11", { exact: true })).toBeVisible()
-  await expect(dialog.getByText("Common Name 1", { exact: true })).toHaveCount(0)
+  await expect(
+    dialog.getByText("Common Name 11", { exact: true }),
+  ).toBeVisible()
+  await expect(dialog.getByText("Common Name 1", { exact: true })).toHaveCount(
+    0,
+  )
   await expect(dialog.getByText("Showing 11–12 of 12")).toBeVisible()
   expect(searchRequests.some((query) => query.includes("skip=10"))).toBeTruthy()
 })
