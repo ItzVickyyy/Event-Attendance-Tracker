@@ -3236,6 +3236,60 @@ export type usersUpdateUserMeResponses = {
 
 export type usersUpdateUserMeResponse = usersUpdateUserMeResponses[keyof usersUpdateUserMeResponses];
 
+export type usersReadAppearancePreferencesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/appearance-preferences';
+};
+
+export type usersReadAppearancePreferencesResponses = {
+    /**
+     * Response Users-Read Appearance Preferences
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type usersReadAppearancePreferencesResponse = usersReadAppearancePreferencesResponses[keyof usersReadAppearancePreferencesResponses];
+
+export type usersUpdateAppearancePreferencesData = {
+    /**
+     * Preferences
+     */
+    body: {
+        [key: string]: unknown;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/me/appearance-preferences';
+};
+
+export type usersUpdateAppearancePreferencesErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type usersUpdateAppearancePreferencesError = usersUpdateAppearancePreferencesErrors[keyof usersUpdateAppearancePreferencesErrors];
+
+export type usersUpdateAppearancePreferencesResponses = {
+    /**
+     * Response Users-Update Appearance Preferences
+     *
+     * Successful Response
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type usersUpdateAppearancePreferencesResponse = usersUpdateAppearancePreferencesResponses[keyof usersUpdateAppearancePreferencesResponses];
+
 export type usersUpdatePasswordMeData = {
     body: UpdatePassword;
     path?: never;
