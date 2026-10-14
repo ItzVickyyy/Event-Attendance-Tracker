@@ -157,7 +157,6 @@
   ::selection {
     background: color-mix(in oklab, var(--primary) 24%, transparent);
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
