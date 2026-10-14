@@ -11,7 +11,7 @@ test("student search submits the entered query when Search is clicked", async ({
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ data: { data: [], count: 0 } }),
+        body: JSON.stringify({ data: [], count: 0 }),
       })
       return
     }
@@ -38,14 +38,12 @@ test("direct student details URL renders the nested details route", async ({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        data: {
-          id: studentId,
-          person_id: personId,
-          student_number: "TEST-STUDENT-123",
-          person_name: "Test Student",
-          academic_status: "regular",
-          section_id: sectionId,
-        },
+        id: studentId,
+        person_id: personId,
+        student_number: "TEST-STUDENT-123",
+        person_name: "Test Student",
+        academic_status: "regular",
+        section_id: sectionId,
       }),
     })
   })
@@ -157,14 +155,12 @@ test("section search requests matches beyond the loaded roster page", async ({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          data: {
-            id: sectionId,
-            section_name: "BSIT 1A",
-            section_code: "1A",
-            program_id: "00000000-0000-4000-8000-000000000010",
-            year_level: "1",
-            academic_year: "2026-2027",
-          },
+          id: sectionId,
+          section_name: "BSIT 1A",
+          section_code: "1A",
+          program_id: "00000000-0000-4000-8000-000000000010",
+          year_level: "1",
+          academic_year: "2026-2027",
         }),
       })
     },
