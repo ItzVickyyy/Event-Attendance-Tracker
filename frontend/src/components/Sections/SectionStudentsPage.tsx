@@ -209,6 +209,7 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
                         <Link
                           to="/sections/$sectionId/students/$studentId"
                           params={{ sectionId, studentId: student.id }}
+                          search={{ from: "section" }}
                         >
                           View
                         </Link>
