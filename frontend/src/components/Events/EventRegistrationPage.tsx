@@ -215,22 +215,15 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           ) : sectionsQuery.isError ? (
             <div className="space-y-2" role="alert">
               <p className="text-sm text-destructive">
-                Unable to load eligible sections. Your current selections have
-                not been changed.
+                Unable to load eligible sections. Your current selections have not been changed.
               </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => sectionsQuery.refetch()}
-              >
+              <Button type="button" size="sm" variant="outline" onClick={() => sectionsQuery.refetch()}>
                 Retry loading sections
               </Button>
             </div>
           ) : sections.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No sections are available. Check the academic year and section
-              setup.
+              No sections are available. Check the academic year and section setup.
             </p>
           ) : (
             <>
@@ -241,7 +234,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                       {selectedSections.length} of {sections.length} sections selected
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Select sections below or use the year shortcuts.
+                      Choose sections individually or use the year shortcuts.
                     </p>
                   </div>
                   <Button
@@ -249,7 +242,6 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                     size="sm"
                     variant="outline"
                     className="w-full sm:w-auto"
-                    disabled={sections.length === 0}
                     onClick={() =>
                       setSelectedSections(
                         allSectionsSelected ? [] : sections.map((section) => section.id),
@@ -260,65 +252,56 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                   </Button>
                 </div>
               </div>
+              <div className="flex flex-wrap gap-2">
                 {[1, 2, 3, 4].map((year) => {
                   const yearSections = sections.filter(
                     (section) => getYearNumber(section.year_level) === year,
                   )
                   const allYearSelected =
                     yearSections.length > 0 &&
-                    yearSections.every((section) =>
-                      selectedSections.includes(section.id),
-                    )
+                    yearSections.every((section) => selectedSections.includes(section.id))
                   return (
                     <Button
                       key={year}
                       type="button"
                       size="sm"
-                      variant="outline"
+                      variant={allYearSelected ? "default" : "outline"}
                       disabled={yearSections.length === 0}
                       onClick={() =>
-                        toggleSectionGroup(
-                          yearSections.map((section) => section.id),
-                        )
+                        toggleSectionGroup(yearSections.map((section) => section.id))
                       }
                     >
-                      {allYearSelected ? "Clear" : "All"}{" "}
-                      {year === 1
-                        ? "1st"
-                        : year === 2
-                          ? "2nd"
-                          : year === 3
-                            ? "3rd"
-                            : "4th"}{" "}
-                      year
+                      {allYearSelected ? "Clear" : "Select"} {year === 1 ? "1st" : year === 2 ? "2nd" : year === 3 ? "3rd" : "4th"} year
                     </Button>
                   )
                 })}
               </div>
-              {sections.map((section) => {
-                const checked = selectedSections.includes(section.id)
-                return (
-                  <label
-                    key={section.id}
-                    className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50 ${checked ? "border-primary bg-primary/5" : "bg-background"}`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="size-5 shrink-0 accent-primary"
-                      checked={checked}
-                      onChange={() => toggleSectionGroup([section.id])}
-                    />
-                    <span className="flex-1">
-                      <span className="block font-medium">
-                        {section.section_name}
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {sections.map((section) => {
+                  const checked = selectedSections.includes(section.id)
+                  return (
+                    <label
+                      key={section.id}
+                      className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50 ${checked ? "border-primary bg-primary/5" : "bg-background"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-5 shrink-0 accent-primary"
+                        checked={checked}
+                        onChange={() => toggleSectionGroup([section.id])}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block break-words font-medium">
+                          {section.section_name}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Year {section.year_level} · {section.academic_year}
+                        </span>
                       </span>
-                      <span className="text-sm text-muted-foreground">
-                        Year {section.year_level} · {section.academic_year}
-                      </span>
-                    </span>
-                  </label>
-                )
-              })}
+                    </label>
+                  )
+                })}
+              </div>
             </>
           )}
         </CardContent>
