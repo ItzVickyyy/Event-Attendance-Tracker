@@ -87,7 +87,7 @@ test("direct student details URL renders the nested details route", async ({
   ).toHaveCount(0)
 })
 
-test("global student search paginates results and shows the section name", async ({
+test("global student search shows the full program, major, and section name", async ({
   page,
 }) => {
   const sectionId = "00000000-0000-4000-8000-000000000001"
@@ -108,11 +108,13 @@ test("global student search paginates results and shows the section name", async
         data: [
           {
             id: sectionId,
-            section_name: "BSIT 1A",
-            section_code: "1A",
+            section_name: "3A",
+            section_code: "3A",
             program_id: "00000000-0000-4000-8000-000000000010",
             program_code: "BSIT",
             program_name: "Bachelor of Science in Information Technology",
+            major_code: "WMAD",
+            major_name: "Web and Mobile Application Development",
             year_level: "1",
             academic_year_id: "00000000-0000-4000-8000-000000000011",
             academic_year: "2026-2027",
@@ -146,7 +148,7 @@ test("global student search paginates results and shows the section name", async
   await page.getByRole("textbox", { name: "Search students" }).fill("Kenneth")
   await page.getByRole("button", { name: "Search", exact: true }).click()
 
-  await expect(page.getByText("BSIT 1A").first()).toBeVisible()
+  await expect(page.getByText("BSIT WMAD 3A").first()).toBeVisible()
   await expect(page.getByText("Page 1 of 2")).toBeVisible()
   await expect(page.getByText("TEST-001")).toBeVisible()
   await expect(page.getByText("TEST-026")).toHaveCount(0)
