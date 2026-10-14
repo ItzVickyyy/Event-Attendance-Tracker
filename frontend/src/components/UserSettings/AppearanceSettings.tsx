@@ -458,8 +458,8 @@ export function AppearanceSettings() {
                 <CardTitle id="theme-colors-title">Theme Colors</CardTitle>
               </div>
               <CardDescription>
-                Personalize the colors used across the interface. Leave a color at
-                its default to follow the selected visual style.
+                Personalize the colors used across the interface. Leave a color
+                at its default to follow the selected visual style.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -483,7 +483,9 @@ export function AppearanceSettings() {
                         aria-label={`${title} color picker`}
                         type="color"
                         value={value}
-                        onChange={(event) => updateColor(key, event.target.value)}
+                        onChange={(event) =>
+                            updateColor(key, event.target.value)
+                          }
                         className="h-11 w-14 cursor-pointer rounded-md border border-input bg-background p-1"
                       />
                       <Input
@@ -617,7 +619,7 @@ export function AppearanceSettings() {
             Reset All Settings
           </Button>
         </div>
-        </div>
       </div>
+    </div>
   )
 }
