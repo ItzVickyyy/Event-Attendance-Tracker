@@ -17,7 +17,7 @@ import {
 const PAGE_SIZE = 25
 const SEARCH_STATE_KEY = "section-students-global-search"
 
-function readSavedSearchState() {
+function readSavedSearchState(): { search: string; submitted: string; page: number } {
   if (typeof window === "undefined") {
     return { search: "", submitted: "", page: 0 }
   }
