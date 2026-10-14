@@ -90,23 +90,21 @@ test("global student search paginates results and shows the section name", async
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        data: {
-          data: [
-            {
-              id: sectionId,
-              section_name: "BSIT 1A",
-              section_code: "1A",
-              program_id: "00000000-0000-4000-8000-000000000010",
-              program_code: "BSIT",
-              program_name: "Bachelor of Science in Information Technology",
-              year_level: "1",
-              academic_year_id: "00000000-0000-4000-8000-000000000011",
-              academic_year: "2026-2027",
-              enrolled: 26,
-            },
-          ],
-          count: 1,
-        },
+        data: [
+          {
+            id: sectionId,
+            section_name: "BSIT 1A",
+            section_code: "1A",
+            program_id: "00000000-0000-4000-8000-000000000010",
+            program_code: "BSIT",
+            program_name: "Bachelor of Science in Information Technology",
+            year_level: "1",
+            academic_year_id: "00000000-0000-4000-8000-000000000011",
+            academic_year: "2026-2027",
+            enrolled: 26,
+          },
+        ],
+        count: 1,
       }),
     })
   })
@@ -123,10 +121,8 @@ test("global student search paginates results and shows the section name", async
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        data: {
-          data: students.slice(skip, skip + limit),
-          count: students.length,
-        },
+        data: students.slice(skip, skip + limit),
+        count: students.length,
       }),
     })
   })
@@ -178,16 +174,14 @@ test("section search requests matches beyond the loaded roster page", async ({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        data: {
-          data: [
-            {
-              id: "00000000-0000-4000-8000-000000000010",
-              program_code: "BSIT",
-              program_name: "Bachelor of Science in Information Technology",
-            },
-          ],
-          count: 1,
-        },
+        data: [
+          {
+            id: "00000000-0000-4000-8000-000000000010",
+            program_code: "BSIT",
+            program_name: "Bachelor of Science in Information Technology",
+          },
+        ],
+        count: 1,
       }),
     })
   })
@@ -220,7 +214,7 @@ test("section search requests matches beyond the loaded roster page", async ({
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ data: { data: rows, count: rows.length } }),
+      body: JSON.stringify({ data: rows, count: rows.length }),
     })
   })
 
