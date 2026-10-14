@@ -871,6 +871,21 @@ function SectionList() {
                     </div>
                   ))}
                 </div>
+              ) : rosterQuery.isError ? (
+                <div className="flex min-h-[360px] flex-col items-center justify-center gap-3 text-center">
+                  <h3 className="text-lg font-semibold">Unable to load students</h3>
+                  <p className="max-w-md text-sm text-muted-foreground">
+                    The roster could not be loaded. Check your connection and retry.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void rosterQuery.refetch()}
+                    disabled={rosterQuery.isFetching}
+                  >
+                    {rosterQuery.isFetching ? "Retrying…" : "Retry"}
+                  </Button>
+                </div>
               ) : rosterStudents.length === 0 ? (
                 <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
                   <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
