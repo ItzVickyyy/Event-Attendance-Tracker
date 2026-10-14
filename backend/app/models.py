@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import EmailStr
 from sqlalchemy import JSON, Column, DateTime, Index, UniqueConstraint, event, text
