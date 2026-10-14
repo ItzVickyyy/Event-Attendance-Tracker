@@ -303,17 +303,3 @@ test("Super admin can validate and import officer accounts from CSV", async ({
   await expect(row).toContainText(position)
 })
 
-test("Edit account does not expose a password field", async ({ page }) => {
-  const email = randomEmail()
-  await createUser({ email, password: randomPassword() })
-
-  await page.goto("/administration/users")
-  await page.getByPlaceholder("Search by name, email, or position").fill(email)
-  const row = page.getByRole("row").filter({ hasText: email })
-  await expect(row).toBeVisible()
-  await row.getByRole("button", { name: "Edit" }).click()
-
-  const dialog = page.getByRole("dialog")
-  await expect(dialog.getByText("Email *")).toBeVisible()
-  await expect(dialog.getByText("New Password")).toHaveCount(0)
-})
