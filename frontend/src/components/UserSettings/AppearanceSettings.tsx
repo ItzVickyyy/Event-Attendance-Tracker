@@ -491,7 +491,9 @@ export function AppearanceSettings() {
                       <Input
                         aria-label={`${title} HEX color`}
                         value={hexDrafts[key]}
-                        onChange={(event) => updateColor(key, event.target.value)}
+                        onChange={(event) =>
+                            updateColor(key, event.target.value)
+                          }
                         onBlur={() => {
                           if (!isHexColor(hexDrafts[key])) {
                             setHexDrafts((current) => ({
