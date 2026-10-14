@@ -154,22 +154,25 @@ test("section search requests matches beyond the loaded roster page", async ({
   const studentId = "00000000-0000-4000-8000-000000000099"
   let searchedTerm = ""
 
-  await page.route(`**/api/v1/academic-sections/${sectionId}`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        data: {
-          id: sectionId,
-          section_name: "BSIT 1A",
-          section_code: "1A",
-          program_id: "00000000-0000-4000-8000-000000000010",
-          year_level: "1",
-          academic_year: "2026-2027",
-        },
-      }),
-    })
-  })
+  await page.route(
+    `**/api/v1/academic-sections/${sectionId}`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            id: sectionId,
+            section_name: "BSIT 1A",
+            section_code: "1A",
+            program_id: "00000000-0000-4000-8000-000000000010",
+            year_level: "1",
+            academic_year: "2026-2027",
+          },
+        }),
+      })
+    },
+  )
   await page.route("**/api/v1/academic-programs/**", async (route) => {
     await route.fulfill({
       status: 200,
