@@ -13,10 +13,10 @@ import {
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { UsersService } from "@/client"
-import { useTheme } from "@/components/theme-provider"
 import { AccountModal } from "@/components/Account/AccountModal"
 import { Footer } from "@/components/Common/Footer"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
+import { useTheme } from "@/components/theme-provider"
 import {
   AppearancePreferencesInitializer,
   AppearanceSettings,
