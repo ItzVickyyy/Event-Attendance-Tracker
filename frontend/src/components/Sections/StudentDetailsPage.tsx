@@ -21,9 +21,11 @@ import { Input } from "@/components/ui/input"
 export function StudentDetailsPage({
   sectionId,
   studentId,
+  returnToSearch = false,
 }: {
   sectionId: string
   studentId: string
+  returnToSearch?: boolean
 }) {
   const queryClient = useQueryClient()
   const [credentialValue, setCredentialValue] = useState("")
@@ -264,10 +266,17 @@ export function StudentDetailsPage({
             The requested student could not be loaded.
           </p>
           <Button className="mt-4" variant="outline" asChild>
-            <Link to="/sections">
-              <ArrowLeft />
-              Back to sections
-            </Link>
+            {returnToSearch ? (
+              <Link to="/sections">
+                <ArrowLeft />
+                Back to student search
+              </Link>
+            ) : (
+              <Link to="/sections">
+                <ArrowLeft />
+                Back to sections
+              </Link>
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -290,10 +299,17 @@ export function StudentDetailsPage({
               : "Student is not part of this section."}
           </p>
           <Button className="mt-4" variant="outline" asChild>
-            <Link to="/sections/$sectionId" params={{ sectionId }}>
-              <ArrowLeft />
-              Back to section
-            </Link>
+            {returnToSearch ? (
+              <Link to="/sections">
+                <ArrowLeft />
+                Back to student search
+              </Link>
+            ) : (
+              <Link to="/sections/$sectionId" params={{ sectionId }}>
+                <ArrowLeft />
+                Back to section
+              </Link>
+            )}
           </Button>
         </CardContent>
       </Card>
@@ -321,10 +337,17 @@ export function StudentDetailsPage({
     <div className="space-y-6">
       <div>
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/sections/$sectionId/students" params={{ sectionId }}>
-            <ArrowLeft />
-            Students
-          </Link>
+          {returnToSearch ? (
+            <Link to="/sections">
+              <ArrowLeft />
+              Back to student search
+            </Link>
+          ) : (
+            <Link to="/sections/$sectionId/students" params={{ sectionId }}>
+              <ArrowLeft />
+              Students
+            </Link>
+          )}
         </Button>
         <div className="mt-4 flex items-start gap-3">
           <div className="rounded-lg border p-2">
