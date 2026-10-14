@@ -12,6 +12,8 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { UsersService } from "@/client"
 import { Footer } from "@/components/Common/Footer"
+import { AccountModal } from "@/components/Account/AccountModal"
+import { AppearancePreferencesInitializer, AppearanceSettings } from "@/components/UserSettings/AppearanceSettings"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -223,6 +225,8 @@ function Layout() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const mustChangePassword = Boolean((user as any)?.must_change_password)
+  const [accountModalOpen, setAccountModalOpen] = useState(false)
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   const [passwordModalOpen, setPasswordModalOpen] = useState(mustChangePassword)
   const [currentPassword, setCurrentPassword] = useState("")
@@ -236,6 +240,17 @@ function Layout() {
   useEffect(() => {
     if (mustChangePassword) setPasswordModalOpen(true)
   }, [mustChangePassword])
+
+  useEffect(() => {
+    const openAccount = () => setAccountModalOpen(true)
+    const openSettings = () => setSettingsModalOpen(true)
+    window.addEventListener("open-account-modal", openAccount)
+    window.addEventListener("open-settings-modal", openSettings)
+    return () => {
+      window.removeEventListener("open-account-modal", openAccount)
+      window.removeEventListener("open-settings-modal", openSettings)
+    }
+  }, [])
 
   const updateInitialPassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -462,6 +477,27 @@ function Layout() {
                   {changingPassword ? "Updating..." : "Update Password"}
                 </Button>
               </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <AppearancePreferencesInitializer />
+          <Dialog open={accountModalOpen} onOpenChange={setAccountModalOpen}>
+            <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-3xl">
+              <AccountModal />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+            <DialogContent className="h-[85dvh] max-h-[850px] overflow-hidden p-0 sm:max-w-4xl">
+              <div className="h-full min-h-0">
+                <DialogHeader className="border-b px-6 py-4">
+                  <DialogTitle>Settings</DialogTitle>
+                  <DialogDescription>
+                    Personalize your appearance and accessibility preferences.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="h-[calc(100%-85px)] min-h-0">
+                  <AppearanceSettings />
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
           <Footer />
