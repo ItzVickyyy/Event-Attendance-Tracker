@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
-import { StudentsService } from "@/client"
+import { AcademicRegistryService, StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,18 +14,34 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+const PAGE_SIZE = 25
+
 export function StudentSearch() {
   const [search, setSearch] = useState("")
   const [submitted, setSubmitted] = useState("")
+  const [page, setPage] = useState(0)
+
   const query = useQuery({
-    queryKey: ["students", "global-search", submitted],
+    queryKey: ["students", "global-search", submitted, page],
     queryFn: () =>
       StudentsService.readStudents({
-        query: { search: submitted, skip: 0, limit: 25 },
+        query: { search: submitted, skip: page * PAGE_SIZE, limit: PAGE_SIZE },
       }),
     enabled: submitted.trim().length > 0,
   })
+  const sectionsQuery = useQuery({
+    queryKey: ["academicRegistrySections", "student-search"],
+    queryFn: () => AcademicRegistryService.registryReadSections(),
+    enabled: submitted.trim().length > 0,
+  })
+
   const students = query.data?.data.data ?? []
+  const count = query.data?.data.count ?? 0
+  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE))
+  const sections = sectionsQuery.data?.data.data ?? []
+  const sectionNames = new Map(
+    sections.map((section) => [section.id, section.section_name]),
+  )
 
   return (
     <Card>
@@ -34,13 +50,14 @@ export function StudentSearch() {
           className="flex flex-col gap-2 sm:flex-row"
           onSubmit={(event) => {
             event.preventDefault()
+            setPage(0)
             setSubmitted(search.trim())
           }}
         >
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search students by number or name"
+            placeholder="Search by student number or full name"
             aria-label="Search students"
           />
           <Button type="submit" disabled={!search.trim()}>
@@ -96,10 +113,13 @@ export function StudentSearch() {
                         to="/sections/$sectionId"
                         params={{ sectionId: student.section_id }}
                       >
-                        Open section
+                        {sectionNames.get(student.section_id) ??
+                          (sectionsQuery.isLoading
+                            ? "Loading section…"
+                            : "Section unavailable")}
                       </Link>
                     ) : (
-                      "—"
+                      "No section assigned"
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -112,7 +132,7 @@ export function StudentSearch() {
                             studentId: student.id,
                           }}
                         >
-                          View student
+                          View details
                         </Link>
                       </Button>
                     ) : (
@@ -126,11 +146,35 @@ export function StudentSearch() {
             </TableBody>
           </Table>
         )}
-        {query.data && query.data.data.count > students.length && (
-          <p className="text-xs text-muted-foreground">
-            Showing the first {students.length} of {query.data.data.count}{" "}
-            matching students.
-          </p>
+        {query.data && count > 0 && (
+          <div className="flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Showing {page * PAGE_SIZE + 1}–
+              {Math.min((page + 1) * PAGE_SIZE, count)} of {count} matching
+              students
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page === 0 || query.isFetching}
+                onClick={() => setPage((value) => Math.max(0, value - 1))}
+              >
+                Previous
+              </Button>
+              <span className="flex items-center px-2">
+                Page {page + 1} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page + 1 >= totalPages || query.isFetching}
+                onClick={() => setPage((value) => value + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
