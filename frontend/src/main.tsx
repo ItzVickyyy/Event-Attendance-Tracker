@@ -39,10 +39,8 @@ const queryClient = new QueryClient({
     onError: handleApiError,
   }),
   mutationCache: new MutationCache({
-    onSuccess: () => {
-      // Refresh active views without delaying the mutation's success feedback.
-      void queryClient.invalidateQueries()
-    },
+    // Mutations should invalidate only the query keys they change. Global
+    // invalidation causes unnecessary requests and rerenders on mobile.
     onError: handleApiError,
   }),
 })
