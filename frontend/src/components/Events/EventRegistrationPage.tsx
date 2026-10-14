@@ -215,15 +215,22 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           ) : sectionsQuery.isError ? (
             <div className="space-y-2" role="alert">
               <p className="text-sm text-destructive">
-                Unable to load eligible sections. Your current selections have not been changed.
+                Unable to load eligible sections. Your current selections have
+                not been changed.
               </p>
-              <Button type="button" size="sm" variant="outline" onClick={() => sectionsQuery.refetch()}>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => sectionsQuery.refetch()}
+              >
                 Retry loading sections
               </Button>
             </div>
           ) : sections.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No sections are available. Check the academic year and section setup.
+              No sections are available. Check the academic year and section
+              setup.
             </p>
           ) : (
             <>
@@ -231,7 +238,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">
-                      {selectedSections.length} of {sections.length} sections selected
+                      {selectedSections.length} of {sections.length} sections
+                      selected
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Choose sections individually or use the year shortcuts.
@@ -244,11 +252,15 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                     className="w-full sm:w-auto"
                     onClick={() =>
                       setSelectedSections(
-                        allSectionsSelected ? [] : sections.map((section) => section.id),
+                        allSectionsSelected
+                          ? []
+                          : sections.map((section) => section.id),
                       )
                     }
                   >
-                    {allSectionsSelected ? "Clear selection" : "Select all sections"}
+                    {allSectionsSelected
+                      ? "Clear selection"
+                      : "Select all sections"}
                   </Button>
                 </div>
               </div>
@@ -259,7 +271,9 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                   )
                   const allYearSelected =
                     yearSections.length > 0 &&
-                    yearSections.every((section) => selectedSections.includes(section.id))
+                    yearSections.every((section) =>
+                      selectedSections.includes(section.id),
+                    )
                   return (
                     <Button
                       key={year}
@@ -268,10 +282,20 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                       variant={allYearSelected ? "default" : "outline"}
                       disabled={yearSections.length === 0}
                       onClick={() =>
-                        toggleSectionGroup(yearSections.map((section) => section.id))
+                        toggleSectionGroup(
+                          yearSections.map((section) => section.id),
+                        )
                       }
                     >
-                      {allYearSelected ? "Clear" : "Select"} {year === 1 ? "1st" : year === 2 ? "2nd" : year === 3 ? "3rd" : "4th"} year
+                      {allYearSelected ? "Clear" : "Select"}{" "}
+                      {year === 1
+                        ? "1st"
+                        : year === 2
+                          ? "2nd"
+                          : year === 3
+                            ? "3rd"
+                            : "4th"}{" "}
+                      year
                     </Button>
                   )
                 })}
