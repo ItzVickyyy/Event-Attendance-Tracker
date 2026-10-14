@@ -395,11 +395,11 @@ export function AppearanceSettings() {
       </nav>
       <div className="min-h-0 min-w-0 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
         <h2
-            id="appearance-settings-title"
-            className="text-lg font-semibold tracking-tight"
-          >
-            Appearance
-          </h2>
+          id="appearance-settings-title"
+          className="text-lg font-semibold tracking-tight"
+        >
+          Appearance
+        </h2>
         <section aria-labelledby="visual-style-title">
           <Card>
             <CardHeader>
