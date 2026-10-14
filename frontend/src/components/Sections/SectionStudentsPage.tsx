@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, UsersRound } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   AcademicProgramsService,
   AcademicSectionsService,
@@ -24,6 +24,14 @@ const PAGE_SIZE = 25
 export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+    }, 250)
+    return () => window.clearTimeout(timeout)
+  }, [search])
 
   const sectionQuery = useQuery({
     queryKey: ["academicSection", sectionId],
@@ -40,11 +48,12 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
       }),
   })
   const studentsQuery = useQuery({
-    queryKey: ["students", "section", sectionId, page],
+    queryKey: ["students", "section", sectionId, debouncedSearch, page],
     queryFn: () =>
       StudentsService.readStudents({
         query: {
           section_id: sectionId,
+          search: debouncedSearch || undefined,
           skip: page * PAGE_SIZE,
           limit: PAGE_SIZE,
         },
@@ -59,14 +68,7 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
     : undefined
   const students = studentsQuery.data?.data.data ?? []
   const count = studentsQuery.data?.data.count ?? 0
-  const term = search.trim().toLowerCase()
-  const filteredStudents = term
-    ? students.filter((student) =>
-        `${student.student_number} ${student.person_name ?? ""}`
-          .toLowerCase()
-          .includes(term),
-      )
-    : students
+  const filteredStudents = students
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE))
 
   if (sectionQuery.isLoading) {
@@ -150,8 +152,11 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
         <CardContent className="space-y-4">
           <Input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Filter this section by student number or name"
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setPage(0)
+            }}
+            placeholder="Search this section by student number or full name"
             aria-label="Filter students in section"
           />
           {studentsQuery.isLoading ? (
