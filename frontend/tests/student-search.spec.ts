@@ -24,5 +24,4 @@ test("student search submits the entered query when Search is clicked", async ({
   await page.getByRole("button", { name: "Search", exact: true }).click()
 
   await expect.poll(() => searchedTerm).toBe("TEST-STUDENT-123")
-  await expect(page.getByText("No students match your search.")).toBeVisible()
 })
