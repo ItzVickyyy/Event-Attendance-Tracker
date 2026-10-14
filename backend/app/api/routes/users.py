@@ -250,8 +250,6 @@ def update_appearance_preferences(
     session.refresh(current_user)
     return current_user.appearance_preferences or {}
 
-
-
 @router.patch("/me/password", response_model=Message)
 def update_password_me(
     *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
