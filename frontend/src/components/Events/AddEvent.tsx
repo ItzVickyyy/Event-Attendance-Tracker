@@ -10,6 +10,7 @@ import { EventsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -182,22 +183,24 @@ export function AddEvent() {
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  form.reset({
-                    event_name: "",
-                    event_date: "",
-                    start_time: undefined,
-                    end_time: undefined,
-                    attendance_mode: "time_in_only",
-                    status: "draft",
-                  })
-                }
-              >
-                Cancel
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    form.reset({
+                      event_name: "",
+                      event_date: "",
+                      start_time: undefined,
+                      end_time: undefined,
+                      attendance_mode: "time_in_only",
+                      status: "draft",
+                    })
+                  }
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
               <LoadingButton loading={mutation.isPending} type="submit">
                 Create Event
               </LoadingButton>
