@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 import uuid
 from typing import Any
 
@@ -188,6 +189,66 @@ def update_user_me(
     session.commit()
     session.refresh(current_user)
     return current_user
+
+
+@router.get("/me/appearance-preferences")
+def read_appearance_preferences(current_user: CurrentUser) -> dict[str, Any]:
+    """Return only the signed-in user's appearance preferences."""
+    return current_user.appearance_preferences or {}
+
+
+@router.patch("/me/appearance-preferences")
+def update_appearance_preferences(
+    *, session: SessionDep, current_user: CurrentUser, preferences: dict[str, Any]
+) -> dict[str, Any]:
+    """Update a validated subset of the signed-in user's appearance preferences."""
+    allowed_keys = {
+        "theme",
+        "accent",
+        "background",
+        "foreground",
+        "fontSize",
+        "contrast",
+    }
+    unknown_keys = set(preferences) - allowed_keys
+    if unknown_keys:
+        raise HTTPException(status_code=422, detail="Unsupported appearance preference")
+
+    validated: dict[str, Any] = {}
+    if "theme" in preferences:
+        if preferences["theme"] not in ("light", "dark", "system"):
+            raise HTTPException(status_code=422, detail="Invalid theme")
+        validated["theme"] = preferences["theme"]
+    if "fontSize" in preferences:
+        if preferences["fontSize"] not in (
+            "small",
+            "default",
+            "large",
+            "extra-large",
+        ):
+            raise HTTPException(status_code=422, detail="Invalid UI font size")
+        validated["fontSize"] = preferences["fontSize"]
+    if "contrast" in preferences:
+        if preferences["contrast"] not in ("standard", "high"):
+            raise HTTPException(status_code=422, detail="Invalid contrast mode")
+        validated["contrast"] = preferences["contrast"]
+    for key in ("accent", "background", "foreground"):
+        if key in preferences:
+            value = preferences[key]
+            if value is not None and (
+                not isinstance(value, str)
+                or re.fullmatch(r"#[0-9a-fA-F]{6}", value) is None
+            ):
+                raise HTTPException(status_code=422, detail=f"Invalid {key} color")
+            validated[key] = value.lower() if isinstance(value, str) else None
+
+    saved = dict(current_user.appearance_preferences or {})
+    saved.update(validated)
+    current_user.appearance_preferences = saved
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    return current_user.appearance_preferences or {}
 
 
 @router.patch("/me/password", response_model=Message)

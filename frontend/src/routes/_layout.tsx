@@ -6,13 +6,21 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  Moon,
   ShieldAlert,
+  Sun,
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { UsersService } from "@/client"
+import { AccountModal } from "@/components/Account/AccountModal"
 import { Footer } from "@/components/Common/Footer"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
+import { useTheme } from "@/components/theme-provider"
+import {
+  AppearancePreferencesInitializer,
+  AppearanceSettings,
+} from "@/components/UserSettings/AppearanceSettings"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -221,8 +229,11 @@ function AcademicYearSelector() {
 }
 function Layout() {
   const { user } = useAuth()
+  const { resolvedTheme, setTheme } = useTheme()
   const queryClient = useQueryClient()
   const mustChangePassword = Boolean((user as any)?.must_change_password)
+  const [accountModalOpen, setAccountModalOpen] = useState(false)
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   const [passwordModalOpen, setPasswordModalOpen] = useState(mustChangePassword)
   const [currentPassword, setCurrentPassword] = useState("")
@@ -236,6 +247,17 @@ function Layout() {
   useEffect(() => {
     if (mustChangePassword) setPasswordModalOpen(true)
   }, [mustChangePassword])
+
+  useEffect(() => {
+    const openAccount = () => setAccountModalOpen(true)
+    const openSettings = () => setSettingsModalOpen(true)
+    window.addEventListener("open-account-modal", openAccount)
+    window.addEventListener("open-settings-modal", openSettings)
+    return () => {
+      window.removeEventListener("open-account-modal", openAccount)
+      window.removeEventListener("open-settings-modal", openSettings)
+    }
+  }, [])
 
   const updateInitialPassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -297,6 +319,32 @@ function Layout() {
                 user?.is_superuser ||
                 user?.role === "admin" ||
                 user?.role === "super_admin") && <AcademicYearSelector />}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="min-h-10 min-w-10"
+              data-testid="top-nav-theme-toggle"
+              aria-label={
+                resolvedTheme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              title={
+                resolvedTheme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              onClick={() =>
+                setTheme(resolvedTheme === "dark" ? "light" : "dark")
+              }
+            >
+              {resolvedTheme === "dark" ? (
+                <Sun className="size-5" />
+              ) : (
+                <Moon className="size-5" />
+              )}
+            </Button>
           </header>
           <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
             <div className="mx-auto w-full max-w-7xl min-w-0">
@@ -462,6 +510,27 @@ function Layout() {
                   {changingPassword ? "Updating..." : "Update Password"}
                 </Button>
               </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <AppearancePreferencesInitializer />
+          <Dialog open={accountModalOpen} onOpenChange={setAccountModalOpen}>
+            <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-3xl">
+              <AccountModal />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+            <DialogContent className="h-[85dvh] max-h-[850px] overflow-hidden p-0 sm:max-w-4xl">
+              <div className="flex h-full min-h-0 flex-col">
+                <DialogHeader className="shrink-0 border-b px-6 py-4">
+                  <DialogTitle>Settings</DialogTitle>
+                  <DialogDescription>
+                    Personalize your appearance and accessibility preferences.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="min-h-0 flex-1">
+                  <AppearanceSettings />
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
           <Footer />

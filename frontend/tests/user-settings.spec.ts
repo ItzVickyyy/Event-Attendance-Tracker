@@ -132,7 +132,7 @@ test.describe("Change password", () => {
   })
 })
 
-test("Appearance control remains available in the sidebar", async ({
+test("Appearance settings remain available from the user menu", async ({
   page,
 }) => {
   const email = randomEmail()
@@ -140,5 +140,9 @@ test("Appearance control remains available in the sidebar", async ({
   await createUser({ email, password })
   await logInUser(page, email, password)
   await page.goto("/account/profile")
-  await expect(page.getByTestId("theme-button")).toBeVisible()
+
+  await page.getByTestId("user-menu").click()
+  await page.getByRole("menuitem", { name: "Settings" }).click()
+  await expect(page.getByRole("dialog")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Appearance" })).toBeVisible()
 })

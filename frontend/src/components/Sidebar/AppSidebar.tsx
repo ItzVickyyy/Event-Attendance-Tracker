@@ -1,4 +1,3 @@
-import { SidebarAppearance } from "@/components/Common/Appearance"
 import { Logo } from "@/components/Common/Logo"
 import {
   Sidebar,
@@ -22,7 +21,6 @@ export function AppSidebar() {
         <ReconstructionNavigation />
       </SidebarContent>
       <SidebarFooter>
-        <SidebarAppearance />
         <User user={user} />
       </SidebarFooter>
     </Sidebar>
