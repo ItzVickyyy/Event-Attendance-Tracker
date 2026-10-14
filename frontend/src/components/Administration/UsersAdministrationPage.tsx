@@ -115,6 +115,7 @@ export function UsersAdministrationPage() {
   )
   const accountRoles = isSuperAdmin ? superAdminAccountRoles : adminAccountRoles
   const [q, setQ] = useState("")
+  const [debouncedQ, setDebouncedQ] = useState("")
   const [createOpen, setCreateOpen] = useState(false)
   const [managePositionsOpen, setManagePositionsOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -136,9 +137,17 @@ export function UsersAdministrationPage() {
   const [positionId, setPositionId] = useState("")
   const [newPositionName, setNewPositionName] = useState("")
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQ(q.trim()), 250)
+    return () => window.clearTimeout(timeout)
+  }, [q])
+
   const query = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: () => UsersService.readUsers({ query: { skip: 0, limit: 1000 } }),
+    queryKey: ["admin-users", debouncedQ],
+    queryFn: () =>
+      apiRequest<{ data: OfficerUser[]; count: number }>(
+        `/users/?skip=0&limit=1000&search=${encodeURIComponent(debouncedQ)}`,
+      ),
   })
   const yearsQuery = useQuery({
     queryKey: ["officer-account-academic-years"],
@@ -354,13 +363,7 @@ export function UsersAdministrationPage() {
   )
   const positionName = (id?: string | null) =>
     positions.find((position) => position.id === id)?.name ?? "—"
-  const users = ((query.data?.data.data ?? []) as OfficerUser[])
-    .filter((u) => !u.is_developer)
-    .filter((u) =>
-      `${u.full_name ?? ""} ${u.email} ${u.student_number ?? ""} ${positionName(u.position_id)}`
-        .toLowerCase()
-        .includes(q.toLowerCase()),
-    )
+  const users = query.data?.data ?? []
 
   return (
     <div className="space-y-6">
@@ -401,6 +404,7 @@ export function UsersAdministrationPage() {
       </div>
       <Input
         placeholder="Search by name, email, or position"
+        aria-label="Search by name, email, student ID, or position"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />

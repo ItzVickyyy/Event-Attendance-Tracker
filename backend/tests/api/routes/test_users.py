@@ -333,6 +333,93 @@ def test_retrieve_users(
         assert "email" in item
 
 
+def test_retrieve_users_search_matches_name_and_email_and_counts_filtered_results(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: Session,
+) -> None:
+    first_email = f"search-regression-{uuid.uuid4().hex[:8]}@example.com"
+    second_email = f"search-regression-{uuid.uuid4().hex[:8]}@example.com"
+    first = crud.create_user(
+        session=db,
+        user_create=UserCreate(
+            email=first_email,
+            password=random_lower_string(),
+            full_name="Search Regression Person",
+        ),
+    )
+    second = crud.create_user(
+        session=db,
+        user_create=UserCreate(
+            email=second_email,
+            password=random_lower_string(),
+            full_name="Another Search Regression",
+        ),
+    )
+    developer_email = f"search-regression-dev-{uuid.uuid4().hex[:8]}@example.com"
+    crud.create_user(
+        session=db,
+        user_create=UserCreate(
+            email=developer_email,
+            password=random_lower_string(),
+            full_name="Search Regression Developer",
+            is_developer=True,
+        ),
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/users/",
+        headers=superuser_token_headers,
+        params={"search": "sEaRcH rEgReSsIoN", "skip": 0, "limit": 1},
+    )
+
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["count"] == 2
+    assert len(result["data"]) == 1
+    assert result["data"][0]["id"] in {str(first.id), str(second.id)}
+    assert all(item["email"] != developer_email for item in result["data"])
+
+    second_page = client.get(
+        f"{settings.API_V1_STR}/users/",
+        headers=superuser_token_headers,
+        params={"search": "search regression", "skip": 1, "limit": 1},
+    )
+    assert second_page.status_code == 200, second_page.text
+    assert second_page.json()["count"] == 2
+    assert len(second_page.json()["data"]) == 1
+    assert second_page.json()["data"][0]["id"] != result["data"][0]["id"]
+
+
+def test_retrieve_users_search_matches_email_without_changing_default_listing(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    db: Session,
+) -> None:
+    email = f"unique-search-token-{uuid.uuid4().hex[:8]}@example.com"
+    user = crud.create_user(
+        session=db,
+        user_create=UserCreate(email=email, password=random_lower_string()),
+    )
+
+    response = client.get(
+        f"{settings.API_V1_STR}/users/",
+        headers=superuser_token_headers,
+        params={"search": email.split("@")[0]},
+    )
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["count"] == 1
+    assert [item["id"] for item in result["data"]] == [str(user.id)]
+
+    default_response = client.get(
+        f"{settings.API_V1_STR}/users/",
+        headers=superuser_token_headers,
+    )
+    assert default_response.status_code == 200
+    assert default_response.json()["count"] >= 1
+
+
 def test_update_user_me(
     client: TestClient, normal_user_token_headers: dict[str, str], db: Session
 ) -> None:
