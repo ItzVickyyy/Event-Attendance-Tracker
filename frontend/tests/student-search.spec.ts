@@ -47,6 +47,23 @@ test("direct student details URL renders the nested details route", async ({
       }),
     })
   })
+  await page.route("**/api/v1/attendees**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [
+          {
+            id: "00000000-0000-4000-8000-000000000004",
+            person_id: personId,
+            attendee_type: "student",
+          },
+        ],
+        count: 1,
+      }),
+    })
+  })
+
   await page.route(
     `**/api/v1/academic-registry/students/${studentId}*`,
     async (route) => {
