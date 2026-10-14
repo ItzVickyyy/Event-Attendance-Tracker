@@ -234,18 +234,37 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
             </p>
           ) : (
             <>
+              <div className="rounded-lg border bg-muted/20 p-3 sm:p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {selectedSections.length} of {sections.length} sections
+                      selected
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Choose sections individually or use the year shortcuts.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() =>
+                      setSelectedSections(
+                        allSectionsSelected
+                          ? []
+                          : sections.map((section) => section.id),
+                      )
+                    }
+                  >
+                    {allSectionsSelected
+                      ? "Clear selection"
+                      : "Select all sections"}
+                  </Button>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={sections.length === 0}
-                  onClick={() =>
-                    toggleSectionGroup(sections.map((section) => section.id))
-                  }
-                >
-                  {allSectionsSelected ? "Clear all" : "Select all"}
-                </Button>
                 {[1, 2, 3, 4].map((year) => {
                   const yearSections = sections.filter(
                     (section) => getYearNumber(section.year_level) === year,
@@ -260,7 +279,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                       key={year}
                       type="button"
                       size="sm"
-                      variant="outline"
+                      variant={allYearSelected ? "default" : "outline"}
                       disabled={yearSections.length === 0}
                       onClick={() =>
                         toggleSectionGroup(
@@ -268,7 +287,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                         )
                       }
                     >
-                      {allYearSelected ? "Clear" : "All"}{" "}
+                      {allYearSelected ? "Clear" : "Select"}{" "}
                       {year === 1
                         ? "1st"
                         : year === 2
@@ -281,29 +300,32 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                   )
                 })}
               </div>
-              {sections.map((section) => {
-                const checked = selectedSections.includes(section.id)
-                return (
-                  <label
-                    key={section.id}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleSectionGroup([section.id])}
-                    />
-                    <span className="flex-1">
-                      <span className="block font-medium">
-                        {section.section_name}
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {sections.map((section) => {
+                  const checked = selectedSections.includes(section.id)
+                  return (
+                    <label
+                      key={section.id}
+                      className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50 ${checked ? "border-primary bg-primary/5" : "bg-background"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-5 shrink-0 accent-primary"
+                        checked={checked}
+                        onChange={() => toggleSectionGroup([section.id])}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block break-words font-medium">
+                          {section.section_name}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Year {section.year_level} · {section.academic_year}
+                        </span>
                       </span>
-                      <span className="text-sm text-muted-foreground">
-                        Year {section.year_level} · {section.academic_year}
-                      </span>
-                    </span>
-                  </label>
-                )
-              })}
+                    </label>
+                  )
+                })}
+              </div>
             </>
           )}
         </CardContent>
