@@ -184,3 +184,43 @@ test("event details distinguish server failures from missing events and can retr
   await page.getByRole("button", { name: "Retry loading event" }).click()
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
 })
+
+test("event modal Cancel buttons close without submitting or deleting", async ({
+  page,
+}) => {
+  await page.goto("/events")
+  const eventName = `Cancel button regression ${randomEmail()}`
+
+  await page.getByRole("button", { name: "Add Event" }).click()
+  let dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(page.getByRole("link", { name: eventName })).toHaveCount(0)
+
+  await page.getByRole("button", { name: "Add Event" }).click()
+  dialog = page.getByRole("dialog")
+  await dialog.getByLabel("Event Name").fill(eventName)
+  await dialog
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
+  await dialog.getByRole("button", { name: "Create Event" }).click()
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await expect(page.getByRole("link", { name: eventName })).toBeVisible()
+
+  const eventRow = page.getByRole("row").filter({ hasText: eventName })
+  await eventRow.getByRole("button").nth(2).click()
+  dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(eventRow).toBeVisible()
+
+  await eventRow.getByRole("button").nth(3).click()
+  dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(eventRow).toBeVisible()
+})
+
