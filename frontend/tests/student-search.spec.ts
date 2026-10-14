@@ -243,7 +243,6 @@ test("section search requests matches beyond the loaded roster page", async ({
   await expect(page.getByText("ROSTER-001")).toHaveCount(0)
 })
 
-
 test("global student search restores its query and page after viewing details", async ({
   page,
 }) => {
@@ -267,7 +266,10 @@ test("global student search restores its query and page after viewing details", 
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ data: students.slice(skip, skip + limit), count: students.length }),
+        body: JSON.stringify({
+          data: students.slice(skip, skip + limit),
+          count: students.length,
+        }),
       })
       return
     }
@@ -292,8 +294,9 @@ test("global student search restores its query and page after viewing details", 
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        data: [{
-          id: sectionId,
+        data: [
+          {
+            id: sectionId,
           section_name: "BSIT 2A",
           section_code: "2A",
           program_id: "00000000-0000-4000-8000-000000000010",
@@ -302,8 +305,9 @@ test("global student search restores its query and page after viewing details", 
           year_level: "2",
           academic_year_id: "00000000-0000-4000-8000-000000000011",
           academic_year: "2026-2027",
-          enrolled: 26,
-        }],
+            enrolled: 26,
+          },
+        ],
         count: 1,
       }),
     })
@@ -320,37 +324,45 @@ test("global student search restores its query and page after viewing details", 
       }),
     })
   })
-  await page.route(`**/api/v1/academic-registry/students/${studentId}*`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ student_status: "regular" }),
-    })
-  })
-  await page.route(`**/api/v1/academic-sections/${sectionId}`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: sectionId,
-        section_name: "BSIT 2A",
-        section_code: "2A",
-        program_id: "00000000-0000-4000-8000-000000000010",
-        year_level: "2",
-        academic_year: "2026-2027",
-      }),
-    })
-  })
+  await page.route(
+    `**/api/v1/academic-registry/students/${studentId}*`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ student_status: "regular" }),
+      })
+    },
+  )
+  await page.route(
+    `**/api/v1/academic-sections/${sectionId}`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: sectionId,
+          section_name: "BSIT 2A",
+          section_code: "2A",
+          program_id: "00000000-0000-4000-8000-000000000010",
+          year_level: "2",
+          academic_year: "2026-2027",
+        }),
+      })
+    },
+  )
   await page.route("**/api/v1/academic-programs/**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        data: [{
-          id: "00000000-0000-4000-8000-000000000010",
-          program_code: "BSIT",
-          program_name: "Bachelor of Science in Information Technology",
-        }],
+        data: [
+          {
+            id: "00000000-0000-4000-8000-000000000010",
+            program_code: "BSIT",
+            program_name: "Bachelor of Science in Information Technology",
+          },
+        ],
         count: 1,
       }),
     })
@@ -364,17 +376,23 @@ test("global student search restores its query and page after viewing details", 
   })
 
   await page.goto("/sections")
-  await page.getByRole("textbox", { name: "Search students" }).fill("Search Student")
+  await page
+    .getByRole("textbox", { name: "Search students" })
+    .fill("Search Student")
   await page.getByRole("button", { name: "Search", exact: true }).click()
   await expect(page.getByText("Page 1 of 2")).toBeVisible()
   await page.getByRole("button", { name: "Next" }).click()
   await expect(page.getByText("RETURN-026")).toBeVisible()
   await page.getByRole("link", { name: "View details" }).click()
 
-  await expect(page.getByText("Student Information", { exact: true })).toBeVisible()
+  await expect(
+    page.getByText("Student Information", { exact: true }),
+  ).toBeVisible()
   await page.getByRole("link", { name: "Back to student search" }).click()
 
-  await expect(page.getByRole("textbox", { name: "Search students" })).toHaveValue("Search Student")
+  await expect(
+    page.getByRole("textbox", { name: "Search students" }),
+  ).toHaveValue("Search Student")
   await expect(page.getByText("Page 2 of 2")).toBeVisible()
   await expect(page.getByText("RETURN-026")).toBeVisible()
   await expect(page.getByText("RETURN-001")).toHaveCount(0)
