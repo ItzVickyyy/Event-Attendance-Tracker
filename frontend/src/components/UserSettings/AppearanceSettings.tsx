@@ -203,12 +203,19 @@ export function AppearancePreferencesInitializer() {
       const token = localStorage.getItem("access_token")
       if (user?.id && token) {
         try {
-          const response = await fetch("/api/v1/users/me/appearance-preferences", {
-            headers: { Authorization: `Bearer ${token}` },
-          })
+          const response = await fetch(
+            "/api/v1/users/me/appearance-preferences",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          )
           if (response.ok) {
             const saved = await response.json()
-            preferences = { ...DEFAULT_PREFERENCES, ...localPreferences, ...saved }
+            preferences = {
+              ...DEFAULT_PREFERENCES,
+              ...localPreferences,
+              ...saved,
+            }
 
             // Migrate browser-only preferences into the account record once.
             if (Object.keys(saved).length === 0) {
@@ -269,8 +276,9 @@ function ChoiceButton({
 export function AppearanceSettings() {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const { user } = useAuth()
-  const [preferences, setPreferences] =
-    useState<AppearancePreferences>(() => readPreferences(user?.id))
+  const [preferences, setPreferences] = useState<AppearancePreferences>(() =>
+    readPreferences(user?.id),
+  )
   const [hexDrafts, setHexDrafts] = useState<Record<ColorKey, string>>({
     accent: COLOR_DEFAULTS.light.accent,
     background: COLOR_DEFAULTS.light.background,
@@ -386,7 +394,12 @@ export function AppearanceSettings() {
         </Button>
       </nav>
       <div className="min-h-0 min-w-0 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
-      <h2 id="appearance-settings-title" className="text-lg font-semibold tracking-tight">Appearance</h2>
+      <h2
+          id="appearance-settings-title"
+          className="text-lg font-semibold tracking-tight"
+        >
+          Appearance
+        </h2>
       <section aria-labelledby="visual-style-title">
         <Card>
           <CardHeader>
