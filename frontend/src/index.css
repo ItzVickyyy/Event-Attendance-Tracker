@@ -169,3 +169,45 @@
     transition-duration: 0.01ms;
   }
 }
+
+/* User-controlled interface scale and contrast preferences. */
+html[data-ui-font-size="small"] {
+  font-size: 14px;
+}
+
+html[data-ui-font-size="default"] {
+  font-size: 16px;
+}
+
+html[data-ui-font-size="large"] {
+  font-size: 18px;
+}
+
+html[data-ui-font-size="extra-large"] {
+  font-size: 20px;
+}
+
+.high-contrast {
+  --muted-foreground: color-mix(
+    in srgb,
+    var(--foreground) 92%,
+    var(--background)
+  );
+  --border: color-mix(in srgb, var(--foreground) 42%, var(--background));
+  --input: color-mix(in srgb, var(--foreground) 48%, var(--background));
+  --ring: var(--foreground);
+}
+
+.high-contrast
+  :where(
+    button,
+    [role="button"],
+    a,
+    input,
+    select,
+    textarea,
+    [tabindex]
+  ):focus-visible {
+  outline-width: 3px;
+  outline-offset: 3px;
+}
