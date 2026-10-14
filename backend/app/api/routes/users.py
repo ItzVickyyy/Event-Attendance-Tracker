@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from openpyxl import Workbook  # type: ignore[import-untyped]
 from sqlalchemy import or_
+from sqlalchemy.sql.elements import ColumnElement
 from sqlmodel import col, delete, func, select
 
 from app import crud
@@ -59,7 +60,7 @@ def read_users(
 
     # Treat LIKE metacharacters as literal text so search input cannot broaden
     # results unexpectedly. The same conditions are used for data and count.
-    conditions = [col(User.is_developer).is_(False)]
+    conditions: list[ColumnElement[bool]] = [col(User.is_developer).is_(False)]
     normalized_search = (search or "").strip()
     if normalized_search:
         escaped_search = (
