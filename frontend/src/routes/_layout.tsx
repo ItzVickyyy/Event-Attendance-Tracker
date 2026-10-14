@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { UsersService } from "@/client"
+import { useTheme } from "@/components/theme-provider"
 import { AccountModal } from "@/components/Account/AccountModal"
 import { Footer } from "@/components/Common/Footer"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
@@ -52,7 +53,6 @@ import {
   useAcademicYear,
 } from "@/context/AcademicYearContext"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import { useTheme } from "@/components/theme-provider"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -325,11 +325,25 @@ function Layout() {
               size="icon"
               className="min-h-10 min-w-10"
               data-testid="top-nav-theme-toggle"
-              aria-label={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              title={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+              aria-label={
+                resolvedTheme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              title={
+                resolvedTheme === "dark"
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              onClick={() =>
+                setTheme(resolvedTheme === "dark" ? "light" : "dark")
+              }
             >
-              {resolvedTheme === "dark" ? <Sun className="size-5" /> : <Moon className="size-5" />}
+              {resolvedTheme === "dark" ? (
+                <Sun className="size-5" />
+              ) : (
+                <Moon className="size-5" />
+              )}
             </Button>
           </header>
           <main className="min-w-0 flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
