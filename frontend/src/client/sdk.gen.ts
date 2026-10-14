@@ -144,7 +144,7 @@ export class UsersService {
     /**
      * Read Users
      *
-     * Retrieve users.
+     * Retrieve users, optionally searching account and officer-position fields.
      */
     public static readUsers<ThrowOnError extends boolean = true>(options?: Options<usersReadUsersData, ThrowOnError>) {
         return (options?.client ?? client).get<usersReadUsersResponses, usersReadUsersErrors, ThrowOnError>({
