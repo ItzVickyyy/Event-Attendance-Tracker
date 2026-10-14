@@ -302,4 +302,3 @@ test("Super admin can validate and import officer accounts from CSV", async ({
   await expect(row).toBeVisible()
   await expect(row).toContainText(position)
 })
-
