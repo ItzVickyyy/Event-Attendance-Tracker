@@ -1,5 +1,5 @@
-import { useState } from "react"
 import { Shield, UserRound } from "lucide-react"
+import { useState } from "react"
 
 import ChangePassword from "@/components/UserSettings/ChangePassword"
 import UserInformation from "@/components/UserSettings/UserInformation"
