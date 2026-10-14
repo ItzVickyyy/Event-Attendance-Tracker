@@ -55,9 +55,7 @@ export function StudentSearch() {
 
       return [
         section.id,
-        alreadyFormatted || !prefix
-          ? sectionCode
-          : `${prefix} ${sectionCode}`,
+        alreadyFormatted || !prefix ? sectionCode : `${prefix} ${sectionCode}`,
       ]
     }),
   )
