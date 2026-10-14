@@ -76,7 +76,7 @@ export function StudentDetailsPage({
     queryKey: ["attendeeIdForPerson", student?.person_id],
     queryFn: async () => {
       const result = await AttendeesService.readAttendees({
-        query: { limit: 10000 },
+        query: { person_id: student!.person_id, limit: 1 },
         throwOnError: true,
       })
       const attendees = (
@@ -84,18 +84,7 @@ export function StudentDetailsPage({
           data: { data: { id: string; person_id: string }[] }
         }
       ).data.data
-      const existing = attendees.find(
-        (attendee) => attendee.person_id === student!.person_id,
-      )
-      if (existing) return existing.id
-      const created = await AttendeesService.createAttendee({
-        body: {
-          person_id: student!.person_id,
-          attendee_type: "student",
-        },
-        throwOnError: true,
-      })
-      return (created as unknown as { data: { id: string } }).data.id
+      return attendees[0]?.id ?? null
     },
     enabled: Boolean(student?.person_id),
   })
@@ -455,7 +444,24 @@ export function StudentDetailsPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!attendeeId ? (
+          {!student?.attendee_id && attendeeQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">
+              Checking attendee link…
+            </p>
+          ) : !student?.attendee_id && attendeeQuery.isError ? (
+            <div className="space-y-2">
+              <p className="text-sm text-destructive">
+                Unable to check the attendee link.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void attendeeQuery.refetch()}
+              >
+                Retry
+              </Button>
+            </div>
+          ) : !attendeeId ? (
             <p className="text-sm text-muted-foreground">
               This student is not linked to an attendee record, so NFC
               credential management is unavailable.
