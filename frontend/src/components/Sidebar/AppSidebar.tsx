@@ -21,7 +21,6 @@ export function AppSidebar() {
         <ReconstructionNavigation />
       </SidebarContent>
       <SidebarFooter>
-        <SidebarAppearance />
         <User user={user} />
       </SidebarFooter>
     </Sidebar>
