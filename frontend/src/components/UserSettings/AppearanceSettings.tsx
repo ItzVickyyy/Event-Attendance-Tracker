@@ -394,229 +394,229 @@ export function AppearanceSettings() {
         </Button>
       </nav>
       <div className="min-h-0 min-w-0 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
-        <h2
-            id="appearance-settings-title"
-            className="text-lg font-semibold tracking-tight"
-          >
-            Appearance
-          </h2>
-        <section aria-labelledby="visual-style-title">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Monitor className="size-5 text-primary" />
-                <CardTitle id="visual-style-title">Visual Style</CardTitle>
-              </div>
-              <CardDescription>
-                Choose how the application should look.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2 sm:grid-cols-3">
-                <ChoiceButton
-                  active={theme === "light"}
-                  onClick={() =>
-                    savePreferences({ ...preferences, theme: "light" })
-                  }
+      <h2
+          id="appearance-settings-title"
+          className="text-lg font-semibold tracking-tight"
+        >
+          Appearance
+        </h2>
+      <section aria-labelledby="visual-style-title">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Monitor className="size-5 text-primary" />
+              <CardTitle id="visual-style-title">Visual Style</CardTitle>
+            </div>
+            <CardDescription>
+              Choose how the application should look.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <ChoiceButton
+                active={theme === "light"}
+                onClick={() =>
+                  savePreferences({ ...preferences, theme: "light" })
+                }
+              >
+                <Sun className="size-4 shrink-0" />
+                Light Mode
+              </ChoiceButton>
+              <ChoiceButton
+                active={theme === "dark"}
+                onClick={() =>
+                  savePreferences({ ...preferences, theme: "dark" })
+                }
+              >
+                <Moon className="size-4 shrink-0" />
+                Dark Mode
+              </ChoiceButton>
+              <ChoiceButton
+                active={theme === "system"}
+                onClick={() =>
+                  savePreferences({ ...preferences, theme: "system" })
+                }
+              >
+                <Monitor className="size-4 shrink-0" />
+                System Default
+              </ChoiceButton>
+            </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {theme === "system"
+                ? `Following your device appearance. Currently ${resolvedTheme}.`
+                : `Using ${theme} mode until you change this setting.`}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-labelledby="theme-colors-title">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Palette className="size-5 text-primary" />
+              <CardTitle id="theme-colors-title">Theme Colors</CardTitle>
+            </div>
+            <CardDescription>
+              Personalize the colors used across the interface. Leave a color at
+              its default to follow the selected visual style.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {colors.map(({ key, title, description }) => {
+              const value = preferences[key] ?? defaults[key]
+
+              return (
+                <div
+                  key={key}
+                  className="grid gap-3 border-b pb-5 last:border-b-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                 >
-                  <Sun className="size-4 shrink-0" />
-                  Light Mode
-                </ChoiceButton>
-                <ChoiceButton
-                  active={theme === "dark"}
-                  onClick={() =>
-                    savePreferences({ ...preferences, theme: "dark" })
-                  }
-                >
-                  <Moon className="size-4 shrink-0" />
-                  Dark Mode
-                </ChoiceButton>
-                <ChoiceButton
-                  active={theme === "system"}
-                  onClick={() =>
-                    savePreferences({ ...preferences, theme: "system" })
-                  }
-                >
-                  <Monitor className="size-4 shrink-0" />
-                  System Default
-                </ChoiceButton>
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">
-                {theme === "system"
-                  ? `Following your device appearance. Currently ${resolvedTheme}.`
-                  : `Using ${theme} mode until you change this setting.`}
-              </p>
-            </CardContent>
-          </Card>
-        </section>
-  
-        <section aria-labelledby="theme-colors-title">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Palette className="size-5 text-primary" />
-                <CardTitle id="theme-colors-title">Theme Colors</CardTitle>
-              </div>
-              <CardDescription>
-                Personalize the colors used across the interface. Leave a color at
-                its default to follow the selected visual style.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {colors.map(({ key, title, description }) => {
-                const value = preferences[key] ?? defaults[key]
-  
-                return (
-                  <div
-                    key={key}
-                    className="grid gap-3 border-b pb-5 last:border-b-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                  >
-                    <div className="space-y-1">
-                      <Label htmlFor={`appearance-${key}`}>{title}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {description}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        id={`appearance-${key}`}
-                        aria-label={`${title} color picker`}
-                        type="color"
-                        value={value}
-                        onChange={(event) => updateColor(key, event.target.value)}
-                        className="h-11 w-14 cursor-pointer rounded-md border border-input bg-background p-1"
-                      />
-                      <Input
-                        aria-label={`${title} HEX color`}
-                        value={hexDrafts[key]}
-                        onChange={(event) => updateColor(key, event.target.value)}
-                        onBlur={() => {
-                          if (!isHexColor(hexDrafts[key])) {
-                            setHexDrafts((current) => ({
-                              ...current,
-                              [key]: preferences[key] ?? defaults[key],
-                            }))
-                            setInvalidHex(null)
-                          }
-                        }}
-                        aria-invalid={invalidHex === key}
-                        className="w-28 font-mono uppercase"
-                        maxLength={7}
-                        spellCheck={false}
-                      />
-                      {preferences[key] && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => clearColorOverride(key)}
-                        >
-                          Reset
-                        </Button>
-                      )}
-                      {invalidHex === key && (
-                        <p
-                          className="w-full text-xs text-destructive"
-                          role="alert"
-                        >
-                          Enter a valid HEX color, such as #0F766E.
-                        </p>
-                      )}
-                    </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`appearance-${key}`}>{title}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {description}
+                    </p>
                   </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-        </section>
-  
-        <section aria-labelledby="advanced-appearance-title">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Contrast className="size-5 text-primary" />
-                <CardTitle id="advanced-appearance-title">Advanced</CardTitle>
-              </div>
-              <CardDescription>
-                Adjust readability and interface density.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:items-start">
-                <div className="space-y-1">
-                  <Label
-                    htmlFor="appearance-font-size"
-                    className="flex items-center gap-2"
-                  >
-                    <Type className="size-4" />
-                    UI Font Size
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Changes the base text and spacing scale throughout the app.
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      id={`appearance-${key}`}
+                      aria-label={`${title} color picker`}
+                      type="color"
+                      value={value}
+                      onChange={(event) => updateColor(key, event.target.value)}
+                      className="h-11 w-14 cursor-pointer rounded-md border border-input bg-background p-1"
+                    />
+                    <Input
+                      aria-label={`${title} HEX color`}
+                      value={hexDrafts[key]}
+                      onChange={(event) => updateColor(key, event.target.value)}
+                      onBlur={() => {
+                        if (!isHexColor(hexDrafts[key])) {
+                          setHexDrafts((current) => ({
+                            ...current,
+                            [key]: preferences[key] ?? defaults[key],
+                          }))
+                          setInvalidHex(null)
+                        }
+                      }}
+                      aria-invalid={invalidHex === key}
+                      className="w-28 font-mono uppercase"
+                      maxLength={7}
+                      spellCheck={false}
+                    />
+                    {preferences[key] && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => clearColorOverride(key)}
+                      >
+                        Reset
+                      </Button>
+                    )}
+                    {invalidHex === key && (
+                      <p
+                        className="w-full text-xs text-destructive"
+                        role="alert"
+                      >
+                        Enter a valid HEX color, such as #0F766E.
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <select
-                  id="appearance-font-size"
-                  value={preferences.fontSize}
-                  onChange={(event) =>
-                    savePreferences({
-                      ...preferences,
-                      fontSize: event.target.value as FontSize,
-                    })
-                  }
-                  className="h-11 w-full rounded-md border border-input bg-background px-3 text-base"
+              )
+            })}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-labelledby="advanced-appearance-title">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Contrast className="size-5 text-primary" />
+              <CardTitle id="advanced-appearance-title">Advanced</CardTitle>
+            </div>
+            <CardDescription>
+              Adjust readability and interface density.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:items-start">
+              <div className="space-y-1">
+                <Label
+                  htmlFor="appearance-font-size"
+                  className="flex items-center gap-2"
                 >
-                  <option value="small">Small</option>
-                  <option value="default">Default</option>
-                  <option value="large">Large</option>
-                  <option value="extra-large">Extra Large</option>
-                </select>
+                  <Type className="size-4" />
+                  UI Font Size
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Changes the base text and spacing scale throughout the app.
+                </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:items-start">
-                <div className="space-y-1">
-                  <Label>Contrast</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Strengthens borders, secondary text, and keyboard focus
-                    indicators.
-                  </p>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <ChoiceButton
-                    active={preferences.contrast === "standard"}
-                    onClick={() =>
-                      savePreferences({ ...preferences, contrast: "standard" })
-                    }
-                  >
-                    Standard
-                  </ChoiceButton>
-                  <ChoiceButton
-                    active={preferences.contrast === "high"}
-                    onClick={() =>
-                      savePreferences({ ...preferences, contrast: "high" })
-                    }
-                  >
-                    High Contrast
-                  </ChoiceButton>
-                </div>
+              <select
+                id="appearance-font-size"
+                value={preferences.fontSize}
+                onChange={(event) =>
+                  savePreferences({
+                    ...preferences,
+                    fontSize: event.target.value as FontSize,
+                  })
+                }
+                className="h-11 w-full rounded-md border border-input bg-background px-3 text-base"
+              >
+                <option value="small">Small</option>
+                <option value="default">Default</option>
+                <option value="large">Large</option>
+                <option value="extra-large">Extra Large</option>
+              </select>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] sm:items-start">
+              <div className="space-y-1">
+                <Label>Contrast</Label>
+                <p className="text-sm text-muted-foreground">
+                  Strengthens borders, secondary text, and keyboard focus
+                  indicators.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </section>
-  
-        <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Settings are saved to your account and apply immediately.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={resetAll}
-            className="w-full sm:w-auto"
-          >
-            <RotateCcw className="size-4" />
-            Reset All Settings
-          </Button>
-        </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <ChoiceButton
+                  active={preferences.contrast === "standard"}
+                  onClick={() =>
+                    savePreferences({ ...preferences, contrast: "standard" })
+                  }
+                >
+                  Standard
+                </ChoiceButton>
+                <ChoiceButton
+                  active={preferences.contrast === "high"}
+                  onClick={() =>
+                    savePreferences({ ...preferences, contrast: "high" })
+                  }
+                >
+                  High Contrast
+                </ChoiceButton>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Settings are saved to your account and apply immediately.
+        </p>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={resetAll}
+          className="w-full sm:w-auto"
+        >
+          <RotateCcw className="size-4" />
+          Reset All Settings
+        </Button>
+      </div>
         </div>
       </div>
   )
