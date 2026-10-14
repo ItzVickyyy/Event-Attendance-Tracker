@@ -223,4 +223,3 @@ test("event modal Cancel buttons close without submitting or deleting", async ({
   await expect(page.getByRole("dialog")).toHaveCount(0)
   await expect(eventRow).toBeVisible()
 })
-
