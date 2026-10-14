@@ -146,6 +146,7 @@ def read_students(
         statement = statement.where(
             col(Student.student_number).ilike(pattern)
             | col(Person.first_name).ilike(pattern)
+            | col(Person.middle_name).ilike(pattern)
             | col(Person.last_name).ilike(pattern)
         )
 
