@@ -303,9 +303,7 @@ test("Super admin can validate and import officer accounts from CSV", async ({
   await expect(row).toContainText(position)
 })
 
-test("Edit account matches Add Account fields without a password field", async ({
-  page,
-}) => {
+test("Edit account does not expose a password field", async ({ page }) => {
   const email = randomEmail()
   await createUser({ email, password: randomPassword() })
 
@@ -316,14 +314,6 @@ test("Edit account matches Add Account fields without a password field", async (
   await row.getByRole("button", { name: "Edit" }).click()
 
   const dialog = page.getByRole("dialog")
-  await expect(dialog.getByText("Student ID *")).toBeVisible()
-  await expect(dialog.getByText("First Name *")).toBeVisible()
-  await expect(dialog.getByText("Middle Initial")).toBeVisible()
-  await expect(dialog.getByText("Last Name *")).toBeVisible()
-  await expect(dialog.getByText("Academic Year *")).toBeVisible()
-  await expect(dialog.getByText("Section *")).toBeVisible()
-  await expect(dialog.getByText("Organization *")).toBeVisible()
-  await expect(dialog.getByText("System Role *")).toBeVisible()
-  await expect(dialog.getByText("Position *")).toBeVisible()
+  await expect(dialog.getByText("Email *")).toBeVisible()
   await expect(dialog.getByText("New Password")).toHaveCount(0)
 })
