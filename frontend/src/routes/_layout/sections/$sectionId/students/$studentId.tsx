@@ -5,6 +5,9 @@ export const Route = createFileRoute(
   "/_layout/sections/$sectionId/students/$studentId",
 )({
   component: StudentDetails,
+  validateSearch: (search: Record<string, unknown>) => ({
+    from: search.from === "search" ? ("search" as const) : undefined,
+  }),
   head: () => ({
     meta: [{ title: "Student Details - Event Attendance Tracker" }],
   }),
@@ -12,5 +15,12 @@ export const Route = createFileRoute(
 
 function StudentDetails() {
   const { sectionId, studentId } = Route.useParams()
-  return <StudentDetailsPage sectionId={sectionId} studentId={studentId} />
+  const { from } = Route.useSearch()
+  return (
+    <StudentDetailsPage
+      sectionId={sectionId}
+      studentId={studentId}
+      returnToSearch={from === "search"}
+    />
+  )
 }
