@@ -238,9 +238,13 @@ test("event roster student search can navigate beyond the first ten matches", as
   await expect(page.getByText("Event created successfully")).toBeVisible()
   await page.keyboard.press("Escape")
 
-  const eventRow = page.getByRole("row").filter({ hasText: eventName })
-  await expect(eventRow).toBeVisible()
-  await eventRow.getByRole("button", { name: "Roster" }).click()
+  const eventLink = page.getByRole("link", { name: eventName })
+  await expect(eventLink).toBeVisible()
+  const eventHref = await eventLink.getAttribute("href")
+  expect(eventHref).toBeTruthy()
+  await page.goto(eventHref!)
+  await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
+  await page.getByRole("button", { name: "Roster" }).click()
   const dialog = page.getByRole("dialog")
   await dialog
     .getByPlaceholder("Search student by name or student number...")
