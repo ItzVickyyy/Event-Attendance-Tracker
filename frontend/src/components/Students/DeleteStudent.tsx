@@ -6,6 +6,7 @@ import { StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -60,9 +61,11 @@ export function DeleteStudent({ student }: DeleteStudentProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2 py-4">
-          <Button variant="outline" onClick={() => {}}>
-            Cancel
-          </Button>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
           <LoadingButton
             loading={mutation.isPending}
             variant="destructive"
