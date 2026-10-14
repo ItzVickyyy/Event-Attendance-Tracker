@@ -189,7 +189,11 @@ function useSyncStatus(eventId?: string) {
     void reload()
     void reloadRoster()
     void reloadActiveSession()
-    const interval = window.setInterval(() => void reloadActiveSession(), 3000)
+    // Session state does not need a network request every three seconds.
+    // The visibility handler above refreshes immediately when the user returns.
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void reloadActiveSession()
+    }, 10000)
     return () => {
       window.clearInterval(interval)
       window.removeEventListener("online", handleOnline)
