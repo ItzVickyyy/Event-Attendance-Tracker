@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { AcademicRegistryService, StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,11 +15,38 @@ import {
 } from "@/components/ui/table"
 
 const PAGE_SIZE = 25
+const SEARCH_STATE_KEY = "section-students-global-search"
+
+function readSavedSearchState() {
+  if (typeof window === "undefined") {
+    return { search: "", submitted: "", page: 0 }
+  }
+  try {
+    const saved = sessionStorage.getItem(SEARCH_STATE_KEY)
+    if (!saved) return { search: "", submitted: "", page: 0 }
+    const parsed = JSON.parse(saved)
+    return {
+      search: typeof parsed.search === "string" ? parsed.search : "",
+      submitted: typeof parsed.submitted === "string" ? parsed.submitted : "",
+      page: Number.isInteger(parsed.page) && parsed.page >= 0 ? parsed.page : 0,
+    }
+  } catch {
+    return { search: "", submitted: "", page: 0 }
+  }
+}
 
 export function StudentSearch() {
-  const [search, setSearch] = useState("")
-  const [submitted, setSubmitted] = useState("")
-  const [page, setPage] = useState(0)
+  const [initialState] = useState(readSavedSearchState)
+  const [search, setSearch] = useState(initialState.search)
+  const [submitted, setSubmitted] = useState(initialState.submitted)
+  const [page, setPage] = useState(initialState.page)
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      SEARCH_STATE_KEY,
+      JSON.stringify({ search, submitted, page }),
+    )
+  }, [search, submitted, page])
 
   const query = useQuery({
     queryKey: ["students", "global-search", submitted, page],
@@ -148,6 +175,7 @@ export function StudentSearch() {
                             sectionId: student.section_id,
                             studentId: student.id,
                           }}
+                          search={{ from: "search" }}
                         >
                           View details
                         </Link>
