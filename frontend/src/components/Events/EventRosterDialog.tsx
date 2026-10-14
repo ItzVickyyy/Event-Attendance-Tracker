@@ -296,7 +296,8 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
                       </LoadingButton>
                     </div>
                   ))}
-                  {(studentSearchResponse?.count ?? 0) > studentSearchPageSize && (
+                  {(studentSearchResponse?.count ?? 0) >
+                    studentSearchPageSize && (
                     <div className="flex items-center justify-between gap-2 border-t p-2">
                       <span className="text-xs text-muted-foreground">
                         Showing {studentSearchPage * studentSearchPageSize + 1}
@@ -313,7 +314,9 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
                           variant="outline"
                           disabled={studentSearchPage === 0}
                           onClick={() =>
-                            setStudentSearchPage((page) => Math.max(0, page - 1))
+                            setStudentSearchPage((page) =>
+                              Math.max(0, page - 1),
+                            )
                           }
                         >
                           Previous
