@@ -55,7 +55,9 @@ test("direct student details URL renders the nested details route", async ({
       await route.fulfill({
         status: 404,
         contentType: "application/json",
-        body: JSON.stringify({ detail: "Student is not enrolled in this section" }),
+        body: JSON.stringify({
+          detail: "Student is not enrolled in this section",
+        }),
       })
     },
   )
