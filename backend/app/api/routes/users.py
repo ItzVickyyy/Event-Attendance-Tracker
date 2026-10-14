@@ -212,9 +212,7 @@ def update_appearance_preferences(
     }
     unknown_keys = set(preferences) - allowed_keys
     if unknown_keys:
-        raise HTTPException(
-            status_code=422, detail="Unsupported appearance preference"
-        )
+        raise HTTPException(status_code=422, detail="Unsupported appearance preference")
 
     validated: dict[str, Any] = {}
     if "theme" in preferences:
