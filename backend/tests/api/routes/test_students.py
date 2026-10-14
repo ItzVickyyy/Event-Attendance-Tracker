@@ -15,6 +15,7 @@ def test_student_lifecycle(
         headers=superuser_token_headers,
         json={
             "first_name": "StudentFirst",
+            "middle_name": "MiddleSearchUnique",
             "last_name": "StudentLast",
             "email": random_email(),
         },
@@ -64,6 +65,14 @@ def test_student_lifecycle(
     )
     assert search_res.status_code == 200
     assert search_res.json()["count"] == 1
+
+    middle_search_res = client.get(
+        f"{settings.API_V1_STR}/students/?search=MiddleSearchUnique",
+        headers=superuser_token_headers,
+    )
+    assert middle_search_res.status_code == 200
+    assert middle_search_res.json()["count"] == 1
+    assert middle_search_res.json()["data"][0]["id"] == student_id
 
     # 5. Read by ID
     get_res = client.get(
