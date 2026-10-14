@@ -84,25 +84,46 @@ test("settings modal saves account appearance preferences", async ({
     .toBe(true)
 })
 
-test("top navigation theme button toggles light and dark modes", async ({
+test("top navigation theme button toggles light and dark modes without reverting", async ({
   page,
 }) => {
   await page.goto("/dashboard")
   const wasDark = await page.evaluate(() =>
     document.documentElement.classList.contains("dark"),
   )
+
   await page.getByTestId("top-nav-theme-toggle").click()
+  const shouldBeDark = !wasDark
   await expect
     .poll(() =>
       page.evaluate(() => document.documentElement.classList.contains("dark")),
     )
-    .toBe(!wasDark)
+    .toBe(shouldBeDark)
+  await page.waitForTimeout(750)
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.classList.contains("dark")),
+    )
+    .toBe(shouldBeDark)
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("vite-ui-theme")))
+    .toBe(shouldBeDark ? "dark" : "light")
+
   await page.getByTestId("top-nav-theme-toggle").click()
   await expect
     .poll(() =>
       page.evaluate(() => document.documentElement.classList.contains("dark")),
     )
     .toBe(wasDark)
+  await page.waitForTimeout(750)
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.classList.contains("dark")),
+    )
+    .toBe(wasDark)
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("vite-ui-theme")))
+    .toBe(wasDark ? "dark" : "light")
 })
 
 test("My Account opens in a modal without navigating away", async ({
