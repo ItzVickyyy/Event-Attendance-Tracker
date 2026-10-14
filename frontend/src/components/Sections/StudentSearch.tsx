@@ -40,7 +40,24 @@ export function StudentSearch() {
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE))
   const sections = sectionsQuery.data?.data.data ?? []
   const sectionNames = new Map(
-    sections.map((section) => [section.id, section.section_name]),
+    sections.map((section) => {
+      const programCode = section.program_code?.trim() ?? ""
+      const majorCode = section.major_code?.trim() ?? ""
+      const sectionCode =
+        section.section_code?.trim() || section.section_name.trim()
+      const prefix = [programCode, majorCode].filter(Boolean).join(" ")
+      const alreadyFormatted =
+        prefix.length > 0 &&
+        (sectionCode.toLocaleUpperCase() === prefix.toLocaleUpperCase() ||
+          sectionCode
+            .toLocaleUpperCase()
+            .startsWith(`${prefix.toLocaleUpperCase()} `))
+
+      return [
+        section.id,
+        alreadyFormatted || !prefix ? sectionCode : `${prefix} ${sectionCode}`,
+      ]
+    }),
   )
 
   return (
