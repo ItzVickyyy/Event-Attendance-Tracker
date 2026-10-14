@@ -9,7 +9,7 @@ test("settings modal saves account appearance preferences", async ({
 
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible()
   await expect(
-    page.getByRole("heading", { name: "Visual Style" }),
+    page.getByText("Visual Style", { exact: true }),
   ).toBeVisible()
   const appearanceSections = page.getByRole("navigation", {
     name: "Settings sections",
