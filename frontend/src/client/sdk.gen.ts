@@ -220,6 +220,38 @@ export class UsersService {
     }
 
     /**
+     * Read Appearance Preferences
+     *
+     * Return only the signed-in user's appearance preferences.
+     */
+    public static readAppearancePreferences<ThrowOnError extends boolean = true>(options?: Options<usersReadAppearancePreferencesData, ThrowOnError>) {
+        return (options?.client ?? client).get<usersReadAppearancePreferencesResponses, unknown, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/me/appearance-preferences',
+            ...options
+        });
+    }
+
+    /**
+     * Update Appearance Preferences
+     *
+     * Update a validated subset of the signed-in user's appearance preferences.
+     */
+    public static updateAppearancePreferences<ThrowOnError extends boolean = true>(options: Options<usersUpdateAppearancePreferencesData, ThrowOnError>) {
+        return (options.client ?? client).patch<usersUpdateAppearancePreferencesResponses, usersUpdateAppearancePreferencesErrors, ThrowOnError>({
+            responseType: 'json',
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/v1/users/me/appearance-preferences',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
      * Update Password Me
      *
      * Update own password.
