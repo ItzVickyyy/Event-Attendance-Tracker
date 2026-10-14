@@ -403,7 +403,7 @@ export function UsersAdministrationPage() {
         </div>
       </div>
       <Input
-        placeholder="Search by name, email, or position"
+        placeholder="Search by name, email, student ID, or position"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
