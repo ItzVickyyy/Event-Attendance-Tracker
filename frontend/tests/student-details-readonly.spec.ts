@@ -49,7 +49,9 @@ test("viewing student details never creates an attendee record", async ({
     },
   )
 
-  await page.route(`**/api/v1/academic-sections/${sectionId}`, async (route) => {
+  await page.route(
+    `**/api/v1/academic-sections/${sectionId}`,
+    async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -62,7 +64,8 @@ test("viewing student details never creates an attendee record", async ({
         academic_year: "2026-2027",
       }),
     })
-  })
+    },
+  )
 
   await page.route("**/api/v1/academic-programs/**", async (route) => {
     await route.fulfill({
@@ -107,7 +110,9 @@ test("viewing student details never creates an attendee record", async ({
 
   await page.goto(`/sections/${sectionId}/students/${studentId}`)
 
-  await expect(page.getByText("Student Information", { exact: true })).toBeVisible()
+  await expect(
+    page.getByText("Student Information", { exact: true }),
+  ).toBeVisible()
   await expect(page.getByText("READONLY-001", { exact: true })).toBeVisible()
   await expect(
     page.getByText(
