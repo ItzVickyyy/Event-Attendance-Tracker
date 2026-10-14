@@ -7,6 +7,7 @@ import { EventsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -59,7 +60,11 @@ export function DeleteEvent({ event }: DeleteEventProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2 py-4">
-          <Button variant="outline">Cancel</Button>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
           <LoadingButton
             loading={mutation.isPending}
             variant="destructive"

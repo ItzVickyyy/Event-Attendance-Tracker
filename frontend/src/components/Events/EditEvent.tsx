@@ -9,6 +9,7 @@ import { type EventPublic, EventsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -207,24 +208,26 @@ export function EditEvent({ event }: EditEventProps) {
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  form.reset({
-                    event_name: event.event_name,
-                    academic_year_id:
-                      event.academic_year_id ?? activeAcademicYear?.id ?? "",
-                    event_date: event.event_date,
-                    start_time: event.start_time || undefined,
-                    end_time: event.end_time || undefined,
-                    attendance_mode: event.attendance_mode,
-                    status: event.status || "draft",
-                  })
-                }
-              >
-                Cancel
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    form.reset({
+                      event_name: event.event_name,
+                      academic_year_id:
+                        event.academic_year_id ?? activeAcademicYear?.id ?? "",
+                      event_date: event.event_date,
+                      start_time: event.start_time || undefined,
+                      end_time: event.end_time || undefined,
+                      attendance_mode: event.attendance_mode,
+                      status: event.status || "draft",
+                    })
+                  }
+                >
+                  Cancel
+                </Button>
+              </DialogClose>
               <LoadingButton loading={mutation.isPending} type="submit">
                 Save Changes
               </LoadingButton>

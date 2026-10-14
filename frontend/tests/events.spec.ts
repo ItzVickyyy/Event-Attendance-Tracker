@@ -184,3 +184,15 @@ test("event details distinguish server failures from missing events and can retr
   await page.getByRole("button", { name: "Retry loading event" }).click()
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
 })
+
+test("Create Event Cancel closes without submitting", async ({ page }) => {
+  await page.goto("/events")
+  await page.getByRole("button", { name: "Add Event" }).click()
+
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel("Event Name").fill(`Cancelled event ${randomEmail()}`)
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+})
