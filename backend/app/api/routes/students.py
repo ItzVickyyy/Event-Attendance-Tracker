@@ -140,6 +140,7 @@ def read_students(
         count_statement = count_statement.join(Person, isouter=True).where(
             col(Student.student_number).ilike(pattern)
             | col(Person.first_name).ilike(pattern)
+            | col(Person.middle_name).ilike(pattern)
             | col(Person.last_name).ilike(pattern)
         )
         statement = statement.where(
