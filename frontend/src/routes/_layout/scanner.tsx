@@ -982,10 +982,10 @@ function Scanner() {
       manualLookupMutation.mutate(query)
     }, 300)
     return () => window.clearTimeout(timeout)
-  }, [manualSearch, eventId, manualLookupMutation.mutate])
+  }, [manualSearch, manualLookupMutation.mutate])
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -1131,7 +1131,6 @@ function Scanner() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -1276,7 +1275,6 @@ function Scanner() {
         </CardContent>
       </Card>
 
-      </div>
       <SyncStatusCard
         online={syncStatus.online}
         pendingScans={syncStatus.pendingScans}
