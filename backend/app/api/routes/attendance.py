@@ -5,7 +5,7 @@ from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
-from sqlalchemy import and_, or_, select as sa_select
+from sqlalchemy import select as sa_select
 from sqlmodel import col, func, select
 
 from app.api.deps import (
@@ -161,12 +161,8 @@ def read_attendances(
         count_statement = count_statement.where(col(Attendance.is_late) == is_late)
         statement = statement.where(col(Attendance.is_late) == is_late)
     if incomplete_only:
-        incomplete_condition = or_(
-            col(Attendance.status) == AttendanceStatus.incomplete,
-            and_(
-                col(Attendance.time_in).is_not(None),
-                col(Attendance.time_out).is_(None),
-            ),
+        incomplete_condition = col(Attendance.status).in_(
+            [AttendanceStatus.incomplete, AttendanceStatus.time_in_only]
         )
         count_statement = count_statement.where(incomplete_condition)
         statement = statement.where(incomplete_condition)
