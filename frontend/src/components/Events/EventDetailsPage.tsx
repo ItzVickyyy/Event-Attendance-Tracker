@@ -25,7 +25,7 @@ export function EventDetailsPage({ eventId }: { eventId: string }) {
     },
   })
   const sectionsQuery = useQuery({
-    queryKey: ["academicRegistrySections", "event-details"],
+    queryKey: ["academicRegistrySections"],
     queryFn: () => AcademicRegistryService.registryReadSections(),
   })
   const event = query.data
