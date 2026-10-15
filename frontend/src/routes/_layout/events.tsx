@@ -23,9 +23,7 @@ function getEventsQueryOptions(academicYearId: string | undefined) {
       const events = [...firstPage.data.data]
       const remainingOffsets = Array.from(
         {
-          length: Math.ceil(
-            Math.max(0, firstPage.data.count - limit) / limit,
-          ),
+          length: Math.ceil(Math.max(0, firstPage.data.count - limit) / limit),
         },
         (_, index) => (index + 1) * limit,
       )
