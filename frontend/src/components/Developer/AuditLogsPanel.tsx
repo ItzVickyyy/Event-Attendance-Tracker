@@ -14,6 +14,7 @@ import {
 type AuditEntry = {
   id: string
   actor_user_id: string | null
+  actor_name: string | null
   action: string
   resource: string
   method: string
@@ -264,7 +265,7 @@ export function AuditLogsPanel() {
                       <th className="px-3 py-3 font-medium">Time (UTC)</th>
                       <th className="px-3 py-3 font-medium">Action</th>
                       <th className="px-3 py-3 font-medium">Resource</th>
-                      <th className="px-3 py-3 font-medium">Actor ID</th>
+                      <th className="px-3 py-3 font-medium">Actor</th>
                       <th className="px-3 py-3 font-medium">Result</th>
                       <th className="px-3 py-3 font-medium">Request ID</th>
                       <th className="px-3 py-3 text-right font-medium">
@@ -290,7 +291,10 @@ export function AuditLogsPanel() {
                           </div>
                         </td>
                         <td className="max-w-[160px] break-all px-3 py-3 font-mono text-xs">
-                          {entry.actor_user_id ?? "Unknown"}
+                          {entry.actor_name ??
+                            (entry.actor_user_id
+                              ? "Unavailable account"
+                              : "System")}
                         </td>
                         <td className="px-3 py-3">
                           <Badge
