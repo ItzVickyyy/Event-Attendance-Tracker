@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, UserPlus } from "lucide-react"
+import { ArrowLeft, Search, UserPlus } from "lucide-react"
 import { useState } from "react"
 import {
   AttendeesService,
@@ -33,6 +33,7 @@ export function EventRosterPage({ eventId }: { eventId: string }) {
   const [lastName, setLastName] = useState("")
   const [contact, setContact] = useState("")
   const [selectedSessionId, setSelectedSessionId] = useState<string>("")
+  const [rosterSearch, setRosterSearch] = useState("")
   const eventQuery = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => EventsService.readEvent({ path: { event_id: eventId } }),
@@ -74,6 +75,13 @@ export function EventRosterPage({ eventId }: { eventId: string }) {
   })
   const event = eventQuery.data?.data
   const roster: SessionRosterEntry[] = rosterQuery.data ?? []
+  const normalizedRosterSearch = rosterSearch.trim().toLocaleLowerCase()
+  const filteredRoster = roster.filter((entry) =>
+    [entry.person_name, entry.student_number ?? ""]
+      .join(" ")
+      .toLocaleLowerCase()
+      .includes(normalizedRosterSearch),
+  )
   const sessions: AttendanceSession[] = sessionsQuery.data ?? []
   if (eventQuery.isLoading)
     return (
@@ -169,11 +177,21 @@ export function EventRosterPage({ eventId }: { eventId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Live Roster ({roster.length})
+            Live Roster ({filteredRoster.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="Search event roster"
+                placeholder="Search by attendee name or student number"
+                value={rosterSearch}
+                onChange={(event) => setRosterSearch(event.target.value)}
+                className="pl-9"
+              />
+            </div>
             <select
               className="h-10 rounded-md border bg-background px-3 text-sm"
               value={selectedSessionId}
@@ -229,7 +247,7 @@ export function EventRosterPage({ eventId }: { eventId: string }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {roster.map((entry) => (
+                {filteredRoster.map((entry) => (
                   <TableRow key={entry.attendee_id}>
                     <TableCell className="font-medium">
                       {entry.person_name}
@@ -257,6 +275,14 @@ export function EventRosterPage({ eventId }: { eventId: string }) {
               </TableBody>
             </Table>
           )}
+          {!rosterQuery.isLoading &&
+            !rosterQuery.isError &&
+            roster.length > 0 &&
+            filteredRoster.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No attendees match your search.
+              </p>
+            )}
         </CardContent>
       </Card>
     </div>
