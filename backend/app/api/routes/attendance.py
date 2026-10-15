@@ -175,7 +175,9 @@ def read_attendances(
 
     registrations = session.exec(
         select(EventRegistration).where(
-            col(EventRegistration.id).in_({record.registration_id for record in records})
+            col(EventRegistration.id).in_(
+                {record.registration_id for record in records}
+            )
         )
     ).all()
     registration_by_id = {item.id: item for item in registrations}
@@ -185,9 +187,7 @@ def read_attendances(
     ).all()
     attendee_by_id = {item.id: item for item in attendees}
     person_ids = {item.person_id for item in attendees}
-    people = session.exec(
-        select(Person).where(col(Person.id).in_(person_ids))
-    ).all()
+    people = session.exec(select(Person).where(col(Person.id).in_(person_ids))).all()
     person_by_id = {item.id: item for item in people}
     students = session.exec(
         select(Student).where(col(Student.person_id).in_(person_ids))
