@@ -511,6 +511,10 @@ export type AttendancePublic = {
      * Updated At
      */
     updated_at?: string | null;
+    person_name?: string | null;
+    student_number?: string | null;
+    event_name?: string | null;
+    scanned_by_name?: string | null;
 };
 
 /**
@@ -6011,6 +6015,10 @@ export type attendanceReadAttendancesData = {
          * Is Late
          */
         is_late?: boolean | null;
+        /**
+         * Incomplete Only
+         */
+        incomplete_only?: boolean;
         /**
          * Attendee Type
          */
