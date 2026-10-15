@@ -563,7 +563,11 @@ export function ClassRepresentativeSectionWorkspace() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={totalPages === 0 || page + 1 >= totalPages || students.isFetching}
+                  disabled={
+                    totalPages === 0 ||
+                    page + 1 >= totalPages ||
+                    students.isFetching
+                  }
                   onClick={() => setPage((value) => value + 1)}
                 >
                   Next
