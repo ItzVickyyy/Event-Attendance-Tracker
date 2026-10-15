@@ -426,11 +426,12 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
               Saving eligible sections…
             </p>
           )}
-          {saveSectionsMutation.isSuccess && !saveSectionsMutation.isPending && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Eligible sections saved automatically.
-            </p>
-          )}
+          {saveSectionsMutation.isSuccess &&
+            !saveSectionsMutation.isPending && (
+              <p role="status" className="text-sm text-muted-foreground">
+                Eligible sections saved automatically.
+              </p>
+            )}
           {saveSectionsMutation.isError && (
             <div className="space-y-2" role="alert">
               <p className="text-sm text-destructive">
