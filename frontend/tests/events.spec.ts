@@ -439,4 +439,3 @@ test("eligible section auto-saves are serialized and the latest selection wins",
   expect(savedSectionIds[0]).toEqual([firstSectionId])
   expect(savedSectionIds[1]).toEqual([firstSectionId, secondSectionId])
 })
-
