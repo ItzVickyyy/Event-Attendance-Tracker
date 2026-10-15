@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-test("student search runs automatically after typing", async ({
-  page,
-}) => {
+test("student search runs automatically after typing", async ({ page }) => {
   let searchedTerm = ""
   await page.route("**/api/v1/students**", async (route) => {
     const url = new URL(route.request().url())
