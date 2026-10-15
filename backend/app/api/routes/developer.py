@@ -204,7 +204,9 @@ def read_audit_logs(
     )
     actor_names = {
         actor.id: (
-            " ".join(part for part in (actor.first_name, actor.last_name) if part).strip()
+            " ".join(
+                part for part in (actor.first_name, actor.last_name) if part
+            ).strip()
             or str(actor.email)
         )
         for actor in actors
@@ -215,7 +217,9 @@ def read_audit_logs(
             AuditLogEntry(
                 id=str(row.id),
                 actor_user_id=str(row.actor_user_id) if row.actor_user_id else None,
-                actor_name=actor_names.get(row.actor_user_id) if row.actor_user_id else None,
+                actor_name=actor_names.get(row.actor_user_id)
+                if row.actor_user_id
+                else None,
                 action=row.action,
                 resource=row.resource,
                 method=row.method,
