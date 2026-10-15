@@ -112,9 +112,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         path: { event_id: eventId },
         body: { eligible_section_ids: selectedSections },
       })
-      const existing = new Set(
-        registered.map((item) => item.attendee_id),
-      )
+      const existing = new Set(registered.map((item) => item.attendee_id))
       const students = (studentQueries.data ?? []).filter(
         (student) => student.attendee_id && !existing.has(student.attendee_id),
       )
@@ -362,7 +360,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block break-words font-medium">
-                          {registrySectionNames.get(section.id) ?? section.section_name}
+                          {registrySectionNames.get(section.id) ??
+                            section.section_name}
                         </span>
                         <span className="text-sm text-muted-foreground">
                           Year {section.year_level} · {section.academic_year}
