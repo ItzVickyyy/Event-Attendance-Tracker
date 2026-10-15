@@ -47,6 +47,15 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         query: { event_id: eventId, skip: 0, limit: 1000 },
       }),
   })
+  const registrationPayload = registrationQuery.data?.data as unknown
+  const registered = Array.isArray(registrationPayload)
+    ? registrationPayload
+    : registrationPayload &&
+        typeof registrationPayload === "object" &&
+        "data" in registrationPayload &&
+        Array.isArray(registrationPayload.data)
+      ? registrationPayload.data
+      : []
   const eventResponse = eventQuery.data as unknown as
     | { data?: EventPublic }
     | EventPublic
@@ -103,11 +112,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         path: { event_id: eventId },
         body: { eligible_section_ids: selectedSections },
       })
-      const registrationData = registrationQuery.data?.data.data as unknown
       const existing = new Set(
-        (Array.isArray(registrationData) ? registrationData : []).map(
-          (item) => item.attendee_id,
-        ),
+        registered.map((item) => item.attendee_id),
       )
       const students = (studentQueries.data ?? []).filter(
         (student) => student.attendee_id && !existing.has(student.attendee_id),
@@ -129,8 +135,6 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       queryClient.invalidateQueries({ queryKey: ["event", eventId] })
     },
   })
-  const registrationData = registrationQuery.data?.data.data as unknown
-  const registered = Array.isArray(registrationData) ? registrationData : []
   const students = studentQueries.data ?? []
   const sections = sectionsQuery.data?.data.data ?? []
   const registrySections = registrySectionsQuery.data?.data.data ?? []
