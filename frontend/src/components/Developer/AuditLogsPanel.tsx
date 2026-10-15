@@ -291,7 +291,10 @@ export function AuditLogsPanel() {
                           </div>
                         </td>
                         <td className="max-w-[160px] break-all px-3 py-3 font-mono text-xs">
-                          {entry.actor_name ?? (entry.actor_user_id ? "Unavailable account" : "System")}
+                          {entry.actor_name ??
+                            (entry.actor_user_id
+                              ? "Unavailable account"
+                              : "System")}
                         </td>
                         <td className="px-3 py-3">
                           <Badge
