@@ -15,13 +15,25 @@ import { AttendanceCorrectionDialog } from "./CorrectionDialog"
 
 export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
   {
-    accessorKey: "registration_id",
-    header: "Registration ID",
+    accessorKey: "person_name",
+    header: "Attendee",
     cell: ({ row }) => (
-      <div>
-        <p className="font-mono text-sm">{row.original.registration_id}</p>
+      <div className="min-w-36">
+        <p className="font-medium">
+          {row.original.person_name || "Unknown attendee"}
+        </p>
+        {row.original.student_number && (
+          <p className="text-xs text-muted-foreground">
+            {row.original.student_number}
+          </p>
+        )}
       </div>
     ),
+  },
+  {
+    accessorKey: "event_name",
+    header: "Event",
+    cell: ({ row }) => row.original.event_name || "—",
   },
   {
     accessorKey: "time_in",
@@ -31,7 +43,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       return timeIn ? (
         <div className="flex items-center gap-1">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>{format(new Date(timeIn), "PPpp")}</span>
+          <span>{format(new Date(timeIn), "p")}</span>
         </div>
       ) : (
         <span className="text-muted-foreground">-</span>
@@ -46,7 +58,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       return timeOut ? (
         <div className="flex items-center gap-1">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>{format(new Date(timeOut), "PPpp")}</span>
+          <span>{format(new Date(timeOut), "p")}</span>
         </div>
       ) : (
         <span className="text-muted-foreground">-</span>
@@ -102,7 +114,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
     header: "Scanned By",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {row.original.scanned_by || "-"}
+        {row.original.scanned_by_name || (row.original.scanned_by ? "Unknown scanner" : "-")}
       </div>
     ),
   },
