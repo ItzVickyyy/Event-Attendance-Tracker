@@ -511,9 +511,21 @@ export type AttendancePublic = {
      * Updated At
      */
     updated_at?: string | null;
+    /**
+     * Person Name
+     */
     person_name?: string | null;
+    /**
+     * Student Number
+     */
     student_number?: string | null;
+    /**
+     * Event Name
+     */
     event_name?: string | null;
+    /**
+     * Scanned By Name
+     */
     scanned_by_name?: string | null;
 };
 
