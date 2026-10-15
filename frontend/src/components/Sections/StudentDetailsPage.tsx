@@ -153,7 +153,7 @@ export function StudentDetailsPage({
   })
   const guardianMutation = useMutation({
     mutationFn: async () => {
-      const person = await PeopleService.createPerson({
+      const person = await PeopleService.peopleCreatePerson({
         body: {
           first_name: guardianFirstName.trim(),
           last_name: guardianLastName.trim(),
@@ -162,7 +162,7 @@ export function StudentDetailsPage({
         },
         throwOnError: true,
       })
-      const attendee = await AttendeesService.createAttendee({
+      const attendee = await AttendeesService.attendeesCreateAttendee({
         body: {
           person_id: person.data.id,
           attendee_type: "parent_guardian",
