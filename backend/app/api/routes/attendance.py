@@ -211,7 +211,9 @@ def read_attendances(
     data = []
     for record in records:
         registration = registration_by_id.get(record.registration_id)
-        attendee = attendee_by_id.get(registration.attendee_id) if registration else None
+        attendee = (
+            attendee_by_id.get(registration.attendee_id) if registration else None
+        )
         person = person_by_id.get(attendee.person_id) if attendee else None
         student = student_by_person_id.get(person.id) if person else None
         event = event_by_id.get(registration.event_id) if registration else None
