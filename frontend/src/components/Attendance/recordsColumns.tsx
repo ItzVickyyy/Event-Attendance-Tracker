@@ -76,7 +76,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       ),
   },
   {
-    accessorKey: "scanned_by",
+    accessorKey: "scanned_by_name",
     header: "Scanned By",
     cell: ({ row }) => (
       <span className="text-sm text-muted-foreground">
