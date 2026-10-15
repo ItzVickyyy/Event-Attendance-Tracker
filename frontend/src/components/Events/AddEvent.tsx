@@ -51,6 +51,7 @@ export function AddEvent() {
   })
 
   const mutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: (data: FormData) =>
       EventsService.createEvent({
         body: {
