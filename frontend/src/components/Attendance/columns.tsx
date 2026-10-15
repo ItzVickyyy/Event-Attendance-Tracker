@@ -114,7 +114,8 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
     header: "Scanned By",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground">
-        {row.original.scanned_by_name || (row.original.scanned_by ? "Unknown scanner" : "-")}
+        {row.original.scanned_by_name ||
+          (row.original.scanned_by ? "Unknown scanner" : "-")}
       </div>
     ),
   },
