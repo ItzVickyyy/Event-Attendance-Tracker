@@ -1063,6 +1063,15 @@ def test_attendance_read_filtering_and_admin_crud(
     assert listed_record["time_in"] is not None
     assert listed_record["scanned_by_name"]
 
+    incomplete_res = client.get(
+        f"{settings.API_V1_STR}/attendance/?incomplete_only=true",
+        headers=superuser_token_headers,
+    )
+    assert incomplete_res.status_code == 200
+    assert any(
+        record["id"] == rec_id for record in incomplete_res.json()["data"]
+    )
+
     # 4. Read single record
     get_res = client.get(
         f"{settings.API_V1_STR}/attendance/{rec_id}",
