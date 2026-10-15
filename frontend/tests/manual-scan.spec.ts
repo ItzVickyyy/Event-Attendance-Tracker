@@ -417,7 +417,11 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Alice",
     )
-    await page.getByRole("button", { name: "Search" }).click()
+    await expect(page.getByRole("button", { name: /Alice Student/ })).toBeVisible({
+      timeout: 10000,
+    })
+    expect(handle.sent()).toHaveLength(0)
+    await page.getByRole("button", { name: /Alice Student/ }).click()
 
     await expect(
       page.getByText("Attendance queued - Alice Student"),
@@ -525,8 +529,6 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Student",
     )
-    await page.getByRole("button", { name: "Search" }).click()
-
     await expect(page.getByText("Alice Student")).toBeVisible({
       timeout: 10000,
     })
@@ -616,7 +618,10 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Charlie",
     )
-    await page.getByRole("button", { name: "Search" }).click()
+    await expect(page.getByRole("button", { name: /Charlie Student/ })).toBeVisible({
+      timeout: 10000,
+    })
+    await page.getByRole("button", { name: /Charlie Student/ }).click()
 
     await expect(
       page.getByText("Attendance queued - Charlie Student"),
@@ -630,9 +635,7 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Another",
     )
-    await page.getByRole("button", { name: "Search" }).click()
-
-    await expect(page.getByText("No student found")).toBeVisible()
+    await expect(page.getByText("No matching students found.")).toBeVisible()
   })
 
   test("no student found error handling", async ({ page, mockHttp }) => {
@@ -655,9 +658,7 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "NonexistentStudent123",
     )
-    await page.getByRole("button", { name: "Search" }).click()
-
-    await expect(page.getByText("No student found")).toBeVisible({
+    await expect(page.getByText("No matching students found.")).toBeVisible({
       timeout: 10000,
     })
 
@@ -665,8 +666,6 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "ValidStudent",
     )
-    await page.getByRole("button", { name: "Search" }).click()
-
     await expect(
       page.locator('input[placeholder="Search by student number or name..."]'),
     ).toBeVisible()
@@ -712,7 +711,10 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Diana",
     )
-    await page.getByRole("button", { name: "Search" }).click()
+    await expect(page.getByRole("button", { name: /Diana Student/ })).toBeVisible({
+      timeout: 10000,
+    })
+    await page.getByRole("button", { name: /Diana Student/ }).click()
 
     await expect(
       page.getByText("No attendee record found for this student"),
@@ -722,8 +724,6 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "AnotherStudent",
     )
-    await page.getByRole("button", { name: "Search" }).click()
-
     await expect(
       page.locator('input[placeholder="Search by student number or name..."]'),
     ).toBeVisible()
