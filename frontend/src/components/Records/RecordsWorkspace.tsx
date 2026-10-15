@@ -51,19 +51,32 @@ export function RecordsWorkspace({
         },
       })
       const events = [...firstPage.data.data]
-      for (
-        let skip = PAGE_SIZE;
-        skip < firstPage.data.count;
-        skip += PAGE_SIZE
-      ) {
-        const page = await EventsService.readEvents({
-          query: {
-            skip,
-            limit: PAGE_SIZE,
-            academic_year_id: academicYearId,
-          },
-        })
-        events.push(...page.data.data)
+      const remainingOffsets = Array.from(
+        {
+          length: Math.ceil(
+            Math.max(0, firstPage.data.count - PAGE_SIZE) / PAGE_SIZE,
+          ),
+        },
+        (_, index) => (index + 1) * PAGE_SIZE,
+      )
+
+      // Fetch a small batch of pages concurrently to avoid a long serial wait
+      // on slower mobile connections without flooding the API.
+      const batchSize = 4
+      for (let index = 0; index < remainingOffsets.length; index += batchSize) {
+        const batchOffsets = remainingOffsets.slice(index, index + batchSize)
+        const pages = await Promise.all(
+          batchOffsets.map((skip) =>
+            EventsService.readEvents({
+              query: {
+                skip,
+                limit: PAGE_SIZE,
+                academic_year_id: academicYearId,
+              },
+            }),
+          ),
+        )
+        for (const page of pages) events.push(...page.data.data)
       }
       return events
     },
