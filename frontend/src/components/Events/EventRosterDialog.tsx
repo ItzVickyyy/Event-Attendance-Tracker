@@ -104,9 +104,27 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
       enabled: open && searchStudent.trim().length > 0,
     })
 
-  const rosterEntries = rosterResponse?.data ?? []
-  const registrations = registrationsResponse?.data ?? []
-  const attendances = attendanceResponse?.data ?? []
+  const rosterEntries = Array.isArray(rosterResponse?.data)
+    ? rosterResponse.data
+    : []
+  const rawRegistrations = registrationsResponse?.data as unknown
+  const registrations = Array.isArray(rawRegistrations)
+    ? rawRegistrations
+    : rawRegistrations &&
+        typeof rawRegistrations === "object" &&
+        "data" in rawRegistrations &&
+        Array.isArray(rawRegistrations.data)
+      ? rawRegistrations.data
+      : []
+  const rawAttendances = attendanceResponse?.data as unknown
+  const attendances = Array.isArray(rawAttendances)
+    ? rawAttendances
+    : rawAttendances &&
+        typeof rawAttendances === "object" &&
+        "data" in rawAttendances &&
+        Array.isArray(rawAttendances.data)
+      ? rawAttendances.data
+      : []
 
   // Map attendee_id to registration record
   const registrationByAttendeeId = useMemo(() => {
