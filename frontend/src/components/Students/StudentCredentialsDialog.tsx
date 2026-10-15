@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import {
   CheckCircle2,
   KeyRound,
@@ -78,7 +78,6 @@ export function StudentCredentialsDialog({
   const [open, setOpen] = useState(false)
   const [newCredValue, setNewCredValue] = useState("")
   const [scanningNfc, setScanningNfc] = useState(false)
-  const queryClient = useQueryClient()
 
   // 1. Resolve Attendee ID for Student
   const {
@@ -130,8 +129,7 @@ export function StudentCredentialsDialog({
     onSuccess: () => {
       toast.success("Card UID registered successfully")
       setNewCredValue("")
-      refetch()
-      queryClient.invalidateQueries({ queryKey: ["attendeeCredentials"] })
+      void refetch()
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to add credential")
