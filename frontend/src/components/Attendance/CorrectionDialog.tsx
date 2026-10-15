@@ -186,7 +186,7 @@ export function AttendanceCorrectionDialog({
               )}
             />
             <DialogFooter>
-              <Button variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
