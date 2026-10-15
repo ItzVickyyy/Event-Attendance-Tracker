@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -29,7 +29,6 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 const UserInformation = () => {
-  const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const [editMode, setEditMode] = useState(false)
   const { user: currentUser } = useAuth()
@@ -67,9 +66,6 @@ const UserInformation = () => {
       toggleEditMode()
     },
     onError: handleError.bind(showErrorToast),
-    onSettled: () => {
-      queryClient.invalidateQueries()
-    },
   })
 
   const onSubmit = (data: FormData) => {
