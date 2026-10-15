@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
@@ -54,7 +54,6 @@ type FormData = z.infer<typeof formSchema>
 
 const AddUser = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
   const form = useForm<FormData>({
@@ -79,9 +78,6 @@ const AddUser = () => {
       setIsOpen(false)
     },
     onError: handleError.bind(showErrorToast),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-    },
   })
 
   const onSubmit = (data: FormData) => {
