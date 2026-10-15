@@ -240,7 +240,7 @@ test("event roster student search can navigate beyond the first ten matches", as
 
   const eventRow = page.getByRole("row").filter({ hasText: eventName })
   await expect(eventRow).toBeVisible()
-  await eventRow.getByRole("button", { name: "Roster" }).click()
+  await eventRow.getByRole("button", { name: "Roster", exact: true }).click()
   const dialog = page.getByRole("dialog")
   await dialog
     .getByPlaceholder("Search student by name or student number...")
