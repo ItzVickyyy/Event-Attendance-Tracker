@@ -1279,6 +1279,10 @@ class AttendancePublic(AttendanceBase):
     id: uuid.UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    person_name: str | None = None
+    student_number: str | None = None
+    event_name: str | None = None
+    scanned_by_name: str | None = None
 
 
 class AttendancesPublic(SQLModel):
