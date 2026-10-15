@@ -124,10 +124,16 @@ export function StudentDetailsPage({
     enabled: Boolean(attendeeId),
   })
   const registrationIds = useMemo(() => {
-    const registrations = registrationsQuery.data?.data.data as unknown
-    return Array.isArray(registrations)
-      ? registrations.map((registration) => registration.id)
-      : []
+    const payload = registrationsQuery.data?.data as unknown
+    const registrations = Array.isArray(payload)
+      ? payload
+      : payload &&
+          typeof payload === "object" &&
+          "data" in payload &&
+          Array.isArray(payload.data)
+        ? payload.data
+        : []
+    return registrations.map((registration) => registration.id)
   }, [registrationsQuery.data])
   const attendanceHistoryQuery = useQuery({
     queryKey: ["studentAttendanceHistory", registrationIds],
