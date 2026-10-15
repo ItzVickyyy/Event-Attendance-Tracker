@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router"
 import { ArrowLeft, Check, Users } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
+  AcademicRegistryService,
   AcademicSectionsService,
   type EventPublic,
   EventRegistrationsService,
@@ -34,6 +35,10 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       AcademicSectionsService.sectionsReadAcademicSections({
         query: { skip: 0, limit: 200 },
       }),
+  })
+  const registrySectionsQuery = useQuery({
+    queryKey: ["academicRegistrySections", "event-registration"],
+    queryFn: () => AcademicRegistryService.registryReadSections(),
   })
   const registrationQuery = useQuery({
     queryKey: ["eventRegistrations", eventId],
@@ -128,6 +133,26 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const registered = Array.isArray(registrationData) ? registrationData : []
   const students = studentQueries.data ?? []
   const sections = sectionsQuery.data?.data.data ?? []
+  const registrySections = registrySectionsQuery.data?.data.data ?? []
+  const registrySectionNames = new Map(
+    registrySections.map((section) => {
+      const programCode = section.program_code?.trim() ?? ""
+      const majorCode = section.major_code?.trim() ?? ""
+      const sectionCode =
+        section.section_code?.trim() || section.section_name.trim()
+      const prefix = [programCode, majorCode].filter(Boolean).join(" ")
+      const alreadyFormatted =
+        prefix.length > 0 &&
+        (sectionCode.toLocaleUpperCase() === prefix.toLocaleUpperCase() ||
+          sectionCode
+            .toLocaleUpperCase()
+            .startsWith(`${prefix.toLocaleUpperCase()} `))
+      return [
+        section.id,
+        alreadyFormatted || !prefix ? sectionCode : `${prefix} ${sectionCode}`,
+      ]
+    }),
+  )
   const allSectionsSelected =
     sections.length > 0 &&
     sections.every((section) => selectedSections.includes(section.id))
