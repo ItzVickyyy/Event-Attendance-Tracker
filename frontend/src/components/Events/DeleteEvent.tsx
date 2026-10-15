@@ -25,6 +25,7 @@ export function DeleteEvent({ event }: DeleteEventProps) {
   const [open, setOpen] = useState(false)
 
   const mutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: () =>
       EventsService.deleteEvent({
         path: { event_id: event.id },
