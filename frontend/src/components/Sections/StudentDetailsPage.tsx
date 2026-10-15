@@ -514,41 +514,41 @@ export function StudentDetailsPage({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label
-                      htmlFor="guardian-first-name"
-                      className="text-sm font-medium"
-                    >
+                    htmlFor="guardian-first-name"
+                    className="text-sm font-medium"
+                  >
                     First name *
                   </label>
                   <Input
                     id="guardian-first-name"
                     value={guardianFirstName}
                     onChange={(event) =>
-                        setGuardianFirstName(event.target.value)
-                      }
+                      setGuardianFirstName(event.target.value)
+                    }
                     required
                   />
                 </div>
                 <div className="space-y-1">
                   <label
-                      htmlFor="guardian-last-name"
-                      className="text-sm font-medium"
-                    >
+                    htmlFor="guardian-last-name"
+                    className="text-sm font-medium"
+                  >
                     Last name *
                   </label>
                   <Input
                     id="guardian-last-name"
                     value={guardianLastName}
                     onChange={(event) =>
-                        setGuardianLastName(event.target.value)
-                      }
+                      setGuardianLastName(event.target.value)
+                    }
                     required
                   />
                 </div>
                 <div className="space-y-1">
                   <label
-                      htmlFor="guardian-relationship"
-                      className="text-sm font-medium"
-                    >
+                    htmlFor="guardian-relationship"
+                    className="text-sm font-medium"
+                  >
                     Relationship
                   </label>
                   <select
@@ -571,9 +571,9 @@ export function StudentDetailsPage({
                 </div>
                 <div className="space-y-1">
                   <label
-                      htmlFor="guardian-contact"
-                      className="text-sm font-medium"
-                    >
+                    htmlFor="guardian-contact"
+                    className="text-sm font-medium"
+                  >
                     Contact number
                   </label>
                   <Input
@@ -584,9 +584,9 @@ export function StudentDetailsPage({
                 </div>
                 <div className="space-y-1 sm:col-span-2">
                   <label
-                      htmlFor="guardian-email"
-                      className="text-sm font-medium"
-                    >
+                    htmlFor="guardian-email"
+                    className="text-sm font-medium"
+                  >
                     Email
                   </label>
                   <Input
@@ -606,8 +606,8 @@ export function StudentDetailsPage({
                 }
               >
                 {guardianMutation.isPending
-                    ? "Saving contact…"
-                    : "Save contact"}
+                  ? "Saving contact…"
+                  : "Save contact"}
               </Button>
             </form>
           )}
