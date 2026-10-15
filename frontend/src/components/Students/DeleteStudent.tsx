@@ -21,7 +21,6 @@ interface DeleteStudentProps {
 }
 
 export function DeleteStudent({ student }: DeleteStudentProps) {
-
   const mutation = useMutation({
     mutationFn: () =>
       StudentsService.deleteStudent({
