@@ -48,6 +48,7 @@ export function DeleteEvent({ event }: DeleteEventProps) {
           variant="outline"
           size="icon"
           className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          aria-label={`Delete ${event.event_name}`}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
