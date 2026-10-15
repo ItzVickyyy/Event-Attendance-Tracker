@@ -66,6 +66,7 @@ export function AttendanceCorrectionDialog({
   })
 
   const mutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async (values: CorrectionFormValues) => {
       return await AttendanceCorrectionsService.correctionsCreateAttendanceCorrection(
         {
