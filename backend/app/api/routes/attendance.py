@@ -527,8 +527,8 @@ def scan_attendance(
     if not registration:
         detail = (
             "This event has no eligible sections selected yet. Open Event "
-            "Registration, select sections under Eligible Sections, click Save "
-            "eligible sections, then click Register selected sections before retrying sync."
+            "Registration, select sections under Eligible Sections, wait for the "
+            "automatic save to finish, then click Register selected sections before retrying sync."
             if not event.eligible_section_ids
             else (
                 "Attendee is not registered for this event. Confirm the attendee's "
@@ -609,8 +609,8 @@ def scan_attendance_manual(
     if not registration:
         detail = (
             "This event has no eligible sections selected yet. Open Event "
-            "Registration, select sections under Eligible Sections, click Save "
-            "eligible sections, then click Register selected sections before retrying sync."
+            "Registration, select sections under Eligible Sections, wait for the "
+            "automatic save to finish, then click Register selected sections before retrying sync."
             if not event.eligible_section_ids
             else (
                 "Attendee is not registered for this event. Confirm the attendee's "
