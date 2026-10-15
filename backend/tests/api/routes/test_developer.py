@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 
 from app import crud
 from app.core.config import settings
-from app.models import AuditLog, UserCreate, UserRole
+from app.models import AuditLog, User, UserCreate, UserRole
 from tests.utils.user import (
     get_token_headers_for_role,
     user_authentication_headers,
@@ -122,8 +122,11 @@ def test_developer_can_read_filtered_audit_logs(
         role=UserRole.student,
         is_developer=True,
     )
+    actor = db.exec(select(User)).first()
+    assert actor is not None
     db.add(
         AuditLog(
+            actor_user_id=actor.id,
             action="POST events",
             resource="events",
             method="POST",
@@ -148,6 +151,10 @@ def test_developer_can_read_filtered_audit_logs(
     assert payload["data"][0]["outcome"] == "success"
     assert payload["data"][0]["duration_ms"] == 12.5
     assert payload["data"][0]["request_id"] == "audit-entry-test-01"
+    assert payload["data"][0]["actor_name"] == (
+        " ".join(part for part in (actor.first_name, actor.last_name) if part).strip()
+        or str(actor.email)
+    )
 
 
 def test_non_developer_cannot_read_audit_logs(
