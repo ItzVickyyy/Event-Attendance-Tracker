@@ -71,7 +71,7 @@ export function RecordsWorkspace({
   })
 
   const attendanceQuery = useInfiniteQuery({
-    queryKey: ["records-attendance", eventId, academicYearId],
+    queryKey: ["records-attendance", eventId, academicYearId, mode],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       if (!academicYearId) {
@@ -82,6 +82,7 @@ export function RecordsWorkspace({
           skip: pageParam,
           limit: PAGE_SIZE,
           academic_year_id: academicYearId,
+          incomplete_only: mode === "incomplete",
           ...(eventId === "all" ? {} : { event_id: eventId }),
         },
       })
@@ -105,14 +106,7 @@ export function RecordsWorkspace({
     attendancePages.length > 0
       ? attendancePages[attendancePages.length - 1].count
       : 0
-  const attendance =
-    mode === "incomplete"
-      ? allAttendance.filter(
-          (record) =>
-            record.status === "incomplete" ||
-            (record.time_in && !record.time_out),
-        )
-      : allAttendance
+  const attendance = allAttendance
   const selectedEvent = events.find((event) => event.id === eventId)
 
   async function exportAttendance() {
