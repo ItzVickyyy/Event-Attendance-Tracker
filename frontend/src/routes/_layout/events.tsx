@@ -13,26 +13,43 @@ function getEventsQueryOptions(academicYearId: string | undefined) {
   return {
     queryFn: async () => {
       const limit = 100
-      const events = []
-      let skip = 0
-      let count = Number.POSITIVE_INFINITY
+      const firstPage = await EventsService.readEvents({
+        query: {
+          skip: 0,
+          limit,
+          academic_year_id: academicYearId,
+        },
+      })
+      const events = [...firstPage.data.data]
+      const remainingOffsets = Array.from(
+        {
+          length: Math.ceil(
+            Math.max(0, firstPage.data.count - limit) / limit,
+          ),
+        },
+        (_, index) => (index + 1) * limit,
+      )
 
-      while (skip < count) {
-        const response = await EventsService.readEvents({
-          query: {
-            skip,
-            limit,
-            academic_year_id: academicYearId,
-          },
-        })
-        const page = response.data
-        events.push(...page.data)
-        count = page.count
-        skip += page.data.length
-        if (page.data.length === 0) break
+      // Fetch a few pages at a time to reduce serial waits on mobile networks
+      // without sending every request at once for large event histories.
+      const batchSize = 4
+      for (let index = 0; index < remainingOffsets.length; index += batchSize) {
+        const batchOffsets = remainingOffsets.slice(index, index + batchSize)
+        const pages = await Promise.all(
+          batchOffsets.map((skip) =>
+            EventsService.readEvents({
+              query: {
+                skip,
+                limit,
+                academic_year_id: academicYearId,
+              },
+            }),
+          ),
+        )
+        for (const page of pages) events.push(...page.data.data)
       }
 
-      return { data: events, count }
+      return { data: events, count: firstPage.data.count }
     },
     queryKey: ["events", academicYearId],
   }
