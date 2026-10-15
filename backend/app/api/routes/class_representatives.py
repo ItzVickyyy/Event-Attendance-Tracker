@@ -110,6 +110,7 @@ def read_my_students(
         FROM student_enrollments se
         JOIN students s ON s.id = se.student_id
         JOIN people p ON p.id = s.person_id
+        LEFT JOIN attendees a ON a.person_id = p.id
         WHERE se.section_id = :section_id
           AND se.academic_year_id = :academic_year_id
           AND se.archived_at IS NULL
@@ -192,7 +193,6 @@ def read_my_students(
                    ) AS card_uid_registered
             {base_where}
             {filters}
-            LEFT JOIN attendees a ON a.person_id = p.id
             ORDER BY p.last_name, p.first_name, s.student_number
             LIMIT :limit OFFSET :skip
         """),
