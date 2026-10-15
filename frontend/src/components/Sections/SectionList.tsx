@@ -678,7 +678,14 @@ function SectionList() {
         academicYear={activeAcademicYear}
         sections={sections}
         onImported={async () => {
-          await queryClient.invalidateQueries()
+          await Promise.all([
+            queryClient.invalidateQueries({
+              queryKey: ["academicRegistryRoster"],
+            }),
+            queryClient.invalidateQueries({
+              queryKey: ["academicRegistrySections"],
+            }),
+          ])
         }}
       />
 
