@@ -105,7 +105,7 @@ export function EditEvent({ event }: EditEventProps) {
               </label>
               <Input
                 id="event_name"
-                placeholder="CCS Week 2026"
+                placeholder="Enter event name"
                 {...form.register("event_name")}
               />
             </div>
@@ -182,7 +182,7 @@ export function EditEvent({ event }: EditEventProps) {
                 <SelectContent>
                   <SelectItem value="time_in_only">Time-In Only</SelectItem>
                   <SelectItem value="time_in_time_out">
-                    Time-In + Time-Out
+                    Time-In & Time-Out
                   </SelectItem>
                 </SelectContent>
               </Select>
