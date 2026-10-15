@@ -113,6 +113,7 @@ export function StudentCredentialsDialog({
 
   // Mutation to create a credential
   const createMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async () => {
       if (!attendeeId) throw new Error("Attendee not resolved")
       return await AttendeeCredentialsService.credentialsCreateAttendeeCredential(
@@ -138,6 +139,7 @@ export function StudentCredentialsDialog({
 
   // Mutation to delete a credential
   const deleteMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async (id: string) => {
       return await AttendeeCredentialsService.credentialsDeleteAttendeeCredential(
         {
