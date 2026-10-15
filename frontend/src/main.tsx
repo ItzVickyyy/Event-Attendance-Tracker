@@ -39,8 +39,10 @@ const queryClient = new QueryClient({
     onError: handleApiError,
   }),
   mutationCache: new MutationCache({
-    onSuccess: () => {
-      // Refresh active views without delaying the mutation's success feedback.
+    onSuccess: (_data, _variables, _onMutateResult, _context, mutation) => {
+      // Mutations that only change authentication state can opt out of unrelated refetches.
+      if (mutation.meta?.skipGlobalInvalidation === true) return
+      // Keep the existing fallback for mutations whose affected queries are not fully mapped.
       void queryClient.invalidateQueries()
     },
     onError: handleApiError,

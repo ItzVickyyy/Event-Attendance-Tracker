@@ -52,6 +52,8 @@ const ChangePassword = () => {
   })
 
   const mutation = useMutation({
+    // Password updates do not change the data shown by cached application queries.
+    meta: { skipGlobalInvalidation: true },
     mutationFn: (data: UpdatePassword) =>
       UsersService.updatePasswordMe({ body: data }),
     onSuccess: () => {
