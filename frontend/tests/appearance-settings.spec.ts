@@ -101,7 +101,7 @@ test("top navigation theme button toggles light and dark modes without reverting
   const shouldBeDark = !wasDark
   const firstPatchResponse = await firstPreferencePatch
   expect(firstPatchResponse.ok()).toBeTruthy()
-  await expect(firstPatchResponse.json()).resolves.toMatchObject({
+  expect(await firstPatchResponse.json()).toMatchObject({
     theme: shouldBeDark ? "dark" : "light",
   })
   await expect
@@ -134,7 +134,7 @@ test("top navigation theme button toggles light and dark modes without reverting
   await page.getByTestId("top-nav-theme-toggle").click()
   const secondPatchResponse = await secondPreferencePatch
   expect(secondPatchResponse.ok()).toBeTruthy()
-  await expect(secondPatchResponse.json()).resolves.toMatchObject({
+  expect(await secondPatchResponse.json()).toMatchObject({
     theme: wasDark ? "dark" : "light",
   })
   await expect
