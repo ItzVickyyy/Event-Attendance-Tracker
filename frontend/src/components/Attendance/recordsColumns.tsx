@@ -32,7 +32,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       row.original.time_in ? (
         <div className="flex items-center gap-1">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          {format(new Date(row.original.time_in), "PPpp")}
+          {format(new Date(row.original.time_in), "p")}
         </div>
       ) : (
         <span className="text-muted-foreground">—</span>
@@ -45,7 +45,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       row.original.time_out ? (
         <div className="flex items-center gap-1">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          {format(new Date(row.original.time_out), "PPpp")}
+          {format(new Date(row.original.time_out), "p")}
         </div>
       ) : (
         <span className="text-muted-foreground">—</span>
