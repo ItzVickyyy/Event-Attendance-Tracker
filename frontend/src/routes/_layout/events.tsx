@@ -103,24 +103,18 @@ function Events() {
         </div>
         <AddEvent />
       </div>
-      <form
-        className="flex-1 max-w-md"
-        onSubmit={(e) => {
-          e.preventDefault()
-          const formData = new FormData(e.currentTarget)
-          setSearch((formData.get("search") as string) || "")
-        }}
-      >
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            name="search"
-            type="search"
-            placeholder="Search by event name or organizer..."
-            className="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          />
-        </div>
-      </form>
+      <div className="relative max-w-md flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          name="search"
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          aria-label="Search events"
+          placeholder="Search by event name or organizer..."
+          className="flex h-10 w-full rounded-md border border-input bg-background px-10 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        />
+      </div>
       <Suspense fallback={<PendingEvents />}>
         <EventsTableContent search={search} />
       </Suspense>
