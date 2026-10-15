@@ -118,10 +118,11 @@ function SyncQueuePage() {
                   >
                     <div>
                       <p className="font-medium">
-                        {record.scan_method.toUpperCase()} ·{" "}
-                        {record.attendee_id ||
-                          record.credential_value ||
-                          "Manual"}
+                        {record.scan_method === "manual"
+                          ? "Manual scan"
+                          : record.scan_method === "nfc"
+                            ? "NFC scan"
+                            : "QR scan"}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {new Date(record.client_timestamp).toLocaleString()}
