@@ -6680,6 +6680,22 @@ export type classRepresentativesReadMyStudentsData = {
          * Academic Year Id
          */
         academic_year_id?: string | null;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+        /**
+         * Unregistered Only
+         */
+        unregistered_only?: boolean;
     };
     url: '/api/v1/class-representatives/me/students';
 };
