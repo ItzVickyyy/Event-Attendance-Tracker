@@ -195,13 +195,6 @@ export function EditStudent({ student }: EditStudentProps) {
                 {...form.register("extension")}
               />
             </div>
-            {student.section_id ? (
-              <div className="grid gap-2">
-                <div className="text-xs text-muted-foreground">
-                  Current section ID: {student.section_id}
-                </div>
-              </div>
-            ) : null}
             <div className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"
