@@ -92,6 +92,16 @@ def test_attendance_time_in_only_prevent_duplicate_scan(
     assert res_1["attendance"]["time_in"] is not None
     assert res_1["attendance"]["time_out"] is None
 
+    incomplete_res = client.get(
+        f"{settings.API_V1_STR}/attendance/?event_id={event_id}&incomplete_only=true",
+        headers=superuser_token_headers,
+    )
+    assert incomplete_res.status_code == 200
+    assert all(
+        record["id"] != res_1["attendance"]["id"]
+        for record in incomplete_res.json()["data"]
+    )
+
     # 4. 2nd Scan -> 409 Conflict ("Already Recorded")
     scan_2 = client.post(
         f"{settings.API_V1_STR}/attendance/scan",
