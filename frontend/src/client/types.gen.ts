@@ -6016,6 +6016,10 @@ export type attendanceReadAttendancesData = {
          */
         is_late?: boolean | null;
         /**
+         * Incomplete Only
+         */
+        incomplete_only?: boolean;
+        /**
          * Attendee Type
          */
         attendee_type?: AttendeeType | null;
