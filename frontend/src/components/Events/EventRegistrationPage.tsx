@@ -37,7 +37,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       }),
   })
   const registrySectionsQuery = useQuery({
-    queryKey: ["academicRegistrySections", "event-registration"],
+    queryKey: ["academicRegistrySections"],
     queryFn: () => AcademicRegistryService.registryReadSections(),
   })
   const registrationQuery = useQuery({
