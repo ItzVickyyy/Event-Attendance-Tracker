@@ -956,6 +956,10 @@ export type AuditLogEntry = {
      */
     actor_user_id: string | null;
     /**
+     * Actor Name
+     */
+    actor_name: string | null;
+    /**
      * Action
      */
     action: string;
