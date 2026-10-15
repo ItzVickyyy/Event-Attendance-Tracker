@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
 import { Edit } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -41,7 +40,6 @@ type StudentRow = StudentPublic & {
 }
 
 export function EditStudent({ student }: EditStudentProps) {
-  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const row = student as StudentRow
 
@@ -121,7 +119,6 @@ export function EditStudent({ student }: EditStudentProps) {
     },
     onSuccess: () => {
       toast.success("Student updated successfully")
-      router.invalidate()
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update student")
