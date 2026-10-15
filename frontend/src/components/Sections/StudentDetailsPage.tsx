@@ -124,13 +124,12 @@ export function StudentDetailsPage({
       }),
     enabled: Boolean(attendeeId),
   })
-  const registrationIds = useMemo(
-    () =>
-      registrationsQuery.data?.data.data.map(
-        (registration) => registration.id,
-      ) ?? [],
-    [registrationsQuery.data],
-  )
+  const registrationIds = useMemo(() => {
+    const registrations = registrationsQuery.data?.data.data as unknown
+    return Array.isArray(registrations)
+      ? registrations.map((registration) => registration.id)
+      : []
+  }, [registrationsQuery.data])
   const attendanceHistoryQuery = useQuery({
     queryKey: ["studentAttendanceHistory", registrationIds],
     queryFn: async () => {
@@ -141,7 +140,9 @@ export function StudentDetailsPage({
           }),
         ),
       )
-      return results.flatMap((result) => result.data.data)
+      return results.flatMap((result) =>
+        Array.isArray(result.data?.data) ? result.data.data : [],
+      )
     },
     enabled: registrationIds.length > 0,
   })
