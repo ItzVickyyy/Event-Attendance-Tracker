@@ -54,7 +54,7 @@ export function AttendanceAdministrationPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="p-3">Attendance</th>
+                  <th className="p-3">Record</th>
                   <th className="p-3">Reason</th>
                   <th className="p-3">Corrected By</th>
                   <th className="p-3">Old Status</th>
@@ -65,7 +65,7 @@ export function AttendanceAdministrationPage() {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b">
-                    <td className="p-3 font-mono">{r.attendance_id}</td>
+                    <td className="p-3">Attendance record</td>
                     <td className="p-3">{r.reason}</td>
                     <td className="p-3">{r.corrected_by || "—"}</td>
                     <td className="p-3">{r.old_status || "—"}</td>
