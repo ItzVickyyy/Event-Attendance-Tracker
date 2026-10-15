@@ -214,6 +214,7 @@ function SectionList() {
   }
 
   const saveSection = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async () => {
       const upperYear = yearLevel === "3rd Year" || yearLevel === "4th Year"
       const payload = {
@@ -302,6 +303,7 @@ function SectionList() {
   }
 
   const createStudent = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: () => {
       if (!studentsTarget) throw new Error("Section is required")
       return apiJson("/academic-registry/students", {
@@ -341,6 +343,7 @@ function SectionList() {
   })
 
   const saveStudent = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: () =>
       apiJson(`/academic-registry/students/${studentTarget.id}`, {
         method: "PATCH",
@@ -379,6 +382,7 @@ function SectionList() {
   }
 
   const archiveStudent = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: () =>
       apiJson(`/students/${deleteTarget.id}`, { method: "DELETE" }),
     onSuccess: () => {
