@@ -5,7 +5,7 @@ from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
-from sqlalchemy import select as sa_select
+from sqlalchemy import and_, or_, select as sa_select
 from sqlmodel import col, func, select
 
 from app.api.deps import (
@@ -63,6 +63,7 @@ def read_attendances(
     attendance_status: AttendanceStatus | None = None,
     scan_method: ScanMethod | None = None,
     is_late: bool | None = None,
+    incomplete_only: bool = False,
     attendee_type: AttendeeType | None = None,
     section_id: uuid.UUID | None = None,
     session_date: str | None = None,
@@ -159,6 +160,16 @@ def read_attendances(
     if is_late is not None:
         count_statement = count_statement.where(col(Attendance.is_late) == is_late)
         statement = statement.where(col(Attendance.is_late) == is_late)
+    if incomplete_only:
+        incomplete_condition = or_(
+            col(Attendance.status) == AttendanceStatus.incomplete,
+            and_(
+                col(Attendance.time_in).is_not(None),
+                col(Attendance.time_out).is_(None),
+            ),
+        )
+        count_statement = count_statement.where(incomplete_condition)
+        statement = statement.where(incomplete_condition)
     count = session.exec(count_statement).one()
     records = session.exec(
         statement.order_by(col(Attendance.created_at).desc()).offset(skip).limit(limit)
