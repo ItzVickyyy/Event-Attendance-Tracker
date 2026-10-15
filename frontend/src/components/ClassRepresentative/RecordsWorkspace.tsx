@@ -48,9 +48,9 @@ export function ClassRepresentativeRecordsWorkspace() {
     enabled: Boolean(activeAcademicYear),
   })
 
-  const records = query.data?.pages.flatMap((page) => page.data) ?? []
-  const totalRecords =
-    query.data?.pages[query.data.pages.length - 1]?.count ?? 0
+  const attendancePages = query.data?.pages ?? []
+  const records = attendancePages.flatMap((page) => page.data)
+  const totalRecords = attendancePages[attendancePages.length - 1]?.count ?? 0
 
   const exportRecords = async () => {
     if (!activeAcademicYear) return
@@ -84,7 +84,9 @@ export function ClassRepresentativeRecordsWorkspace() {
       toast.success("Attendance exported successfully")
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Unable to export attendance records",
+        error instanceof Error
+          ? error.message
+          : "Unable to export attendance records",
       )
     }
   }
