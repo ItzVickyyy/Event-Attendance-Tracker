@@ -30,7 +30,7 @@ export function DeleteEvent({ event }: DeleteEventProps) {
         path: { event_id: event.id },
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Event deleted successfully")
       setOpen(false)
       await queryClient.invalidateQueries({ queryKey: ["events"] })
