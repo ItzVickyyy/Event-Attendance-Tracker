@@ -462,7 +462,7 @@ export function ClassRepresentativeSectionWorkspace() {
               <TableBody>
                 {filtered.map((student: any, index: number) => (
                   <TableRow key={student.id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{page * pageSize + index + 1}</TableCell>
                     <TableCell>{student.student_number}</TableCell>
                     <TableCell>
                       {[
