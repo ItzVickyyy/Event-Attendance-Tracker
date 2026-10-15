@@ -3,7 +3,7 @@ import io
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import text
 from sqlmodel import select
 
@@ -91,6 +91,10 @@ def read_my_students(
     session: SessionDep,
     current_user: CurrentUser,
     academic_year_id: uuid.UUID | None = None,
+    search: str | None = None,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=25, ge=1, le=100),
+    unregistered_only: bool = False,
 ) -> dict[str, Any]:
     if current_user.role != UserRole.class_representative:
         raise HTTPException(
@@ -101,40 +105,120 @@ def read_my_students(
         raise HTTPException(
             status_code=404, detail="No Class Representative assignment found"
         )
+
+    base_where = """
+        FROM student_enrollments se
+        JOIN students s ON s.id = se.student_id
+        JOIN people p ON p.id = s.person_id
+        LEFT JOIN attendees a ON a.person_id = p.id
+        WHERE se.section_id = :section_id
+          AND se.academic_year_id = :academic_year_id
+          AND se.archived_at IS NULL
+          AND s.archived_at IS NULL
+    """
+    params: dict[str, Any] = {
+        "section_id": assignment["section_id"],
+        "academic_year_id": assignment["academic_year_id"],
+        "skip": skip,
+        "limit": limit,
+    }
+    total = (
+        session.connection()
+        .execute(
+            text(f"""
+                SELECT
+                    COUNT(DISTINCT s.id) AS count,
+                    COUNT(DISTINCT CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM attendees a
+                        JOIN attendee_credentials ac ON ac.attendee_id = a.id
+                        WHERE a.person_id = p.id
+                          AND ac.credential_type = 'nfc'
+                          AND ac.is_active IS TRUE
+                    ) THEN s.id END) AS registered_count,
+                    COUNT(DISTINCT CASE WHEN NOT EXISTS (
+                        SELECT 1
+                        FROM attendees a
+                        JOIN attendee_credentials ac ON ac.attendee_id = a.id
+                        WHERE a.person_id = p.id
+                          AND ac.credential_type = 'nfc'
+                          AND ac.is_active IS TRUE
+                    ) THEN s.id END) AS unregistered_count
+                {base_where}
+            """),
+            params,
+        )
+        .mappings()
+        .one()
+    )
+
+    filters = ""
+    if search and search.strip():
+        filters += """
+          AND (
+              s.student_number ILIKE :search
+              OR p.first_name ILIKE :search
+              OR p.middle_name ILIKE :search
+              OR p.last_name ILIKE :search
+          )
+        """
+        params["search"] = f"%{search.strip()}%"
+    if unregistered_only:
+        filters += """
+          AND NOT EXISTS (
+              SELECT 1
+              FROM attendees a
+              JOIN attendee_credentials ac ON ac.attendee_id = a.id
+              WHERE a.person_id = p.id
+                AND ac.credential_type = 'nfc'
+                AND ac.is_active IS TRUE
+          )
+        """
+
+    filtered_count = (
+        session.connection()
+        .execute(
+            text(f"SELECT COUNT(DISTINCT s.id) {base_where} {filters}"),
+            params,
+        )
+        .scalar_one()
+    )
+
     rows = (
         session.connection()
         .execute(
-            text("""
+            text(f"""
             SELECT s.id, s.student_number, p.first_name, p.middle_name, p.last_name,
                    p.name_extension AS extension, p.email, p.contact_number,
                    se.student_status, se.id AS enrollment_id, a.id AS attendee_id,
                    EXISTS (
                        SELECT 1
-                       FROM attendees a
-                       JOIN attendee_credentials ac ON ac.attendee_id = a.id
-                       WHERE a.person_id = p.id
+                       FROM attendees registered_attendee
+                       JOIN attendee_credentials ac
+                         ON ac.attendee_id = registered_attendee.id
+                       WHERE registered_attendee.person_id = p.id
                          AND ac.credential_type = 'nfc'
                          AND ac.is_active IS TRUE
                    ) AS card_uid_registered
-            FROM student_enrollments se
-            JOIN students s ON s.id = se.student_id
-            JOIN people p ON p.id = s.person_id
-            LEFT JOIN attendees a ON a.person_id = p.id
-            WHERE se.section_id = :section_id
-              AND se.academic_year_id = :academic_year_id
-              AND se.archived_at IS NULL
-              AND s.archived_at IS NULL
+            {base_where}
+            {filters}
             ORDER BY p.last_name, p.first_name, s.student_number
+            LIMIT :limit OFFSET :skip
         """),
-            {
-                "section_id": assignment["section_id"],
-                "academic_year_id": assignment["academic_year_id"],
-            },
+            params,
         )
         .mappings()
         .all()
     )
-    return {"data": [dict(row) for row in rows], "count": len(rows)}
+    return {
+        "data": [dict(row) for row in rows],
+        "count": total["count"],
+        "filtered_count": filtered_count,
+        "registered_count": total["registered_count"],
+        "unregistered_count": total["unregistered_count"],
+        "skip": skip,
+        "limit": limit,
+    }
 
 
 @router.post("/me/students")

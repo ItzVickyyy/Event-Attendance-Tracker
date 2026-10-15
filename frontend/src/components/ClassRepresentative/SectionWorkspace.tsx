@@ -11,7 +11,7 @@ import {
   Search,
   Wifi,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -72,7 +72,17 @@ export function ClassRepresentativeSectionWorkspace() {
   const { activeAcademicYear } = useAcademicYear()
   const client = useQueryClient()
   const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [page, setPage] = useState(0)
   const [unregisteredOnly, setUnregisteredOnly] = useState(false)
+
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setDebouncedSearch(search.trim()),
+      250,
+    )
+    return () => window.clearTimeout(timeout)
+  }, [search])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [form, setForm] = useState(emptyForm)
@@ -94,12 +104,34 @@ export function ClassRepresentativeSectionWorkspace() {
     },
     enabled: Boolean(activeAcademicYear),
   })
+  const pageSize = 25
   const students = useQuery({
-    queryKey: ["class-representative-students", activeAcademicYear?.id],
+    queryKey: [
+      "class-representative-students",
+      activeAcademicYear?.id,
+      debouncedSearch,
+      page,
+      unregisteredOnly,
+    ],
     queryFn: async () => {
-      if (!activeAcademicYear) return { data: [], count: 0 }
+      if (!activeAcademicYear) {
+        return {
+          data: [],
+          count: 0,
+          filtered_count: 0,
+          registered_count: 0,
+          unregistered_count: 0,
+        }
+      }
+      const params = new URLSearchParams({
+        academic_year_id: activeAcademicYear.id,
+        skip: String(page * pageSize),
+        limit: String(pageSize),
+      })
+      if (debouncedSearch) params.set("search", debouncedSearch)
+      if (unregisteredOnly) params.set("unregistered_only", "true")
       const response = await fetch(
-        `${api}/class-representatives/me/students?academic_year_id=${encodeURIComponent(activeAcademicYear.id)}`,
+        `${api}/class-representatives/me/students?${params.toString()}`,
         {
           headers: {
             ...authHeaders(),
@@ -323,13 +355,8 @@ export function ClassRepresentativeSectionWorkspace() {
     await client.invalidateQueries()
   }
 
-  const filtered = (students.data?.data ?? []).filter((student: any) => {
-    const matchesSearch =
-      `${student.student_number} ${student.first_name} ${student.middle_name ?? ""} ${student.last_name}`
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    return matchesSearch && (!unregisteredOnly || !student.card_uid_registered)
-  })
+  const filtered = students.data?.data ?? []
+  const totalPages = Math.ceil((students.data?.filtered_count ?? 0) / pageSize)
   const section = assignment.data
 
   return (
@@ -377,21 +404,13 @@ export function ClassRepresentativeSectionWorkspace() {
             <div className="rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">Registered cards</p>
               <p className="text-2xl font-semibold">
-                {
-                  (students.data?.data ?? []).filter(
-                    (student: any) => student.card_uid_registered,
-                  ).length
-                }
+                {students.data?.registered_count ?? 0}
               </p>
             </div>
             <div className="rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">Remaining</p>
               <p className="text-2xl font-semibold">
-                {
-                  (students.data?.data ?? []).filter(
-                    (student: any) => !student.card_uid_registered,
-                  ).length
-                }
+                {students.data?.unregistered_count ?? 0}
               </p>
             </div>
           </div>
@@ -402,12 +421,18 @@ export function ClassRepresentativeSectionWorkspace() {
                 className="pl-9"
                 placeholder="Search students"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(0)
+                }}
               />
             </div>
             <Button
               variant={unregisteredOnly ? "default" : "outline"}
-              onClick={() => setUnregisteredOnly((value) => !value)}
+              onClick={() => {
+                setUnregisteredOnly((value) => !value)
+                setPage(0)
+              }}
             >
               {unregisteredOnly ? "Showing unregistered" : "Unregistered only"}
             </Button>
@@ -436,7 +461,7 @@ export function ClassRepresentativeSectionWorkspace() {
               <TableBody>
                 {filtered.map((student: any, index: number) => (
                   <TableRow key={student.id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{page * pageSize + index + 1}</TableCell>
                     <TableCell>{student.student_number}</TableCell>
                     <TableCell>
                       {[
@@ -512,6 +537,43 @@ export function ClassRepresentativeSectionWorkspace() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {students.data && (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                {students.data.filtered_count === 0
+                  ? "Showing 0 students"
+                  : `Showing ${page * pageSize + 1}–${Math.min(
+                      page * pageSize + filtered.length,
+                      students.data.filtered_count,
+                    )} of ${students.data.filtered_count} matching students`}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0 || students.isFetching}
+                  onClick={() => setPage((value) => Math.max(0, value - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {totalPages === 0 ? 0 : page + 1} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    totalPages === 0 ||
+                    page + 1 >= totalPages ||
+                    students.isFetching
+                  }
+                  onClick={() => setPage((value) => value + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

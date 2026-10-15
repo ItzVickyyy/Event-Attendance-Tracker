@@ -148,6 +148,44 @@ def test_super_admin_can_manage_class_representative_assignment_and_students(
     assert students.json()["count"] == 1
     assert students.json()["data"][0]["student_number"] == payload["student_number"]
 
+    assert students.json()["filtered_count"] == 1
+    assert students.json()["unregistered_count"] == 1
+    middle_name_search = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"search": "Jamie"},
+    )
+    assert middle_name_search.status_code == 200
+    assert middle_name_search.json()["count"] == 1
+    assert middle_name_search.json()["filtered_count"] == 1
+    assert (
+        middle_name_search.json()["data"][0]["student_number"]
+        == payload["student_number"]
+    )
+    no_match = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"search": "does-not-match"},
+    )
+    assert no_match.status_code == 200
+    assert no_match.json()["count"] == 1
+    assert no_match.json()["filtered_count"] == 0
+    assert no_match.json()["data"] == []
+    unregistered = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"unregistered_only": True},
+    )
+    assert unregistered.status_code == 200
+    assert unregistered.json()["filtered_count"] == 1
+    first_page = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"skip": 0, "limit": 1},
+    )
+    assert first_page.status_code == 200
+    assert first_page.json()["limit"] == 1
+
     duplicate = client.post(
         _api("/class-representatives/me/students"), headers=headers, json=payload
     )
@@ -218,6 +256,35 @@ def test_super_admin_can_manage_class_representative_assignment_and_students(
     students = client.get(_api("/class-representatives/me/students"), headers=headers)
     assert students.status_code == 200
     assert students.json()["count"] == 1
+
+    second_payload = {
+        **payload,
+        "student_number": f"CR-{random_lower_string()[:10].upper()}",
+        "first_name": "Morgan",
+        "middle_name": "R",
+        "email": random_email(),
+    }
+    second_created = client.post(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        json=second_payload,
+    )
+    assert second_created.status_code == 200
+    first_page = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"skip": 0, "limit": 1},
+    )
+    second_page = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"skip": 1, "limit": 1},
+    )
+    assert first_page.status_code == second_page.status_code == 200
+    assert first_page.json()["count"] == second_page.json()["count"] == 2
+    assert first_page.json()["filtered_count"] == 2
+    assert len(first_page.json()["data"]) == len(second_page.json()["data"]) == 1
+    assert first_page.json()["data"][0]["id"] != second_page.json()["data"][0]["id"]
 
 
 def test_class_representative_routes_reject_wrong_roles_and_missing_assignment(
