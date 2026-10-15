@@ -92,8 +92,18 @@ test("top navigation theme button toggles light and dark modes without reverting
     document.documentElement.classList.contains("dark"),
   )
 
+  const firstPreferencePatch = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/v1/users/me/appearance-preferences") &&
+      response.request().method() === "PATCH",
+  )
   await page.getByTestId("top-nav-theme-toggle").click()
   const shouldBeDark = !wasDark
+  const firstPatchResponse = await firstPreferencePatch
+  expect(firstPatchResponse.ok()).toBeTruthy()
+  expect(await firstPatchResponse.json()).toMatchObject({
+    theme: shouldBeDark ? "dark" : "light",
+  })
   await expect
     .poll(() =>
       page.evaluate(() => document.documentElement.classList.contains("dark")),
@@ -109,7 +119,24 @@ test("top navigation theme button toggles light and dark modes without reverting
     .poll(() => page.evaluate(() => localStorage.getItem("vite-ui-theme")))
     .toBe(shouldBeDark ? "dark" : "light")
 
+  await page.reload()
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.classList.contains("dark")),
+    )
+    .toBe(shouldBeDark)
+
+  const secondPreferencePatch = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/v1/users/me/appearance-preferences") &&
+      response.request().method() === "PATCH",
+  )
   await page.getByTestId("top-nav-theme-toggle").click()
+  const secondPatchResponse = await secondPreferencePatch
+  expect(secondPatchResponse.ok()).toBeTruthy()
+  expect(await secondPatchResponse.json()).toMatchObject({
+    theme: wasDark ? "dark" : "light",
+  })
   await expect
     .poll(() =>
       page.evaluate(() => document.documentElement.classList.contains("dark")),

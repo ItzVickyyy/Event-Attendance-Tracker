@@ -20,6 +20,7 @@ import { useTheme } from "@/components/theme-provider"
 import {
   AppearancePreferencesInitializer,
   AppearanceSettings,
+  persistAccountAppearanceTheme,
 } from "@/components/UserSettings/AppearanceSettings"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -335,9 +336,11 @@ function Layout() {
                   ? "Switch to light mode"
                   : "Switch to dark mode"
               }
-              onClick={() =>
-                setTheme(resolvedTheme === "dark" ? "light" : "dark")
-              }
+              onClick={() => {
+                const nextTheme = resolvedTheme === "dark" ? "light" : "dark"
+                setTheme(nextTheme)
+                persistAccountAppearanceTheme(nextTheme, user?.id)
+              }}
             >
               {resolvedTheme === "dark" ? (
                 <Sun className="size-5" />
