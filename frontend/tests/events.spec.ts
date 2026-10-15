@@ -128,6 +128,12 @@ test("registration page reports event loading failures and can retry", async ({
   failEventRequests = false
   await page.getByRole("button", { name: "Retry loading event" }).click()
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
+
+  await page.getByRole("link", { name: "Event Details" }).click()
+  await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
+  await page.getByRole("link", { name: "Events", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Events" })).toBeVisible()
+  await expect(page.getByText("Oops")).toHaveCount(0)
 })
 
 test("event details distinguish server failures from missing events and can retry", async ({
