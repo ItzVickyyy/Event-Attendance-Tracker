@@ -1,5 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangle, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -22,7 +21,7 @@ interface DeleteEventProps {
 }
 
 export function DeleteEvent({ event }: DeleteEventProps) {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
 
   const mutation = useMutation({
@@ -31,10 +30,17 @@ export function DeleteEvent({ event }: DeleteEventProps) {
         path: { event_id: event.id },
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Event deleted successfully")
       setOpen(false)
-      router.invalidate()
+      await queryClient.invalidateQueries({ queryKey: ["events"] })
+      await queryClient.invalidateQueries({ queryKey: ["event", event.id] })
+      await queryClient.invalidateQueries({
+        queryKey: ["eventRoster", event.id],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ["eventRegistrations", event.id],
+      })
     },
     onError: (error) => {
       toast.error(error.message || "Failed to delete event")

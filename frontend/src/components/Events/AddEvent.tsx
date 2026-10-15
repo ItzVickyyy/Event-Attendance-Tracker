@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Plus } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -38,7 +37,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export function AddEvent() {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -64,7 +63,7 @@ export function AddEvent() {
         },
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Event created successfully")
       form.reset({
         event_name: "",
@@ -74,7 +73,7 @@ export function AddEvent() {
         attendance_mode: "time_in_only",
         status: "draft",
       })
-      router.invalidate()
+      await queryClient.invalidateQueries({ queryKey: ["events"] })
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create event")
