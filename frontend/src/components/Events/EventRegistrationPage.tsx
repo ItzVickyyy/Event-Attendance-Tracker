@@ -23,6 +23,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient()
   const [selectedSections, setSelectedSections] = useState<string[]>([])
   const hydratedEventRef = useRef<string | null>(null)
+  const autoSaveReadyRef = useRef(false)
   const eventQuery = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => EventsService.readEvent({ path: { event_id: eventId } }),
@@ -51,6 +52,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       : eventResponse?.data
   useEffect(() => {
     if (!eventQuery.isSuccess || hydratedEventRef.current === eventId) return
+    autoSaveReadyRef.current = false
     setSelectedSections(event?.eligible_section_ids ?? [])
     hydratedEventRef.current = eventId
   }, [eventId, eventQuery.isSuccess, event?.eligible_section_ids])
@@ -69,14 +71,25 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
     },
   })
   const saveSectionsMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (sectionIds: string[]) =>
       EventsService.updateEvent({
         path: { event_id: eventId },
-        body: { eligible_section_ids: selectedSections },
+        body: { eligible_section_ids: sectionIds },
       }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
   })
+  useEffect(() => {
+    if (hydratedEventRef.current !== eventId) return
+    if (!autoSaveReadyRef.current) {
+      autoSaveReadyRef.current = true
+      return
+    }
+    const timeout = window.setTimeout(() => {
+      saveSectionsMutation.mutate(selectedSections)
+    }, 350)
+    return () => window.clearTimeout(timeout)
+  }, [eventId, selectedSections, saveSectionsMutation.mutate])
   const mutation = useMutation({
     mutationFn: async () => {
       await EventsService.updateEvent({
@@ -389,19 +402,6 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
-              variant="outline"
-              disabled={
-                saveSectionsMutation.isPending ||
-                sectionsQuery.isLoading ||
-                sectionsQuery.isError
-              }
-              onClick={() => saveSectionsMutation.mutate()}
-            >
-              {saveSectionsMutation.isPending
-                ? "Saving sections…"
-                : "Save eligible sections"}
-            </Button>
-            <Button
               disabled={
                 selectedSections.length === 0 ||
                 eligibleCount === 0 ||
@@ -421,15 +421,30 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                 : "Register selected sections"}
             </Button>
           </div>
-          {saveSectionsMutation.isSuccess && (
-            <p className="text-sm text-muted-foreground">
-              Eligible section selections saved.
+          {saveSectionsMutation.isPending && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Saving eligible sections…
+            </p>
+          )}
+          {saveSectionsMutation.isSuccess && !saveSectionsMutation.isPending && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Eligible sections saved automatically.
             </p>
           )}
           {saveSectionsMutation.isError && (
-            <p className="text-sm text-destructive">
-              Could not save eligible sections. Please retry.
-            </p>
+            <div className="space-y-2" role="alert">
+              <p className="text-sm text-destructive">
+                Could not save eligible sections.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => saveSectionsMutation.mutate(selectedSections)}
+              >
+                Retry saving sections
+              </Button>
+            </div>
           )}
           {mutation.isSuccess && (
             <p className="text-sm text-muted-foreground">
