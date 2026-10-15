@@ -57,7 +57,7 @@ export const eventsColumns: ColumnDef<EventPublic>[] = [
     cell: ({ row }) => (
       <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
         {row.original.attendance_mode === "time_in_time_out"
-          ? "Time-In + Time-Out"
+          ? "Time-In & Time-Out"
           : "Time-In Only"}
       </span>
     ),

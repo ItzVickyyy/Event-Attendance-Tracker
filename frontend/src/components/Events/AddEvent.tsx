@@ -93,7 +93,7 @@ export function AddEvent() {
           Add Event
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>Create New Event</DialogTitle>
@@ -105,7 +105,7 @@ export function AddEvent() {
               </label>
               <Input
                 id="event_name"
-                placeholder="CCS Week 2026"
+                placeholder="Enter event name"
                 {...form.register("event_name")}
               />
             </div>
@@ -157,7 +157,7 @@ export function AddEvent() {
                 <SelectContent>
                   <SelectItem value="time_in_only">Time-In Only</SelectItem>
                   <SelectItem value="time_in_time_out">
-                    Time-In + Time-Out
+                    Time-In & Time-Out
                   </SelectItem>
                 </SelectContent>
               </Select>

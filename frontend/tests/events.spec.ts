@@ -66,7 +66,7 @@ test("registration page reports section loading failures and can retry", async (
   ).toBeVisible({ timeout: 15000 })
   await expect(
     page.getByRole("button", { name: "Save eligible sections" }),
-  ).toBeDisabled()
+  ).toHaveCount(0)
 
   failSectionRequests = false
   await page.getByRole("button", { name: "Retry loading sections" }).click()
@@ -128,6 +128,12 @@ test("registration page reports event loading failures and can retry", async ({
   failEventRequests = false
   await page.getByRole("button", { name: "Retry loading event" }).click()
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
+
+  await page.getByRole("link", { name: "Event Details" }).click()
+  await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
+  await page.getByRole("link", { name: "Events", exact: true }).last().click()
+  await expect(page.getByRole("heading", { name: "Events" })).toBeVisible()
+  await expect(page.getByText("Oops")).toHaveCount(0)
 })
 
 test("event details distinguish server failures from missing events and can retry", async ({
@@ -240,7 +246,7 @@ test("event roster student search can navigate beyond the first ten matches", as
 
   const eventRow = page.getByRole("row").filter({ hasText: eventName })
   await expect(eventRow).toBeVisible()
-  await eventRow.getByRole("button", { name: "Roster" }).click()
+  await eventRow.getByRole("button", { name: "Roster", exact: true }).click()
   const dialog = page.getByRole("dialog")
   await dialog
     .getByPlaceholder("Search student by name or student number...")
@@ -257,4 +263,89 @@ test("event roster student search can navigate beyond the first ten matches", as
   )
   await expect(dialog.getByText("Showing 11–12 of 12")).toBeVisible()
   expect(searchRequests.some((query) => query.includes("skip=10"))).toBeTruthy()
+})
+
+test("deleting an event closes its confirmation and removes only that event", async ({
+  page,
+}) => {
+  await page.goto("/events")
+  const eventName = `Delete confirmation regression ${randomEmail()}`
+
+  await page.getByRole("button", { name: "Add Event" }).click()
+  await page.getByLabel("Event Name").fill(eventName)
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
+  await page.getByRole("button", { name: "Create Event" }).click()
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const eventRow = page.getByRole("row").filter({ hasText: eventName })
+  await expect(eventRow).toBeVisible()
+  await eventRow.getByRole("button", { name: `Delete ${eventName}` }).click()
+
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toContainText(eventName)
+  await dialog.getByRole("button", { name: "Delete", exact: true }).click()
+
+  await expect(page.getByText("Event deleted successfully")).toBeVisible()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(
+    page.getByRole("row").filter({ hasText: eventName }),
+  ).toHaveCount(0)
+})
+
+test("eligible sections save automatically when a section is selected", async ({
+  page,
+}) => {
+  const sectionId = "00000000-0000-4000-8000-000000000321"
+  let savedSectionIds: string[] | undefined
+  await page.route("**/api/v1/academic-sections/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [
+          {
+            id: sectionId,
+            section_name: "Automatic Save Test Section",
+            year_level: 1,
+            academic_year: "2026-2027",
+          },
+        ],
+        count: 1,
+      }),
+    })
+  })
+  await page.route("**/api/v1/events/*", async (route) => {
+    if (route.request().method() === "PATCH") {
+      const body = route.request().postDataJSON() as {
+        eligible_section_ids?: string[]
+      }
+      if (body.eligible_section_ids) {
+        savedSectionIds = body.eligible_section_ids
+      }
+    }
+    await route.continue()
+  })
+
+  await page.goto("/events")
+  const eventName = `Automatic section save ${randomEmail()}`
+  await page.getByRole("button", { name: "Add Event" }).click()
+  await page.getByLabel("Event Name").fill(eventName)
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
+  await page.getByRole("button", { name: "Create Event" }).click()
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const eventLink = page.getByRole("link", { name: eventName })
+  await expect(eventLink).toBeVisible()
+  const href = await eventLink.getAttribute("href")
+  await page.goto(`${href}/registration`)
+  const sectionCheckbox = page.getByRole("checkbox")
+  await expect(sectionCheckbox).toHaveCount(1)
+  await sectionCheckbox.check()
+  await expect.poll(() => savedSectionIds).toEqual([sectionId])
 })
