@@ -102,8 +102,7 @@ export function AttendanceCorrectionDialog({
         <DialogHeader>
           <DialogTitle>Correct Attendance</DialogTitle>
           <DialogDescription>
-            Modify attendance record for registration{" "}
-            {attendance.registration_id}
+            Update the time-in, time-out, or status for this attendance record.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
