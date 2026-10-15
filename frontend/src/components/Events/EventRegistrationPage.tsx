@@ -362,7 +362,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block break-words font-medium">
-                          {section.section_name}
+                          {registrySectionNames.get(section.id) ?? section.section_name}
                         </span>
                         <span className="text-sm text-muted-foreground">
                           Year {section.year_level} · {section.academic_year}
