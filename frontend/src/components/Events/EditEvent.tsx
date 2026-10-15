@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
 import { Edit } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -43,7 +42,6 @@ interface EditEventProps {
 }
 
 export function EditEvent({ event }: EditEventProps) {
-  const router = useRouter()
   const { academicYears, activeAcademicYear } = useAcademicYear()
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -75,7 +73,6 @@ export function EditEvent({ event }: EditEventProps) {
       }),
     onSuccess: () => {
       toast.success("Event updated successfully")
-      router.invalidate()
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update event")
