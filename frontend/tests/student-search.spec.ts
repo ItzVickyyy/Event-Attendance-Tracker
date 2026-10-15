@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-test("student search submits the entered query when Search is clicked", async ({
+test("student search runs automatically after typing", async ({
   page,
 }) => {
   let searchedTerm = ""
@@ -21,7 +21,6 @@ test("student search submits the entered query when Search is clicked", async ({
   await page.goto("/sections")
   const search = page.getByRole("textbox", { name: "Search students" })
   await search.fill("  TEST-STUDENT-123  ")
-  await page.getByRole("button", { name: "Search", exact: true }).click()
 
   await expect.poll(() => searchedTerm).toBe("TEST-STUDENT-123")
 })
