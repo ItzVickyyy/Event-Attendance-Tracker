@@ -131,7 +131,7 @@ test("registration page reports event loading failures and can retry", async ({
 
   await page.getByRole("link", { name: "Event Details" }).click()
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible()
-  await page.getByRole("link", { name: "Events", exact: true }).click()
+  await page.getByRole("link", { name: "Events", exact: true }).last().click()
   await expect(page.getByRole("heading", { name: "Events" })).toBeVisible()
   await expect(page.getByText("Oops")).toHaveCount(0)
 })
