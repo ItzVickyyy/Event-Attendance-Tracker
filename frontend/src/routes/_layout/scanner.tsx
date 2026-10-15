@@ -899,20 +899,13 @@ function Scanner() {
         query: { skip: 0, limit: 10, search: query },
         throwOnError: false,
       }),
-    onSuccess: async (result) => {
+    onSuccess: (result) => {
       if (!eventId) {
         toast.error("Please select an event first")
         return
       }
-      const students = result.data?.data ?? []
-      if (students.length === 0) {
-        toast.error("No student found")
-      } else if (students.length === 1) {
-        await submitManualScan(students[0])
-      } else {
-        setManualResults(students)
-        setShowManualPicker(true)
-      }
+      setManualResults(result.data?.data ?? [])
+      setShowManualPicker(true)
     },
     onError: () => {
       toast.error("Search failed")
@@ -977,17 +970,22 @@ function Scanner() {
     }
   }
 
-  const handleManualSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (manualSearch.trim()) {
-      setShowManualPicker(false)
+  useEffect(() => {
+    const query = manualSearch.trim()
+    if (!query) {
       setManualResults([])
-      manualLookupMutation.mutate(manualSearch.trim())
+      setShowManualPicker(false)
+      return
     }
-  }
+    const timeout = window.setTimeout(() => {
+      setShowManualPicker(false)
+      manualLookupMutation.mutate(query)
+    }, 300)
+    return () => window.clearTimeout(timeout)
+  }, [manualSearch, manualLookupMutation.mutate])
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+    <div className="mx-auto grid w-full max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -1009,7 +1007,7 @@ function Scanner() {
               })
             }
           >
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[260px]">
               <SelectValue placeholder="Select event..." />
             </SelectTrigger>
             <SelectContent>
@@ -1235,23 +1233,28 @@ function Scanner() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleManualSearch} className="flex gap-2">
-            <Input
-              placeholder="Search by student number or name..."
-              value={manualSearch}
-              onChange={(e) => setManualSearch(e.target.value)}
-              className="flex-1"
-            />
-            <LoadingButton
-              loading={manualLookupMutation.isPending}
-              type="submit"
-            >
-              <Search className="mr-2 h-4 w-4" />
-              Search
-            </LoadingButton>
-          </form>
+          <Input
+            placeholder="Search by student number or name..."
+            value={manualSearch}
+            aria-label="Search students for manual attendance"
+            onChange={(e) => {
+              setManualSearch(e.target.value)
+              setShowManualPicker(false)
+            }}
+            className="w-full"
+          />
+          {manualLookupMutation.isPending && (
+            <p className="text-sm text-muted-foreground" role="status">
+              Searching students…
+            </p>
+          )}
+          {showManualPicker && manualResults.length === 0 && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No matching students found.
+            </p>
+          )}
           {showManualPicker && manualResults.length > 0 && (
-            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+            <div className="mt-3 max-h-60 space-y-2 overflow-y-auto">
               {manualResults.map((s) => (
                 <button
                   key={s.id}

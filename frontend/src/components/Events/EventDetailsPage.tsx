@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, Calendar, Clock, ScanLine } from "lucide-react"
+import { AcademicRegistryService } from "@/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,7 +24,31 @@ export function EventDetailsPage({ eventId }: { eventId: string }) {
       return response.json()
     },
   })
+  const sectionsQuery = useQuery({
+    queryKey: ["academicRegistrySections"],
+    queryFn: () => AcademicRegistryService.registryReadSections(),
+  })
   const event = query.data
+  const registrySections = sectionsQuery.data?.data.data ?? []
+  const sectionNameById = new Map(
+    registrySections.map((section) => {
+      const programCode = section.program_code?.trim() ?? ""
+      const majorCode = section.major_code?.trim() ?? ""
+      const sectionCode =
+        section.section_code?.trim() || section.section_name.trim()
+      const prefix = [programCode, majorCode].filter(Boolean).join(" ")
+      const alreadyFormatted =
+        prefix.length > 0 &&
+        (sectionCode.toLocaleUpperCase() === prefix.toLocaleUpperCase() ||
+          sectionCode
+            .toLocaleUpperCase()
+            .startsWith(`${prefix.toLocaleUpperCase()} `))
+      return [
+        section.id,
+        alreadyFormatted || !prefix ? sectionCode : `${prefix} ${sectionCode}`,
+      ]
+    }),
+  )
   if (query.isLoading)
     return (
       <Card>
@@ -113,6 +138,28 @@ export function EventDetailsPage({ eventId }: { eventId: string }) {
           <Info icon={<Clock />} label="End" value={event.end_time || "—"} />
           <Info label="Attendance mode" value={mode} />
           <Info label="Status" value={status} />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Eligible Sections</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sectionsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading sections…</p>
+          ) : (event.eligible_section_ids ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No eligible sections configured.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {(event.eligible_section_ids ?? []).map((sectionId: string) => (
+                <Badge key={sectionId} variant="outline">
+                  {sectionNameById.get(sectionId) ?? "Section unavailable"}
+                </Badge>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
       <div className="grid gap-4 md:grid-cols-3">

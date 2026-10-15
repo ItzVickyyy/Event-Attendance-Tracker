@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-test("student search submits the entered query when Search is clicked", async ({
-  page,
-}) => {
+test("student search runs automatically after typing", async ({ page }) => {
   let searchedTerm = ""
   await page.route("**/api/v1/students**", async (route) => {
     const url = new URL(route.request().url())
@@ -21,7 +19,6 @@ test("student search submits the entered query when Search is clicked", async ({
   await page.goto("/sections")
   const search = page.getByRole("textbox", { name: "Search students" })
   await search.fill("  TEST-STUDENT-123  ")
-  await page.getByRole("button", { name: "Search", exact: true }).click()
 
   await expect.poll(() => searchedTerm).toBe("TEST-STUDENT-123")
 })
@@ -146,7 +143,6 @@ test("global student search shows the full program, major, and section name", as
 
   await page.goto("/sections")
   await page.getByRole("textbox", { name: "Search students" }).fill("Kenneth")
-  await page.getByRole("button", { name: "Search", exact: true }).click()
 
   await expect(page.getByText("BSIT WMAD 3A").first()).toBeVisible()
   await expect(page.getByText("Page 1 of 2")).toBeVisible()
@@ -379,7 +375,6 @@ test("global student search restores its query and page after viewing details", 
   await page
     .getByRole("textbox", { name: "Search students" })
     .fill("Search Student")
-  await page.getByRole("button", { name: "Search", exact: true }).click()
   await expect(page.getByText("Page 1 of 2")).toBeVisible()
   await page.getByRole("button", { name: "Next" }).click()
   await expect(page.getByText("RETURN-026")).toBeVisible()

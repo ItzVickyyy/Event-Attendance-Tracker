@@ -5,11 +5,25 @@ import type { AttendancePublic } from "@/client"
 
 export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
   {
-    accessorKey: "registration_id",
-    header: "Registration ID",
+    accessorKey: "person_name",
+    header: "Attendee",
     cell: ({ row }) => (
-      <span className="font-mono text-sm">{row.original.registration_id}</span>
+      <div className="min-w-36">
+        <p className="font-medium">
+          {row.original.person_name || "Unknown attendee"}
+        </p>
+        {row.original.student_number && (
+          <p className="text-xs text-muted-foreground">
+            {row.original.student_number}
+          </p>
+        )}
+      </div>
     ),
+  },
+  {
+    accessorKey: "event_name",
+    header: "Event",
+    cell: ({ row }) => row.original.event_name || "—",
   },
   {
     accessorKey: "time_in",
@@ -18,7 +32,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       row.original.time_in ? (
         <div className="flex items-center gap-1">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          {format(new Date(row.original.time_in), "PPpp")}
+          {format(new Date(row.original.time_in), "p")}
         </div>
       ) : (
         <span className="text-muted-foreground">—</span>
@@ -31,7 +45,7 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       row.original.time_out ? (
         <div className="flex items-center gap-1">
           <Clock className="h-4 w-4 text-muted-foreground" />
-          {format(new Date(row.original.time_out), "PPpp")}
+          {format(new Date(row.original.time_out), "p")}
         </div>
       ) : (
         <span className="text-muted-foreground">—</span>
@@ -62,11 +76,12 @@ export const attendanceColumns: ColumnDef<AttendancePublic>[] = [
       ),
   },
   {
-    accessorKey: "scanned_by",
+    accessorKey: "scanned_by_name",
     header: "Scanned By",
     cell: ({ row }) => (
       <span className="text-sm text-muted-foreground">
-        {row.original.scanned_by || "—"}
+        {row.original.scanned_by_name ||
+          (row.original.scanned_by ? "Unknown scanner" : "—")}
       </span>
     ),
   },

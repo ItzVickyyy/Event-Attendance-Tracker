@@ -92,6 +92,16 @@ def test_attendance_time_in_only_prevent_duplicate_scan(
     assert res_1["attendance"]["time_in"] is not None
     assert res_1["attendance"]["time_out"] is None
 
+    incomplete_res = client.get(
+        f"{settings.API_V1_STR}/attendance/?event_id={event_id}&incomplete_only=true",
+        headers=superuser_token_headers,
+    )
+    assert incomplete_res.status_code == 200
+    assert all(
+        record["id"] != res_1["attendance"]["id"]
+        for record in incomplete_res.json()["data"]
+    )
+
     # 4. 2nd Scan -> 409 Conflict ("Already Recorded")
     scan_2 = client.post(
         f"{settings.API_V1_STR}/attendance/scan",
@@ -993,6 +1003,7 @@ def test_attendance_read_filtering_and_admin_crud(
         json={
             "event_name": f"CRUD Event {random_lower_string()[:5]}",
             "event_date": "2026-09-15",
+            "attendance_mode": "time_in_time_out",
             "status": "open",
         },
     )
@@ -1055,6 +1066,20 @@ def test_attendance_read_filtering_and_admin_crud(
     )
     assert list_res.status_code == 200
     assert list_res.json()["count"] >= 1
+    listed_record = next(
+        record for record in list_res.json()["data"] if record["id"] == rec_id
+    )
+    assert listed_record["person_name"] == "CRUD Attendee"
+    assert listed_record["event_name"] == event_res.json()["event_name"]
+    assert listed_record["time_in"] is not None
+    assert listed_record["scanned_by_name"]
+
+    incomplete_res = client.get(
+        f"{settings.API_V1_STR}/attendance/?incomplete_only=true",
+        headers=superuser_token_headers,
+    )
+    assert incomplete_res.status_code == 200
+    assert any(record["id"] == rec_id for record in incomplete_res.json()["data"])
 
     # 4. Read single record
     get_res = client.get(

@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
+from sqlalchemy import and_, or_
 from sqlalchemy import select as sa_select
 from sqlmodel import col, func, select
 
@@ -20,6 +21,7 @@ from app.api.deps import (
 from app.models import (
     Attendance,
     AttendanceCreate,
+    AttendanceMode,
     AttendancePublic,
     AttendanceSession,
     AttendancesPublic,
@@ -37,6 +39,7 @@ from app.models import (
     ScanRequest,
     ScanResponse,
     Student,
+    User,
     UserRole,
     get_datetime_utc,
 )
@@ -62,6 +65,7 @@ def read_attendances(
     attendance_status: AttendanceStatus | None = None,
     scan_method: ScanMethod | None = None,
     is_late: bool | None = None,
+    incomplete_only: bool = False,
     attendee_type: AttendeeType | None = None,
     section_id: uuid.UUID | None = None,
     session_date: str | None = None,
@@ -158,13 +162,118 @@ def read_attendances(
     if is_late is not None:
         count_statement = count_statement.where(col(Attendance.is_late) == is_late)
         statement = statement.where(col(Attendance.is_late) == is_late)
+    if incomplete_only:
+        legacy_incomplete_registrations = (
+            select(EventRegistration.id)
+            .join(
+                Event,
+                col(EventRegistration.event_id) == col(Event.id),
+            )
+            .where(col(Event.attendance_mode) == AttendanceMode.time_in_time_out)
+        )
+        incomplete_condition = or_(
+            col(Attendance.status).in_(
+                [AttendanceStatus.incomplete, AttendanceStatus.time_in_only]
+            ),
+            and_(
+                col(Attendance.status) == AttendanceStatus.present,
+                col(Attendance.time_in).is_not(None),
+                col(Attendance.time_out).is_(None),
+                col(Attendance.registration_id).in_(legacy_incomplete_registrations),
+            ),
+        )
+        count_statement = count_statement.where(incomplete_condition)
+        statement = statement.where(incomplete_condition)
     count = session.exec(count_statement).one()
     records = session.exec(
         statement.order_by(col(Attendance.created_at).desc()).offset(skip).limit(limit)
     ).all()
-    return AttendancesPublic(
-        data=[AttendancePublic.model_validate(r) for r in records], count=count
+    if not records:
+        return AttendancesPublic(data=[], count=count)
+
+    registrations = session.exec(
+        select(EventRegistration).where(
+            col(EventRegistration.id).in_(
+                {record.registration_id for record in records}
+            )
+        )
+    ).all()
+    registration_by_id = {item.id: item for item in registrations}
+    attendee_ids = {item.attendee_id for item in registrations}
+    attendees = session.exec(
+        select(Attendee).where(col(Attendee.id).in_(attendee_ids))
+    ).all()
+    attendee_by_id = {item.id: item for item in attendees}
+    person_ids = {item.person_id for item in attendees}
+    people = session.exec(select(Person).where(col(Person.id).in_(person_ids))).all()
+    person_by_id = {item.id: item for item in people}
+    students = session.exec(
+        select(Student).where(col(Student.person_id).in_(person_ids))
+    ).all()
+    student_by_person_id = {item.person_id: item for item in students}
+    event_ids = {item.event_id for item in registrations}
+    events = session.exec(select(Event).where(col(Event.id).in_(event_ids))).all()
+    event_by_id = {item.id: item for item in events}
+    scanner_ids = {record.scanned_by for record in records if record.scanned_by}
+    scanners = (
+        session.exec(select(User).where(col(User.id).in_(scanner_ids))).all()
+        if scanner_ids
+        else []
     )
+    scanner_by_id = {item.id: item for item in scanners}
+
+    data = []
+    for record in records:
+        registration = registration_by_id.get(record.registration_id)
+        attendee = (
+            attendee_by_id.get(registration.attendee_id) if registration else None
+        )
+        person = person_by_id.get(attendee.person_id) if attendee else None
+        student = student_by_person_id.get(person.id) if person else None
+        event = event_by_id.get(registration.event_id) if registration else None
+        scanner = scanner_by_id.get(record.scanned_by) if record.scanned_by else None
+        person_name = (
+            " ".join(
+                part
+                for part in (
+                    person.first_name,
+                    person.middle_name,
+                    person.last_name,
+                    person.name_extension,
+                )
+                if part and part.strip()
+            )
+            if person
+            else None
+        )
+        scanner_name = None
+        if scanner:
+            scanner_name = (
+                scanner.full_name
+                or " ".join(
+                    part
+                    for part in (
+                        scanner.first_name,
+                        scanner.middle_name,
+                        scanner.last_name,
+                        scanner.name_extension,
+                    )
+                    if part and part.strip()
+                )
+                or str(scanner.email)
+            )
+        data.append(
+            AttendancePublic.model_validate(
+                {
+                    **record.model_dump(),
+                    "person_name": person_name,
+                    "student_number": student.student_number if student else None,
+                    "event_name": event.event_name if event else None,
+                    "scanned_by_name": scanner_name or None,
+                }
+            )
+        )
+    return AttendancesPublic(data=data, count=count)
 
 
 @router.get("/export", dependencies=[Depends(require_class_rep_or_higher)])
@@ -418,8 +527,8 @@ def scan_attendance(
     if not registration:
         detail = (
             "This event has no eligible sections selected yet. Open Event "
-            "Registration, select sections under Eligible Sections, click Save "
-            "eligible sections, then click Register selected sections before retrying sync."
+            "Registration, select sections under Eligible Sections, wait for the "
+            "automatic save to finish, then click Register selected sections before retrying sync."
             if not event.eligible_section_ids
             else (
                 "Attendee is not registered for this event. Confirm the attendee's "
@@ -500,8 +609,8 @@ def scan_attendance_manual(
     if not registration:
         detail = (
             "This event has no eligible sections selected yet. Open Event "
-            "Registration, select sections under Eligible Sections, click Save "
-            "eligible sections, then click Register selected sections before retrying sync."
+            "Registration, select sections under Eligible Sections, wait for the "
+            "automatic save to finish, then click Register selected sections before retrying sync."
             if not event.eligible_section_ids
             else (
                 "Attendee is not registered for this event. Confirm the attendee's "

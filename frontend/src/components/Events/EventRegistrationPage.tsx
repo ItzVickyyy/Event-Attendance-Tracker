@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router"
 import { ArrowLeft, Check, Users } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
+  AcademicRegistryService,
   AcademicSectionsService,
   type EventPublic,
   EventRegistrationsService,
@@ -24,6 +25,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const [selectedSections, setSelectedSections] = useState<string[]>([])
   const hydratedEventRef = useRef<string | null>(null)
   const autoSaveReadyRef = useRef(false)
+  // Serialize eligible-section saves so slower requests cannot overwrite newer choices.
+  const sectionSaveQueueRef = useRef<Promise<unknown>>(Promise.resolve())
   const eventQuery = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => EventsService.readEvent({ path: { event_id: eventId } }),
@@ -35,6 +38,10 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         query: { skip: 0, limit: 200 },
       }),
   })
+  const registrySectionsQuery = useQuery({
+    queryKey: ["academicRegistrySections"],
+    queryFn: () => AcademicRegistryService.registryReadSections(),
+  })
   const registrationQuery = useQuery({
     queryKey: ["eventRegistrations", eventId],
     queryFn: () =>
@@ -42,6 +49,15 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         query: { event_id: eventId, skip: 0, limit: 1000 },
       }),
   })
+  const registrationPayload = registrationQuery.data?.data as unknown
+  const registered = Array.isArray(registrationPayload)
+    ? registrationPayload
+    : registrationPayload &&
+        typeof registrationPayload === "object" &&
+        "data" in registrationPayload &&
+        Array.isArray(registrationPayload.data)
+      ? registrationPayload.data
+      : []
   const eventResponse = eventQuery.data as unknown as
     | { data?: EventPublic }
     | EventPublic
@@ -67,15 +83,26 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           }),
         ),
       )
-      return results.flatMap((result) => result.data.data)
+      return results.flatMap((result) =>
+        Array.isArray(result.data?.data) ? result.data.data : [],
+      )
     },
   })
-  const saveSectionsMutation = useMutation({
-    mutationFn: (sectionIds: string[]) =>
+  const persistEligibleSections = (sectionIds: string[]) => {
+    const save = sectionSaveQueueRef.current.then(() =>
       EventsService.updateEvent({
         path: { event_id: eventId },
         body: { eligible_section_ids: sectionIds },
       }),
+    )
+    sectionSaveQueueRef.current = save.then(
+      () => undefined,
+      () => undefined,
+    )
+    return save
+  }
+  const saveSectionsMutation = useMutation({
+    mutationFn: persistEligibleSections,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
   })
@@ -92,15 +119,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   }, [eventId, selectedSections, saveSectionsMutation.mutate])
   const mutation = useMutation({
     mutationFn: async () => {
-      await EventsService.updateEvent({
-        path: { event_id: eventId },
-        body: { eligible_section_ids: selectedSections },
-      })
-      const existing = new Set(
-        (registrationQuery.data?.data.data ?? []).map(
-          (item) => item.attendee_id,
-        ),
-      )
+      await persistEligibleSections(selectedSections)
+      const existing = new Set(registered.map((item) => item.attendee_id))
       const students = (studentQueries.data ?? []).filter(
         (student) => student.attendee_id && !existing.has(student.attendee_id),
       )
@@ -121,9 +141,28 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       queryClient.invalidateQueries({ queryKey: ["event", eventId] })
     },
   })
-  const registered = registrationQuery.data?.data.data ?? []
   const students = studentQueries.data ?? []
   const sections = sectionsQuery.data?.data.data ?? []
+  const registrySections = registrySectionsQuery.data?.data.data ?? []
+  const registrySectionNames = new Map(
+    registrySections.map((section) => {
+      const programCode = section.program_code?.trim() ?? ""
+      const majorCode = section.major_code?.trim() ?? ""
+      const sectionCode =
+        section.section_code?.trim() || section.section_name.trim()
+      const prefix = [programCode, majorCode].filter(Boolean).join(" ")
+      const alreadyFormatted =
+        prefix.length > 0 &&
+        (sectionCode.toLocaleUpperCase() === prefix.toLocaleUpperCase() ||
+          sectionCode
+            .toLocaleUpperCase()
+            .startsWith(`${prefix.toLocaleUpperCase()} `))
+      return [
+        section.id,
+        alreadyFormatted || !prefix ? sectionCode : `${prefix} ${sectionCode}`,
+      ]
+    }),
+  )
   const allSectionsSelected =
     sections.length > 0 &&
     sections.every((section) => selectedSections.includes(section.id))
@@ -329,7 +368,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block break-words font-medium">
-                          {section.section_name}
+                          {registrySectionNames.get(section.id) ??
+                            section.section_name}
                         </span>
                         <span className="text-sm text-muted-foreground">
                           Year {section.year_level} · {section.academic_year}
