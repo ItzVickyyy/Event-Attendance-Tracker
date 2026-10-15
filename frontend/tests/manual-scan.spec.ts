@@ -420,6 +420,7 @@ test.describe("Manual attendance scan", () => {
     await expect(page.getByRole("button", { name: /Alice Student/ })).toBeVisible({
       timeout: 10000,
     })
+    expect(handle.sent()).toHaveLength(0)
     await page.getByRole("button", { name: /Alice Student/ }).click()
 
     await expect(
