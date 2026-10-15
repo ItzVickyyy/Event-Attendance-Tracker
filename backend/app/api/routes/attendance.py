@@ -232,15 +232,19 @@ def read_attendances(
         )
         scanner_name = None
         if scanner:
-            scanner_name = scanner.full_name or " ".join(
-                part
-                for part in (
-                    scanner.first_name,
-                    scanner.middle_name,
-                    scanner.last_name,
-                    scanner.name_extension,
+            scanner_name = (
+                scanner.full_name
+                or " ".join(
+                    part
+                    for part in (
+                        scanner.first_name,
+                        scanner.middle_name,
+                        scanner.last_name,
+                        scanner.name_extension,
+                    )
+                    if part and part.strip()
                 )
-                if part and part.strip()
+                or str(scanner.email)
             )
         data.append(
             AttendancePublic.model_validate(
