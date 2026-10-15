@@ -67,7 +67,7 @@ export function EventDetailsPage({ eventId }: { eventId: string }) {
   }
   const mode =
     event.attendance_mode === "time_in_time_out"
-      ? "Time-In + Time-Out"
+      ? "Time-In & Time-Out"
       : "Time-In Only"
   const status = event.status || "draft"
   return (
