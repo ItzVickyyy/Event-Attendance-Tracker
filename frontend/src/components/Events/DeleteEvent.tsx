@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "@tanstack/react-router"
 import { AlertTriangle, Trash2 } from "lucide-react"
+import { useState } from "react"
 import { toast } from "sonner"
 import type { EventPublic } from "@/client"
 import { EventsService } from "@/client"
@@ -22,6 +23,7 @@ interface DeleteEventProps {
 
 export function DeleteEvent({ event }: DeleteEventProps) {
   const router = useRouter()
+  const [open, setOpen] = useState(false)
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -31,6 +33,7 @@ export function DeleteEvent({ event }: DeleteEventProps) {
       }),
     onSuccess: () => {
       toast.success("Event deleted successfully")
+      setOpen(false)
       router.invalidate()
     },
     onError: (error) => {
@@ -39,7 +42,7 @@ export function DeleteEvent({ event }: DeleteEventProps) {
   })
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
