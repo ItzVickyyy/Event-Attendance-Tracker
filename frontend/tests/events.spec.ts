@@ -349,3 +349,94 @@ test("eligible sections save automatically when a section is selected", async ({
   await sectionCheckbox.check()
   await expect.poll(() => savedSectionIds).toEqual([sectionId])
 })
+
+test("eligible section auto-saves are serialized and the latest selection wins", async ({
+  page,
+}) => {
+  const firstSectionId = "00000000-0000-4000-8000-000000000401"
+  const secondSectionId = "00000000-0000-4000-8000-000000000402"
+  let firstPatchStarted = false
+  let releaseFirstPatch: (() => void) | undefined
+  const firstPatchGate = new Promise<void>((resolve) => {
+    releaseFirstPatch = resolve
+  })
+  const savedSectionIds: string[][] = []
+
+  await page.route("**/api/v1/academic-sections/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [
+          {
+            id: firstSectionId,
+            section_name: "Auto Save Queue Test 1A",
+            year_level: 1,
+            academic_year: "2026-2027",
+          },
+          {
+            id: secondSectionId,
+            section_name: "Auto Save Queue Test 1B",
+            year_level: 1,
+            academic_year: "2026-2027",
+          },
+        ],
+        count: 2,
+      }),
+    })
+  })
+  await page.route("**/api/v1/events/*", async (route) => {
+    if (route.request().method() !== "PATCH") {
+      await route.continue()
+      return
+    }
+    const body = route.request().postDataJSON() as {
+      eligible_section_ids?: string[]
+    }
+    if (!body.eligible_section_ids) {
+      await route.continue()
+      return
+    }
+    savedSectionIds.push(body.eligible_section_ids)
+    if (savedSectionIds.length === 1) {
+      firstPatchStarted = true
+      await firstPatchGate
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ id: "event-auto-save-queue" }),
+    })
+  })
+
+  await page.goto("/events")
+  const eventName = `Serialized section save ${randomEmail()}`
+  await page.getByRole("button", { name: "Add Event" }).click()
+  await page.getByLabel("Event Name").fill(eventName)
+  await page.getByLabel("Event Date").fill(new Date().toISOString().slice(0, 10))
+  await page.getByRole("button", { name: "Create Event" }).click()
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const eventLink = page.getByRole("link", { name: eventName })
+  await expect(eventLink).toBeVisible()
+  const href = await eventLink.getAttribute("href")
+  await page.goto(`${href}/registration`)
+
+  const firstCheckbox = page.getByRole("checkbox").nth(0)
+  const secondCheckbox = page.getByRole("checkbox").nth(1)
+  await expect(firstCheckbox).toBeVisible()
+  await expect(secondCheckbox).toBeVisible()
+  await firstCheckbox.check()
+  await expect.poll(() => firstPatchStarted).toBeTruthy()
+
+  await secondCheckbox.check()
+  await page.waitForTimeout(500)
+  expect(savedSectionIds).toHaveLength(1)
+
+  releaseFirstPatch?.()
+  await expect.poll(() => savedSectionIds).toHaveLength(2)
+  expect(savedSectionIds[0]).toEqual([firstSectionId])
+  expect(savedSectionIds[1]).toEqual([firstSectionId, secondSectionId])
+})
+
