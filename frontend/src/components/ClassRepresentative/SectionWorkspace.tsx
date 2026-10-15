@@ -77,7 +77,10 @@ export function ClassRepresentativeSectionWorkspace() {
   const [unregisteredOnly, setUnregisteredOnly] = useState(false)
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 250)
+    const timeout = window.setTimeout(
+      () => setDebouncedSearch(search.trim()),
+      250,
+    )
     return () => window.clearTimeout(timeout)
   }, [search])
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -401,17 +404,13 @@ export function ClassRepresentativeSectionWorkspace() {
             <div className="rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">Registered cards</p>
               <p className="text-2xl font-semibold">
-                {
-                  students.data?.registered_count ?? 0
-                }
+                {students.data?.registered_count ?? 0}
               </p>
             </div>
             <div className="rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">Remaining</p>
               <p className="text-2xl font-semibold">
-                {
-                  students.data?.unregistered_count ?? 0
-                }
+                {students.data?.unregistered_count ?? 0}
               </p>
             </div>
           </div>
