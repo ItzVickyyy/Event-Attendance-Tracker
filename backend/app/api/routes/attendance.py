@@ -5,7 +5,8 @@ from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import Response
-from sqlalchemy import and_, or_, select as sa_select
+from sqlalchemy import and_, or_
+from sqlalchemy import select as sa_select
 from sqlmodel import col, func, select
 
 from app.api.deps import (
