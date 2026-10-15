@@ -35,8 +35,12 @@ export function DeleteEvent({ event }: DeleteEventProps) {
       setOpen(false)
       await queryClient.invalidateQueries({ queryKey: ["events"] })
       await queryClient.invalidateQueries({ queryKey: ["event", event.id] })
-      await queryClient.invalidateQueries({ queryKey: ["eventRoster", event.id] })
-      await queryClient.invalidateQueries({ queryKey: ["eventRegistrations", event.id] })
+      await queryClient.invalidateQueries({
+        queryKey: ["eventRoster", event.id],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ["eventRegistrations", event.id],
+      })
     },
     onError: (error) => {
       toast.error(error.message || "Failed to delete event")
