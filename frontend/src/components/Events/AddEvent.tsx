@@ -63,7 +63,7 @@ export function AddEvent() {
         },
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Event created successfully")
       form.reset({
         event_name: "",
