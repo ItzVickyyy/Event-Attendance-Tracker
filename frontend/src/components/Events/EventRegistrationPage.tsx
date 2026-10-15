@@ -25,6 +25,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   const [selectedSections, setSelectedSections] = useState<string[]>([])
   const hydratedEventRef = useRef<string | null>(null)
   const autoSaveReadyRef = useRef(false)
+  // Serialize eligible-section saves so slower requests cannot overwrite newer choices.
+  const sectionSaveQueueRef = useRef<Promise<unknown>>(Promise.resolve())
   const eventQuery = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => EventsService.readEvent({ path: { event_id: eventId } }),
@@ -87,11 +89,19 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
     },
   })
   const saveSectionsMutation = useMutation({
-    mutationFn: (sectionIds: string[]) =>
-      EventsService.updateEvent({
-        path: { event_id: eventId },
-        body: { eligible_section_ids: sectionIds },
-      }),
+    mutationFn: (sectionIds: string[]) => {
+      const save = sectionSaveQueueRef.current.then(() =>
+        EventsService.updateEvent({
+          path: { event_id: eventId },
+          body: { eligible_section_ids: sectionIds },
+        }),
+      )
+      sectionSaveQueueRef.current = save.then(
+        () => undefined,
+        () => undefined,
+      )
+      return save
+    },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
   })
