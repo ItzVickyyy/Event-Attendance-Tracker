@@ -473,7 +473,9 @@ test("event list loads later pages concurrently in bounded batches", async ({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          data: Array.from({ length: 100 }, (_, index) => ({
+          data: Array.from(
+            { length: Math.min(100, Math.max(0, 250 - skip)) },
+            (_, index) => ({
             id: `event-${skip + index}`,
             event_name: `Mock event ${skip + index}`,
             event_date: "2026-10-15",
@@ -481,7 +483,8 @@ test("event list loads later pages concurrently in bounded batches", async ({
             end_time: "10:00:00",
             attendance_mode: "time_in_time_out",
             status: "published",
-          })),
+          }),
+          ),
           count: 250,
         }),
       })
