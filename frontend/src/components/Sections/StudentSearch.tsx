@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AcademicRegistryService, StudentsService } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -44,11 +44,16 @@ export function StudentSearch() {
   const [search, setSearch] = useState(initialState.search)
   const [submitted, setSubmitted] = useState(initialState.submitted)
   const [page, setPage] = useState(initialState.page)
+  const lastSubmittedRef = useRef(initialState.submitted)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      setSubmitted(search.trim())
-      setPage(0)
+      const nextSearch = search.trim()
+      if (nextSearch !== lastSubmittedRef.current) {
+        lastSubmittedRef.current = nextSearch
+        setSubmitted(nextSearch)
+        setPage(0)
+      }
     }, 250)
     return () => window.clearTimeout(timeout)
   }, [search])
