@@ -441,3 +441,77 @@ test("eligible section auto-saves are serialized and the latest selection wins",
   expect(savedSectionIds[0]).toEqual([firstSectionId])
   expect(savedSectionIds[1]).toEqual([firstSectionId, secondSectionId])
 })
+test("event list loads later pages concurrently in bounded batches", async ({
+  page,
+}) => {
+  const requestedOffsets: number[] = []
+  let releaseLaterPages: () => void = () => {}
+  const laterPagesRequested = new Promise<void>((resolve) => {
+    releaseLaterPages = resolve
+  })
+
+  await page.route("**/api/v1/events**", async (route) => {
+    const requestUrl = new URL(route.request().url())
+    if (
+      requestUrl.pathname !== "/api/v1/events" &&
+      requestUrl.pathname !== "/api/v1/events/"
+    ) {
+      await route.continue()
+      return
+    }
+    if (route.request().method() !== "GET") {
+      await route.continue()
+      return
+    }
+
+    const skip = Number(requestUrl.searchParams.get("skip") ?? 0)
+    if (skip > 0) {
+      requestedOffsets.push(skip)
+      if (requestedOffsets.length >= 2) releaseLaterPages()
+      await laterPagesRequested
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: Array.from(
+            { length: Math.min(100, Math.max(0, 250 - skip)) },
+            (_, index) => ({
+              id: `event-${skip + index}`,
+              event_name: `Mock event ${skip + index}`,
+              event_date: "2026-10-15",
+              start_time: "09:00:00",
+              end_time: "10:00:00",
+              attendance_mode: "time_in_time_out",
+              status: "published",
+            }),
+          ),
+          count: 250,
+        }),
+      })
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: Array.from({ length: 100 }, (_, index) => ({
+          id: `event-${index}`,
+          event_name: `Mock event ${index}`,
+          event_date: "2026-10-15",
+          start_time: "09:00:00",
+          end_time: "10:00:00",
+          attendance_mode: "time_in_time_out",
+          status: "published",
+        })),
+        count: 250,
+      }),
+    })
+  })
+
+  await page.goto("/events")
+  await expect(page.getByRole("heading", { name: "Events" })).toBeVisible()
+  await expect.poll(() => requestedOffsets.length).toBe(2)
+  expect(requestedOffsets.sort((a, b) => a - b)).toEqual([100, 200])
+  await expect(page.getByText("Mock event 0").first()).toBeVisible()
+})
