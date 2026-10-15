@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CheckCircle, Loader2, Plus, Search, Trash2, Users } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import {
@@ -34,6 +34,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   const [open, setOpen] = useState(false)
   const [searchRoster, setSearchRoster] = useState("")
   const [searchStudent, setSearchStudent] = useState("")
+  const [debouncedSearchStudent, setDebouncedSearchStudent] = useState("")
   const [studentSearchPage, setStudentSearchPage] = useState(0)
   const studentSearchPageSize = 10
   const queryClient = useQueryClient()
@@ -85,15 +86,23 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
     enabled: open,
   })
 
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setDebouncedSearchStudent(searchStudent.trim()),
+      250,
+    )
+    return () => window.clearTimeout(timeout)
+  }, [searchStudent])
+
   // 4. Search Students for Adding
   const { data: studentSearchResponse, isLoading: isSearchingStudents } =
     useQuery({
-      queryKey: ["studentsSearch", searchStudent, studentSearchPage],
+      queryKey: ["studentsSearch", debouncedSearchStudent, studentSearchPage],
       queryFn: async () => {
-        if (!searchStudent.trim()) return { data: [], count: 0 }
+        if (!debouncedSearchStudent) return { data: [], count: 0 }
         const res = await StudentsService.readStudents({
           query: {
-            search: searchStudent.trim(),
+            search: debouncedSearchStudent,
             skip: studentSearchPage * studentSearchPageSize,
             limit: studentSearchPageSize,
           },
@@ -101,7 +110,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
         })
         return res.data
       },
-      enabled: open && searchStudent.trim().length > 0,
+      enabled: open && debouncedSearchStudent.length > 0,
     })
 
   const rosterEntries = Array.isArray(rosterResponse?.data)
@@ -277,7 +286,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
             />
           </div>
 
-          {searchStudent.trim().length > 0 && (
+          {debouncedSearchStudent.length > 0 && (
             <div className="border rounded-md bg-background max-h-40 overflow-y-auto divide-y text-sm">
               {isSearchingStudents ? (
                 <div className="p-3 flex items-center justify-center text-muted-foreground gap-2">
