@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router"
 import { ArrowLeft, CreditCard, History, UserRound, Wifi } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { toast } from "sonner"
 import {
   AcademicProgramsService,
   AcademicSectionsService,
