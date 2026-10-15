@@ -88,20 +88,21 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       )
     },
   })
+  const persistEligibleSections = (sectionIds: string[]) => {
+    const save = sectionSaveQueueRef.current.then(() =>
+      EventsService.updateEvent({
+        path: { event_id: eventId },
+        body: { eligible_section_ids: sectionIds },
+      }),
+    )
+    sectionSaveQueueRef.current = save.then(
+      () => undefined,
+      () => undefined,
+    )
+    return save
+  }
   const saveSectionsMutation = useMutation({
-    mutationFn: (sectionIds: string[]) => {
-      const save = sectionSaveQueueRef.current.then(() =>
-        EventsService.updateEvent({
-          path: { event_id: eventId },
-          body: { eligible_section_ids: sectionIds },
-        }),
-      )
-      sectionSaveQueueRef.current = save.then(
-        () => undefined,
-        () => undefined,
-      )
-      return save
-    },
+    mutationFn: persistEligibleSections,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
   })
@@ -118,10 +119,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
   }, [eventId, selectedSections, saveSectionsMutation.mutate])
   const mutation = useMutation({
     mutationFn: async () => {
-      await EventsService.updateEvent({
-        path: { event_id: eventId },
-        body: { eligible_section_ids: selectedSections },
-      })
+      await persistEligibleSections(selectedSections)
       const existing = new Set(registered.map((item) => item.attendee_id))
       const students = (studentQueries.data ?? []).filter(
         (student) => student.attendee_id && !existing.has(student.attendee_id),
