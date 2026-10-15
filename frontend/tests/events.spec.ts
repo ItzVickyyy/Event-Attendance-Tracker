@@ -289,7 +289,6 @@ test("deleting an event closes its confirmation and removes only that event", as
   ).toHaveCount(0)
 })
 
-
 test("eligible sections save automatically when a section is selected", async ({
   page,
 }) => {
@@ -328,7 +327,9 @@ test("eligible sections save automatically when a section is selected", async ({
   const eventName = `Automatic section save ${randomEmail()}`
   await page.getByRole("button", { name: "Add Event" }).click()
   await page.getByLabel("Event Name").fill(eventName)
-  await page.getByLabel("Event Date").fill(new Date().toISOString().slice(0, 10))
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
   await page.getByRole("button", { name: "Create Event" }).click()
   await expect(page.getByText("Event created successfully")).toBeVisible()
   await page.keyboard.press("Escape")
