@@ -46,6 +46,14 @@ export function StudentSearch() {
   const [page, setPage] = useState(initialState.page)
 
   useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setSubmitted(search.trim())
+      setPage(0)
+    }, 250)
+    return () => window.clearTimeout(timeout)
+  }, [search])
+
+  useEffect(() => {
     sessionStorage.setItem(
       SEARCH_STATE_KEY,
       JSON.stringify({ search, submitted, page }),
@@ -94,24 +102,12 @@ export function StudentSearch() {
   return (
     <Card>
       <CardContent className="space-y-4">
-        <form
-          className="flex flex-col gap-2 sm:flex-row"
-          onSubmit={(event) => {
-            event.preventDefault()
-            setPage(0)
-            setSubmitted(search.trim())
-          }}
-        >
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by student number or full name"
-            aria-label="Search students"
-          />
-          <Button type="submit" disabled={!search.trim()}>
-            Search
-          </Button>
-        </form>
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search by student number or full name"
+          aria-label="Search students"
+        />
         {query.isLoading && (
           <p className="text-sm text-muted-foreground">Searching…</p>
         )}
