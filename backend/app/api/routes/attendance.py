@@ -20,12 +20,12 @@ from app.api.deps import (
 from app.models import (
     Attendance,
     AttendanceCreate,
+    AttendanceMode,
     AttendancePublic,
     AttendanceSession,
     AttendancesPublic,
     AttendanceStatus,
     AttendanceUpdate,
-    AttendanceMode,
     Attendee,
     AttendeeCredential,
     AttendeeType,
