@@ -458,6 +458,20 @@ export function StudentDetailsPage({
             <p className="text-sm text-muted-foreground">
               Loading guardian relationships…
             </p>
+          ) : relationshipsQuery.isError ? (
+            <div className="space-y-2">
+              <p className="text-sm text-destructive">
+                Unable to load guardian or parent contacts.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void relationshipsQuery.refetch()}
+              >
+                Retry
+              </Button>
+            </div>
           ) : relationships.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No guardian or parent relationship is currently recorded.
@@ -742,7 +756,9 @@ function GuardianRow({
       ]
         .filter(Boolean)
         .join(" ")
-    : "Loading…"
+    : attendeeQuery.isLoading || personQuery.isLoading
+      ? "Loading…"
+      : "Contact unavailable"
   return (
     <div className="rounded-lg border p-3">
       <p className="font-medium">{name}</p>
@@ -750,8 +766,8 @@ function GuardianRow({
         {relationship.relationship_type?.replace("_", " ") ?? "Guardian"}
       </p>
       <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-        <span>{person?.contact_number ?? "No contact number"}</span>
-        <span>{person?.email ?? "No email"}</span>
+        <span>{personQuery.isLoading ? "Loading contact…" : person?.contact_number ?? "No contact number"}</span>
+        <span>{personQuery.isLoading ? "Loading email…" : person?.email ?? "No email"}</span>
       </div>
     </div>
   )
