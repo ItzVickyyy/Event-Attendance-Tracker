@@ -113,9 +113,15 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
       enabled: open && debouncedSearchStudent.length > 0,
     })
 
-  const rosterEntries = Array.isArray(rosterResponse?.data)
-    ? rosterResponse.data
-    : []
+  const rawRoster = rosterResponse?.data as unknown
+  const rosterEntries = Array.isArray(rawRoster)
+    ? rawRoster
+    : rawRoster &&
+        typeof rawRoster === "object" &&
+        "data" in rawRoster &&
+        Array.isArray(rawRoster.data)
+      ? rawRoster.data
+      : []
   const rawRegistrations = registrationsResponse?.data as unknown
   const registrations = Array.isArray(rawRegistrations)
     ? rawRegistrations
