@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
 import { AlertTriangle, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { StudentsService } from "@/client"
@@ -22,7 +21,6 @@ interface DeleteStudentProps {
 }
 
 export function DeleteStudent({ student }: DeleteStudentProps) {
-  const router = useRouter()
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -32,7 +30,6 @@ export function DeleteStudent({ student }: DeleteStudentProps) {
       }),
     onSuccess: () => {
       toast.success("Student deleted successfully")
-      router.invalidate()
     },
     onError: (error) => {
       toast.error(error.message || "Failed to delete student")
