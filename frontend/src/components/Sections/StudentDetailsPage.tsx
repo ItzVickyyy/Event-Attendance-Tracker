@@ -560,11 +560,6 @@ export function StudentDetailsPage({
           )}
         </CardContent>
       </Card>
-      <Button variant="outline" asChild>
-        <Link to="/sections/$sectionId" params={{ sectionId }}>
-          View Section
-        </Link>
-      </Button>
     </div>
   )
 }
