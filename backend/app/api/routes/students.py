@@ -159,7 +159,15 @@ def read_students(
         data=[
             StudentPublic(
                 **student.model_dump(),
-                person_name=f"{person.first_name} {person.last_name}".strip(),
+                person_name=" ".join(
+                    part
+                    for part in (
+                        person.first_name,
+                        person.middle_name,
+                        person.last_name,
+                    )
+                    if part and part.strip()
+                ),
                 attendee_id=attendee.id if attendee else None,
             )
             for student, person, attendee in rows

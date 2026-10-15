@@ -73,6 +73,10 @@ def test_student_lifecycle(
     assert middle_search_res.status_code == 200
     assert middle_search_res.json()["count"] == 1
     assert middle_search_res.json()["data"][0]["id"] == student_id
+    assert (
+        middle_search_res.json()["data"][0]["person_name"]
+        == "StudentFirst MiddleSearchUnique StudentLast"
+    )
 
     # 5. Read by ID
     get_res = client.get(
