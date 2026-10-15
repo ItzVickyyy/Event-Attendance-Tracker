@@ -993,6 +993,7 @@ def test_attendance_read_filtering_and_admin_crud(
         json={
             "event_name": f"CRUD Event {random_lower_string()[:5]}",
             "event_date": "2026-09-15",
+            "attendance_mode": "time_in_time_out",
             "status": "open",
         },
     )
