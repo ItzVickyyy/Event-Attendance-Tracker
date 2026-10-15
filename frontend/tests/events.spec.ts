@@ -413,7 +413,9 @@ test("eligible section auto-saves are serialized and the latest selection wins",
   const eventName = `Serialized section save ${randomEmail()}`
   await page.getByRole("button", { name: "Add Event" }).click()
   await page.getByLabel("Event Name").fill(eventName)
-  await page.getByLabel("Event Date").fill(new Date().toISOString().slice(0, 10))
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
   await page.getByRole("button", { name: "Create Event" }).click()
   await expect(page.getByText("Event created successfully")).toBeVisible()
   await page.keyboard.press("Escape")
