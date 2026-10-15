@@ -259,8 +259,7 @@ test("event roster student search can navigate beyond the first ten matches", as
   expect(searchRequests.some((query) => query.includes("skip=10"))).toBeTruthy()
 })
 
-
-test("deleting an event closes its confirmation and removes only that event", async ({
+test("deleting an event closes its confirmation and removes only that event, async ({
   page,
 }) => {
   await page.goto("/events")
@@ -268,7 +267,9 @@ test("deleting an event closes its confirmation and removes only that event", as
 
   await page.getByRole("button", { name: "Add Event" }).click()
   await page.getByLabel("Event Name").fill(eventName)
-  await page.getByLabel("Event Date").fill(new Date().toISOString().slice(0, 10))
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
   await page.getByRole("button", { name: "Create Event" }).click()
   await expect(page.getByText("Event created successfully")).toBeVisible()
   await page.keyboard.press("Escape")
@@ -283,7 +284,9 @@ test("deleting an event closes its confirmation and removes only that event", as
 
   await expect(page.getByText("Event deleted successfully")).toBeVisible()
   await expect(page.getByRole("dialog")).toHaveCount(0)
-  await expect(page.getByRole("row").filter({ hasText: eventName })).toHaveCount(0)
+  await expect(
+    page.getByRole("row").filter({ hasText: eventName }),
+  ).toHaveCount(0)
 })
 
 
