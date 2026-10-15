@@ -1055,6 +1055,22 @@ def test_attendance_read_filtering_and_admin_crud(
     )
     assert list_res.status_code == 200
     assert list_res.json()["count"] >= 1
+    listed_record = next(
+        record for record in list_res.json()["data"] if record["id"] == rec_id
+    )
+    assert listed_record["person_name"] == "CRUD Attendee"
+    assert listed_record["event_name"] == event_res.json()["event_name"]
+    assert listed_record["time_in"] is not None
+    assert listed_record["scanned_by_name"]
+
+    incomplete_res = client.get(
+        f"{settings.API_V1_STR}/attendance/?incomplete_only=true",
+        headers=superuser_token_headers,
+    )
+    assert incomplete_res.status_code == 200
+    assert any(
+        record["id"] == rec_id for record in incomplete_res.json()["data"]
+    )
 
     # 4. Read single record
     get_res = client.get(
