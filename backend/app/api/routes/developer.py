@@ -120,6 +120,7 @@ def read_system_diagnostics(session: SessionDep) -> Any:
 class AuditLogEntry(BaseModel):
     id: str
     actor_user_id: str | None
+    actor_name: str | None
     action: str
     resource: str
     method: str
@@ -195,12 +196,26 @@ def read_audit_logs(
         query.order_by(col(AuditLog.occurred_at).desc()).offset(offset).limit(limit)
     ).all()
     count = session.exec(count_query).one()
+    actor_ids = {row.actor_user_id for row in rows if row.actor_user_id}
+    actors = (
+        session.exec(select(User).where(col(User.id).in_(actor_ids))).all()
+        if actor_ids
+        else []
+    )
+    actor_names = {
+        actor.id: (
+            " ".join(part for part in (actor.first_name, actor.last_name) if part).strip()
+            or str(actor.email)
+        )
+        for actor in actors
+    }
 
     return AuditLogResponse(
         data=[
             AuditLogEntry(
                 id=str(row.id),
                 actor_user_id=str(row.actor_user_id) if row.actor_user_id else None,
+                actor_name=actor_names.get(row.actor_user_id) if row.actor_user_id else None,
                 action=row.action,
                 resource=row.resource,
                 method=row.method,
