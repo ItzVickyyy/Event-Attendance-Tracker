@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { CheckCircle, Loader2, Plus, Search, Trash2, Users } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -37,7 +37,6 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   const [debouncedSearchStudent, setDebouncedSearchStudent] = useState("")
   const [studentSearchPage, setStudentSearchPage] = useState(0)
   const studentSearchPageSize = 10
-  const queryClient = useQueryClient()
 
   // 1. Fetch Event Roster
   const {
@@ -185,6 +184,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
 
   // Mutation to Add Student to Roster
   const addStudentMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async (student: StudentPublic) => {
       // 1. Resolve Attendee record
       const attendeeRes = await AttendeesService.readAttendees({
@@ -217,10 +217,6 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
     },
     onSuccess: () => {
       toast.success("Attendee registered for event")
-      queryClient.invalidateQueries({ queryKey: ["eventRoster", event.id] })
-      queryClient.invalidateQueries({
-        queryKey: ["eventRegistrations", event.id],
-      })
       refetchRoster()
       refetchRegistrations()
     },
@@ -231,6 +227,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
 
   // Mutation to Remove Attendee from Roster
   const removeRegistrationMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async (registrationId: string) => {
       await EventRegistrationsService.registrationsDeleteEventRegistration({
         path: { registration_id: registrationId },
@@ -239,11 +236,6 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
     },
     onSuccess: () => {
       toast.success("Attendee removed from event roster")
-      queryClient.invalidateQueries({ queryKey: ["eventRoster", event.id] })
-      queryClient.invalidateQueries({
-        queryKey: ["eventRegistrations", event.id],
-      })
-      queryClient.invalidateQueries({ queryKey: ["eventAttendance", event.id] })
       refetchRoster()
       refetchRegistrations()
       refetchAttendance()
