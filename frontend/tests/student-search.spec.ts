@@ -145,7 +145,6 @@ test("global student search shows the full program, major, and section name", as
 
   await page.goto("/sections")
   await page.getByRole("textbox", { name: "Search students" }).fill("Kenneth")
-  await page.getByRole("button", { name: "Search", exact: true }).click()
 
   await expect(page.getByText("BSIT WMAD 3A").first()).toBeVisible()
   await expect(page.getByText("Page 1 of 2")).toBeVisible()
@@ -378,7 +377,6 @@ test("global student search restores its query and page after viewing details", 
   await page
     .getByRole("textbox", { name: "Search students" })
     .fill("Search Student")
-  await page.getByRole("button", { name: "Search", exact: true }).click()
   await expect(page.getByText("Page 1 of 2")).toBeVisible()
   await page.getByRole("button", { name: "Next" }).click()
   await expect(page.getByText("RETURN-026")).toBeVisible()
