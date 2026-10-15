@@ -66,7 +66,7 @@ test("registration page reports section loading failures and can retry", async (
   ).toBeVisible({ timeout: 15000 })
   await expect(
     page.getByRole("button", { name: "Save eligible sections" }),
-  ).toBeDisabled()
+  ).toHaveCount(0)
 
   failSectionRequests = false
   await page.getByRole("button", { name: "Retry loading sections" }).click()
@@ -284,4 +284,58 @@ test("deleting an event closes its confirmation and removes only that event", as
   await expect(page.getByText("Event deleted successfully")).toBeVisible()
   await expect(page.getByRole("dialog")).toHaveCount(0)
   await expect(page.getByRole("row").filter({ hasText: eventName })).toHaveCount(0)
+})
+
+
+test("eligible sections save automatically when a section is selected", async ({
+  page,
+}) => {
+  const sectionId = "00000000-0000-4000-8000-000000000321"
+  let savedSectionIds: string[] | undefined
+  await page.route("**/api/v1/academic-sections/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [
+          {
+            id: sectionId,
+            section_name: "Automatic Save Test Section",
+            year_level: 1,
+            academic_year: "2026-2027",
+          },
+        ],
+        count: 1,
+      }),
+    })
+  })
+  await page.route("**/api/v1/events/*", async (route) => {
+    if (route.request().method() === "PATCH") {
+      const body = route.request().postDataJSON() as {
+        eligible_section_ids?: string[]
+      }
+      if (body.eligible_section_ids) {
+        savedSectionIds = body.eligible_section_ids
+      }
+    }
+    await route.continue()
+  })
+
+  await page.goto("/events")
+  const eventName = `Automatic section save ${randomEmail()}`
+  await page.getByRole("button", { name: "Add Event" }).click()
+  await page.getByLabel("Event Name").fill(eventName)
+  await page.getByLabel("Event Date").fill(new Date().toISOString().slice(0, 10))
+  await page.getByRole("button", { name: "Create Event" }).click()
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const eventLink = page.getByRole("link", { name: eventName })
+  await expect(eventLink).toBeVisible()
+  const href = await eventLink.getAttribute("href")
+  await page.goto(`${href}/registration`)
+  const sectionCheckbox = page.getByRole("checkbox")
+  await expect(sectionCheckbox).toHaveCount(1)
+  await sectionCheckbox.check()
+  await expect.poll(() => savedSectionIds).toEqual([sectionId])
 })
