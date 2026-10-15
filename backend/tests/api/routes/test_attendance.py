@@ -1068,9 +1068,7 @@ def test_attendance_read_filtering_and_admin_crud(
         headers=superuser_token_headers,
     )
     assert incomplete_res.status_code == 200
-    assert any(
-        record["id"] == rec_id for record in incomplete_res.json()["data"]
-    )
+    assert any(record["id"] == rec_id for record in incomplete_res.json()["data"])
 
     # 4. Read single record
     get_res = client.get(
