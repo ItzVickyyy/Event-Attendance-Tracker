@@ -254,6 +254,35 @@ def test_super_admin_can_manage_class_representative_assignment_and_students(
     assert students.status_code == 200
     assert students.json()["count"] == 1
 
+    second_payload = {
+        **payload,
+        "student_number": f"CR-{random_lower_string()[:10].upper()}",
+        "first_name": "Morgan",
+        "middle_name": "R",
+        "email": random_email(),
+    }
+    second_created = client.post(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        json=second_payload,
+    )
+    assert second_created.status_code == 200
+    first_page = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"skip": 0, "limit": 1},
+    )
+    second_page = client.get(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        params={"skip": 1, "limit": 1},
+    )
+    assert first_page.status_code == second_page.status_code == 200
+    assert first_page.json()["count"] == second_page.json()["count"] == 2
+    assert first_page.json()["filtered_count"] == 2
+    assert len(first_page.json()["data"]) == len(second_page.json()["data"]) == 1
+    assert first_page.json()["data"][0]["id"] != second_page.json()["data"][0]["id"]
+
 
 def test_class_representative_routes_reject_wrong_roles_and_missing_assignment(
     client: TestClient, superuser_token_headers: dict[str, str]
