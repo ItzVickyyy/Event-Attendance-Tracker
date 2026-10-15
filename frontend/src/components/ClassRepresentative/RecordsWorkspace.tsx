@@ -42,7 +42,10 @@ export function ClassRepresentativeRecordsWorkspace() {
       return response.json()
     },
     getNextPageParam: (lastPage, pages) => {
-      const loadedCount = pages.reduce((total, page) => total + page.data.length, 0)
+      const loadedCount = pages.reduce(
+        (total, page) => total + page.data.length,
+        0,
+      )
       return loadedCount < lastPage.count ? loadedCount : undefined
     },
     enabled: Boolean(activeAcademicYear),
