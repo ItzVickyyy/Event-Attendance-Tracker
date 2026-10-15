@@ -102,6 +102,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
     return save
   }
   const saveSectionsMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: persistEligibleSections,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["event", eventId] }),
@@ -118,6 +119,7 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
     return () => window.clearTimeout(timeout)
   }, [eventId, selectedSections, saveSectionsMutation.mutate])
   const mutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async () => {
       await persistEligibleSections(selectedSections)
       const existing = new Set(registered.map((item) => item.attendee_id))
