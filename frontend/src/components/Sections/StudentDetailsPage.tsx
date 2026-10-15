@@ -12,8 +12,8 @@ import {
   AttendeesService,
   EventRegistrationsService,
   PeopleService,
-  StudentsService,
   type RelationshipType,
+  StudentsService,
 } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -163,14 +163,16 @@ export function StudentDetailsPage({
         },
         throwOnError: true,
       })
-      return AttendeeRelationshipsService.relationshipsCreateAttendeeRelationship({
-        body: {
-          attendee_id: attendee.data.id,
-          related_student_id: studentId,
-          relationship_type: guardianRelationshipType,
+      return AttendeeRelationshipsService.relationshipsCreateAttendeeRelationship(
+        {
+          body: {
+            attendee_id: attendee.data.id,
+            related_student_id: studentId,
+            relationship_type: guardianRelationshipType,
+          },
+          throwOnError: true,
         },
-        throwOnError: true,
-      })
+      )
     },
     onSuccess: async () => {
       toast.success("Guardian or parent contact added")
@@ -505,29 +507,42 @@ export function StudentDetailsPage({
             >
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <label htmlFor="guardian-first-name" className="text-sm font-medium">
+                  <label
+                      htmlFor="guardian-first-name"
+                      className="text-sm font-medium"
+                    >
                     First name *
                   </label>
                   <Input
                     id="guardian-first-name"
                     value={guardianFirstName}
-                    onChange={(event) => setGuardianFirstName(event.target.value)}
+                    onChange={(event) =>
+                        setGuardianFirstName(event.target.value)
+                      }
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="guardian-last-name" className="text-sm font-medium">
+                  <label
+                      htmlFor="guardian-last-name"
+                      className="text-sm font-medium"
+                    >
                     Last name *
                   </label>
                   <Input
                     id="guardian-last-name"
                     value={guardianLastName}
-                    onChange={(event) => setGuardianLastName(event.target.value)}
+                    onChange={(event) =>
+                        setGuardianLastName(event.target.value)
+                      }
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="guardian-relationship" className="text-sm font-medium">
+                  <label
+                      htmlFor="guardian-relationship"
+                      className="text-sm font-medium"
+                    >
                     Relationship
                   </label>
                   <select
@@ -535,7 +550,9 @@ export function StudentDetailsPage({
                     className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                     value={guardianRelationshipType}
                     onChange={(event) =>
-                      setGuardianRelationshipType(event.target.value as RelationshipType)
+                      setGuardianRelationshipType(
+                        event.target.value as RelationshipType,
+                      )
                     }
                   >
                     <option value="mother">Mother</option>
@@ -547,7 +564,10 @@ export function StudentDetailsPage({
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="guardian-contact" className="text-sm font-medium">
+                  <label
+                      htmlFor="guardian-contact"
+                      className="text-sm font-medium"
+                    >
                     Contact number
                   </label>
                   <Input
@@ -557,7 +577,10 @@ export function StudentDetailsPage({
                   />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                  <label htmlFor="guardian-email" className="text-sm font-medium">
+                  <label
+                      htmlFor="guardian-email"
+                      className="text-sm font-medium"
+                    >
                     Email
                   </label>
                   <Input
@@ -576,7 +599,9 @@ export function StudentDetailsPage({
                   guardianMutation.isPending
                 }
               >
-                {guardianMutation.isPending ? "Saving contact…" : "Save contact"}
+                {guardianMutation.isPending
+                    ? "Saving contact…"
+                    : "Save contact"}
               </Button>
             </form>
           )}
@@ -766,8 +791,16 @@ function GuardianRow({
         {relationship.relationship_type?.replace("_", " ") ?? "Guardian"}
       </p>
       <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-        <span>{personQuery.isLoading ? "Loading contact…" : person?.contact_number ?? "No contact number"}</span>
-        <span>{personQuery.isLoading ? "Loading email…" : person?.email ?? "No email"}</span>
+        <span>
+          {personQuery.isLoading
+            ? "Loading contact…"
+            : (person?.contact_number ?? "No contact number")}
+        </span>
+        <span>
+          {personQuery.isLoading
+            ? "Loading email…"
+            : (person?.email ?? "No email")}
+        </span>
       </div>
     </div>
   )
