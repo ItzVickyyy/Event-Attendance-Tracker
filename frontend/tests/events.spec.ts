@@ -300,7 +300,9 @@ test("eligible sections save automatically when a section is selected", async ({
 }) => {
   const sectionId = "00000000-0000-4000-8000-000000000321"
   let savedSectionIds: string[] | undefined
+  let sectionGetCount = 0
   await page.route("**/api/v1/academic-sections/**", async (route) => {
+    if (route.request().method() === "GET") sectionGetCount += 1
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -348,6 +350,9 @@ test("eligible sections save automatically when a section is selected", async ({
   await expect(sectionCheckbox).toHaveCount(1)
   await sectionCheckbox.check()
   await expect.poll(() => savedSectionIds).toEqual([sectionId])
+  // Saving one event's eligible sections must not refetch unrelated section data.
+  await page.waitForTimeout(700)
+  expect(sectionGetCount).toBe(1)
 })
 
 test("eligible section auto-saves are serialized and the latest selection wins", async ({
