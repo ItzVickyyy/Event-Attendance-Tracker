@@ -417,7 +417,9 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Alice",
     )
-    await expect(page.getByRole("button", { name: /Alice Student/ })).toBeVisible({
+    await expect(
+      page.getByRole("button", { name: /Alice Student/ }),
+    ).toBeVisible({
       timeout: 10000,
     })
     expect(handle.sent()).toHaveLength(0)
@@ -618,7 +620,9 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Charlie",
     )
-    await expect(page.getByRole("button", { name: /Charlie Student/ })).toBeVisible({
+    await expect(
+      page.getByRole("button", { name: /Charlie Student/ }),
+    ).toBeVisible({
       timeout: 10000,
     })
     await page.getByRole("button", { name: /Charlie Student/ }).click()
@@ -711,7 +715,9 @@ test.describe("Manual attendance scan", () => {
       'input[placeholder="Search by student number or name..."]',
       "Diana",
     )
-    await expect(page.getByRole("button", { name: /Diana Student/ })).toBeVisible({
+    await expect(
+      page.getByRole("button", { name: /Diana Student/ }),
+    ).toBeVisible({
       timeout: 10000,
     })
     await page.getByRole("button", { name: /Diana Student/ }).click()
