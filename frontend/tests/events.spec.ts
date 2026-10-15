@@ -259,7 +259,7 @@ test("event roster student search can navigate beyond the first ten matches", as
   expect(searchRequests.some((query) => query.includes("skip=10"))).toBeTruthy()
 })
 
-test("deleting an event closes its confirmation and removes only that event, async ({
+test("deleting an event closes its confirmation and removes only that event", async ({
   page,
 }) => {
   await page.goto("/events")
