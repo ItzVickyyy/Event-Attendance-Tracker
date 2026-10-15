@@ -122,30 +122,35 @@ def read_my_students(
         "skip": skip,
         "limit": limit,
     }
-    total = session.connection().execute(
-        text(f"""
-            SELECT
-                COUNT(DISTINCT s.id) AS count,
-                COUNT(DISTINCT CASE WHEN EXISTS (
-                    SELECT 1
-                    FROM attendees a
-                    JOIN attendee_credentials ac ON ac.attendee_id = a.id
-                    WHERE a.person_id = p.id
-                      AND ac.credential_type = 'nfc'
-                      AND ac.is_active IS TRUE
-                ) THEN s.id END) AS registered_count,
-                COUNT(DISTINCT CASE WHEN NOT EXISTS (
-                    SELECT 1
-                    FROM attendees a
-                    JOIN attendee_credentials ac ON ac.attendee_id = a.id
-                    WHERE a.person_id = p.id
-                      AND ac.credential_type = 'nfc'
-                      AND ac.is_active IS TRUE
-                ) THEN s.id END) AS unregistered_count
-            {base_where}
-        """),
-        params,
-    ).mappings().one()
+    total = (
+        session.connection()
+        .execute(
+            text(f"""
+                SELECT
+                    COUNT(DISTINCT s.id) AS count,
+                    COUNT(DISTINCT CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM attendees a
+                        JOIN attendee_credentials ac ON ac.attendee_id = a.id
+                        WHERE a.person_id = p.id
+                          AND ac.credential_type = 'nfc'
+                          AND ac.is_active IS TRUE
+                    ) THEN s.id END) AS registered_count,
+                    COUNT(DISTINCT CASE WHEN NOT EXISTS (
+                        SELECT 1
+                        FROM attendees a
+                        JOIN attendee_credentials ac ON ac.attendee_id = a.id
+                        WHERE a.person_id = p.id
+                          AND ac.credential_type = 'nfc'
+                          AND ac.is_active IS TRUE
+                    ) THEN s.id END) AS unregistered_count
+                {base_where}
+            """),
+            params,
+        )
+        .mappings()
+        .one()
+    )
 
     filters = ""
     if search and search.strip():
@@ -170,10 +175,14 @@ def read_my_students(
           )
         """
 
-    filtered_count = session.connection().execute(
-        text(f"SELECT COUNT(DISTINCT s.id) {base_where} {filters}"),
-        params,
-    ).scalar_one()
+    filtered_count = (
+        session.connection()
+        .execute(
+            text(f"SELECT COUNT(DISTINCT s.id) {base_where} {filters}"),
+            params,
+        )
+        .scalar_one()
+    )
 
     rows = (
         session.connection()
@@ -210,6 +219,7 @@ def read_my_students(
         "skip": skip,
         "limit": limit,
     }
+
 
 @router.post("/me/students")
 def create_my_student(
