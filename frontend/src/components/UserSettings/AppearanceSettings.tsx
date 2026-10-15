@@ -61,6 +61,37 @@ const COLOR_DEFAULTS = {
 
 const isHexColor = (value: string) => /^#[0-9a-f]{6}$/i.test(value)
 
+/** Keep the top-navigation theme toggle in sync with account-scoped preferences. */
+export function persistAccountAppearanceTheme(theme: Theme, userId?: string) {
+  if (!userId) return
+
+  try {
+    const storageKey = `${STORAGE_KEY}:${userId}`
+    const stored = localStorage.getItem(storageKey)
+    const current = stored ? JSON.parse(stored) : DEFAULT_PREFERENCES
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({ ...DEFAULT_PREFERENCES, ...current, theme }),
+    )
+  } catch {
+    // The theme still applies for this session if local storage is unavailable.
+  }
+
+  const token = localStorage.getItem("access_token")
+  if (token) {
+    void fetch("/api/v1/users/me/appearance-preferences", {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ theme }),
+    }).catch(() => {
+      // Keep the local account-scoped preference if the API is unavailable.
+    })
+  }
+}
+
 function readPreferences(userId?: string): AppearancePreferences {
   try {
     const storageKey = userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY
