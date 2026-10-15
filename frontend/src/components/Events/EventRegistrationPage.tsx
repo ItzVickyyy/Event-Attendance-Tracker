@@ -67,7 +67,9 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
           }),
         ),
       )
-      return results.flatMap((result) => result.data.data)
+      return results.flatMap((result) =>
+        Array.isArray(result.data?.data) ? result.data.data : [],
+      )
     },
   })
   const saveSectionsMutation = useMutation({
@@ -96,8 +98,9 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         path: { event_id: eventId },
         body: { eligible_section_ids: selectedSections },
       })
+      const registrationData = registrationQuery.data?.data.data as unknown
       const existing = new Set(
-        (registrationQuery.data?.data.data ?? []).map(
+        (Array.isArray(registrationData) ? registrationData : []).map(
           (item) => item.attendee_id,
         ),
       )
@@ -121,7 +124,8 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
       queryClient.invalidateQueries({ queryKey: ["event", eventId] })
     },
   })
-  const registered = registrationQuery.data?.data.data ?? []
+  const registrationData = registrationQuery.data?.data.data as unknown
+  const registered = Array.isArray(registrationData) ? registrationData : []
   const students = studentQueries.data ?? []
   const sections = sectionsQuery.data?.data.data ?? []
   const allSectionsSelected =
