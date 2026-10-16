@@ -18,7 +18,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { attendeeCredentialsQueryKey } from "@/lib/attendeeQueryKeys"
+import {
+  attendeeCredentialsQueryKey,
+  attendeeIdQueryKey,
+} from "@/lib/attendeeQueryKeys"
 
 export function StudentDetailsPage({
   sectionId,
@@ -84,7 +87,10 @@ export function StudentDetailsPage({
     enabled: Boolean(sectionId),
   })
   const attendeeQuery = useQuery({
-    queryKey: ["attendeeIdForPerson", student?.person_id],
+    queryKey: attendeeIdQueryKey({
+      id: studentId,
+      person_id: student?.person_id,
+    }),
     queryFn: async () => {
       const result = await AttendeesService.readAttendees({
         query: { person_id: student!.person_id, limit: 1 },
