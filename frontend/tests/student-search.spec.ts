@@ -388,7 +388,7 @@ test("global student search restores its query and page after viewing details", 
   await page.getByRole("button", { name: "Next" }).click()
   await expect(page.getByText("Page 3 of 3")).toBeVisible()
   await expect(page.getByText("RETURN-026")).toBeVisible()
-  await page.getByRole("link", { name: "View details" }).click()
+  await page.getByRole("link", { name: "View details" }).last().click()
 
   await expect(
     page.getByText("Student Information", { exact: true }),
