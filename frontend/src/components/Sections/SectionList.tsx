@@ -662,7 +662,7 @@ function SectionList() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setStudentsTarget(section)}
+                    onClick={() => openRoster(section)}
                   >
                     <UsersRound /> Students
                   </Button>
