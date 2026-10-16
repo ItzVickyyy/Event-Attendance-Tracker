@@ -599,7 +599,7 @@ function SectionList() {
                           variant="ghost"
                           size="icon"
                           title="Students"
-                          onClick={() => openRoster(section)
+                          onClick={() => openRoster(section)}
                         >
                           <UsersRound />
                         </Button>
@@ -1025,7 +1025,7 @@ function SectionList() {
                     </Table>
                   </div>
                   <div className="space-y-3 py-3 sm:hidden">
-                    {filteredRosterStudents.map(
+                    {paginatedRosterStudents.map(
                       (student: any, index: number) => (
                         <div key={student.id} className="rounded-lg border p-3">
                           <div className="flex items-start gap-3">
