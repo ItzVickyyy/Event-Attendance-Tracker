@@ -43,6 +43,7 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
   })
   const programsQuery = useQuery({
     queryKey: ["academicPrograms", "section-students"],
+    retry: false,
     queryFn: () =>
       AcademicProgramsService.programsReadAcademicPrograms({
         query: { skip: 0, limit: 100 },
@@ -135,9 +136,25 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
             {section.section_name}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {program
-              ? `${program.program_code} · ${program.program_name}`
-              : "Program unavailable"}{" "}
+            {programsQuery.isLoading ? (
+              "Loading program details…"
+            ) : programsQuery.isError ? (
+              <span className="inline-flex flex-wrap items-center gap-2">
+                Program details unavailable.
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0"
+                  onClick={() => void programsQuery.refetch()}
+                >
+                  Retry program details
+                </Button>
+              </span>
+            ) : program ? (
+              `${program.program_code} · ${program.program_name}`
+            ) : (
+              "Program unavailable"
+            )}{" "}
             · {section.academic_year}
           </p>
         </div>
