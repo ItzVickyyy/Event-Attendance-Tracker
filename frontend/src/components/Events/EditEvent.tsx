@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAcademicYear } from "@/context/AcademicYearContext"
+import { eventRosterRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 
 const schema = z.object({
   event_name: z.string().min(1, "Event name is required"),
@@ -77,7 +78,9 @@ export function EditEvent({ event }: EditEventProps) {
       toast.success("Event updated successfully")
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["events"] }),
-        queryClient.invalidateQueries({ queryKey: ["event", event.id] }),
+        ...eventRosterRelatedQueryKeys(event.id).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
       ])
     },
     onError: (error) => {
