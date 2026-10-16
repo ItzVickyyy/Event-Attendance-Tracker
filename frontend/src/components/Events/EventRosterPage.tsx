@@ -47,6 +47,7 @@ export function EventRosterPage({ eventId }: { eventId: string }) {
     queryFn: () => getEventRoster(eventId, selectedSessionId || undefined),
   })
   const walkIn = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async () => {
       const person = await PeopleService.createPerson({
         body: {
