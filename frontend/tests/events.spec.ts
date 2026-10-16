@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test"
-import { eventRosterRelatedQueryKeys } from "../src/lib/eventRosterQueryKeys"
+import {
+  eventRosterRelatedQueryKeys,
+  eventSessionRelatedQueryKeys,
+} from "../src/lib/eventRosterQueryKeys"
 import { randomEmail } from "./utils/random"
 
 test("new event appears in the list without refreshing the page", async ({
@@ -567,5 +570,13 @@ test("event roster mutations invalidate all related event views", () => {
     ["eventRegistrations", "evt-1"],
     ["eventAttendance", "evt-1"],
     ["event", "evt-1"],
+  ])
+})
+
+
+test("attendance session mutations invalidate only related event session and roster views", () => {
+  expect(eventSessionRelatedQueryKeys("evt-1")).toEqual([
+    ["attendanceSessions", "evt-1"],
+    ["eventRoster", "evt-1"],
   ])
 })
