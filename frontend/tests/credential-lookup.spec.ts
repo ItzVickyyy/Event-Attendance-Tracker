@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test"
-import { attendeeIdQueryKey } from "../src/lib/attendeeQueryKeys"
+import {
+  attendeeCredentialsQueryKey,
+  attendeeIdQueryKey,
+} from "../src/lib/attendeeQueryKeys"
 import { requireCredentialLookupData } from "../src/lib/credentialLookup"
 
 test("credential lookup returns data for a successful response", () => {
@@ -36,4 +39,15 @@ test("attendee lookup cache keys remain unique when reduced student rows omit pe
   })
 
   expect(firstStudentKey).not.toEqual(secondStudentKey)
+})
+
+test("attendee credential cache key is shared across student views", () => {
+  expect(attendeeCredentialsQueryKey("attendee-1")).toEqual([
+    "attendeeCredentials",
+    "attendee-1",
+  ])
+  expect(attendeeCredentialsQueryKey(undefined)).toEqual([
+    "attendeeCredentials",
+    null,
+  ])
 })
