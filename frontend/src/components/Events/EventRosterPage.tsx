@@ -26,6 +26,7 @@ import {
   getEventRoster,
   type SessionRosterEntry,
 } from "@/data/attendanceSessions"
+import { eventRosterRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 
 export function EventRosterPage({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient()
@@ -67,11 +68,15 @@ export function EventRosterPage({ eventId }: { eventId: string }) {
         },
       })
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setFirstName("")
       setLastName("")
       setContact("")
-      queryClient.invalidateQueries({ queryKey: ["eventRoster", eventId] })
+      await Promise.all(
+        eventRosterRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      )
     },
   })
   const event = eventQuery.data?.data
