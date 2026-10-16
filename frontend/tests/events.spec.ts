@@ -272,15 +272,21 @@ test("event roster student search can navigate beyond the first ten matches", as
 test("event roster reports load failures and can retry", async ({ page }) => {
   let failRosterRequests = false
   let rosterRequests = 0
-  await page.route("**/api/v1/events/*/roster*", async (route) => {
-    rosterRequests += 1
-    if (failRosterRequests) {
-      await route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({ detail: "Simulated roster request failure" }),
-      })
-      return
+  await page.route("**/*", async (route) => {
+    const url = new URL(route.request().url())
+    if (
+      url.pathname.includes("/api/v1/events/") &&
+      url.pathname.includes("/roster")
+    ) {
+      rosterRequests += 1
+      if (failRosterRequests && route.request().method() === "GET") {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "Simulated roster request failure" }),
+        })
+        return
+      }
     }
     await route.continue()
   })
