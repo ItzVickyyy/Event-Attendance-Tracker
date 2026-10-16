@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
-import { eventSessionRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +14,7 @@ import {
   createAttendanceSession,
   getAttendanceSessions,
 } from "@/data/attendanceSessions"
+import { eventSessionRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 
 export const Route = createFileRoute("/_layout/events/$eventId/sessions")({
   component: SessionsPage,
