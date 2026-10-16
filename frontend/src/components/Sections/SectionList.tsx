@@ -1622,7 +1622,7 @@ function SectionList() {
                   <TableBody>
                     {printPreview.map((student: any, index: number) => (
                       <TableRow key={student.id}>
-                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{rosterPage * ROSTER_PAGE_SIZE + index + 1}</TableCell>
                         <TableCell>{student.student_number}</TableCell>
                         <TableCell>{student.last_name}</TableCell>
                         <TableCell>{student.first_name}</TableCell>
