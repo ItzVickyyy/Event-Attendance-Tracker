@@ -269,6 +269,60 @@ test("event roster student search can navigate beyond the first ten matches", as
   expect(searchRequests.some((query) => query.includes("skip=10"))).toBeTruthy()
 })
 
+test("event roster reports load failures and can retry", async ({ page }) => {
+  let failRosterRequests = false
+  let rosterRequests = 0
+  await page.route("**/api/v1/events/*/roster*", async (route) => {
+    rosterRequests += 1
+    if (failRosterRequests) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Simulated roster request failure" }),
+      })
+      return
+    }
+    await route.continue()
+  })
+
+  await page.goto("/events")
+  const eventName = `Roster loading failure ${randomEmail()}`
+  await page.getByRole("button", { name: "Add Event" }).click()
+  await page.getByLabel("Event Name").fill(eventName)
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
+  await page.getByRole("button", { name: "Create Event" }).click()
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const eventLink = page.getByRole("link", { name: eventName })
+  await expect(eventLink).toBeVisible()
+  const href = await eventLink.getAttribute("href")
+  expect(href).toBeTruthy()
+  const eventRow = page.getByRole("row").filter({ hasText: eventName })
+
+  failRosterRequests = true
+  await eventRow.getByRole("button", { name: "Roster", exact: true }).click()
+  const dialog = page.getByRole("dialog")
+  await expect.poll(() => rosterRequests).toBeGreaterThan(0)
+  await expect(dialog.getByText("Unable to load event roster.")).toBeVisible({
+    timeout: 15000,
+  })
+  await expect(
+    dialog.getByText("No attendees registered for this event yet"),
+  ).toHaveCount(0)
+
+  failRosterRequests = false
+  await dialog.getByRole("button", { name: "Retry loading roster" }).click()
+  await expect(
+    dialog.getByText("Unable to load event roster."),
+  ).toHaveCount(0)
+  await expect(
+    dialog.getByText("No attendees registered for this event yet"),
+  ).toBeVisible()
+})
+
 test("deleting an event closes its confirmation and removes only that event", async ({
   page,
 }) => {
