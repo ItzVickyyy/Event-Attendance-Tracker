@@ -1,0 +1,1 @@
+export const STUDENT_SEARCH_PAGE_SIZE = 10
