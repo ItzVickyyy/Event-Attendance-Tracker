@@ -403,24 +403,29 @@ test("global student search restores its query and page after viewing details", 
   await expect(page.getByText("RETURN-001")).toHaveCount(0)
 })
 
-test("section student page can retry failed program details", async ({ page }) => {
+test("section student page can retry failed program details", async ({
+  page,
+}) => {
   const sectionId = "00000000-0000-4000-8000-000000000201"
   let programAttempts = 0
 
-  await page.route(`**/api/v1/academic-sections/${sectionId}`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: sectionId,
-        section_name: "BSIT 3A",
-        section_code: "3A",
-        program_id: "00000000-0000-4000-8000-000000000202",
-        year_level: "3",
-        academic_year: "2026-2027",
-      }),
-    })
-  })
+  await page.route(
+    `**/api/v1/academic-sections/${sectionId}`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: sectionId,
+          section_name: "BSIT 3A",
+          section_code: "3A",
+          program_id: "00000000-0000-4000-8000-000000000202",
+          year_level: "3",
+          academic_year: "2026-2027",
+        }),
+      })
+    },
+  )
 
   await page.route("**/api/v1/academic-programs/**", async (route) => {
     programAttempts += 1
