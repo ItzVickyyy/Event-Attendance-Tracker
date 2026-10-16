@@ -539,7 +539,9 @@ test("editing an event refreshes the list and event details without global inval
 
   const originalRow = page.getByRole("row").filter({ hasText: originalName })
   await expect(originalRow).toBeVisible()
-  await originalRow.getByRole("button", { name: `Edit ${originalName}` }).click()
+  await originalRow
+    .getByRole("button", { name: `Edit ${originalName}` })
+    .click()
 
   const dialog = page.getByRole("dialog")
   await dialog.getByLabel("Event Name").fill(updatedName)
