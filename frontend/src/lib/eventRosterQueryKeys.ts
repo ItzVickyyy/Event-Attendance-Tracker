@@ -6,3 +6,10 @@ export function eventRosterRelatedQueryKeys(eventId: string) {
     ["event", eventId],
   ] as const
 }
+
+export function eventSessionRelatedQueryKeys(eventId: string) {
+  return [
+    ["attendanceSessions", eventId],
+    ["eventRoster", eventId],
+  ] as const
+}
