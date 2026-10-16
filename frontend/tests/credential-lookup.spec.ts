@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
-import { requireCredentialLookupData } from "../src/lib/credentialLookup"
 import { attendeeIdQueryKey } from "../src/lib/attendeeQueryKeys"
+import { requireCredentialLookupData } from "../src/lib/credentialLookup"
 
 test("credential lookup returns data for a successful response", () => {
   const credential = {
