@@ -43,6 +43,7 @@ export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
   })
   const programsQuery = useQuery({
     queryKey: ["academicPrograms", "section-students"],
+    retry: false,
     queryFn: () =>
       AcademicProgramsService.programsReadAcademicPrograms({
         query: { skip: 0, limit: 100 },
