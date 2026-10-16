@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CheckCircle, Loader2, Plus, Search, Trash2, Users } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -25,12 +25,14 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { eventRosterRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 
 interface EventRosterDialogProps {
   event: EventPublic
 }
 
 export function EventRosterDialog({ event }: EventRosterDialogProps) {
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [searchRoster, setSearchRoster] = useState("")
   const [searchStudent, setSearchStudent] = useState("")
@@ -42,7 +44,6 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   const {
     data: rosterResponse,
     isLoading: isLoadingRoster,
-    refetch: refetchRoster,
   } = useQuery({
     queryKey: ["eventRoster", event.id],
     queryFn: async () => {
@@ -58,8 +59,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   })
 
   // 2. Fetch Event Registrations mapping (to get registration_id for delete)
-  const { data: registrationsResponse, refetch: refetchRegistrations } =
-    useQuery({
+  const { data: registrationsResponse } = useQuery({
       queryKey: ["eventRegistrations", event.id],
       queryFn: async () => {
         const res =
@@ -73,7 +73,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
     })
 
   // 3. Fetch Event Attendances (to show if attendee is already checked in/out)
-  const { data: attendanceResponse, refetch: refetchAttendance } = useQuery({
+  const { data: attendanceResponse } = useQuery({
     queryKey: ["eventAttendance", event.id],
     queryFn: async () => {
       const res = await AttendanceService.readAttendances({
@@ -215,10 +215,13 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
         throwOnError: true,
       })
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Attendee registered for event")
-      refetchRoster()
-      refetchRegistrations()
+      await Promise.all(
+        eventRosterRelatedQueryKeys(event.id).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      )
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to register attendee")
@@ -234,11 +237,13 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
         throwOnError: true,
       })
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Attendee removed from event roster")
-      refetchRoster()
-      refetchRegistrations()
-      refetchAttendance()
+      await Promise.all(
+        eventRosterRelatedQueryKeys(event.id).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      )
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to remove attendee")
