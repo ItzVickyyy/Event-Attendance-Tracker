@@ -50,6 +50,9 @@ export function CreateImportBatchDialog() {
       return
     }
 
+    let batchCreated = false
+    let promotionAttempted = false
+
     try {
       setIsProcessing(true)
 
@@ -63,6 +66,7 @@ export function CreateImportBatchDialog() {
       })
 
       const batch = batchRes.data
+      batchCreated = true
       const uploadRes =
         await ImportBatchesService.batchesUploadImportBatchWorkbook({
           path: { batch_id: batch.id },
@@ -82,6 +86,7 @@ export function CreateImportBatchDialog() {
       } else {
         // Clean batches are promoted immediately. The backend rechecks the
         // batch status, validation errors, conflicts, and source reconciliation.
+        promotionAttempted = true
         const promotionRes =
           await ImportBatchesService.batchesPromoteImportBatch({
             path: { batch_id: batch.id },
@@ -102,7 +107,10 @@ export function CreateImportBatchDialog() {
         }
       }
 
-      await queryClient.invalidateQueries()
+      await queryClient.invalidateQueries({ queryKey: ["importBatches"] })
+      if (promotionAttempted) {
+        await queryClient.invalidateQueries({ queryKey: ["students"] })
+      }
       setOpen(false)
       setSelectedFile(null)
       setNotes("")
@@ -111,7 +119,12 @@ export function CreateImportBatchDialog() {
         err.message ||
           "The batch was created, but upload or promotion could not be completed. Check Import Batches before trying again.",
       )
-      await queryClient.invalidateQueries()
+      if (batchCreated) {
+        await queryClient.invalidateQueries({ queryKey: ["importBatches"] })
+      }
+      if (promotionAttempted) {
+        await queryClient.invalidateQueries({ queryKey: ["students"] })
+      }
     } finally {
       setIsProcessing(false)
     }
