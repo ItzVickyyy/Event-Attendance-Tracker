@@ -41,7 +41,12 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   const studentSearchPageSize = 10
 
   // 1. Fetch Event Roster
-  const { data: rosterResponse, isLoading: isLoadingRoster } = useQuery({
+  const {
+    data: rosterResponse,
+    isLoading: isLoadingRoster,
+    isError: isRosterError,
+    refetch: refetchRoster,
+  } = useQuery({
     queryKey: ["eventRoster", event.id],
     queryFn: async () => {
       const res = await EventsService.readEventRoster({
@@ -393,6 +398,23 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
               <div className="p-8 flex items-center justify-center text-muted-foreground gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Loading roster...
+              </div>
+            ) : isRosterError ? (
+              <div className="p-8 text-center">
+                <p className="text-sm font-medium">
+                  Unable to load event roster.
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Check your connection and try again.
+                </p>
+                <Button
+                  className="mt-3"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchRoster()}
+                >
+                  Retry loading roster
+                </Button>
               </div>
             ) : filteredRoster.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
