@@ -401,7 +401,9 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
               </div>
             ) : isRosterError ? (
               <div className="p-8 text-center">
-                <p className="text-sm font-medium">Unable to load event roster.</p>
+                <p className="text-sm font-medium">
+                  Unable to load event roster.
+                </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Check your connection and try again.
                 </p>
