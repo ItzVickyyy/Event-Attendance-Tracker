@@ -43,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useAcademicYear } from "@/context/AcademicYearContext"
+import { sectionStudentMutationQueryKeys } from "@/lib/academicRegistryQueryKeys"
 
 function apiUrl(path: string) {
   return `${import.meta.env.VITE_API_URL ?? ""}/api/v1${path}`
@@ -329,12 +330,12 @@ function SectionList() {
         contact_number: "",
         student_status: "regular",
       })
-      void queryClient.invalidateQueries({
-        queryKey: ["academicRegistryRoster"],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ["academicRegistrySections"],
-      })
+      void Promise.all(
+        sectionStudentMutationQueryKeys(
+          studentsTarget?.id,
+          studentsTarget?.academic_year_id ?? activeAcademicYear?.id,
+        ).map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      )
     },
     onError: (error) =>
       toast.error(
@@ -353,12 +354,12 @@ function SectionList() {
     onSuccess: () => {
       toast.success("Student updated")
       setStudentTarget(null)
-      void queryClient.invalidateQueries({
-        queryKey: ["academicRegistryRoster"],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ["academicRegistrySections"],
-      })
+      void Promise.all(
+        sectionStudentMutationQueryKeys(
+          studentsTarget?.id,
+          studentsTarget?.academic_year_id ?? activeAcademicYear?.id,
+        ).map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      )
     },
     onError: (error) =>
       toast.error(
@@ -388,12 +389,12 @@ function SectionList() {
     onSuccess: () => {
       toast.success("Student archived")
       setDeleteTarget(null)
-      void queryClient.invalidateQueries({
-        queryKey: ["academicRegistryRoster"],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ["academicRegistrySections"],
-      })
+      void Promise.all(
+        sectionStudentMutationQueryKeys(
+          studentsTarget?.id,
+          studentsTarget?.academic_year_id ?? activeAcademicYear?.id,
+        ).map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      )
     },
     onError: (error) =>
       toast.error(
