@@ -18,7 +18,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { attendeeCredentialsQueryKey } from "@/lib/attendeeQueryKeys"
+import {
+  attendeeCredentialsQueryKey,
+  attendeeIdQueryKey,
+} from "@/lib/attendeeQueryKeys"
 
 export function StudentDetailsPage({
   sectionId,
@@ -84,7 +87,10 @@ export function StudentDetailsPage({
     enabled: Boolean(sectionId),
   })
   const attendeeQuery = useQuery({
-    queryKey: ["attendeeIdForPerson", student?.person_id],
+    queryKey: attendeeIdQueryKey({
+      id: studentId,
+      person_id: student?.person_id,
+    }),
     queryFn: async () => {
       const result = await AttendeesService.readAttendees({
         query: { person_id: student!.person_id, limit: 1 },
@@ -98,6 +104,146 @@ export function StudentDetailsPage({
       return attendees[0]?.id ?? null
     },
     enabled: Boolean(student?.person_id),
+  })
+  const attendeeId = student?.attendee_id ?? attendeeQuery.data
+  const credentialsQuery = useQuery({
+    queryKey: ["studentCredentials", attendeeId],
+    queryFn: () =>
+      AttendeeCredentialsService.credentialsReadAttendeeCredentials({
+        query: { attendee_id: attendeeId! },
+      }),
+    enabled: Boolean(attendeeId),
+  })
+  const relationshipsQuery = useQuery({
+    queryKey: ["studentRelationships", studentId],
+    queryFn: () =>
+      AttendeeRelationshipsService.relationshipsReadAttendeeRelationships({
+        query: { related_student_id: studentId },
+      }),
+    enabled: Boolean(attendeeId),
+  })
+  const registrationsQuery = useQuery({
+    queryKey: ["studentRegistrations", attendeeId],
+    queryFn: () =>
+      EventRegistrationsService.registrationsReadEventRegistrations({
+        query: { attendee_id: attendeeId! },
+      }),
+    enabled: Boolean(attendeeId),
+  })
+  const registrationIds = useMemo(() => {
+    const payload = registrationsQuery.data?.data as unknown
+    const registrations = Array.isArray(payload)
+      ? payload
+      : payload &&
+          typeof payload === "object" &&
+          "data" in payload &&
+          Array.isArray(payload.data)
+        ? payload.data
+        : []
+    return registrations.map((registration) => registration.id)
+  }, [registrationsQuery.data])
+  const attendanceHistoryQuery = useQuery({
+    queryKey: ["studentAttendanceHistory", registrationIds],
+    queryFn: async () => {
+      const results = await Promise.all(
+        registrationIds.map((registrationId) =>
+          AttendanceService.readAttendances({
+            query: { registration_id: registrationId, skip: 0, limit: 1 },
+          }),
+        ),
+      )
+      return results.flatMap((result) =>
+        Array.isArray(result.data?.data) ? result.data.data : [],
+      )
+    },
+    enabled: registrationIds.length > 0,
+  })
+  const guardianMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
+    mutationFn: async () => {
+      const person = await PeopleService.createPerson({
+        body: {
+          first_name: guardianFirstName.trim(),
+          last_name: guardianLastName.trim(),
+          contact_number: guardianContact.trim() || null,
+          email: guardianEmail.trim() || null,
+        },
+        throwOnError: true,
+      })
+      const attendee = await AttendeesService.createAttendee({
+        body: {
+          person_id: person.data.id,
+          attendee_type: "parent_guardian",
+        },
+        throwOnError: true,
+      })
+      return AttendeeRelationshipsService.relationshipsCreateAttendeeRelationship(
+        {
+          body: {
+            attendee_id: attendee.data.id,
+            related_student_id: studentId,
+            relationship_type: guardianRelationshipType,
+          },
+          throwOnError: true,
+        },
+      )
+    },
+    onSuccess: async () => {
+      toast.success("Guardian or parent contact added")
+      setGuardianFormOpen(false)
+      setGuardianFirstName("")
+      setGuardianLastName("")
+      setGuardianContact("")
+      setGuardianEmail("")
+      setGuardianRelationshipType("guardian")
+      await queryClient.invalidateQueries({
+        queryKey: ["studentRelationships", studentId],
+      })
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to add guardian or parent contact",
+      )
+    },
+  })
+  const credentialMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
+    mutationFn: () =>
+      AttendeeCredentialsService.credentialsCreateAttendeeCredential({
+        body: {
+          attendee_id: attendeeId!,
+          credential_type: "nfc",
+          credential_value: credentialValue.trim().toUpperCase(),
+          is_active: true,
+        },
+      }),
+    onSuccess: () => {
+      setCredentialValue("")
+      void queryClient.invalidateQueries({
+        queryKey: ["studentCredentials", attendeeId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: attendeeCredentialsQueryKey(attendeeId),
+      })
+    },
+  })
+  const revokeMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
+    mutationFn: (credentialId: string) =>
+      AttendeeCredentialsService.credentialsUpdateAttendeeCredential({
+        path: { credential_id: credentialId },
+        body: { is_active: false },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["studentCredentials", attendeeId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: attendeeCredentialsQueryKey(attendeeId),
+      })
+    },
   })
   const attendeeId = student?.attendee_id ?? attendeeQuery.data
   const credentialsQuery = useQuery({
