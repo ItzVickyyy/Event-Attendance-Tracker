@@ -12,6 +12,7 @@ import {
 } from "@/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { eventRosterRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 
 function getYearNumber(
   yearLevel: string | number | null | undefined,
@@ -136,11 +137,12 @@ export function EventRegistrationPage({ eventId }: { eventId: string }) {
         })
       return students.length
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["eventRegistrations", eventId],
-      })
-      queryClient.invalidateQueries({ queryKey: ["event", eventId] })
+    onSuccess: async () => {
+      await Promise.all(
+        eventRosterRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      )
     },
   })
   const students = studentQueries.data ?? []
