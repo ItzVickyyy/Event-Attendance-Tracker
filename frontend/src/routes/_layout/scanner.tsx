@@ -893,13 +893,15 @@ function Scanner() {
     }
   }, [])
 
+  const manualLookupRequestIdRef = useRef(0)
   const manualLookupMutation = useMutation({
-    mutationFn: (query: string) =>
+    mutationFn: ({ query }: { query: string; requestId: number }) =>
       StudentsService.readStudents({
         query: { skip: 0, limit: 10, search: query },
         throwOnError: false,
       }),
-    onSuccess: (result) => {
+    onSuccess: (result, variables) => {
+      if (variables.requestId !== manualLookupRequestIdRef.current) return
       if (!eventId) {
         toast.error("Please select an event first")
         return
@@ -907,7 +909,8 @@ function Scanner() {
       setManualResults(result.data?.data ?? [])
       setShowManualPicker(true)
     },
-    onError: () => {
+    onError: (_error, variables) => {
+      if (variables.requestId !== manualLookupRequestIdRef.current) return
       toast.error("Search failed")
     },
   })
@@ -971,6 +974,7 @@ function Scanner() {
   }
 
   useEffect(() => {
+    const requestId = ++manualLookupRequestIdRef.current
     const query = manualSearch.trim()
     if (!query) {
       setManualResults([])
@@ -979,7 +983,7 @@ function Scanner() {
     }
     const timeout = window.setTimeout(() => {
       setShowManualPicker(false)
-      manualLookupMutation.mutate(query)
+      manualLookupMutation.mutate({ query, requestId })
     }, 300)
     return () => window.clearTimeout(timeout)
   }, [manualSearch, manualLookupMutation.mutate])
