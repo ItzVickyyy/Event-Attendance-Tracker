@@ -87,6 +87,8 @@ function escapeHtml(value: unknown) {
     .replaceAll('"', "&quot;")
 }
 
+const ROSTER_PAGE_SIZE = 10
+
 function SectionList() {
   const queryClient = useQueryClient()
   const [sectionDialog, setSectionDialog] = useState(false)
@@ -105,6 +107,7 @@ function SectionList() {
   const [majorId, setMajorId] = useState("")
   const [studentForm, setStudentForm] = useState<Record<string, string>>({})
   const [studentSearch, setStudentSearch] = useState("")
+  const [rosterPage, setRosterPage] = useState(0)
   const [addStudentOpen, setAddStudentOpen] = useState(false)
   const [addStudentSectionOpen, setAddStudentSectionOpen] = useState(false)
   const [addStudentSectionId, setAddStudentSectionId] = useState("")
@@ -170,6 +173,14 @@ function SectionList() {
       ),
     )
   }, [rosterStudents, studentSearch])
+  const rosterTotalPages = Math.max(
+    1,
+    Math.ceil(filteredRosterStudents.length / ROSTER_PAGE_SIZE),
+  )
+  const paginatedRosterStudents = filteredRosterStudents.slice(
+    rosterPage * ROSTER_PAGE_SIZE,
+    (rosterPage + 1) * ROSTER_PAGE_SIZE,
+  )
   const printRosterQuery = useQuery({
     queryKey: ["academicRegistryPrintRoster", printTarget?.id],
     queryFn: () =>
@@ -194,6 +205,12 @@ function SectionList() {
     setYearLevel("1st Year")
     setSectionCode("")
     setMajorId("")
+  }
+
+  const openRoster = (section: any) => {
+    setRosterPage(0)
+    setStudentSearch("")
+    setStudentsTarget(section)
   }
 
   const openCreate = () => {
@@ -478,7 +495,7 @@ function SectionList() {
     const rows = printPreview
       .map(
         (student: any, index: number) =>
-          `<tr><td>${index + 1}</td><td>${escapeHtml(student.student_number)}</td><td>${escapeHtml(student.last_name)}</td><td>${escapeHtml(student.first_name)}</td><td>${escapeHtml(student.middle_name)}</td></tr>`,
+          `<tr><td>${rosterPage * ROSTER_PAGE_SIZE + index + 1}</td><td>${escapeHtml(student.student_number)}</td><td>${escapeHtml(student.last_name)}</td><td>${escapeHtml(student.first_name)}</td><td>${escapeHtml(student.middle_name)}</td></tr>`,
       )
       .join("")
     const popup = window.open("", "_blank", "width=1000,height=800")
@@ -582,7 +599,7 @@ function SectionList() {
                           variant="ghost"
                           size="icon"
                           title="Students"
-                          onClick={() => setStudentsTarget(section)}
+                          onClick={() => openRoster(section)
                         >
                           <UsersRound />
                         </Button>
@@ -852,6 +869,7 @@ function SectionList() {
                   value={studentSearch}
                   onChange={(event) => {
                     setStudentSearch(event.target.value)
+                    setRosterPage(0)
                   }}
                   placeholder="Search by student number or name..."
                   className="h-10 bg-background"
@@ -944,7 +962,7 @@ function SectionList() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredRosterStudents.map(
+                        {paginatedRosterStudents.map(
                           (student: any, index: number) => (
                             <TableRow key={student.id} className="h-[58px]">
                               <TableCell className="text-muted-foreground">
@@ -1067,6 +1085,39 @@ function SectionList() {
                       ),
                     )}
                   </div>
+                  {filteredRosterStudents.length > 0 && (
+                    <div className="flex flex-col gap-3 border-t py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                      <span>
+                        Showing {rosterPage * ROSTER_PAGE_SIZE + 1}–{Math.min(
+                          (rosterPage + 1) * ROSTER_PAGE_SIZE,
+                          filteredRosterStudents.length,
+                        )} of {filteredRosterStudents.length} students
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={rosterPage === 0}
+                          onClick={() => setRosterPage((page) => page - 1)}
+                        >
+                          Previous
+                        </Button>
+                        <span className="min-w-[90px] text-center">
+                          Page {rosterPage + 1} of {rosterTotalPages}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={rosterPage + 1 >= rosterTotalPages}
+                          onClick={() => setRosterPage((page) => page + 1)}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
