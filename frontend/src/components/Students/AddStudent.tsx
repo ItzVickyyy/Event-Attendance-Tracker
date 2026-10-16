@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
 import { UserPlus } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -30,7 +29,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export function AddStudent() {
-  const router = useRouter()
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -73,7 +71,6 @@ export function AddStudent() {
         last_name: "",
         extension: undefined,
       })
-      router.invalidate()
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create student")

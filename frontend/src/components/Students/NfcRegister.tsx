@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query"
-import { useRouter } from "@tanstack/react-router"
 import { Loader2, Search, UserCheck, Wifi, WifiOff } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -44,7 +43,6 @@ async function resolveAttendeeId(personId: string): Promise<string> {
 }
 
 export function NfcRegister({ student }: NfcRegisterProps) {
-  const router = useRouter()
   const [scanning, setScanning] = useState(false)
   const [nfcUid, setNfcUid] = useState("")
   const [nfcSupported, setNfcSupported] = useState(false)
@@ -159,7 +157,6 @@ export function NfcRegister({ student }: NfcRegisterProps) {
       toast.success("NFC credential registered successfully")
       setNfcUid("")
       setFoundCredential(null)
-      router.invalidate()
     },
     onError: (error) => {
       toast.error(error.message || "Failed to register NFC credential")
