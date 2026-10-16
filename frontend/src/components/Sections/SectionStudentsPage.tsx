@@ -8,7 +8,6 @@ import {
   StudentsService,
 } from "@/client"
 import { Button } from "@/components/ui/button"
-import { STUDENT_SEARCH_PAGE_SIZE } from "@/lib/studentPagination"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { STUDENT_SEARCH_PAGE_SIZE } from "@/lib/studentPagination"
 
 const PAGE_SIZE = STUDENT_SEARCH_PAGE_SIZE
 
