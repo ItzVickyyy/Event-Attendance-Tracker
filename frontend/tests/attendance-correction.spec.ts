@@ -125,12 +125,16 @@ test("correcting attendance refreshes the records table", async ({ page }) => {
 
   await page.getByRole("button", { name: "Correct" }).click()
   await page.getByRole("menuitem", { name: "Correct Record" }).click()
-  await page.getByLabel("Reason for Correction").fill("Regression test correction")
+  await page
+    .getByLabel("Reason for Correction")
+    .fill("Regression test correction")
   await page.getByRole("combobox").last().click()
   await page.getByRole("option", { name: "Incomplete" }).click()
   await page.getByRole("button", { name: "Save Correction" }).click()
 
-  await expect(page.getByText("Attendance record corrected successfully")).toBeVisible()
+  await expect(
+    page.getByText("Attendance record corrected successfully"),
+  ).toBeVisible()
   await expect(page.getByText("incomplete", { exact: true })).toBeVisible()
   expect(attendanceReads).toBeGreaterThan(1)
 })
