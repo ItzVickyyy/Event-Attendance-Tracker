@@ -56,6 +56,7 @@ export function ImportBatchesTab() {
   const batches: ImportBatchPublic[] = batchesResponse?.data ?? []
 
   const deleteMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async (id: string) => {
       return await ImportBatchesService.batchesDeleteImportBatch({
         path: { batch_id: id },
@@ -63,7 +64,7 @@ export function ImportBatchesTab() {
     },
     onSuccess: () => {
       toast.success("Batch deleted successfully")
-      refetch()
+      void queryClient.invalidateQueries({ queryKey: ["importBatches"] })
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to delete batch")
@@ -71,6 +72,7 @@ export function ImportBatchesTab() {
   })
 
   const promoteMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async (id: string) => {
       return await ImportBatchesService.batchesPromoteImportBatch({
         path: { batch_id: id },
@@ -80,8 +82,8 @@ export function ImportBatchesTab() {
       toast.success(
         `Batch promoted! Created: ${data.data?.students_created ?? 0}, Updated: ${data.data?.students_updated ?? 0}`,
       )
-      refetch()
-      queryClient.invalidateQueries({ queryKey: ["students"] })
+      void queryClient.invalidateQueries({ queryKey: ["importBatches"] })
+      void queryClient.invalidateQueries({ queryKey: ["students"] })
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to promote batch")
