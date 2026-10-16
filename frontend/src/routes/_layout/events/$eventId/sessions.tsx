@@ -14,6 +14,7 @@ import {
   createAttendanceSession,
   getAttendanceSessions,
 } from "@/data/attendanceSessions"
+import { eventSessionRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 
 export const Route = createFileRoute("/_layout/events/$eventId/sessions")({
   component: SessionsPage,
@@ -63,7 +64,12 @@ function SessionsPage() {
       })
       setName("")
       toast.success("Attendance session created")
-      await Promise.all([reload(), queryClient.invalidateQueries()])
+      await Promise.all([
+        reload(),
+        ...eventSessionRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to create session",
@@ -77,7 +83,12 @@ function SessionsPage() {
     try {
       await activateAttendanceSession(id)
       toast.success("Session is now active")
-      await Promise.all([reload(), queryClient.invalidateQueries()])
+      await Promise.all([
+        reload(),
+        ...eventSessionRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to activate session",
@@ -89,7 +100,12 @@ function SessionsPage() {
     try {
       await closeAttendanceSession(id)
       toast.success("Session closed")
-      await Promise.all([reload(), queryClient.invalidateQueries()])
+      await Promise.all([
+        reload(),
+        ...eventSessionRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to close session",
