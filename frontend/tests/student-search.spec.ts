@@ -427,7 +427,7 @@ test("section student page can retry failed program details", async ({
     },
   )
 
-  await page.route("**/api/v1/academic-programs/**", async (route) => {
+  await page.route("**/api/v1/academic-programs**", async (route) => {
     programAttempts += 1
     if (programAttempts === 1) {
       await route.fulfill({
