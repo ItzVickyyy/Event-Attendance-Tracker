@@ -370,4 +370,3 @@ test("credential dialog retries failed credential lookup without claiming no car
   ).toBeVisible()
   expect(credentialAttempts).toBe(2)
 })
-
