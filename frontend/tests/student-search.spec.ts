@@ -444,16 +444,14 @@ test("section student page can retry failed program details", async ({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        data: {
-          data: [
-            {
-              id: "00000000-0000-4000-8000-000000000202",
-              program_code: "BSIT",
-              program_name: "Bachelor of Science in Information Technology",
-            },
-          ],
-          count: 1,
-        },
+        data: [
+          {
+            id: "00000000-0000-4000-8000-000000000202",
+            program_code: "BSIT",
+            program_name: "Bachelor of Science in Information Technology",
+          },
+        ],
+        count: 1,
       }),
     })
   })
