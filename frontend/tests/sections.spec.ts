@@ -344,7 +344,7 @@ test("credential dialog retries failed credential lookup without claiming no car
   await page.goto("/sections")
   await page.getByTitle("Students").first().click()
   const rosterDialog = page.getByRole("dialog").last()
-  await rosterDialog.getByTitle("Edit student").click()
+  await rosterDialog.getByTitle("Edit student").first().click()
   await expect(
     page
       .getByRole("dialog")
