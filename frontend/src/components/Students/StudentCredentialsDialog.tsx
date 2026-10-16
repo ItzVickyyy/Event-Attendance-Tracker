@@ -28,8 +28,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { attendeeIdQueryKey } from "@/lib/attendeeQueryKeys"
 import { Label } from "@/components/ui/label"
+import { attendeeIdQueryKey } from "@/lib/attendeeQueryKeys"
 
 interface StudentCredentialsDialogProps {
   student: StudentPublic
