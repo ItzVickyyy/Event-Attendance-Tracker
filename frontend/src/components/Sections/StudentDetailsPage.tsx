@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { attendeeCredentialsQueryKey } from "@/lib/attendeeQueryKeys"
 
 export function StudentDetailsPage({
   sectionId,
@@ -217,6 +218,9 @@ export function StudentDetailsPage({
       void queryClient.invalidateQueries({
         queryKey: ["studentCredentials", attendeeId],
       })
+      void queryClient.invalidateQueries({
+        queryKey: attendeeCredentialsQueryKey(attendeeId),
+      })
     },
   })
   const revokeMutation = useMutation({
@@ -226,10 +230,14 @@ export function StudentDetailsPage({
         path: { credential_id: credentialId },
         body: { is_active: false },
       }),
-    onSuccess: () =>
+    onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["studentCredentials", attendeeId],
-      }),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: attendeeCredentialsQueryKey(attendeeId),
+      })
+    },
   })
   const handleScanNfc = async () => {
     if (!("NDEFReader" in window)) {
