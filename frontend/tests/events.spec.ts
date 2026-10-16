@@ -520,3 +520,39 @@ test("event list loads later pages concurrently in bounded batches", async ({
   expect(requestedOffsets.sort((a, b) => a - b)).toEqual([100, 200])
   await expect(page.getByText("Mock event 0").first()).toBeVisible()
 })
+
+test("editing an event refreshes the list and event details without global invalidation", async ({
+  page,
+}) => {
+  await page.goto("/events")
+  const originalName = `Edit event invalidation ${randomEmail()}`
+  const updatedName = `${originalName} updated`
+
+  await page.getByRole("button", { name: "Add Event" }).click()
+  await page.getByLabel("Event Name").fill(originalName)
+  await page
+    .getByLabel("Event Date")
+    .fill(new Date().toISOString().slice(0, 10))
+  await page.getByRole("button", { name: "Create Event" }).click()
+  await expect(page.getByText("Event created successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const originalRow = page.getByRole("row").filter({ hasText: originalName })
+  await expect(originalRow).toBeVisible()
+  await originalRow.getByRole("button", { name: `Edit ${originalName}` }).click()
+
+  const dialog = page.getByRole("dialog")
+  await dialog.getByLabel("Event Name").fill(updatedName)
+  await dialog.getByRole("button", { name: "Save Changes" }).click()
+  await expect(page.getByText("Event updated successfully")).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const updatedRow = page.getByRole("row").filter({ hasText: updatedName })
+  await expect(updatedRow).toBeVisible()
+  await expect(
+    page.getByRole("row").filter({ hasText: originalName }),
+  ).toHaveCount(0)
+
+  await updatedRow.getByRole("link", { name: updatedName }).click()
+  await expect(page.getByRole("heading", { name: updatedName })).toBeVisible()
+})
