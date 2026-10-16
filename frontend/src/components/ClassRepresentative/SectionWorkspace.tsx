@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useAcademicYear } from "@/context/AcademicYearContext"
+import { classRepresentativeStudentRelatedQueryKeys } from "@/lib/studentQueryKeys"
 
 const api = "/api/v1"
 const authHeaders = (): Record<string, string> => {
@@ -329,7 +330,11 @@ export function ClassRepresentativeSectionWorkspace() {
     setDialogOpen(false)
     setEditing(null)
     setForm(emptyForm)
-    await client.invalidateQueries()
+    await Promise.all(
+      classRepresentativeStudentRelatedQueryKeys().map((queryKey) =>
+        client.invalidateQueries({ queryKey }),
+      ),
+    )
   }
 
   const archive = async (student: any) => {
@@ -352,7 +357,11 @@ export function ClassRepresentativeSectionWorkspace() {
       return
     }
     toast.success("Student archived")
-    await client.invalidateQueries()
+    await Promise.all(
+      classRepresentativeStudentRelatedQueryKeys().map((queryKey) =>
+        client.invalidateQueries({ queryKey }),
+      ),
+    )
   }
 
   const filtered = students.data?.data ?? []
