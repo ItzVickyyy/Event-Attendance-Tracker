@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { attendeeIdQueryKey } from "@/lib/attendeeQueryKeys"
 import { Label } from "@/components/ui/label"
 
 interface StudentCredentialsDialogProps {
@@ -85,7 +86,7 @@ export function StudentCredentialsDialog({
     isLoading: isLoadingAttendee,
     error: attendeeError,
   } = useQuery({
-    queryKey: ["attendeeIdForPerson", student.person_id],
+    queryKey: attendeeIdQueryKey(student),
     queryFn: () => resolveAttendeeId(student),
     enabled: open,
   })
