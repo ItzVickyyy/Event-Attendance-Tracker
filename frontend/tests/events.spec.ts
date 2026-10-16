@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
-import { randomEmail } from "./utils/random"
 import { eventRosterRelatedQueryKeys } from "../src/lib/eventRosterQueryKeys"
+import { randomEmail } from "./utils/random"
 
 test("new event appears in the list without refreshing the page", async ({
   page,
