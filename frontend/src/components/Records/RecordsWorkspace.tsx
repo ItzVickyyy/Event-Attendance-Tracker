@@ -15,7 +15,7 @@ import {
   type EventPublic,
   EventsService,
 } from "@/client"
-import { attendanceColumns } from "@/components/Attendance/recordsColumns"
+import { attendanceColumns } from "@/components/Attendance/columns"
 import { DataTable } from "@/components/Common/DataTable"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"

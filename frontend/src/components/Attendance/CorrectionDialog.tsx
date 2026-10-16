@@ -83,10 +83,17 @@ export function AttendanceCorrectionDialog({
         },
       )
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Attendance record corrected successfully")
-      queryClient.invalidateQueries({ queryKey: ["attendance"] })
       onClose()
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["records-attendance"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["studentAttendanceHistory"],
+        }),
+        queryClient.invalidateQueries({ queryKey: ["attendance-corrections"] }),
+      ])
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to correct attendance record")
