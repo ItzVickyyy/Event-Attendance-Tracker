@@ -113,6 +113,7 @@ export function StudentCredentialsDialog({
       return res.data
     },
     enabled: !!attendeeId && open,
+    retry: false,
   })
 
   const credentials: AttendeeCredentialPublic[] =
