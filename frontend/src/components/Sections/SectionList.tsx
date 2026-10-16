@@ -966,7 +966,7 @@ function SectionList() {
                           (student: any, index: number) => (
                             <TableRow key={student.id} className="h-[58px]">
                               <TableCell className="text-muted-foreground">
-                                {index + 1}
+                                {rosterPage * ROSTER_PAGE_SIZE + index + 1}
                               </TableCell>
                               <TableCell className="font-semibold tabular-nums">
                                 {student.student_number}
@@ -1030,7 +1030,7 @@ function SectionList() {
                         <div key={student.id} className="rounded-lg border p-3">
                           <div className="flex items-start gap-3">
                             <span className="pt-0.5 text-xs tabular-nums text-muted-foreground">
-                              {index + 1}.
+                              {rosterPage * ROSTER_PAGE_SIZE + index + 1}.
                             </span>
                             <div className="min-w-0 flex-1">
                               <p className="break-words font-semibold">
@@ -1622,7 +1622,7 @@ function SectionList() {
                   <TableBody>
                     {printPreview.map((student: any, index: number) => (
                       <TableRow key={student.id}>
-                        <TableCell>{rosterPage * ROSTER_PAGE_SIZE + index + 1}</TableCell>
+                        <TableCell>{index + 1}</TableCell>
                         <TableCell>{student.student_number}</TableCell>
                         <TableCell>{student.last_name}</TableCell>
                         <TableCell>{student.first_name}</TableCell>
