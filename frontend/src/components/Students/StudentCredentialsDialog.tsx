@@ -108,6 +108,7 @@ export function StudentCredentialsDialog({
       const res =
         await AttendeeCredentialsService.credentialsReadAttendeeCredentials({
           query: { attendee_id: attendeeId, limit: 100 },
+          throwOnError: true,
         })
       return res.data
     },
