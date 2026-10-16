@@ -41,10 +41,7 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
   const studentSearchPageSize = 10
 
   // 1. Fetch Event Roster
-  const {
-    data: rosterResponse,
-    isLoading: isLoadingRoster,
-  } = useQuery({
+  const { data: rosterResponse, isLoading: isLoadingRoster } = useQuery({
     queryKey: ["eventRoster", event.id],
     queryFn: async () => {
       const res = await EventsService.readEventRoster({
@@ -60,17 +57,17 @@ export function EventRosterDialog({ event }: EventRosterDialogProps) {
 
   // 2. Fetch Event Registrations mapping (to get registration_id for delete)
   const { data: registrationsResponse } = useQuery({
-      queryKey: ["eventRegistrations", event.id],
-      queryFn: async () => {
-        const res =
-          await EventRegistrationsService.registrationsReadEventRegistrations({
-            query: { event_id: event.id, limit: 1000 },
-            throwOnError: true,
-          })
-        return res.data
-      },
-      enabled: open,
-    })
+    queryKey: ["eventRegistrations", event.id],
+    queryFn: async () => {
+      const res =
+        await EventRegistrationsService.registrationsReadEventRegistrations({
+          query: { event_id: event.id, limit: 1000 },
+          throwOnError: true,
+        })
+      return res.data
+    },
+    enabled: open,
+  })
 
   // 3. Fetch Event Attendances (to show if attendee is already checked in/out)
   const { data: attendanceResponse } = useQuery({
