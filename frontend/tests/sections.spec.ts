@@ -194,18 +194,18 @@ test("section roster paginates students and resets the page when filtering", asy
 
   const dialog = page.getByRole("dialog")
   await expect(dialog.getByText("Page 1 of 3")).toBeVisible()
-  await expect(dialog.getByText("ROSTER-001")).toBeVisible()
-  await expect(dialog.getByText("ROSTER-010")).toBeVisible()
+  await expect(dialog.getByText("ROSTER-001").first()).toBeVisible()
+  await expect(dialog.getByText("ROSTER-010").first()).toBeVisible()
   await expect(dialog.getByText("ROSTER-011")).toHaveCount(0)
 
   await dialog.getByRole("button", { name: "Next" }).click()
   await expect(dialog.getByText("Page 2 of 3")).toBeVisible()
-  await expect(dialog.getByText("ROSTER-011")).toBeVisible()
+  await expect(dialog.getByText("ROSTER-011").first()).toBeVisible()
   await expect(dialog.getByText("ROSTER-001")).toHaveCount(0)
 
   await dialog
     .getByPlaceholder("Search by student number or name...")
     .fill("ROSTER-024")
   await expect(dialog.getByText("Page 1 of 1")).toBeVisible()
-  await expect(dialog.getByText("ROSTER-024")).toBeVisible()
+  await expect(dialog.getByText("ROSTER-024").first()).toBeVisible()
 })
