@@ -315,9 +315,7 @@ test("event roster reports load failures and can retry", async ({ page }) => {
 
   failRosterRequests = false
   await dialog.getByRole("button", { name: "Retry loading roster" }).click()
-  await expect(
-    dialog.getByText("Unable to load event roster."),
-  ).toHaveCount(0)
+  await expect(dialog.getByText("Unable to load event roster.")).toHaveCount(0)
   await expect(
     dialog.getByText("No attendees registered for this event yet"),
   ).toBeVisible()
