@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { LoadingButton } from "@/components/ui/loading-button"
+import { eventRosterRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 
 interface DeleteEventProps {
   event: EventPublic
@@ -34,14 +35,12 @@ export function DeleteEvent({ event }: DeleteEventProps) {
     onSuccess: async () => {
       toast.success("Event deleted successfully")
       setOpen(false)
-      await queryClient.invalidateQueries({ queryKey: ["events"] })
-      await queryClient.invalidateQueries({ queryKey: ["event", event.id] })
-      await queryClient.invalidateQueries({
-        queryKey: ["eventRoster", event.id],
-      })
-      await queryClient.invalidateQueries({
-        queryKey: ["eventRegistrations", event.id],
-      })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+        ...eventRosterRelatedQueryKeys(event.id).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ])
     },
     onError: (error) => {
       toast.error(error.message || "Failed to delete event")
