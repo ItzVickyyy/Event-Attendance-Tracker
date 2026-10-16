@@ -322,13 +322,15 @@ test("credential dialog retries failed credential lookup without claiming no car
       }),
     })
   })
-  await page.route("**/api/v1/attendee-credentials/**", async (route) => {
+  await page.route("**/api/v1/attendee-credentials**", async (route) => {
     credentialAttempts += 1
     if (credentialAttempts === 1) {
       await route.fulfill({
         status: 500,
         contentType: "application/json",
-        body: JSON.stringify({ detail: "Temporary credential service failure" }),
+        body: JSON.stringify({
+          detail: "Temporary credential service failure",
+        }),
       })
       return
     }
@@ -344,7 +346,11 @@ test("credential dialog retries failed credential lookup without claiming no car
   const rosterDialog = page.getByRole("dialog").last()
   await rosterDialog.getByTitle("Edit student").click()
   await expect(
-    page.getByRole("dialog").getByText("Credentials", { exact: true }),
+    page
+      .getByRole("dialog")
+      .last()
+      .getByText("Credentials", { exact: true })
+      .first(),
   ).toBeVisible()
   await page.getByRole("button", { name: "Credentials", exact: true }).click()
 
