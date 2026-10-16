@@ -29,7 +29,10 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { attendeeIdQueryKey } from "@/lib/attendeeQueryKeys"
+import {
+  attendeeCredentialsQueryKey,
+  attendeeIdQueryKey,
+} from "@/lib/attendeeQueryKeys"
 
 interface StudentCredentialsDialogProps {
   student: StudentPublic
@@ -97,7 +100,7 @@ export function StudentCredentialsDialog({
     isLoading: isLoadingCreds,
     refetch,
   } = useQuery({
-    queryKey: ["attendeeCredentials", attendeeId],
+    queryKey: attendeeCredentialsQueryKey(attendeeId),
     queryFn: async () => {
       if (!attendeeId) return { data: [], count: 0 }
       const res =
