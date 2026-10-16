@@ -88,6 +88,7 @@ export function AttendanceCorrectionDialog({
       onClose()
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["eventAttendance"] }),
         queryClient.invalidateQueries({ queryKey: ["records-attendance"] }),
         queryClient.invalidateQueries({
           queryKey: ["studentAttendanceHistory"],
