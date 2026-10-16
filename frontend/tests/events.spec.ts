@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test"
 import { randomEmail } from "./utils/random"
+import { eventRosterRelatedQueryKeys } from "../src/lib/eventRosterQueryKeys"
 
 test("new event appears in the list without refreshing the page", async ({
   page,
@@ -558,4 +559,13 @@ test("editing an event refreshes the list and event details without global inval
 
   await updatedRow.getByRole("link", { name: updatedName }).click()
   await expect(page.getByRole("heading", { name: updatedName })).toBeVisible()
+})
+
+test("event roster mutations invalidate all related event views", () => {
+  expect(eventRosterRelatedQueryKeys("evt-1")).toEqual([
+    ["eventRoster", "evt-1"],
+    ["eventRegistrations", "evt-1"],
+    ["eventAttendance", "evt-1"],
+    ["event", "evt-1"],
+  ])
 })
