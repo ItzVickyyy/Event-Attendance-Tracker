@@ -316,7 +316,7 @@ export function StudentImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-h-[calc(100dvh-4rem)]">
         <DialogHeader>
           <DialogTitle>Import Students</DialogTitle>
           <DialogDescription>

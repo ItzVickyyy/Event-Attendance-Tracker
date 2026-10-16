@@ -475,3 +475,31 @@ test("section student page can retry failed program details", async ({
   ).toBeVisible()
   expect(programAttempts).toBe(2)
 })
+
+test("student import dialog remains scrollable on a small mobile viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 568 })
+  await page.goto("/sections")
+  await page.getByRole("button", { name: "Import students" }).click()
+
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toBeVisible()
+
+  await page.getByRole("button", { name: "Next" }).click()
+  await page.getByRole("button", { name: "Next" }).click()
+  await page.getByRole("button", { name: "Next" }).click()
+
+  await expect(page.getByText("Choose your masterlist file")).toBeVisible()
+  await expect
+    .poll(() =>
+      dialog.evaluate((element) => {
+        const styles = window.getComputedStyle(element)
+        return (
+          element.scrollHeight > element.clientHeight &&
+          ["auto", "scroll"].includes(styles.overflowY)
+        )
+      }),
+    )
+    .toBe(true)
+})
