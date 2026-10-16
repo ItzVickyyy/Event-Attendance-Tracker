@@ -36,10 +36,8 @@ test("correcting attendance refreshes the records table", async ({ page }) => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          data: {
-            data: [],
-            count: 0,
-          },
+          data: [],
+          count: 0,
         }),
       })
       return
@@ -69,18 +67,16 @@ test("correcting attendance refreshes the records table", async ({ page }) => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          data: {
-            data: [
-              {
-                id: eventId,
-                event_name: "Attendance Correction Regression",
-                event_date: "2026-10-16",
-                status: "open",
-                attendance_mode: "time_in_only",
-              },
-            ],
-            count: 1,
-          },
+          data: [
+            {
+              id: eventId,
+              event_name: "Attendance Correction Regression",
+              event_date: "2026-10-16",
+              status: "open",
+              attendance_mode: "time_in_only",
+            },
+          ],
+          count: 1,
         }),
       })
       return
@@ -92,23 +88,21 @@ test("correcting attendance refreshes the records table", async ({ page }) => {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          data: {
-            data: [
-              {
-                id: attendanceId,
-                event_id: eventId,
-                event_name: "Attendance Correction Regression",
-                person_name: "Regression Test Student",
-                student_number: "TEST-100",
-                time_in: "2026-10-16T08:00:00Z",
-                time_out: null,
-                status: attendanceStatus,
-                scan_method: "qr",
-                created_at: "2026-10-16T08:00:00Z",
-              },
-            ],
-            count: 1,
-          },
+          data: [
+            {
+              id: attendanceId,
+              event_id: eventId,
+              event_name: "Attendance Correction Regression",
+              person_name: "Regression Test Student",
+              student_number: "TEST-100",
+              time_in: "2026-10-16T08:00:00Z",
+              time_out: null,
+              status: attendanceStatus,
+              scan_method: "qr",
+              created_at: "2026-10-16T08:00:00Z",
+            },
+          ],
+          count: 1,
         }),
       })
       return
