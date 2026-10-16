@@ -145,13 +145,19 @@ test("global student search shows the full program, major, and section name", as
   await page.getByRole("textbox", { name: "Search students" }).fill("Kenneth")
 
   await expect(page.getByText("BSIT WMAD 3A").first()).toBeVisible()
-  await expect(page.getByText("Page 1 of 2")).toBeVisible()
+  await expect(page.getByText("Page 1 of 3")).toBeVisible()
   await expect(page.getByText("TEST-001")).toBeVisible()
   await expect(page.getByText("TEST-026")).toHaveCount(0)
 
   await page.getByRole("button", { name: "Next" }).click()
 
-  await expect(page.getByText("Page 2 of 2")).toBeVisible()
+  await expect(page.getByText("Page 2 of 3")).toBeVisible()
+  await expect(page.getByText("TEST-011")).toBeVisible()
+  await expect(page.getByText("TEST-001")).toHaveCount(0)
+  await expect(page.getByText("TEST-026")).toHaveCount(0)
+
+  await page.getByRole("button", { name: "Next" }).click()
+  await expect(page.getByText("Page 3 of 3")).toBeVisible()
   await expect(page.getByText("TEST-026")).toBeVisible()
   await expect(page.getByText("TEST-001")).toHaveCount(0)
 })
@@ -375,8 +381,12 @@ test("global student search restores its query and page after viewing details", 
   await page
     .getByRole("textbox", { name: "Search students" })
     .fill("Search Student")
-  await expect(page.getByText("Page 1 of 2")).toBeVisible()
+  await expect(page.getByText("Page 1 of 3")).toBeVisible()
   await page.getByRole("button", { name: "Next" }).click()
+  await expect(page.getByText("Page 2 of 3")).toBeVisible()
+  await expect(page.getByText("RETURN-011")).toBeVisible()
+  await page.getByRole("button", { name: "Next" }).click()
+  await expect(page.getByText("Page 3 of 3")).toBeVisible()
   await expect(page.getByText("RETURN-026")).toBeVisible()
   await page.getByRole("link", { name: "View details" }).click()
 
@@ -388,7 +398,7 @@ test("global student search restores its query and page after viewing details", 
   await expect(
     page.getByRole("textbox", { name: "Search students" }),
   ).toHaveValue("Search Student")
-  await expect(page.getByText("Page 2 of 2")).toBeVisible()
+  await expect(page.getByText("Page 3 of 3")).toBeVisible()
   await expect(page.getByText("RETURN-026")).toBeVisible()
   await expect(page.getByText("RETURN-001")).toHaveCount(0)
 })
