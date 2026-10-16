@@ -51,3 +51,16 @@ test("attendee credential cache key is shared across student views", () => {
     null,
   ])
 })
+
+test("attendee lookup cache keys include student identity when person IDs match", () => {
+  const firstStudentKey = attendeeIdQueryKey({
+    id: "student-1",
+    person_id: "person-shared",
+  })
+  const secondStudentKey = attendeeIdQueryKey({
+    id: "student-2",
+    person_id: "person-shared",
+  })
+
+  expect(firstStudentKey).not.toEqual(secondStudentKey)
+})
