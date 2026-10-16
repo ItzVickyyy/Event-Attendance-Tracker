@@ -104,6 +104,7 @@ export function BatchDetailsDialog({
 
   // Promote Mutation
   const promoteMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async () => {
       if (!batch?.id) throw new Error("No batch")
       return await ImportBatchesService.batchesPromoteImportBatch({
