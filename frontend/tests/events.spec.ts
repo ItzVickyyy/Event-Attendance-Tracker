@@ -525,8 +525,9 @@ test("editing an event refreshes the list and event details without global inval
   page,
 }) => {
   await page.goto("/events")
-  const originalName = `Edit event invalidation ${randomEmail()}`
-  const updatedName = `${originalName} updated`
+  const testEmail = randomEmail()
+  const originalName = `Edit event invalidation ${testEmail}`
+  const updatedName = `Edited event invalidation ${testEmail}`
 
   await page.getByRole("button", { name: "Add Event" }).click()
   await page.getByLabel("Event Name").fill(originalName)
