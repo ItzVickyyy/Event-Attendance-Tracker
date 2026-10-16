@@ -402,3 +402,73 @@ test("global student search restores its query and page after viewing details", 
   await expect(page.getByText("RETURN-026")).toBeVisible()
   await expect(page.getByText("RETURN-001")).toHaveCount(0)
 })
+
+test("section student page can retry failed program details", async ({ page }) => {
+  const sectionId = "00000000-0000-4000-8000-000000000201"
+  let programAttempts = 0
+
+  await page.route(`**/api/v1/academic-sections/${sectionId}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: sectionId,
+        section_name: "BSIT 3A",
+        section_code: "3A",
+        program_id: "00000000-0000-4000-8000-000000000202",
+        year_level: "3",
+        academic_year: "2026-2027",
+      }),
+    })
+  })
+
+  await page.route("**/api/v1/academic-programs/**", async (route) => {
+    programAttempts += 1
+    if (programAttempts === 1) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Temporary program service failure" }),
+      })
+      return
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: {
+          data: [
+            {
+              id: "00000000-0000-4000-8000-000000000202",
+              program_code: "BSIT",
+              program_name: "Bachelor of Science in Information Technology",
+            },
+          ],
+          count: 1,
+        },
+      }),
+    })
+  })
+
+  await page.route("**/api/v1/students**", async (route) => {
+    const url = new URL(route.request().url())
+    if (url.searchParams.get("section_id") !== sectionId) {
+      await route.continue()
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: { data: [], count: 0 } }),
+    })
+  })
+
+  await page.goto(`/sections/${sectionId}/students`)
+  await expect(page.getByText("Program details unavailable.")).toBeVisible()
+  await page.getByRole("button", { name: "Retry program details" }).click()
+  await expect(
+    page.getByText("Bachelor of Science in Information Technology"),
+  ).toBeVisible()
+  expect(programAttempts).toBe(2)
+})
