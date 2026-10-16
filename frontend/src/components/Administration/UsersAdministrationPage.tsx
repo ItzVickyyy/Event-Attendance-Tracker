@@ -188,6 +188,7 @@ export function UsersAdministrationPage() {
   }, [positionId, positionsQuery.data])
 
   const mutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: ({
       id,
       body,
@@ -204,6 +205,7 @@ export function UsersAdministrationPage() {
   })
 
   const createMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async () => {
       if (isSuperAdmin) {
         return apiRequest<OfficerUser>("/users/officers", {
@@ -244,6 +246,7 @@ export function UsersAdministrationPage() {
   })
 
   const positionMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: () =>
       apiRequest<OfficerPosition>("/users/officer-positions", {
         method: "POST",
@@ -288,6 +291,7 @@ export function UsersAdministrationPage() {
   })
 
   const commitImportMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: () =>
       apiRequest<{ created_count: number; delivery_failures: string[] }>(
         "/users/officers/import/commit",
