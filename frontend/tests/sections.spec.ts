@@ -322,6 +322,16 @@ test("credential dialog retries failed credential lookup without claiming no car
       }),
     })
   })
+  await page.route("**/api/v1/attendees**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [{ id: attendeeId, person_id: personId }],
+        count: 1,
+      }),
+    })
+  })
   await page.route("**/api/v1/attendee-credentials**", async (route) => {
     credentialAttempts += 1
     if (credentialAttempts === 1) {
@@ -354,12 +364,16 @@ test("credential dialog retries failed credential lookup without claiming no car
   ).toBeVisible()
   await page.getByRole("button", { name: "Credentials", exact: true }).click()
 
+  await expect(
+    page.getByRole("dialog").last().getByText("Manage Credentials"),
+  ).toBeVisible()
+  await expect.poll(() => credentialAttempts).toBe(1)
   const credentialsDialog = page.getByRole("dialog").last()
   await expect(
-    credentialsDialog.getByText("Unable to load credentials."),
+    page.getByText("Unable to load credentials.", { exact: true }),
   ).toBeVisible()
   await expect(
-    credentialsDialog.getByText("No Card UID registered yet."),
+    page.getByText("No Card UID registered yet.", { exact: false }),
   ).toHaveCount(0)
 
   await credentialsDialog
