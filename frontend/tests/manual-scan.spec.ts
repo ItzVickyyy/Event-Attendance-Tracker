@@ -735,6 +735,73 @@ test.describe("Manual attendance scan", () => {
     ).toBeVisible()
   })
 
+  test("manual search ignores older responses that arrive after newer queries", async ({
+    page,
+    mockHttp,
+  }) => {
+    let releaseFirstResponse: (() => void) | undefined
+    const firstResponseGate = new Promise<void>((resolve) => {
+      releaseFirstResponse = resolve
+    })
+    await mockHttp(
+      page,
+      undefined,
+      async (query) => {
+        if (query.search === "Alice") {
+          await firstResponseGate
+          return {
+            status: 200,
+            json: studentsResponse([
+              studentEntry({
+                id: "stu-alice",
+                person_id: "per-alice",
+                student_number: "STU-ALICE",
+                person_name: "Alice Student",
+              }),
+            ]),
+          }
+        }
+        if (query.search === "Bob") {
+          return {
+            status: 200,
+            json: studentsResponse([
+              studentEntry({
+                id: "stu-bob",
+                person_id: "per-bob",
+                student_number: "STU-BOB",
+                person_name: "Bob Student",
+              }),
+            ]),
+          }
+        }
+        return { status: 200, json: studentsResponse([]) }
+      },
+    )
+
+    await gotoApp(page)
+    await setToken(page)
+    await page.goto("/scanner?event_id=evt-1")
+    const search = page.getByRole("textbox", {
+      name: "Search students for manual attendance",
+    })
+
+    await search.fill("Alice")
+    await expect.poll(async () => {
+      return page.evaluate(() => performance.now())
+    }).toBeGreaterThan(0)
+    await page.waitForTimeout(400)
+    await search.fill("Bob")
+    await expect(page.getByRole("button", { name: /Bob Student/ })).toBeVisible({
+      timeout: 10000,
+    })
+
+    releaseFirstResponse?.()
+    await expect(page.getByRole("button", { name: /Bob Student/ })).toBeVisible()
+    await expect(page.getByRole("button", { name: /Alice Student/ })).toHaveCount(
+      0,
+    )
+  })
+
   test("NFC and QR buttons explain missing session instead of being disabled", async ({
     page,
     mockHttp,
