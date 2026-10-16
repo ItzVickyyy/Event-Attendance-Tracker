@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
+import { eventSessionRelatedQueryKeys } from "@/lib/eventRosterQueryKeys"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -63,7 +64,12 @@ function SessionsPage() {
       })
       setName("")
       toast.success("Attendance session created")
-      await Promise.all([reload(), queryClient.invalidateQueries()])
+      await Promise.all([
+        reload(),
+        ...eventSessionRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to create session",
@@ -77,7 +83,12 @@ function SessionsPage() {
     try {
       await activateAttendanceSession(id)
       toast.success("Session is now active")
-      await Promise.all([reload(), queryClient.invalidateQueries()])
+      await Promise.all([
+        reload(),
+        ...eventSessionRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to activate session",
@@ -89,7 +100,12 @@ function SessionsPage() {
     try {
       await closeAttendanceSession(id)
       toast.success("Session closed")
-      await Promise.all([reload(), queryClient.invalidateQueries()])
+      await Promise.all([
+        reload(),
+        ...eventSessionRelatedQueryKeys(eventId).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ])
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to close session",
