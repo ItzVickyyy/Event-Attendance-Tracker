@@ -416,14 +416,12 @@ test("section student page can retry failed program details", async ({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          data: {
-            id: sectionId,
-            section_name: "BSIT 3A",
-            section_code: "3A",
-            program_id: "00000000-0000-4000-8000-000000000202",
-            year_level: "3",
-            academic_year: "2026-2027",
-          },
+          id: sectionId,
+          section_name: "BSIT 3A",
+          section_code: "3A",
+          program_id: "00000000-0000-4000-8000-000000000202",
+          year_level: "3",
+          academic_year: "2026-2027",
         }),
       })
     },
