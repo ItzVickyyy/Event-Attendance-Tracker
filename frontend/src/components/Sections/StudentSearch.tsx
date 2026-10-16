@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import { AcademicRegistryService, StudentsService } from "@/client"
+import { STUDENT_SEARCH_PAGE_SIZE } from "@/lib/studentPagination"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = STUDENT_SEARCH_PAGE_SIZE
 const SEARCH_STATE_KEY = "section-students-global-search"
 
 function readSavedSearchState(): {
