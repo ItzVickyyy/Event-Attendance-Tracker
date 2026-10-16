@@ -152,6 +152,7 @@ export function StudentDetailsPage({
     enabled: registrationIds.length > 0,
   })
   const guardianMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: async () => {
       const person = await PeopleService.createPerson({
         body: {
@@ -201,6 +202,7 @@ export function StudentDetailsPage({
     },
   })
   const credentialMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: () =>
       AttendeeCredentialsService.credentialsCreateAttendeeCredential({
         body: {
@@ -218,6 +220,7 @@ export function StudentDetailsPage({
     },
   })
   const revokeMutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: (credentialId: string) =>
       AttendeeCredentialsService.credentialsUpdateAttendeeCredential({
         path: { credential_id: credentialId },
