@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Edit } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -42,6 +42,7 @@ interface EditEventProps {
 }
 
 export function EditEvent({ event }: EditEventProps) {
+  const queryClient = useQueryClient()
   const { academicYears, activeAcademicYear } = useAcademicYear()
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -57,6 +58,7 @@ export function EditEvent({ event }: EditEventProps) {
   })
 
   const mutation = useMutation({
+    meta: { skipGlobalInvalidation: true },
     mutationFn: (data: FormData) =>
       EventsService.updateEvent({
         path: { event_id: event.id },
@@ -71,8 +73,12 @@ export function EditEvent({ event }: EditEventProps) {
         },
         throwOnError: true,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Event updated successfully")
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+        queryClient.invalidateQueries({ queryKey: ["event", event.id] }),
+      ])
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update event")
@@ -86,7 +92,11 @@ export function EditEvent({ event }: EditEventProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label={`Edit ${event.event_name}`}
+        >
           <Edit className="h-4 w-4" />
         </Button>
       </DialogTrigger>
