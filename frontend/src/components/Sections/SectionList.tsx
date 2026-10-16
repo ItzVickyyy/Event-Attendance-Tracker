@@ -1088,10 +1088,12 @@ function SectionList() {
                   {filteredRosterStudents.length > 0 && (
                     <div className="flex flex-col gap-3 border-t py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                       <span>
-                        Showing {rosterPage * ROSTER_PAGE_SIZE + 1}–{Math.min(
+                        Showing {rosterPage * ROSTER_PAGE_SIZE + 1}–
+                        {Math.min(
                           (rosterPage + 1) * ROSTER_PAGE_SIZE,
                           filteredRosterStudents.length,
-                        )} of {filteredRosterStudents.length} students
+                        )}{" "}
+                        of {filteredRosterStudents.length} students
                       </span>
                       <div className="flex items-center gap-2">
                         <Button
