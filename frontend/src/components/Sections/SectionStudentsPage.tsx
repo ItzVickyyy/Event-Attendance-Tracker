@@ -8,6 +8,7 @@ import {
   StudentsService,
 } from "@/client"
 import { Button } from "@/components/ui/button"
+import { STUDENT_SEARCH_PAGE_SIZE } from "@/lib/studentPagination"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = STUDENT_SEARCH_PAGE_SIZE
 
 export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
   const [page, setPage] = useState(0)
