@@ -495,7 +495,7 @@ function SectionList() {
     const rows = printPreview
       .map(
         (student: any, index: number) =>
-          `<tr><td>${rosterPage * ROSTER_PAGE_SIZE + index + 1}</td><td>${escapeHtml(student.student_number)}</td><td>${escapeHtml(student.last_name)}</td><td>${escapeHtml(student.first_name)}</td><td>${escapeHtml(student.middle_name)}</td></tr>`,
+          `<tr><td>${index + 1}</td><td>${escapeHtml(student.student_number)}</td><td>${escapeHtml(student.last_name)}</td><td>${escapeHtml(student.first_name)}</td><td>${escapeHtml(student.middle_name)}</td></tr>`,
       )
       .join("")
     const popup = window.open("", "_blank", "width=1000,height=800")
