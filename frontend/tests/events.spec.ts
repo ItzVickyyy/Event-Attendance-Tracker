@@ -573,7 +573,6 @@ test("event roster mutations invalidate all related event views", () => {
   ])
 })
 
-
 test("attendance session mutations invalidate only related event session and roster views", () => {
   expect(eventSessionRelatedQueryKeys("evt-1")).toEqual([
     ["attendanceSessions", "evt-1"],
