@@ -789,9 +789,11 @@ test.describe("Manual attendance scan", () => {
     await search.fill("Alice")
     await firstRequestStarted
     await search.fill("Bob")
-    await expect(page.getByRole("button", { name: /Bob Student/ })).toBeVisible({
-      timeout: 10000,
-    })
+    await expect(page.getByRole("button", { name: /Bob Student/ })).toBeVisible(
+      {
+        timeout: 10000,
+      },
+    )
 
     releaseFirstResponse?.()
     await expect(
