@@ -895,12 +895,7 @@ function Scanner() {
 
   const manualLookupRequestIdRef = useRef(0)
   const manualLookupMutation = useMutation({
-    mutationFn: ({
-      query,
-    }: {
-      query: string
-      requestId: number
-    }) =>
+    mutationFn: ({ query }: { query: string; requestId: number }) =>
       StudentsService.readStudents({
         query: { skip: 0, limit: 10, search: query },
         throwOnError: false,
