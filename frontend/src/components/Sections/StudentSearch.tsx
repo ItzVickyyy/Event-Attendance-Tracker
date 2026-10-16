@@ -13,8 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { STUDENT_SEARCH_PAGE_SIZE } from "@/lib/studentPagination"
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = STUDENT_SEARCH_PAGE_SIZE
 const SEARCH_STATE_KEY = "section-students-global-search"
 
 function readSavedSearchState(): {

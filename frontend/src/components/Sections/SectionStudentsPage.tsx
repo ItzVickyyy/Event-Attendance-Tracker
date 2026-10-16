@@ -18,8 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { STUDENT_SEARCH_PAGE_SIZE } from "@/lib/studentPagination"
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = STUDENT_SEARCH_PAGE_SIZE
 
 export function SectionStudentsPage({ sectionId }: { sectionId: string }) {
   const [page, setPage] = useState(0)
