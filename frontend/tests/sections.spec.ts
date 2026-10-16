@@ -106,7 +106,6 @@ test("section students page distinguishes section loading failures and can retry
   await expect(page.getByRole("heading", { name: "WMAD 3A" })).toBeVisible()
 })
 
-
 test("section roster paginates students and resets the page when filtering", async ({
   page,
 }) => {
@@ -204,7 +203,9 @@ test("section roster paginates students and resets the page when filtering", asy
   await expect(dialog.getByText("ROSTER-011")).toBeVisible()
   await expect(dialog.getByText("ROSTER-001")).toHaveCount(0)
 
-  await dialog.getByPlaceholder("Search by student number or name...").fill("ROSTER-024")
+  await dialog
+    .getByPlaceholder("Search by student number or name...")
+    .fill("ROSTER-024")
   await expect(dialog.getByText("Page 1 of 1")).toBeVisible()
   await expect(dialog.getByText("ROSTER-024")).toBeVisible()
 })
