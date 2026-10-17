@@ -211,4 +211,6 @@ def test_registration_update_rejects_closed_event(
         json={"registration_status": "registered"},
     )
     assert reactivate_registration.status_code == 400
-    assert reactivate_registration.json()["detail"] == "Cannot register for a closed event"
+    assert (
+        reactivate_registration.json()["detail"] == "Cannot register for a closed event"
+    )
