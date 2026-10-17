@@ -215,8 +215,6 @@ def test_registration_update_rejects_closed_event(
         reactivate_registration.json()["detail"] == "Cannot register for a closed event"
     )
 
-
-
 def test_registration_update_rejects_duplicate_event_attendee_pair(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
