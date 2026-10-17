@@ -303,6 +303,14 @@ def update_attendee_credential(
     )
     target_attendee_id = update_dict.get("attendee_id", credential.attendee_id)
     if target_credential_type == CredentialType.nfc:
+        candidate_value = update_dict.get(
+            "credential_value", credential.credential_value
+        )
+        normalized_value = candidate_value.strip().upper() if candidate_value else ""
+        if not normalized_value:
+            raise HTTPException(status_code=422, detail="Card UID is required")
+        update_dict["credential_value"] = normalized_value
+
         existing_nfc = session.exec(
             select(AttendeeCredential).where(
                 AttendeeCredential.attendee_id == target_attendee_id,
@@ -316,7 +324,18 @@ def update_attendee_credential(
                 detail="This student already has a registered Card UID.",
             )
 
-    if (
+        existing_value = session.exec(
+            select(AttendeeCredential).where(
+                func.upper(AttendeeCredential.credential_value) == normalized_value,
+                col(AttendeeCredential.id) != credential_id,
+            )
+        ).first()
+        if existing_value:
+            raise HTTPException(
+                status_code=400,
+                detail="A credential with this value already exists.",
+            )
+    elif (
         "credential_value" in update_dict
         and update_dict["credential_value"] != credential.credential_value
     ):
