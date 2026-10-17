@@ -549,7 +549,6 @@ def test_creating_active_session_closes_previous_active_session(
     assert previous.json()["status"] == "CLOSED"
 
 
-
 def test_setting_session_active_also_sets_open_status(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
