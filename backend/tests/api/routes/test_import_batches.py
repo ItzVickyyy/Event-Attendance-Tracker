@@ -113,6 +113,49 @@ def test_upload_valid_workbook_creates_staging_records(
     assert detail_response.status_code == 200
 
 
+@pytest.mark.parametrize(
+    "status",
+    [ImportBatchStatus.validated, ImportBatchStatus.promoted],
+)
+def test_upload_rejects_batches_that_have_already_been_processed(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+    status: ImportBatchStatus,
+) -> None:
+    original_summary = {
+        "total_rows": 3,
+        "invalid_rows": 1,
+        "conflict_rows": 0,
+        "summary_reconciliation": {"status": "matched"},
+    }
+    batch = make_import_batch(
+        source_filename="already-processed.xlsx",
+        status=status,
+        validation_summary=original_summary,
+    )
+    xlsx_bytes = _make_xlsx(
+        "BSCS 1A", HEADERS, [[1, "REUPLOAD-1001", "Cruz", "Ana", "Regular"]]
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=superuser_token_headers,
+        files={"file": ("replacement.xlsx", xlsx_bytes)},
+    )
+
+    assert response.status_code == 400
+    assert "already been uploaded or processed" in response.json()["detail"]
+
+    detail = client.get(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}",
+        headers=superuser_token_headers,
+    )
+    assert detail.status_code == 200
+    assert detail.json()["status"] == status.value
+    assert detail.json()["validation_summary"] == original_summary
+
+
 def test_upload_requires_authentication(client: TestClient, make_import_batch) -> None:
     batch = make_import_batch(source_filename="upload_noauth.xlsx")
     xlsx_bytes = _make_xlsx(
@@ -442,8 +485,9 @@ def test_csv_import_validation_and_staging(
     assert response.json()["total_rows"] == 2
     assert response.json()["invalid_rows"] >= 1
 
+    missing_columns_batch = make_import_batch(source_filename="missing-columns.csv")
     missing_columns = client.post(
-        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        f"{settings.API_V1_STR}/import-batches/{missing_columns_batch.id}/upload",
         headers=headers,
         files={
             "file": (
@@ -456,8 +500,9 @@ def test_csv_import_validation_and_staging(
     assert missing_columns.status_code == 400
     assert "Missing required columns" in missing_columns.json()["detail"]
 
+    missing_section_batch = make_import_batch(source_filename="missing-section.csv")
     missing_section = client.post(
-        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        f"{settings.API_V1_STR}/import-batches/{missing_section_batch.id}/upload",
         headers=headers,
         files={
             "file": (
@@ -470,8 +515,9 @@ def test_csv_import_validation_and_staging(
     assert missing_section.status_code == 400
     assert "no Section" in missing_section.json()["detail"]
 
+    invalid_encoding_batch = make_import_batch(source_filename="invalid-encoding.csv")
     invalid_encoding = client.post(
-        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        f"{settings.API_V1_STR}/import-batches/{invalid_encoding_batch.id}/upload",
         headers=headers,
         files={"file": ("invalid-encoding.csv", b"\xff\xfe\xff", "text/csv")},
     )

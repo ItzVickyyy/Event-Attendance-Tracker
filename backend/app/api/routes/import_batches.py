@@ -271,6 +271,15 @@ async def upload_import_batch_workbook(
     if not import_batch:
         raise HTTPException(status_code=404, detail="Import batch not found")
 
+    if import_batch.status != ImportBatchStatus.pending:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This import batch has already been uploaded or processed. "
+                "Create a new import batch to upload another workbook."
+            ),
+        )
+
     filename = file.filename or "student-import"
     extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if extension not in {"xlsx", "csv"}:
