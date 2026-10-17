@@ -130,7 +130,7 @@ Adminer: `https://adminer.your-domain.example.com`
 
 ## Network exposure and proxy considerations
 
-The shared `compose.yml` publishes the database on host port `5433` and the backend directly on host ports `8000` and `8001`, in addition to routing application traffic through Traefik. These bindings can bypass the HTTPS entrypoint and expose PostgreSQL or the backend directly to networks that can reach the host. Before production use, restrict these ports with host firewall rules or change the Compose configuration to bind only to loopback or use internal-only service networking, while preserving any deliberate local-development access.
+The shared `compose.yml` publishes PostgreSQL on host port `5433` and the backend directly on host ports `8000` and `8001` for local development. The production overlay `compose.deploy.yml` removes the published ports from both `db` and `backend`, so production API traffic should enter through Traefik and PostgreSQL should remain on the internal Compose network. Use both Compose files for deployment as shown above. Do not expose the shared development ports on a production host.
 
 The current Traefik deployment overlay configures HTTP-to-HTTPS redirection and Let's Encrypt TLS, but does not define an explicit middleware to sanitize client-supplied `X-Forwarded-For` headers. The public student QR lookup currently trusts the first value in that header for its process-local rate-limit key. Do not assume the application's client-IP rate limiting is trustworthy merely because Traefik is present. Verify the actual proxy chain and configure trusted header handling, and prefer a bounded shared rate limiter before exposing the public lookup at scale.
 

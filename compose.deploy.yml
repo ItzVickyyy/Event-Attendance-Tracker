@@ -33,6 +33,8 @@ services:
 
   db:
     restart: always
+    # Production PostgreSQL must only be reachable on the internal Compose network.
+    ports: !reset []
 
   adminer:
     restart: always
