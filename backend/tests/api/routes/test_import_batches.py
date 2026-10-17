@@ -113,6 +113,49 @@ def test_upload_valid_workbook_creates_staging_records(
     assert detail_response.status_code == 200
 
 
+@pytest.mark.parametrize(
+    "status",
+    [ImportBatchStatus.validated, ImportBatchStatus.promoted],
+)
+def test_upload_rejects_batches_that_have_already_been_processed(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+    status: ImportBatchStatus,
+) -> None:
+    original_summary = {
+        "total_rows": 3,
+        "invalid_rows": 1,
+        "conflict_rows": 0,
+        "summary_reconciliation": {"status": "matched"},
+    }
+    batch = make_import_batch(
+        source_filename="already-processed.xlsx",
+        status=status,
+        validation_summary=original_summary,
+    )
+    xlsx_bytes = _make_xlsx(
+        "BSCS 1A", HEADERS, [[1, "REUPLOAD-1001", "Cruz", "Ana", "Regular"]]
+    )
+
+    response = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=superuser_token_headers,
+        files={"file": ("replacement.xlsx", xlsx_bytes)},
+    )
+
+    assert response.status_code == 400
+    assert "already been uploaded or processed" in response.json()["detail"]
+
+    detail = client.get(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}",
+        headers=superuser_token_headers,
+    )
+    assert detail.status_code == 200
+    assert detail.json()["status"] == status.value
+    assert detail.json()["validation_summary"] == original_summary
+
+
 def test_upload_requires_authentication(client: TestClient, make_import_batch) -> None:
     batch = make_import_batch(source_filename="upload_noauth.xlsx")
     xlsx_bytes = _make_xlsx(
