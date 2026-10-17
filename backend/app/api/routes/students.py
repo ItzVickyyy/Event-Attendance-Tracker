@@ -261,6 +261,15 @@ def update_student(
 
     update_dict = student_in.model_dump(exclude_unset=True)
 
+    if _current_user.role == UserRole.class_representative and {
+        "person_id",
+        "student_number",
+    }.intersection(update_dict):
+        raise HTTPException(
+            status_code=403,
+            detail="Class Representatives cannot change student identity fields",
+        )
+
     if (
         "student_number" in update_dict
         and update_dict["student_number"] != student.student_number
