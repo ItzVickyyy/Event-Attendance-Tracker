@@ -485,8 +485,9 @@ def test_csv_import_validation_and_staging(
     assert response.json()["total_rows"] == 2
     assert response.json()["invalid_rows"] >= 1
 
+    missing_columns_batch = make_import_batch(source_filename="missing-columns.csv")
     missing_columns = client.post(
-        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        f"{settings.API_V1_STR}/import-batches/{missing_columns_batch.id}/upload",
         headers=headers,
         files={
             "file": (
@@ -499,8 +500,9 @@ def test_csv_import_validation_and_staging(
     assert missing_columns.status_code == 400
     assert "Missing required columns" in missing_columns.json()["detail"]
 
+    missing_section_batch = make_import_batch(source_filename="missing-section.csv")
     missing_section = client.post(
-        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        f"{settings.API_V1_STR}/import-batches/{missing_section_batch.id}/upload",
         headers=headers,
         files={
             "file": (
@@ -513,8 +515,9 @@ def test_csv_import_validation_and_staging(
     assert missing_section.status_code == 400
     assert "no Section" in missing_section.json()["detail"]
 
+    invalid_encoding_batch = make_import_batch(source_filename="invalid-encoding.csv")
     invalid_encoding = client.post(
-        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        f"{settings.API_V1_STR}/import-batches/{invalid_encoding_batch.id}/upload",
         headers=headers,
         files={"file": ("invalid-encoding.csv", b"\xff\xfe\xff", "text/csv")},
     )
