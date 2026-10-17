@@ -109,6 +109,7 @@ def test_event_reverting_to_draft_deactivates_attendance_session(
     assert after.json()["data"][0]["status"] == "SCHEDULED"
     assert after.json()["data"][0]["is_active"] is False
 
+
 def test_event_closed_to_draft_resets_non_cancelled_sessions(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
@@ -162,7 +163,9 @@ def test_event_closed_to_draft_resets_non_cancelled_sessions(
     )
     assert after_close.status_code == 200
     sessions_after_close = after_close.json()["data"]
-    assert all(row["status"] in {"CLOSED", "CANCELLED"} for row in sessions_after_close)
+    assert all(
+        row["status"] in {"CLOSED", "CANCELLED"} for row in sessions_after_close
+    )
     assert all(row["is_active"] is False for row in sessions_after_close)
     assert next(
         row for row in sessions_after_close if row["id"] == scheduled_session_id
