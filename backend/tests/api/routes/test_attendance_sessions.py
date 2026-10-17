@@ -734,3 +734,47 @@ def test_active_session_cannot_be_patched_to_non_open_status(
     assert unchanged.status_code == 200
     assert unchanged.json()["is_active"] is False
     assert unchanged.json()["status"] == "SCHEDULED"
+
+
+
+def test_setting_active_session_to_scheduled_deactivates_it(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Deactivate Scheduled {random_lower_string()[:6]}",
+            "event_date": "2026-10-17",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    sessions = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
+        headers=headers,
+    )
+    assert sessions.status_code == 200
+    active_session = sessions.json()["data"][0]
+    assert active_session["is_active"] is True
+    assert active_session["status"] == "OPEN"
+
+    updated = client.patch(
+        f"{settings.API_V1_STR}/attendance-sessions/{active_session['id']}",
+        headers=headers,
+        json={"status": "SCHEDULED"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["status"] == "SCHEDULED"
+    assert updated.json()["is_active"] is False
+
+    active_lookup = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/active/{event_id}",
+        headers=headers,
+    )
+    assert active_lookup.status_code == 404
+    assert active_lookup.json()["detail"] == "No active attendance session"
