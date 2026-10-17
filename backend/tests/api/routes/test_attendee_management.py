@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
 from app.core.config import settings
 from app.models import UserRole
@@ -265,7 +266,7 @@ def test_attendee_relationship_create_requires_existing_attendee_and_student(
 
 def test_attendee_relationship_reads_require_admin_role(
     client: TestClient,
-    db,
+    db: Session,
     superuser_token_headers: dict[str, str],
 ) -> None:
     admin_headers = superuser_token_headers
@@ -297,7 +298,10 @@ def test_attendee_relationship_reads_require_admin_role(
         == 403
     )
 
-    assert client.get(_api("/attendee-relationships/"), headers=admin_headers).status_code == 200
+    assert (
+        client.get(_api("/attendee-relationships/"), headers=admin_headers).status_code
+        == 200
+    
     assert (
         client.get(
             _api(f"/attendee-relationships/{relationship_id}"), headers=admin_headers
