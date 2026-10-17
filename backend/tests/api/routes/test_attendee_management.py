@@ -403,6 +403,14 @@ def test_attendee_credential_management_and_public_lookup(
     assert updated.status_code == 200
     assert updated.json()["credential_value"] == changed_value
     assert updated.json()["is_active"] is True
+
+    blank_uid = client.patch(
+        _api(f"/attendee-credentials/{credential_id}"),
+        headers=headers,
+        json={"credential_value": "  "},
+    )
+    assert blank_uid.status_code == 422
+    assert blank_uid.json()["detail"] == "Card UID is required"
     assert (
         client.get(
             _api(f"/attendee-credentials/public/{changed_value}"), headers=headers
