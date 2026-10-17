@@ -214,6 +214,28 @@ def update_import_batch(
 
     update_dict = import_batch_in.model_dump(exclude_unset=True)
 
+    if "status" in update_dict or "validation_summary" in update_dict:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Import batch status and validation summary are managed by the "
+                "import workflow."
+            ),
+        )
+
+    workflow_fields = {"academic_year", "default_section_id", "semester"}
+    if import_batch.status in {
+        ImportBatchStatus.validated,
+        ImportBatchStatus.promoted,
+    } and workflow_fields.intersection(update_dict):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Import settings cannot be changed after validation. Create a "
+                "new import batch and upload the workbook again."
+            ),
+        )
+
     import_batch.sqlmodel_update(update_dict)
     import_batch.updated_at = get_datetime_utc()
     session.add(import_batch)
