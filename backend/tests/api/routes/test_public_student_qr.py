@@ -207,9 +207,10 @@ def test_public_qr_lookup_returns_credential_for_normalized_identity(
 
 
 def test_public_qr_lookup_rejects_identity_mismatch_and_rate_limits(
-    client: TestClient,
+    client: TestClient, monkeypatch
 ) -> None:
     public_student_qr._attempts.clear()
+    monkeypatch.setattr(public_student_qr, "MAX_ATTEMPTS", 2)
     payload = {
         "student_number": "UNKNOWN-QR-MISMATCH",
         "first_name": "Wrong",
@@ -218,14 +219,15 @@ def test_public_qr_lookup_rejects_identity_mismatch_and_rate_limits(
     for attempt in range(public_student_qr.MAX_ATTEMPTS):
         response = client.post(
             f"{settings.API_V1_STR}/public/student-qr",
-            headers={"X-Forwarded-For": "198.51.100.22"},
+            headers={"X-Forwarded-For": f"198.51.100.{22 + attempt}"},
             json=payload,
         )
         assert response.status_code == 404, f"Attempt {attempt + 1}: {response.text}"
 
+    # Changing the caller-controlled forwarded header must not create new buckets.
     limited = client.post(
         f"{settings.API_V1_STR}/public/student-qr",
-        headers={"X-Forwarded-For": "198.51.100.22"},
+        headers={"X-Forwarded-For": "203.0.113.250"},
         json=payload,
     )
     assert limited.status_code == 429
