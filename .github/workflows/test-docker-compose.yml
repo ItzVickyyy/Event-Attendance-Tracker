@@ -35,9 +35,12 @@ jobs:
           import json
           from pathlib import Path
 
-          services = json.loads(Path('/tmp/deploy-compose.json').read_text())['services']
+          config = json.loads(Path('/tmp/deploy-compose.json').read_text())
+          services = config['services']
           for name in ('db', 'backend'):
-              assert not services[name].get('ports'), f'{name} must not publish host ports in production'
+              assert not services[name].get('ports'), (
+                  f'{name} must not publish host ports in production'
+              )
           PY
       - run: docker compose build
       - run: docker compose down -v --remove-orphans
