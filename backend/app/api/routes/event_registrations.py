@@ -140,10 +140,20 @@ def update_event_registration(
         raise HTTPException(status_code=404, detail="Event registration not found")
 
     update_dict = registration_in.model_dump(exclude_unset=True)
-    if "event_id" in update_dict and update_dict["event_id"] != registration.event_id:
-        event = session.get(Event, update_dict["event_id"])
+    target_event_id = update_dict.get("event_id", registration.event_id)
+    changing_event = target_event_id != registration.event_id
+    reactivating_registration = (
+        update_dict.get("registration_status") == RegistrationStatus.registered
+    )
+    if changing_event or reactivating_registration:
+        event = session.get(Event, target_event_id)
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
+        if event.status == EventStatus.closed:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot register for a closed event",
+            )
     if (
         "attendee_id" in update_dict
         and update_dict["attendee_id"] != registration.attendee_id
