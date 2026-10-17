@@ -299,9 +299,11 @@ def test_attendee_relationship_reads_require_admin_role(
     )
 
     assert (
-        client.get(_api("/attendee-relationships/"), headers=admin_headers).status_code
+        client.get(
+            _api("/attendee-relationships/"), headers=admin_headers
+        ).status_code
         == 200
-    
+    )
     assert (
         client.get(
             _api(f"/attendee-relationships/{relationship_id}"), headers=admin_headers
