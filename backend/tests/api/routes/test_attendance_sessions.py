@@ -735,6 +735,7 @@ def test_active_session_cannot_be_patched_to_non_open_status(
     assert unchanged.json()["is_active"] is False
     assert unchanged.json()["status"] == "SCHEDULED"
 
+
 def test_setting_active_session_to_scheduled_deactivates_it(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
