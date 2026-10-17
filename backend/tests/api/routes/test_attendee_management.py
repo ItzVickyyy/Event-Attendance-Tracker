@@ -1,8 +1,11 @@
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
 from app.core.config import settings
+from app.models import UserRole
+from tests.utils.user import get_token_headers_for_role
 from tests.utils.utils import random_email, random_lower_string
 
 
@@ -258,6 +261,54 @@ def test_attendee_relationship_create_requires_existing_attendee_and_student(
             },
         ).status_code
         == 404
+    )
+
+
+def test_attendee_relationship_reads_require_admin_role(
+    client: TestClient,
+    db: Session,
+    superuser_token_headers: dict[str, str],
+) -> None:
+    admin_headers = superuser_token_headers
+    attendee = _attendee(client, admin_headers)
+    student = _student(client, admin_headers)
+    created = client.post(
+        _api("/attendee-relationships/"),
+        headers=admin_headers,
+        json={
+            "attendee_id": attendee["id"],
+            "related_student_id": student["id"],
+            "relationship_type": "guardian",
+        },
+    )
+    assert created.status_code == 200
+    relationship_id = created.json()["id"]
+
+    student_headers = get_token_headers_for_role(
+        client=client, db=db, role=UserRole.student
+    )
+    assert (
+        client.get(
+            _api("/attendee-relationships/"), headers=student_headers
+        ).status_code
+        == 403
+    )
+    assert (
+        client.get(
+            _api(f"/attendee-relationships/{relationship_id}"), headers=student_headers
+        ).status_code
+        == 403
+    )
+
+    assert (
+        client.get(_api("/attendee-relationships/"), headers=admin_headers).status_code
+        == 200
+    )
+    assert (
+        client.get(
+            _api(f"/attendee-relationships/{relationship_id}"), headers=admin_headers
+        ).status_code
+        == 200
     )
 
 

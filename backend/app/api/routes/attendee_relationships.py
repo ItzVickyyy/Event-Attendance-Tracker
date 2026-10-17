@@ -19,7 +19,11 @@ from app.models import (
 router = APIRouter(prefix="/attendee-relationships", tags=["attendee-relationships"])
 
 
-@router.get("/", response_model=AttendeeRelationshipsPublic)
+@router.get(
+    "/",
+    response_model=AttendeeRelationshipsPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_attendee_relationships(
     session: SessionDep,
     _current_user: CurrentUser,
@@ -98,7 +102,11 @@ def create_attendee_relationship(
     return relationship
 
 
-@router.get("/{relationship_id}", response_model=AttendeeRelationshipPublic)
+@router.get(
+    "/{relationship_id}",
+    response_model=AttendeeRelationshipPublic,
+    dependencies=[Depends(require_admin)],
+)
 def read_attendee_relationship(
     session: SessionDep, _current_user: CurrentUser, relationship_id: uuid.UUID
 ) -> Any:
@@ -146,12 +154,6 @@ def update_attendee_relationship(
 def delete_attendee_relationship(
     session: SessionDep, _current_user: CurrentUser, relationship_id: uuid.UUID
 ) -> dict[str, str]:
-    relationship = session.get(AttendeeRelationship, relationship_id)
-    if not relationship:
-        raise HTTPException(status_code=404, detail="Attendee relationship not found")
-    session.delete(relationship)
-    session.commit()
-    return {"message": "Attendee relationship deleted successfully"}
     relationship = session.get(AttendeeRelationship, relationship_id)
     if not relationship:
         raise HTTPException(status_code=404, detail="Attendee relationship not found")
