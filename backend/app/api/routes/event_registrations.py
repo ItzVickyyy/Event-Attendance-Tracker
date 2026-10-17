@@ -154,13 +154,25 @@ def update_event_registration(
                 status_code=400,
                 detail="Cannot register for a closed event",
             )
-    if (
-        "attendee_id" in update_dict
-        and update_dict["attendee_id"] != registration.attendee_id
-    ):
-        attendee = session.get(Attendee, update_dict["attendee_id"])
+    target_attendee_id = update_dict.get("attendee_id", registration.attendee_id)
+    if "attendee_id" in update_dict and target_attendee_id != registration.attendee_id:
+        attendee = session.get(Attendee, target_attendee_id)
         if not attendee:
             raise HTTPException(status_code=404, detail="Attendee not found")
+
+    if changing_event or target_attendee_id != registration.attendee_id:
+        duplicate = session.exec(
+            select(EventRegistration).where(
+                col(EventRegistration.event_id) == target_event_id,
+                col(EventRegistration.attendee_id) == target_attendee_id,
+                col(EventRegistration.id) != registration.id,
+            )
+        ).first()
+        if duplicate:
+            raise HTTPException(
+                status_code=400,
+                detail="Attendee is already registered for this event.",
+            )
 
     registration.sqlmodel_update(update_dict)
     registration.updated_at = get_datetime_utc()
