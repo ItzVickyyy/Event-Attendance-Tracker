@@ -214,3 +214,96 @@ def test_registration_update_rejects_closed_event(
     assert (
         reactivate_registration.json()["detail"] == "Cannot register for a closed event"
     )
+
+
+def test_registration_update_rejects_duplicate_event_attendee_pair(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+
+    event_ids = []
+    for label in ("First", "Second"):
+        response = client.post(
+            f"{settings.API_V1_STR}/events/",
+            headers=headers,
+            json={
+                "event_name": f"{label} Duplicate Guard {random_lower_string()[:6]}",
+                "event_date": "2026-10-17",
+                "attendance_mode": "time_in_only",
+                "status": "draft",
+            },
+        )
+        assert response.status_code == 200
+        event_ids.append(response.json()["id"])
+    first_event_id, second_event_id = event_ids
+
+    attendee_ids = []
+    for label in ("One", "Two"):
+        person_response = client.post(
+            f"{settings.API_V1_STR}/people/",
+            headers=headers,
+            json={
+                "first_name": label,
+                "last_name": "DuplicateGuard",
+                "email": random_email(),
+            },
+        )
+        assert person_response.status_code == 200
+        attendee_response = client.post(
+            f"{settings.API_V1_STR}/attendees/",
+            headers=headers,
+            json={
+                "person_id": person_response.json()["id"],
+                "attendee_type": "guest",
+            },
+        )
+        assert attendee_response.status_code == 200
+        attendee_ids.append(attendee_response.json()["id"])
+    first_attendee_id, second_attendee_id = attendee_ids
+
+    def create_registration(event_id: str, attendee_id: str) -> str:
+        response = client.post(
+            f"{settings.API_V1_STR}/event-registrations/",
+            headers=headers,
+            json={
+                "event_id": event_id,
+                "attendee_id": attendee_id,
+                "registration_status": "registered",
+            },
+        )
+        assert response.status_code == 200, response.text
+        return response.json()["id"]
+
+    target_registration_id = create_registration(first_event_id, first_attendee_id)
+    create_registration(first_event_id, second_attendee_id)
+    create_registration(second_event_id, first_attendee_id)
+
+    move_to_duplicate_event = client.patch(
+        f"{settings.API_V1_STR}/event-registrations/{target_registration_id}",
+        headers=headers,
+        json={"event_id": second_event_id},
+    )
+    assert move_to_duplicate_event.status_code == 400
+    assert (
+        move_to_duplicate_event.json()["detail"]
+        == "Attendee is already registered for this event."
+    )
+
+    change_to_duplicate_attendee = client.patch(
+        f"{settings.API_V1_STR}/event-registrations/{target_registration_id}",
+        headers=headers,
+        json={"attendee_id": second_attendee_id},
+    )
+    assert change_to_duplicate_attendee.status_code == 400
+    assert (
+        change_to_duplicate_attendee.json()["detail"]
+        == "Attendee is already registered for this event."
+    )
+
+    unchanged = client.get(
+        f"{settings.API_V1_STR}/event-registrations/{target_registration_id}",
+        headers=headers,
+    )
+    assert unchanged.status_code == 200
+    assert unchanged.json()["event_id"] == first_event_id
+    assert unchanged.json()["attendee_id"] == first_attendee_id
