@@ -809,6 +809,7 @@ def test_class_representative_can_register_student_card_uid(
     )
     assert forbidden.status_code == 403
 
+
 def test_class_representative_cannot_include_archived_section_students(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
