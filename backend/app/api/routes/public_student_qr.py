@@ -17,8 +17,11 @@ from app.api.deps import SessionDep
 
 router = APIRouter(prefix="/public/student-qr", tags=["public-student-qr"])
 
+# The edge proxy enforces the strict per-client limit in deployment.
+# This fallback uses the transport peer and a higher threshold to avoid trusting
+# caller-supplied X-Forwarded-For values or globally throttling proxy traffic.
 WINDOW_SECONDS = 60
-MAX_ATTEMPTS = 12
+MAX_ATTEMPTS = 600
 MAX_TRACKED_CLIENTS = 10_000
 _attempts: dict[str, list[float]] = defaultdict(list)
 
@@ -75,10 +78,7 @@ def lookup_student_qr(
     request: Request,
 ) -> dict[str, Any]:
     """Verify a student's identity and return their stable QR credential."""
-    forwarded = request.headers.get("x-forwarded-for")
-    client_key = (forwarded.split(",")[0].strip() if forwarded else None) or (
-        request.client.host if request.client else "unknown"
-    )
+    client_key = request.client.host if request.client else "unknown"
     if not _allow_request(client_key):
         raise HTTPException(
             status_code=429, detail="Too many attempts. Please try again later."
