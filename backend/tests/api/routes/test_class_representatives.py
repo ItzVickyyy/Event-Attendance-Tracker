@@ -838,9 +838,7 @@ def test_class_representative_cannot_include_archived_section_students(
 def test_class_representative_cannot_change_student_identity_fields(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
-    representative, _, _ = _create_representative(
-        client, superuser_token_headers
-    )
+    representative, _, _ = _create_representative(client, superuser_token_headers)
     headers = _representative_headers(client, representative["email"])
     created = client.post(
         _api("/class-representatives/me/students"),
