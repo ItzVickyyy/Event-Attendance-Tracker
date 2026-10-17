@@ -833,3 +833,43 @@ def test_class_representative_cannot_include_archived_section_students(
         archived_roster.json()["detail"]
         == "Archived student records are restricted to administrators"
     )
+
+
+def test_class_representative_cannot_change_student_identity_fields(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, _, _ = _create_representative(client, superuser_token_headers)
+    headers = _representative_headers(client, representative["email"])
+    created = client.post(
+        _api("/class-representatives/me/students"),
+        headers=headers,
+        json={
+            "student_number": f"IDENTITY-{random_lower_string()[:10].upper()}",
+            "first_name": "Identity",
+            "last_name": "Protected",
+        },
+    )
+    assert created.status_code == 200
+    student_id = created.json()["id"]
+
+    number_update = client.patch(
+        _api(f"/students/{student_id}"),
+        headers=headers,
+        json={"student_number": "CHANGED-BY-REP"},
+    )
+    assert number_update.status_code == 403
+    assert (
+        number_update.json()["detail"]
+        == "Class Representatives cannot change student identity fields"
+    )
+
+    person_update = client.patch(
+        _api(f"/students/{student_id}"),
+        headers=headers,
+        json={"person_id": str(uuid4())},
+    )
+    assert person_update.status_code == 403
+    assert (
+        person_update.json()["detail"]
+        == "Class Representatives cannot change student identity fields"
+    )
