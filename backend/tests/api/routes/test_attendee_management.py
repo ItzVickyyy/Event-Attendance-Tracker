@@ -398,10 +398,19 @@ def test_attendee_credential_management_and_public_lookup(
     updated = client.patch(
         _api(f"/attendee-credentials/{credential_id}"),
         headers=headers,
-        json={"credential_value": changed_value},
+        json={"credential_value": f"  {changed_value.lower()}  "},
     )
     assert updated.status_code == 200
+    assert updated.json()["credential_value"] == changed_value
     assert updated.json()["is_active"] is True
+
+    blank_uid = client.patch(
+        _api(f"/attendee-credentials/{credential_id}"),
+        headers=headers,
+        json={"credential_value": "  "},
+    )
+    assert blank_uid.status_code == 422
+    assert blank_uid.json()["detail"] == "Card UID is required"
     assert (
         client.get(
             _api(f"/attendee-credentials/public/{changed_value}"), headers=headers
@@ -490,7 +499,7 @@ def test_credential_creation_and_update_reject_missing_or_duplicate_values(
     conflict = client.patch(
         _api(f"/attendee-credentials/{other.json()['id']}"),
         headers=headers,
-        json={"credential_value": value},
+        json={"credential_value": value.lower()},
     )
     assert conflict.status_code == 400
 
