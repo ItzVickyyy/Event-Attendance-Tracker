@@ -65,6 +65,7 @@ def test_event_crud(
     )
     assert del_res.status_code == 200
 
+
 def test_event_reverting_to_draft_deactivates_attendance_session(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
