@@ -183,7 +183,12 @@ def update_event(
                 next_session.status = AttendanceSessionStatus.open
                 next_session.is_active = True
                 next_session.updated_at = get_datetime_utc()
-    elif event.status == EventStatus.closed and previous_status != EventStatus.closed:
+    elif event.status != EventStatus.open and previous_status != event.status:
+        inactive_status = (
+            AttendanceSessionStatus.closed
+            if event.status == EventStatus.closed
+            else AttendanceSessionStatus.scheduled
+        )
         active_sessions = session.exec(
             select(AttendanceSession).where(
                 col(AttendanceSession.event_id) == event.id,
@@ -191,7 +196,7 @@ def update_event(
             )
         ).all()
         for active in active_sessions:
-            active.status = AttendanceSessionStatus.closed
+            active.status = inactive_status
             active.is_active = False
             active.updated_at = get_datetime_utc()
     session.commit()
