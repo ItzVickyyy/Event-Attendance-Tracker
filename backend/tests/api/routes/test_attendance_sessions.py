@@ -560,7 +560,7 @@ def test_creating_open_session_activates_it_only_for_open_event(
             "event_name": f"Scheduled Session {random_lower_string()[:6]}",
             "event_date": "2026-10-17",
             "attendance_mode": "time_in_only",
-            "status": "scheduled",
+            "status": "draft",
         },
     )
     assert scheduled_event.status_code == 200
