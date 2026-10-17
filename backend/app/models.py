@@ -990,6 +990,7 @@ class AttendanceSessionUpdate(SQLModel):
     late_cutoff: str | None = Field(default=None, max_length=10)
     status: AttendanceSessionStatus | None = None
     display_order: int | None = None
+    is_active: bool | None = None
 
 
 class AttendanceSession(AttendanceSessionBase, table=True):
