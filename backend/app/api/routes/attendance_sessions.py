@@ -106,6 +106,14 @@ def create_attendance_session(
         )
     if session_in.is_active and session_in.status != AttendanceSessionStatus.open:
         raise HTTPException(status_code=400, detail="An active session must be open")
+    if session_in.status == AttendanceSessionStatus.open:
+        if event.status != EventStatus.open:
+            raise HTTPException(
+                status_code=400,
+                detail="Event must be open before a session can be activated",
+            )
+        # Keep the active flag and status aligned for newly created sessions.
+        session_in.is_active = True
     if session_in.is_active:
         active_sessions = session.exec(
             select(AttendanceSession).where(
