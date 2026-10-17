@@ -98,6 +98,8 @@ export function StudentCredentialsDialog({
   const {
     data: credentialsResponse,
     isLoading: isLoadingCreds,
+    isError: credentialsError,
+    isFetching: isFetchingCreds,
     refetch,
   } = useQuery({
     queryKey: attendeeCredentialsQueryKey(attendeeId),
@@ -106,10 +108,12 @@ export function StudentCredentialsDialog({
       const res =
         await AttendeeCredentialsService.credentialsReadAttendeeCredentials({
           query: { attendee_id: attendeeId, limit: 100 },
+          throwOnError: true,
         })
       return res.data
     },
     enabled: !!attendeeId && open,
+    retry: false,
   })
 
   const credentials: AttendeeCredentialPublic[] =
@@ -280,6 +284,28 @@ export function StudentCredentialsDialog({
             {attendeeError instanceof Error
               ? attendeeError.message
               : "Unable to resolve this student’s attendee record."}
+          </div>
+        ) : credentialsError ? (
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/5 p-4"
+          >
+            <p className="text-sm font-medium text-destructive">
+              Unable to load credentials.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We could not check whether this student already has a registered
+              Card UID. Retry before making changes.
+            </p>
+            <Button
+              className="mt-3"
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              disabled={isFetchingCreds}
+            >
+              {isFetchingCreds ? "Retrying…" : "Retry credentials"}
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-6 py-2">

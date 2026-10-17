@@ -209,3 +209,178 @@ test("section roster paginates students and resets the page when filtering", asy
   await expect(dialog.getByText("Page 1 of 1")).toBeVisible()
   await expect(dialog.getByText("ROSTER-024").first()).toBeVisible()
 })
+
+test("credential dialog retries failed credential lookup without claiming no card is registered", async ({
+  page,
+}) => {
+  const sectionId = "550e8400-e29b-41d4-a716-446655440020"
+  const yearId = "550e8400-e29b-41d4-a716-446655440021"
+  const studentId = "650e8400-e29b-41d4-a716-446655440020"
+  const personId = "750e8400-e29b-41d4-a716-446655440020"
+  const attendeeId = "850e8400-e29b-41d4-a716-446655440020"
+  let credentialAttempts = 0
+
+  await page.route("**/api/v1/academic-registry/**", async (route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith("/academic-years")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: [
+            {
+              id: yearId,
+              academic_year: "2026-2027",
+              is_current: true,
+            },
+          ],
+        }),
+      })
+      return
+    }
+    if (url.pathname.endsWith(`/sections/${sectionId}/students`)) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: [
+            {
+              id: studentId,
+              person_id: personId,
+              attendee_id: attendeeId,
+              student_number: "CRED-001",
+              first_name: "Credential",
+              last_name: "Test",
+              middle_name: null,
+              extension: null,
+              student_status: "regular",
+            },
+          ],
+          count: 1,
+        }),
+      })
+      return
+    }
+    if (url.pathname.endsWith(`/students/${studentId}`)) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: studentId,
+          person_id: personId,
+          attendee_id: attendeeId,
+          student_number: "CRED-001",
+          first_name: "Credential",
+          middle_name: "",
+          last_name: "Test",
+          extension: "",
+          student_status: "regular",
+          nfc_registered: false,
+          qr_registered: false,
+        }),
+      })
+      return
+    }
+    if (url.pathname.endsWith("/sections")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: [
+            {
+              id: sectionId,
+              program_id: "950e8400-e29b-41d4-a716-446655440020",
+              program_code: "BSIT",
+              major_code: "WMAD",
+              section_code: "3A",
+              year_level: "3rd Year",
+              academic_year_id: yearId,
+              academic_year: "2026-2027",
+              enrolled: 1,
+            },
+          ],
+          count: 1,
+        }),
+      })
+      return
+    }
+    await route.continue()
+  })
+  await page.route("**/api/v1/academic-programs**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [
+          {
+            id: "950e8400-e29b-41d4-a716-446655440020",
+            program_code: "BSIT",
+            program_name: "Bachelor of Science in Information Technology",
+          },
+        ],
+        count: 1,
+      }),
+    })
+  })
+  await page.route("**/api/v1/attendees**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [{ id: attendeeId, person_id: personId }],
+        count: 1,
+      }),
+    })
+  })
+  await page.route("**/api/v1/attendee-credentials**", async (route) => {
+    credentialAttempts += 1
+    if (credentialAttempts === 1) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          detail: "Temporary credential service failure",
+        }),
+      })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [], count: 0 }),
+    })
+  })
+
+  await page.goto("/sections")
+  await page.getByTitle("Students").first().click()
+  const rosterDialog = page.getByRole("dialog").last()
+  await rosterDialog.getByTitle("Edit student").first().click()
+  await expect(
+    page
+      .getByRole("dialog")
+      .last()
+      .getByText("Credentials", { exact: true })
+      .first(),
+  ).toBeVisible()
+  await page.getByRole("button", { name: "Credentials", exact: true }).click()
+
+  await expect(
+    page.getByRole("dialog").last().getByText("Manage Credentials"),
+  ).toBeVisible()
+  await expect.poll(() => credentialAttempts).toBe(1)
+  const credentialsDialog = page.getByRole("dialog").last()
+  await expect(
+    page.getByText("Unable to load credentials.", { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText("No Card UID registered yet.", { exact: false }),
+  ).toHaveCount(0)
+
+  await credentialsDialog
+    .getByRole("button", { name: "Retry credentials" })
+    .click()
+  await expect(
+    credentialsDialog.getByText("No Card UID registered yet."),
+  ).toBeVisible()
+  expect(credentialAttempts).toBe(2)
+})
