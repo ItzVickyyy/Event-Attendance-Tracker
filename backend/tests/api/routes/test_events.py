@@ -108,3 +108,93 @@ def test_event_reverting_to_draft_deactivates_attendance_session(
     assert len(after.json()["data"]) == 1
     assert after.json()["data"][0]["status"] == "SCHEDULED"
     assert after.json()["data"][0]["is_active"] is False
+
+
+def test_event_closed_to_draft_resets_non_cancelled_sessions(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Reopened Draft {random_lower_string()[:6]}",
+            "event_date": "2026-10-18",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert event.status_code == 200
+    event_id = event.json()["id"]
+
+    created_session = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": event_id,
+            "session_date": "2026-10-18",
+            "name": "Additional Scheduled Session",
+            "session_type": "TIME_IN",
+            "status": "SCHEDULED",
+            "display_order": 1,
+            "is_active": False,
+        },
+    )
+    assert created_session.status_code == 200
+    scheduled_session_id = created_session.json()["id"]
+
+    cancelled_session = client.patch(
+        f"{settings.API_V1_STR}/attendance-sessions/{scheduled_session_id}",
+        headers=headers,
+        json={"status": "CANCELLED"},
+    )
+    assert cancelled_session.status_code == 200
+
+    closed = client.patch(
+        f"{settings.API_V1_STR}/events/{event_id}",
+        headers=headers,
+        json={"status": "closed"},
+    )
+    assert closed.status_code == 200
+
+    after_close = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
+        headers=headers,
+    )
+    assert after_close.status_code == 200
+    sessions_after_close = after_close.json()["data"]
+    assert all(row["status"] in {"CLOSED", "CANCELLED"} for row in sessions_after_close)
+    assert all(row["is_active"] is False for row in sessions_after_close)
+    assert (
+        next(row for row in sessions_after_close if row["id"] == scheduled_session_id)[
+            "status"
+        ]
+        == "CANCELLED"
+    )
+
+    drafted = client.patch(
+        f"{settings.API_V1_STR}/events/{event_id}",
+        headers=headers,
+        json={"status": "draft"},
+    )
+    assert drafted.status_code == 200
+
+    after_draft = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/?event_id={event_id}",
+        headers=headers,
+    )
+    assert after_draft.status_code == 200
+    sessions_after_draft = after_draft.json()["data"]
+    assert all(row["is_active"] is False for row in sessions_after_draft)
+    assert (
+        next(row for row in sessions_after_draft if row["id"] != scheduled_session_id)[
+            "status"
+        ]
+        == "SCHEDULED"
+    )
+    assert (
+        next(row for row in sessions_after_draft if row["id"] == scheduled_session_id)[
+            "status"
+        ]
+        == "CANCELLED"
+    )
