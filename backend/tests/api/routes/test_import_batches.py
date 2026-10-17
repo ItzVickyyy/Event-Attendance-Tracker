@@ -318,6 +318,63 @@ def test_import_batch_crud_templates_and_promotion_guards(
     )
 
 
+def test_import_batch_patch_cannot_bypass_workflow_state(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+) -> None:
+    headers = superuser_token_headers
+    batch = make_import_batch(source_filename="workflow-state-guard.xlsx")
+
+    spoofed_promotion = client.patch(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}",
+        headers=headers,
+        json={"status": "promoted"},
+    )
+    assert spoofed_promotion.status_code == 400
+    assert "managed by the import workflow" in spoofed_promotion.json()["detail"]
+
+    spoofed_validation = client.patch(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}",
+        headers=headers,
+        json={
+            "validation_summary": {
+                "invalid_rows": 0,
+                "conflict_rows": 0,
+                "summary_reconciliation": {"status": "matched"},
+            }
+        },
+    )
+    assert spoofed_validation.status_code == 400
+
+    detail = client.get(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}", headers=headers
+    )
+    assert detail.status_code == 200
+    assert detail.json()["status"] == ImportBatchStatus.pending.value
+    assert detail.json()["validation_summary"] is None
+
+    validated_batch = make_import_batch(
+        source_filename="workflow-settings-guard.xlsx",
+        status=ImportBatchStatus.validated,
+        validation_summary={"invalid_rows": 0, "conflict_rows": 0},
+    )
+    changed_settings = client.patch(
+        f"{settings.API_V1_STR}/import-batches/{validated_batch.id}",
+        headers=headers,
+        json={"academic_year": "2027-2028"},
+    )
+    assert changed_settings.status_code == 400
+    assert "cannot be changed after validation" in changed_settings.json()["detail"]
+
+    validated_detail = client.get(
+        f"{settings.API_V1_STR}/import-batches/{validated_batch.id}", headers=headers
+    )
+    assert validated_detail.status_code == 200
+    assert validated_detail.json()["academic_year"] == "2026-2027"
+    assert validated_detail.json()["status"] == ImportBatchStatus.validated.value
+
+
 def test_import_batch_creation_and_upload_reject_invalid_files(
     client: TestClient,
     superuser_token_headers: dict[str, str],
