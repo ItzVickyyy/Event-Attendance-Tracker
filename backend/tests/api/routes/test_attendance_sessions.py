@@ -549,6 +549,77 @@ def test_creating_active_session_closes_previous_active_session(
     assert previous.json()["status"] == "CLOSED"
 
 
+def test_creating_open_session_activates_it_only_for_open_event(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    headers = superuser_token_headers
+    scheduled_event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Scheduled Session {random_lower_string()[:6]}",
+            "event_date": "2026-10-17",
+            "attendance_mode": "time_in_only",
+            "status": "draft",
+        },
+    )
+    assert scheduled_event.status_code == 200
+    scheduled_id = scheduled_event.json()["id"]
+
+    rejected = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": scheduled_id,
+            "name": "Premature Open Session",
+            "session_date": "2026-10-17",
+            "session_type": "TIME_IN",
+            "status": "OPEN",
+            "is_active": False,
+        },
+    )
+    assert rejected.status_code == 400
+    assert rejected.json()["detail"] == (
+        "Event must be open before a session can be activated"
+    )
+
+    open_event = client.post(
+        f"{settings.API_V1_STR}/events/",
+        headers=headers,
+        json={
+            "event_name": f"Open Session {random_lower_string()[:6]}",
+            "event_date": "2026-10-17",
+            "attendance_mode": "time_in_only",
+            "status": "open",
+        },
+    )
+    assert open_event.status_code == 200
+    open_event_id = open_event.json()["id"]
+
+    created = client.post(
+        f"{settings.API_V1_STR}/attendance-sessions/",
+        headers=headers,
+        json={
+            "event_id": open_event_id,
+            "name": "New Open Session",
+            "session_date": "2026-10-17",
+            "session_type": "TIME_IN",
+            "status": "OPEN",
+            "is_active": False,
+        },
+    )
+    assert created.status_code == 200
+    assert created.json()["status"] == "OPEN"
+    assert created.json()["is_active"] is True
+
+    active = client.get(
+        f"{settings.API_V1_STR}/attendance-sessions/active/{open_event_id}",
+        headers=headers,
+    )
+    assert active.status_code == 200
+    assert active.json()["id"] == created.json()["id"]
+
+
 def test_setting_session_active_also_sets_open_status(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
