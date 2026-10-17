@@ -670,6 +670,10 @@ export type AttendanceSessionUpdate = {
      * Display Order
      */
     display_order?: number | null;
+    /**
+     * Is Active
+     */
+    is_active?: boolean | null;
 };
 
 /**
