@@ -163,13 +163,14 @@ def test_event_closed_to_draft_resets_non_cancelled_sessions(
     )
     assert after_close.status_code == 200
     sessions_after_close = after_close.json()["data"]
-    assert all(
-        row["status"] in {"CLOSED", "CANCELLED"} for row in sessions_after_close
-    )
+    assert all(row["status"] in {"CLOSED", "CANCELLED"} for row in sessions_after_close)
     assert all(row["is_active"] is False for row in sessions_after_close)
-    assert next(
-        row for row in sessions_after_close if row["id"] == scheduled_session_id
-    )["status"] == "CANCELLED"
+    assert (
+        next(row for row in sessions_after_close if row["id"] == scheduled_session_id)[
+            "status"
+        ]
+        == "CANCELLED"
+    )
 
     drafted = client.patch(
         f"{settings.API_V1_STR}/events/{event_id}",
@@ -185,9 +186,15 @@ def test_event_closed_to_draft_resets_non_cancelled_sessions(
     assert after_draft.status_code == 200
     sessions_after_draft = after_draft.json()["data"]
     assert all(row["is_active"] is False for row in sessions_after_draft)
-    assert next(
-        row for row in sessions_after_draft if row["id"] != scheduled_session_id
-    )["status"] == "SCHEDULED"
-    assert next(
-        row for row in sessions_after_draft if row["id"] == scheduled_session_id
-    )["status"] == "CANCELLED"
+    assert (
+        next(row for row in sessions_after_draft if row["id"] != scheduled_session_id)[
+            "status"
+        ]
+        == "SCHEDULED"
+    )
+    assert (
+        next(row for row in sessions_after_draft if row["id"] == scheduled_session_id)[
+            "status"
+        ]
+        == "CANCELLED"
+    )
