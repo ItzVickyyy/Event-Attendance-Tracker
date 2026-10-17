@@ -156,6 +156,15 @@ def update_attendance_session(
     if not record:
         raise HTTPException(status_code=404, detail="Attendance session not found")
     update_dict = session_in.model_dump(exclude_unset=True)
+    if update_dict.get("is_active") is True:
+        if (
+            "status" in update_dict
+            and update_dict["status"] != AttendanceSessionStatus.open
+        ):
+            raise HTTPException(
+                status_code=400, detail="An active session must be open"
+            )
+        update_dict["status"] = AttendanceSessionStatus.open
     if update_dict.get("status") == AttendanceSessionStatus.open:
         update_dict["is_active"] = True
     if update_dict.get("status") in (
