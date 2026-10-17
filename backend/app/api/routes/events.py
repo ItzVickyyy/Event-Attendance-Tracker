@@ -189,16 +189,17 @@ def update_event(
             if event.status == EventStatus.closed
             else AttendanceSessionStatus.scheduled
         )
-        active_sessions = session.exec(
+        event_sessions = session.exec(
             select(AttendanceSession).where(
                 col(AttendanceSession.event_id) == event.id,
-                col(AttendanceSession.is_active).is_(True),
             )
         ).all()
-        for active in active_sessions:
-            active.status = inactive_status
-            active.is_active = False
-            active.updated_at = get_datetime_utc()
+        for attendance_session in event_sessions:
+            if attendance_session.status == AttendanceSessionStatus.cancelled:
+                continue
+            attendance_session.status = inactive_status
+            attendance_session.is_active = False
+            attendance_session.updated_at = get_datetime_utc()
     session.commit()
     session.refresh(event)
     return event
