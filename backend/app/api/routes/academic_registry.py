@@ -228,6 +228,14 @@ def read_section_students(
             raise HTTPException(
                 status_code=403, detail="Section is outside your assignment"
             )
+    if include_archived and not (
+        _current_user.is_superuser
+        or _current_user.role in (UserRole.super_admin, UserRole.admin)
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Archived student records are restricted to administrators",
+        )
     archived_filter = "" if include_archived else "AND s.archived_at IS NULL"
     enrollment_archived_filter = (
         "" if include_archived else "AND se.archived_at IS NULL"
