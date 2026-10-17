@@ -176,6 +176,7 @@ def update_attendance_session(
     if update_dict.get("status") == AttendanceSessionStatus.open:
         update_dict["is_active"] = True
     if update_dict.get("status") in (
+        AttendanceSessionStatus.scheduled,
         AttendanceSessionStatus.closed,
         AttendanceSessionStatus.cancelled,
     ):
