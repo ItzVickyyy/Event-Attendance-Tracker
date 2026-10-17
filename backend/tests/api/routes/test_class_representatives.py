@@ -808,3 +808,27 @@ def test_class_representative_can_register_student_card_uid(
         },
     )
     assert forbidden.status_code == 403
+
+def test_class_representative_cannot_include_archived_section_students(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    representative, _, section_id = _create_representative(
+        client, superuser_token_headers
+    )
+    headers = _representative_headers(client, representative["email"])
+    active_roster = client.get(
+        _api(f"/academic-registry/sections/{section_id}/students"),
+        headers=headers,
+    )
+    assert active_roster.status_code == 200
+
+    archived_roster = client.get(
+        _api(f"/academic-registry/sections/{section_id}/students"),
+        headers=headers,
+        params={"include_archived": True},
+    )
+    assert archived_roster.status_code == 403
+    assert (
+        archived_roster.json()["detail"]
+        == "Archived student records are restricted to administrators"
+    )
