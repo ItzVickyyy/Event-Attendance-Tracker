@@ -21,6 +21,9 @@ def test_safe_csv_cell_escapes_spreadsheet_formulas() -> None:
         "\t=1+1",
         "\r=1+1",
         "\n=1+1",
+        "\v=1+1",
+        "\f=1+1",
+        "\u00a0=1+1",
     )
     for value in values:
         assert _safe_csv_cell(value) == "'" + value
