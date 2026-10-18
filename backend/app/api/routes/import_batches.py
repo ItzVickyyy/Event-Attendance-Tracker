@@ -26,6 +26,8 @@ from app.services.student_promotion import StudentPromotionService
 
 router = APIRouter(prefix="/import-batches", tags=["import-batches"])
 
+MAX_IMPORT_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
 
 @router.get(
     "/", response_model=ImportBatchesPublic, dependencies=[Depends(require_admin)]
@@ -288,7 +290,12 @@ async def upload_import_batch_workbook(
             detail="Unsupported file type. Upload an .xlsx or .csv file.",
         )
 
-    contents = await file.read()
+    contents = await file.read(MAX_IMPORT_FILE_SIZE_BYTES + 1)
+    if len(contents) > MAX_IMPORT_FILE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="Uploaded file exceeds the 25 MiB limit.",
+        )
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
