@@ -51,7 +51,7 @@ router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 def _safe_csv_cell(value: str) -> str:
     """Prevent spreadsheet formula execution when exported text is opened as CSV."""
-    starts_with_formula = value.lstrip(" \t\r\n").startswith(
+    starts_with_formula = value.lstrip().startswith(
         ("=", "+", "-", "@")
     )
     starts_with_control = value.startswith(("\t", "\r", "\n"))
