@@ -221,6 +221,24 @@ def test_upload_empty_file_returns_400(
     assert response.status_code == 400
 
 
+def test_upload_rejects_files_over_size_limit(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+) -> None:
+    batch = make_import_batch(source_filename="upload_oversized.xlsx")
+    oversized_content = b"x" * (25 * 1024 * 1024 + 1)
+
+    response = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=superuser_token_headers,
+        files={"file": ("students.csv", oversized_content, "text/csv")},
+    )
+
+    assert response.status_code == 413
+    assert "25 MiB limit" in response.json()["detail"]
+
+
 def test_upload_malformed_workbook_returns_400(
     client: TestClient,
     superuser_token_headers: dict[str, str],
