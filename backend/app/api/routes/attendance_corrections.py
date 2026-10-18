@@ -89,7 +89,7 @@ def create_attendance_correction(
                 attendance.time_in.hour * 60 + attendance.time_in.minute
                 > int(hour) * 60 + int(minute)
             )
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             pass
     correction = AttendanceCorrection(
         attendance_id=correction_in.attendance_id,
