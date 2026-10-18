@@ -238,6 +238,14 @@ def test_upload_rejects_files_over_size_limit(
     assert response.status_code == 413
     assert "25 MiB limit" in response.json()["detail"]
 
+    # Rejected uploads must not advance the batch workflow state.
+    batch_detail = client.get(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}",
+        headers=superuser_token_headers,
+    )
+    assert batch_detail.status_code == 200
+    assert batch_detail.json()["status"] == ImportBatchStatus.pending.value
+
 
 def test_upload_malformed_workbook_returns_400(
     client: TestClient,
