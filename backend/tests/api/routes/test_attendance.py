@@ -12,7 +12,16 @@ from tests.utils.utils import random_email, random_lower_string
 
 
 def test_safe_csv_cell_escapes_spreadsheet_formulas() -> None:
-    values = ("=1+1", "+SUM(A1:A2)", "-1+2", "@SUM(A1)", "  =1+1", "\t=1+1")
+    values = (
+        "=1+1",
+        "+SUM(A1:A2)",
+        "-1+2",
+        "@SUM(A1)",
+        "  =1+1",
+        "\t=1+1",
+        "\r=1+1",
+        "\n=1+1",
+    )
     for value in values:
         assert _safe_csv_cell(value) == "'" + value
 
