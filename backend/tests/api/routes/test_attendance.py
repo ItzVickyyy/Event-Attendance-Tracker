@@ -4,10 +4,22 @@ import uuid
 from fastapi.testclient import TestClient
 from sqlmodel import Session, col, select
 
+from app.api.routes.attendance import _safe_csv_cell
 from app.core.config import settings
 from app.models import Attendance, AttendanceStatus, EventRegistration, UserRole
 from tests.utils.user import get_token_headers_for_role
 from tests.utils.utils import random_email, random_lower_string
+
+
+
+def test_safe_csv_cell_escapes_spreadsheet_formulas() -> None:
+    for value in ("=1+1", "+SUM(A1:A2)", "-1+2", "@SUM(A1)", "  =1+1", "\t=1+1"):
+        assert _safe_csv_cell(value) == "'" + value
+
+
+def test_safe_csv_cell_preserves_ordinary_values() -> None:
+    for value in ("Jane Doe", "2026-10-17T08:30:00", "2026-10-17", "Present"):
+        assert _safe_csv_cell(value) == value
 
 
 def test_attendance_time_in_only_prevent_duplicate_scan(
