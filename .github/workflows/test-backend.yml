@@ -5,6 +5,8 @@ on:
     branches:
       - master
       - fix/release-readiness-migrations-and-ci
+      - fix-limit-student-import-upload-size
+      - fix-attendance-csv-formula-injection
   pull_request:
 permissions:
   contents: read
