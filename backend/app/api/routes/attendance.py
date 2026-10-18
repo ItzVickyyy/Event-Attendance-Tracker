@@ -49,6 +49,13 @@ from app.student_academics import StudentEnrollment
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 
+def _safe_csv_cell(value: str) -> str:
+    """Prevent spreadsheet formula execution when exported text is opened as CSV."""
+    if value.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")) or value.startswith(("\t", "\r", "\n")):
+        return "'" + value
+    return value
+
+
 @router.get(
     "/",
     response_model=AttendancesPublic,
@@ -401,21 +408,24 @@ def export_attendances(
 
         writer.writerow(
             [
-                student_no,
-                full_name,
-                ev.event_name,
-                time_in_str,
-                time_out_str,
-                attendance.status.value
-                if hasattr(attendance.status, "value")
-                else str(attendance.status),
-                "Yes" if attendance.is_late else "No",
-                attendance.scan_method.value
-                if hasattr(attendance.scan_method, "value")
-                else str(attendance.scan_method),
-                attendance_session.name,
-                attendance_session.session_date,
-                recorded_at_str,
+                _safe_csv_cell(str(value))
+                for value in (
+                    student_no,
+                    full_name,
+                    ev.event_name,
+                    time_in_str,
+                    time_out_str,
+                    attendance.status.value
+                    if hasattr(attendance.status, "value")
+                    else str(attendance.status),
+                    "Yes" if attendance.is_late else "No",
+                    attendance.scan_method.value
+                    if hasattr(attendance.scan_method, "value")
+                    else str(attendance.scan_method),
+                    attendance_session.name,
+                    attendance_session.session_date,
+                    recorded_at_str,
+                )
             ]
         )
 
