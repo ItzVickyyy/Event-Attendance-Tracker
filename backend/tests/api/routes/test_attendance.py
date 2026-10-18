@@ -1592,12 +1592,13 @@ def test_manual_scan_rbac(
 def test_attendance_export_csv(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
-    # 1. Create Event
+    # 1. Create Event with a formula-like name to verify CSV export escaping.
+    event_name = f"=Export Test Event {random_lower_string()[:5]}"
     event_res = client.post(
         f"{settings.API_V1_STR}/events/",
         headers=superuser_token_headers,
         json={
-            "event_name": f"Export Test Event {random_lower_string()[:5]}",
+            "event_name": event_name,
             "event_date": "2026-09-15",
             "attendance_mode": "time_in_time_out",
             "status": "open",
@@ -1611,7 +1612,7 @@ def test_attendance_export_csv(
         f"{settings.API_V1_STR}/people/",
         headers=superuser_token_headers,
         json={
-            "first_name": "Export",
+            "first_name": "=Export",
             "last_name": "Student",
             "email": random_email(),
         },
@@ -1665,7 +1666,8 @@ def test_attendance_export_csv(
         in csv_content
     )
     assert student_num in csv_content
-    assert "Export Student" in csv_content
+    assert "'=Export Student" in csv_content
+    assert "'" + event_name in csv_content
 
 
 def test_student_has_only_one_always_active_nfc_credential(
