@@ -271,9 +271,7 @@ def test_import_upload_middleware_rejects_oversized_streamed_body() -> None:
                 message = await receive()
                 if not message.get("more_body", False):
                     break
-            await send(
-                {"type": "http.response.start", "status": 200, "headers": []}
-            )
+            await send({"type": "http.response.start", "status": 200, "headers": []})
             await send({"type": "http.response.body", "body": b"ok"})
 
         middleware = ImportUploadSizeLimitMiddleware(app)
