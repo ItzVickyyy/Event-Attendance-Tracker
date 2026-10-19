@@ -10,7 +10,7 @@ from openpyxl import Workbook
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.main import ImportUploadSizeLimitMiddleware, MAX_IMPORT_REQUEST_BODY_BYTES
+from app.main import MAX_IMPORT_REQUEST_BODY_BYTES, ImportUploadSizeLimitMiddleware
 from app.models import ImportBatch, ImportBatchStatus
 
 
@@ -266,7 +266,7 @@ def test_import_upload_middleware_rejects_oversized_streamed_body() -> None:
         async def send(message: dict) -> None:
             response_messages.append(message)
 
-        async def app(scope: dict, receive, send) -> None:
+        async def app(_scope: dict, receive, send) -> None:
             while True:
                 message = await receive()
                 if not message.get("more_body", False):
@@ -308,7 +308,7 @@ def test_import_upload_middleware_rejects_declared_oversized_body() -> None:
         async def send(message: dict) -> None:
             response_messages.append(message)
 
-        async def app(scope: dict, receive, send) -> None:
+        async def app(_scope: dict, _receive, _send) -> None:
             nonlocal app_called
             app_called = True
 
