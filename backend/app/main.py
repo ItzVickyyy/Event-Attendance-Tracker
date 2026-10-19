@@ -14,6 +14,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 from starlette.routing import Match
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.api.main import api_router
 from app.core import security
@@ -22,6 +23,89 @@ from app.core.db import engine, test_engine
 from app.models import AuditLog, User
 
 logger = logging.getLogger(__name__)
+
+
+
+MAX_IMPORT_REQUEST_BODY_BYTES = 26 * 1024 * 1024
+
+
+class ImportUploadSizeLimitMiddleware:
+    """Cap multipart request bodies before Starlette parses uploaded files."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope["method"] != "POST":
+            await self.app(scope, receive, send)
+            return
+
+        api_prefix = settings.API_V1_STR.rstrip("/")
+        path = scope.get("path", "")
+        segments = path.removeprefix(f"{api_prefix}/import-batches/").split("/")
+        is_import_upload = (
+            path.startswith(f"{api_prefix}/import-batches/")
+            and len(segments) == 2
+            and segments[0]
+            and segments[1] == "upload"
+        )
+        if not is_import_upload:
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                if int(content_length) > MAX_IMPORT_REQUEST_BODY_BYTES:
+                    await self._send_too_large(send)
+                    return
+            except ValueError:
+                pass
+
+        received_bytes = 0
+        response_started = False
+
+        async def limited_receive() -> Message:
+            nonlocal received_bytes
+            message = await receive()
+            if message["type"] == "http.request":
+                received_bytes += len(message.get("body", b""))
+                if received_bytes > MAX_IMPORT_REQUEST_BODY_BYTES:
+                    raise _ImportRequestBodyTooLarge
+            return message
+
+        async def tracked_send(message: Message) -> None:
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, limited_receive, tracked_send)
+        except _ImportRequestBodyTooLarge:
+            if not response_started:
+                await self._send_too_large(send)
+
+    @staticmethod
+    async def _send_too_large(send: Send) -> None:
+        body = b'{"detail":"Import upload request exceeds the maximum allowed size."}'
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 413,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("ascii")),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
+
+
+class _ImportRequestBodyTooLarge(Exception):
+    pass
+
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
@@ -38,6 +122,8 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
 )
+
+app.add_middleware(ImportUploadSizeLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
