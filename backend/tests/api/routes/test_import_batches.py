@@ -223,7 +223,6 @@ def test_upload_empty_file_returns_400(
     assert response.status_code == 400
 
 
-
 def test_upload_rejects_files_over_size_limit(
     client: TestClient,
     superuser_token_headers: dict[str, str],
@@ -272,7 +271,9 @@ def test_import_upload_middleware_rejects_oversized_streamed_body() -> None:
                 message = await receive()
                 if not message.get("more_body", False):
                     break
-            await send({"type": "http.response.start", "status": 200, "headers": []})
+            await send(
+                {"type": "http.response.start", "status": 200, "headers": []}
+            )
             await send({"type": "http.response.body", "body": b"ok"})
 
         middleware = ImportUploadSizeLimitMiddleware(app)
@@ -332,6 +333,7 @@ def test_import_upload_middleware_rejects_declared_oversized_body() -> None:
 
     messages = asyncio.run(run_test())
     assert messages[0]["status"] == 413
+
 
 def test_upload_malformed_workbook_returns_400(
     client: TestClient,
