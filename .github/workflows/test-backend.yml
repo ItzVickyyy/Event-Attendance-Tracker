@@ -7,6 +7,7 @@ on:
       - fix/release-readiness-migrations-and-ci
       - fix-limit-student-import-upload-size
       - fix-attendance-csv-formula-injection
+      - fix/import-upload-request-body-limit
   pull_request:
 permissions:
   contents: read
