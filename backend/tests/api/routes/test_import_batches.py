@@ -1,5 +1,6 @@
 """Tests for POST /import-batches/{batch_id}/upload"""
 
+import asyncio
 from collections.abc import Generator
 from io import BytesIO
 
@@ -9,6 +10,7 @@ from openpyxl import Workbook
 from sqlmodel import Session
 
 from app.core.config import settings
+from app.main import MAX_IMPORT_REQUEST_BODY_BYTES, ImportUploadSizeLimitMiddleware
 from app.models import ImportBatch, ImportBatchStatus
 
 
@@ -219,6 +221,116 @@ def test_upload_empty_file_returns_400(
     )
 
     assert response.status_code == 400
+
+
+def test_upload_rejects_files_over_size_limit(
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
+    make_import_batch,
+) -> None:
+    batch = make_import_batch(source_filename="upload_oversized.xlsx")
+    oversized_content = b"x" * (25 * 1024 * 1024 + 1)
+
+    response = client.post(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}/upload",
+        headers=superuser_token_headers,
+        files={"file": ("students.csv", oversized_content, "text/csv")},
+    )
+
+    assert response.status_code == 413
+    assert "25 MiB limit" in response.json()["detail"]
+
+    batch_detail = client.get(
+        f"{settings.API_V1_STR}/import-batches/{batch.id}",
+        headers=superuser_token_headers,
+    )
+    assert batch_detail.status_code == 200
+    assert batch_detail.json()["status"] == ImportBatchStatus.pending.value
+
+
+def test_import_upload_middleware_rejects_oversized_streamed_body() -> None:
+    async def run_test() -> list[dict]:
+        response_messages: list[dict] = []
+        chunks_sent = 0
+        chunk = b"x" * (1024 * 1024)
+
+        async def receive() -> dict:
+            nonlocal chunks_sent
+            chunks_sent += 1
+            return {
+                "type": "http.request",
+                "body": chunk,
+                "more_body": True,
+            }
+
+        async def send(message: dict) -> None:
+            response_messages.append(message)
+
+        async def app(_scope: dict, receive, send) -> None:
+            while True:
+                message = await receive()
+                if not message.get("more_body", False):
+                    break
+            await send({"type": "http.response.start", "status": 200, "headers": []})
+            await send({"type": "http.response.body", "body": b"ok"})
+
+        middleware = ImportUploadSizeLimitMiddleware(app)
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": (
+                f"{settings.API_V1_STR}/import-batches/"
+                "00000000-0000-4000-8000-000000000001/upload"
+            ),
+            "headers": [],
+        }
+        await middleware(scope, receive, send)
+        assert chunks_sent == 27
+        return response_messages
+
+    messages = asyncio.run(run_test())
+    assert messages[0]["type"] == "http.response.start"
+    assert messages[0]["status"] == 413
+    assert messages[1]["type"] == "http.response.body"
+    assert b"maximum allowed size" in messages[1]["body"]
+
+
+def test_import_upload_middleware_rejects_declared_oversized_body() -> None:
+    async def run_test() -> list[dict]:
+        response_messages: list[dict] = []
+        app_called = False
+
+        async def receive() -> dict:
+            raise AssertionError("body should be rejected before reading")
+
+        async def send(message: dict) -> None:
+            response_messages.append(message)
+
+        async def app(_scope: dict, _receive, _send) -> None:
+            nonlocal app_called
+            app_called = True
+
+        middleware = ImportUploadSizeLimitMiddleware(app)
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": (
+                f"{settings.API_V1_STR}/import-batches/"
+                "00000000-0000-4000-8000-000000000001/upload"
+            ),
+            "headers": [
+                (
+                    b"content-length",
+                    str(MAX_IMPORT_REQUEST_BODY_BYTES + 1).encode("ascii"),
+                )
+            ],
+        }
+        await middleware(scope, receive, send)
+        assert app_called is False
+        return response_messages
+
+    messages = asyncio.run(run_test())
+    assert messages[0]["status"] == 413
 
 
 def test_upload_malformed_workbook_returns_400(
